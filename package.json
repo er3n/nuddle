@@ -11,7 +11,7 @@
   "devDependencies": {
     "@eslint-community/eslint-plugin-eslint-comments": "4.8.1",
     "@eslint/js": "10.0.1",
-    "dependency-cruiser": "18.5.0",
+    "dependency-cruiser": "18.6.0",
     "eslint": "10.12.0",
     "knip": "6.41.0",
     "lefthook": "2.2.1",
