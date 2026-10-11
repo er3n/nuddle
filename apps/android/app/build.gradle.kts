@@ -157,7 +157,6 @@ dependencies {
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
-    implementation(libs.play.services.auth.api.phone)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test)
