@@ -66,11 +66,13 @@ Start the backend scenario suite with: task to self, task to other with done, ph
 
 ### Android `e2e` flavor
 - Base URL points at the host (`adb reverse tcp:3000 tcp:3000`).
-- `testTagsAsResourceId = true`; every interactive element has a `testTag`.
-- CameraX replaced by injecting an image file from the test.
+- `testTagsAsResourceId = true` (only in this flavor); every interactive element has a `testTag` from `ui/TestTags.kt`, and flows find elements only by tag.
+- CameraX replaced by injecting an image file from the test. Arrives with photo tasks (slice 4); the app has no camera before that.
 
 ### Orchestrator
 TypeScript runner in `e2e/orchestrator` that drives two emulators (`emulator-5554` as Selin, `emulator-5556` as Eren), runs Maestro flows on each in sequence, and calls test endpoints in between. Every run writes `e2e-runs/<timestamp>/` with per-step screenshots of both devices, logcat for both, and server logs. Agents debug from that folder.
+
+The emulators are AVDs `nuddle-selin` and `nuddle-eren` (`e2e/scripts/emulators.sh`): stock Android with Google Play (`android-36`, `google_apis_playstore`), hardware profile of a Galaxy S23 (1080 x 2340 px, 480 dpi, about 360 x 780 dp). Each run starts from a clean state: a re-created `nuddle_e2e` database and the app reinstalled on both emulators. Prerequisites, the run folder layout and the smoke flows are in `e2e/README.md`.
 
 FCM needs Google Play system images and the dev Firebase app. Flows wait with timeouts because push can be slow.
 

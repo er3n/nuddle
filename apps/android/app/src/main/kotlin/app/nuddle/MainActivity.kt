@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.nuddle.ui.TestTagsRoot
 import app.nuddle.ui.nav.NuddleNavHost
 import app.nuddle.ui.nav.StartViewModel
 import app.nuddle.ui.theme.DurtTheme
@@ -22,7 +23,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val route by start.startRoute.collectAsStateWithLifecycle()
-            DurtTheme { route?.let { NuddleNavHost(startRoute = it) } }
+            DurtTheme { TestTagsRoot { route?.let { NuddleNavHost(startRoute = it) } } }
         }
     }
 }

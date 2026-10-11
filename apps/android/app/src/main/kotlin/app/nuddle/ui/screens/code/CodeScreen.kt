@@ -9,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -18,6 +19,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import app.nuddle.R
+import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.BackBar
 import app.nuddle.ui.components.CodeInput
 import app.nuddle.ui.components.DurtButton
@@ -77,6 +79,7 @@ fun CodeScreen(
                     onClick = onResend,
                     kind = DurtButtonKind.Secondary,
                     enabled = state.resendInSeconds == 0,
+                    modifier = Modifier.testTag(TestTags.CODE_RESEND),
                 )
             }
         },
@@ -93,6 +96,7 @@ fun CodeScreen(
                     stringResource(R.string.code_change_number),
                     onClick = onChangeNumber,
                     style = DurtTheme.type.bodyLarge,
+                    modifier = Modifier.testTag(TestTags.CODE_CHANGE_NUMBER),
                 )
             }
         }
@@ -103,6 +107,7 @@ fun CodeScreen(
             onComplete = onComplete,
             enabled = !state.verifying,
             focusRequester = focus,
+            modifier = Modifier.testTag(TestTags.CODE_INPUT),
         )
         Column(verticalArrangement = Arrangement.spacedBy(dimens.space12)) {
             when {
@@ -132,7 +137,7 @@ fun CodeScreen(
                 }
 
                 else -> {
-                    TextLink(stringResource(R.string.code_resend), onClick = onResend)
+                    TextLink(stringResource(R.string.code_resend), onClick = onResend, modifier = Modifier.testTag(TestTags.CODE_RESEND))
                 }
             }
             if (!state.wrongCode) {

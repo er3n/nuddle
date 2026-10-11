@@ -1,0 +1,9 @@
+# Taps "Bitti" on the full screen poke; the poke screen closes.
+appId: app.nuddle.debug
+---
+- tapOn:
+    id: poke.done
+- extendedWaitUntil:
+    notVisible:
+      id: poke.screen
+    timeout: 15000

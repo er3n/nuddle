@@ -25,6 +25,10 @@ Independent Gradle build (Kotlin, Compose), `applicationId app.nuddle`, flavors 
 - `google-services.json` for `app.nuddle.debug` (Firebase project `nuddle-app-er3n`) goes to `app/src/dev/` and `app/src/e2e/`. It is git-ignored. Without it the app builds and runs, and FCM registration is skipped.
 - Run against the local API: `mise run dev`, then `adb reverse tcp:3000 tcp:3000` and install the `devDebug` build. Test numbers and the code are in `supabase/config.toml`.
 
+## E2E
+
+The `e2e` flavor is `devDebug` plus test tags exposed as resource ids (`BuildConfig.EXPOSE_TEST_TAGS`, `ui/TestTags.kt`), so the Maestro flows in `e2e/flows` find elements by tag. Every interactive element gets a tag; `TestTagsTest` checks them. Run with `mise run e2e:smoke` (`e2e/README.md`).
+
 ## Screenshots
 
 Roborazzi records every `@Preview` into `app/screenshots/` (record only while designs move, `docs/testing.md`). Screens use `@ScreenPreviews` (390 and 360 dp, font scale 1, 1.5, 2); components use `@ComponentPreview`.

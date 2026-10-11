@@ -32,12 +32,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import app.nuddle.R
+import app.nuddle.ui.TestTags
 import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewComponent
 import app.nuddle.ui.preview.PreviewSurface
@@ -134,7 +136,8 @@ fun ComposeBar(
                         .weight(1f)
                         .padding(vertical = dimens.space8)
                         .onFocusChanged { focused = it.isFocused }
-                        .semantics { contentDescription = label },
+                        .semantics { contentDescription = label }
+                        .testTag(TestTags.COMPOSE_INPUT),
                 decorationBox = { inner ->
                     Box {
                         if (text.isEmpty()) {
@@ -155,7 +158,7 @@ fun ComposeBar(
                         onClick = onSend,
                         kind = DurtButtonKind.Accent,
                         size = DurtButtonSize.Small,
-                        modifier = Modifier.weight(1f, fill = false),
+                        modifier = Modifier.weight(1f, fill = false).testTag(TestTags.COMPOSE_RETRY),
                     )
                 }
 
@@ -200,7 +203,8 @@ private fun SendButton(onSend: () -> Unit) {
                 .clip(CircleShape)
                 .background(DurtTheme.colors.accent)
                 .clickable(role = Role.Button, onClick = onSend)
-                .semantics { contentDescription = description },
+                .semantics { contentDescription = description }
+                .testTag(TestTags.COMPOSE_SEND),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -228,7 +232,8 @@ private fun MicButton(
                 .semantics {
                     contentDescription = description
                     role = Role.Button
-                }.pointerInput(Unit) {
+                }.testTag(TestTags.COMPOSE_MIC)
+                .pointerInput(Unit) {
                     detectTapGestures(
                         onTap = { onShortTap() },
                         onLongPress = { onVoiceStart() },

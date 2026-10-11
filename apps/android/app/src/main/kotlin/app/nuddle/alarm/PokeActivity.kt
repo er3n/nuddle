@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import app.nuddle.data.db.TaskDao
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.PokeRules
+import app.nuddle.ui.TestTagsRoot
 import app.nuddle.ui.screens.LightSystemBarIcons
 import app.nuddle.ui.screens.poke.PokeScreen
 import app.nuddle.ui.screens.poke.PokeUiState
@@ -63,7 +64,7 @@ class PokeActivity : ComponentActivity() {
             finish()
             return
         }
-        setContent { DurtTheme { PokeRoute(key) } }
+        setContent { DurtTheme { TestTagsRoot { PokeRoute(key) } } }
     }
 
     /** The manifest attributes cover API 27+; API 26 needs the window flags. */

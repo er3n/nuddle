@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.AnnotatedString
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import app.nuddle.R
 import app.nuddle.domain.TurkishPhone
+import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.BackBar
 import app.nuddle.ui.components.DurtButton
 import app.nuddle.ui.components.InlineAlert
@@ -71,6 +73,7 @@ fun PhoneScreen(
                 onClick = onSend,
                 enabled = state.canSend || state.sending,
                 loading = state.sending,
+                modifier = Modifier.testTag(TestTags.PHONE_SEND),
             )
         },
     ) {
@@ -90,7 +93,7 @@ fun PhoneScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = { if (state.canSend) onSend() }),
                     visualTransformation = PhoneGrouping,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).testTag(TestTags.PHONE_INPUT),
                 )
             }
         }

@@ -66,8 +66,14 @@ class AndroidPokeNotifications
                     .setPriority(if (silent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_HIGH)
                     .setContentIntent(open)
                     .addPokeActions(step)
-            if (fullScreen) builder.setFullScreenIntent(fullScreenIntent(step), true).setOngoing(true)
-            NotificationManagerCompat.from(context).notify(notificationId(task.id), builder.build())
+            val manager = NotificationManagerCompat.from(context)
+            if (fullScreen) {
+                builder.setFullScreenIntent(fullScreenIntent(step), true).setOngoing(true)
+                // SystemUI launches a full screen intent only for a newly posted notification, never for an update of
+                // the earlier step's notification with the same id (found by E2E smoke 1), so that one goes first.
+                manager.cancel(notificationId(task.id))
+            }
+            manager.notify(notificationId(task.id), builder.build())
         }
 
         private fun fullScreenIntent(step: PokeStep): PendingIntent =

@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import app.nuddle.R
+import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.Avatar
 import app.nuddle.ui.components.DurtButton
 import app.nuddle.ui.components.DurtButtonKind
@@ -65,7 +67,12 @@ fun WelcomeScreen(
         modifier = modifier,
         horizontalPadding = dimens.space24,
         bottom = {
-            DurtButton(text = stringResource(R.string.welcome_start), onClick = onStart, kind = DurtButtonKind.Accent)
+            DurtButton(
+                text = stringResource(R.string.welcome_start),
+                onClick = onStart,
+                kind = DurtButtonKind.Accent,
+                modifier = Modifier.testTag(TestTags.WELCOME_START),
+            )
             TermsText(onTerms = onTerms, onPrivacy = onPrivacy)
         },
     ) {
@@ -126,7 +133,7 @@ private fun TermsText(
         style = DurtTheme.type.caption,
         color = colors.textMuted,
         textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().testTag(TestTags.WELCOME_TERMS),
     )
 }
 
