@@ -34,7 +34,7 @@ Android app (Kotlin, Compose)                       Vercel
 | Storage | Supabase Storage, private bucket, signed upload URLs. Photos deleted when the task closes. |
 | Scheduler | `scheduled_actions` table + pure `tick(now)`. In the cloud, `pg_cron` calls `POST /api/internal/tick` every minute via `pg_net`. Locally, `mise run tick` (ADR 0007). |
 | Push | FCM data messages, sent with `firebase-admin`. Crashlytics and App Distribution from the same Firebase project. One project, debug build registered as `app.nuddle.debug`. |
-| LLM | Behind a `TaskExtractor` interface. Provider not fixed. A gateway (e.g. Cloudflare AI Gateway) is optional. |
+| LLM | Behind a `TaskExtractor` interface. Default provider: OpenRouter (OpenAI-compatible API, one key, model switched by config). Env: `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`. The model is chosen with the eval set (open-questions #16). |
 | Contract | zod schemas in `apps/web` → `packages/contract/openapi.yaml` (committed) → Kotlin client generated at build time (ADR 0008). |
 | Region | Vercel functions `fra1`, Supabase `eu-central-1`. KVKK: cross-border transfer must be named in the privacy notice. |
 

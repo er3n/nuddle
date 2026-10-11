@@ -51,7 +51,7 @@ Prompt template for each stage:
 - `src/infra/clock.ts` (real) and a `FakeClock` for tests.
 - `src/domain`: task state machine (exhaustive), transition functions that return new state + events + scheduled actions, `planPokes` v0 (simple heuristic satisfying every constraint in `domain.md`; document the heuristic in code comments and in `domain.md`), quiet hours shifting, `tick(now)` handlers for each `scheduled_actions` kind, reachability derivation.
 - Interfaces and fakes: `PushSender`, `OtpSender`, `TaskExtractor`, `PhotoStorage`.
-- `TaskExtractor` fixture implementation keyed by input text. `evals/extraction/golden.jsonl` with ~30 cases and a `mise run eval` script (the real provider can be stubbed until a key exists).
+- `TaskExtractor` fixture implementation keyed by input text. `evals/extraction/golden.jsonl` with ~30 cases and a `mise run eval` script against OpenRouter (`OPENROUTER_API_KEY`, `OPENROUTER_MODEL`; the real provider can be stubbed until a key exists).
 - Scenario harness: two simulated people, injected clock, fake push recorder. Write the scenario list from `testing.md`.
 
 **Done when:** `mise run test:fast` and `mise run test` pass; all scenarios in `testing.md` exist and pass; no `Date.now()` in `src/domain` (lint).

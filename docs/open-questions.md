@@ -25,7 +25,7 @@ Things not yet decided. If you hit one while building, do not decide silently: p
 
 ## Technical
 
-16. **LLM provider and model** for task extraction. Decide with the eval set in stage 3.
+16. **LLM model** for task extraction. *Default:* OpenRouter as the provider (`OPENROUTER_API_KEY`, model id in `OPENROUTER_MODEL`), so models can be compared with the eval set in stage 3 without code changes. Pick the model with the eval set.
 17. **Speech recognition:** on-device Android `SpeechRecognizer` vs server-side, Turkish accuracy and cost. *Default for MVP:* on-device, send the transcript as text.
 18. **Poke plan heuristic** (step count, spacing, escalation, when the human channel fires). Designed with scenario tests in stage 3.
 19. **Play policy** for `USE_EXACT_ALARM` and `USE_FULL_SCREEN_INTENT` as an alarm app. Submit an early closed test build.
