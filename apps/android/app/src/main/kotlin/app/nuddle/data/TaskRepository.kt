@@ -2,11 +2,13 @@ package app.nuddle.data
 
 import app.nuddle.api.CommandsApi
 import app.nuddle.api.model.CreateTaskCommand
+import app.nuddle.api.model.EditCommand
 import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.WriteTaskCommand
 import app.nuddle.api.model.WriteTaskResult
 import app.nuddle.data.api.ApiResult
 import app.nuddle.data.api.apiCall
+import app.nuddle.data.db.TaskDao
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.sync.SyncRepository
 import kotlinx.serialization.json.Json
@@ -14,8 +16,10 @@ import javax.inject.Inject
 import kotlin.time.Instant
 
 sealed interface WriteOutcome {
-    /** The server created the task. It is on the device after the sync that follows. */
-    data object Created : WriteOutcome
+    /** The server created (or changed) the task. It is on the device after the sync that follows. */
+    data class Created(
+        val taskId: String,
+    ) : WriteOutcome
 
     /** Something is missing: the preview (2b) shows [draft] and asks one question. */
     data class Ask(
@@ -34,9 +38,13 @@ data class TaskDraft(
     val finishMode: FinishMode,
 )
 
-/** Closes a task the recipient finished (implemented by the alarm package, which also stops its alarms). */
-fun interface TaskCloser {
+/** Closes a task on the device at once (implemented by the alarm package, which also stops its alarms). */
+interface TaskCloser {
+    /** The recipient finished it. */
     suspend fun done(taskId: String)
+
+    /** The sender takes it back: "Geri al" on the undo toast. */
+    suspend fun cancel(taskId: String)
 }
 
 /** Writing and finishing tasks from home (docs/ux/screens.md 2a, 2f). */
@@ -57,8 +65,18 @@ interface TaskRepository {
         idempotencyKey: String,
     ): WriteOutcome
 
+    /** "Düzenle" on the undo toast for a task to self: a new deadline, detail and finish mode kept. */
+    suspend fun editDeadline(
+        taskId: String,
+        deadline: Instant,
+        idempotencyKey: String,
+    ): WriteOutcome
+
     /** "Şimdiden bitti": applied locally at once, then sent through the outbox. */
     suspend fun done(taskId: String)
+
+    /** "Geri al": applied locally at once, then sent through the outbox. */
+    suspend fun cancel(taskId: String)
 }
 
 class ApiTaskRepository
@@ -68,6 +86,7 @@ class ApiTaskRepository
         private val sync: SyncRepository,
         private val closer: TaskCloser,
         private val sessions: SessionStore,
+        private val tasks: TaskDao,
         private val json: Json,
     ) : TaskRepository {
         override suspend fun write(
@@ -78,9 +97,10 @@ class ApiTaskRepository
             if (result !is ApiResult.Success) return WriteOutcome.Failed
             return when (result.value.kind) {
                 WriteTaskResult.Kind.CREATED -> {
+                    val taskId = result.value.taskId ?: return WriteOutcome.Failed
                     // A failed sync is not a failed write: the task exists, and the next sync brings it.
                     sync.sync()
-                    WriteOutcome.Created
+                    WriteOutcome.Created(taskId)
                 }
 
                 WriteTaskResult.Kind.ASK -> {
@@ -111,10 +131,34 @@ class ApiTaskRepository
                     finishMode = finishMode,
                     rawText = rawText,
                 )
-            if (apiCall(json) { commandsApi.createTask(command) } !is ApiResult.Success) return WriteOutcome.Failed
+            val result = apiCall(json) { commandsApi.createTask(command) }
+            if (result !is ApiResult.Success) return WriteOutcome.Failed
             sync.sync()
-            return WriteOutcome.Created
+            return WriteOutcome.Created(result.value.taskId)
+        }
+
+        override suspend fun editDeadline(
+            taskId: String,
+            deadline: Instant,
+            idempotencyKey: String,
+        ): WriteOutcome {
+            val task = tasks.get(taskId) ?: return WriteOutcome.Failed
+            val command =
+                EditCommand(
+                    idempotencyKey = idempotencyKey,
+                    taskId = taskId,
+                    deadline = deadline.toString(),
+                    // Sent as they are: the edit command replaces every field it carries.
+                    detail = task.detail,
+                    finishMode = FinishMode.entries.first { it.value == task.finishMode },
+                )
+            val result = apiCall(json) { commandsApi.edit(command) }
+            if (result !is ApiResult.Success) return WriteOutcome.Failed
+            sync.sync()
+            return WriteOutcome.Created(taskId)
         }
 
         override suspend fun done(taskId: String) = closer.done(taskId)
+
+        override suspend fun cancel(taskId: String) = closer.cancel(taskId)
     }

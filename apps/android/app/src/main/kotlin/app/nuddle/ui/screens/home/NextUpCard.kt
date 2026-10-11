@@ -34,6 +34,7 @@ import app.nuddle.ui.components.DurtButtonKind
 import app.nuddle.ui.components.DurtButtonSize
 import app.nuddle.ui.components.PillStatus
 import app.nuddle.ui.components.StatusPill
+import app.nuddle.ui.components.UndoToast
 import app.nuddle.ui.theme.DurtTheme
 
 // Parts of home once there is a task (2f). Kept next to HomeScreen.kt, used only there.
@@ -155,3 +156,30 @@ private fun Modifier.dashedBorder(
             style = Stroke(width = stroke, pathEffect = PathEffect.dashPathEffect(floatArrayOf(DASH, DASH))),
         )
     }
+
+/** The deadline inside a sentence: "yarın 09:00". */
+@Composable
+private fun DeadlineText.inlineText(): String =
+    when (this) {
+        is DeadlineText.Today -> stringResource(R.string.deadline_today_inline, time)
+        is DeadlineText.Tomorrow -> stringResource(R.string.deadline_tomorrow_inline, time)
+        is DeadlineText.OnDate -> stringResource(R.string.deadline_on_date, day, stringArrayResource(R.array.month_names)[month - 1], time)
+    }
+
+/** 2a: "Kuruldu · Para çek · yarın 09:00" with Geri al and Düzenle (UndoToast, components.md 6). */
+@Composable
+internal fun SelfUndoToast(
+    task: UndoUi,
+    callbacks: UndoCallbacks,
+    modifier: Modifier = Modifier,
+) {
+    val parts = listOfNotNull(task.title, task.deadline.inlineText(), if (task.photo) stringResource(R.string.undo_finish_photo) else null)
+    UndoToast(
+        title = stringResource(R.string.undo_self_title),
+        subtitle = parts.reduce { line, part -> stringResource(R.string.separator_dot, line, part) },
+        onUndo = callbacks.onUndo,
+        onEdit = callbacks.onEdit,
+        onTimeout = callbacks.onTimeout,
+        modifier = modifier.testTag(TestTags.HOME_UNDO),
+    )
+}

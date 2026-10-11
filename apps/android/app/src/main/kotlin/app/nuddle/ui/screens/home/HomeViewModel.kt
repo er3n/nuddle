@@ -26,6 +26,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import javax.inject.Inject
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 private const val STOP_TIMEOUT_MS = 5_000L
 
@@ -35,7 +36,7 @@ class HomeViewModel
     @Inject
     constructor(
         private val sessions: SessionStore,
-        taskDao: TaskDao,
+        private val taskDao: TaskDao,
         private val tasks: TaskRepository,
         private val ids: IdGenerator,
         private val clock: Clock,
@@ -43,12 +44,14 @@ class HomeViewModel
     ) : ViewModel() {
         private val compose = MutableStateFlow<ComposeState>(ComposeState.Idle)
         private val preview = MutableStateFlow<OpenPreview?>(null)
+        private val undo = MutableStateFlow<UndoUi?>(null)
 
-        /** The preview on screen plus what is needed to create the task from it. */
+        /** The preview on screen plus what is needed to create the task from it, or to edit [editing]. */
         private data class OpenPreview(
             val ui: PreviewUi,
             val finishMode: FinishMode,
             val key: String,
+            val editing: String? = null,
         )
 
         /** Kept while the same text is retried, so a write the server got but did not answer is not created twice. */
@@ -60,8 +63,8 @@ class HomeViewModel
             }
 
         val state: StateFlow<HomeUiState?> =
-            combine(sessions.displayName.filterNotNull(), compose, nextUp, preview) { name, compose, nextUp, preview ->
-                HomeUiState(myName = name, compose = compose, nextUp = nextUp, preview = preview?.ui)
+            combine(sessions.displayName.filterNotNull(), compose, nextUp, preview, undo) { name, compose, nextUp, preview, undo ->
+                HomeUiState(myName = name, compose = compose, nextUp = nextUp, preview = preview?.ui, undo = undo)
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
         fun onComposeTextChange(text: String) {
@@ -81,9 +84,12 @@ class HomeViewModel
             compose.value = ComposeState.Sending
             viewModelScope.launch {
                 when (val outcome = tasks.write(text, key)) {
-                    WriteOutcome.Created -> {
+                    is WriteOutcome.Created -> {
                         pendingKey = null
                         compose.value = ComposeState.Idle
+                        // 5 s to take it back or change it (domain.md, Undo toast). Synced right after the write;
+                        // without the task on the device there is nothing to describe, and it stays as created.
+                        undo.value = taskDao.get(outcome.taskId)?.let { undoFor(it, text, clock.now(), timeZone) }
                     }
 
                     // The text stays under the preview, so Vazgeç goes back to it.
@@ -113,16 +119,7 @@ class HomeViewModel
             val quiet = sessions.quietHours() ?: QuietHours.default(timeZone)
             preview.value =
                 OpenPreview(
-                    ui =
-                        PreviewUi(
-                            rawText = text,
-                            title = title,
-                            detail = ask.draft.detail,
-                            choices = quickDeadlines(clock.now(), timeZone),
-                            selected = null,
-                            quietStart = quiet.start.format(HOUR_MINUTE),
-                            quietEnd = quiet.end.format(HOUR_MINUTE),
-                        ),
+                    ui = previewFor(text, title, ask.draft.detail, quiet, clock.now()),
                     finishMode = ask.draft.finishMode,
                     key = ids.next(),
                 )
@@ -142,7 +139,10 @@ class HomeViewModel
             preview.value = null
         }
 
-        /** Kur: creates the task. A failure closes the sheet and leaves the text with "Tekrar dene" (6b). */
+        /**
+         * Kur: creates the task, or moves the deadline of the one being edited. A failed create closes the sheet and
+         * leaves the text with "Tekrar dene" (6b).
+         */
         fun onPreviewConfirm() {
             val open = preview.value ?: return
             val deadline = open.ui.selected ?: return
@@ -150,16 +150,61 @@ class HomeViewModel
             preview.value = open.copy(ui = open.ui.copy(sending = true))
             viewModelScope.launch {
                 val outcome =
-                    tasks.createForSelf(
-                        title = open.ui.title,
-                        detail = open.ui.detail,
-                        deadline = deadline.at,
-                        finishMode = open.finishMode,
-                        rawText = open.ui.rawText,
-                        idempotencyKey = open.key,
+                    if (open.editing != null) {
+                        tasks.editDeadline(open.editing, deadline.at, open.key)
+                    } else {
+                        tasks.createForSelf(
+                            title = open.ui.title,
+                            detail = open.ui.detail,
+                            deadline = deadline.at,
+                            finishMode = open.finishMode,
+                            rawText = open.ui.rawText,
+                            idempotencyKey = open.key,
+                        )
+                    }
+                when {
+                    outcome is WriteOutcome.Created -> {
+                        preview.value = null
+                        compose.value = ComposeState.Idle
+                    }
+
+                    // The task exists: Tekrar dene on the bar would write a second one, so Kur stays for a retry.
+                    open.editing != null -> {
+                        preview.value = open
+                    }
+
+                    else -> {
+                        preview.value = null
+                        compose.value = ComposeState.Failed(open.ui.rawText)
+                    }
+                }
+            }
+        }
+
+        fun onUndo() {
+            val shown = undo.value ?: return
+            undo.value = null
+            viewModelScope.launch { tasks.cancel(shown.taskId) }
+        }
+
+        /** Timeout confirms: the task already exists, so the toast just goes. */
+        fun onUndoTimeout() {
+            undo.value = null
+        }
+
+        /** Düzenle: the preview again, now changing the deadline of the task that went out. */
+        fun onUndoEdit() {
+            val shown = undo.value ?: return
+            undo.value = null
+            viewModelScope.launch {
+                val quiet = sessions.quietHours() ?: QuietHours.default(timeZone)
+                preview.value =
+                    OpenPreview(
+                        ui = previewFor(shown.rawText, shown.title, shown.detail, quiet, clock.now()),
+                        finishMode = if (shown.photo) FinishMode.PHOTO else FinishMode.DONE,
+                        key = ids.next(),
+                        editing = shown.taskId,
                     )
-                preview.value = null
-                compose.value = if (outcome == WriteOutcome.Created) ComposeState.Idle else ComposeState.Failed(open.ui.rawText)
             }
         }
 

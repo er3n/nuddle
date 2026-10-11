@@ -173,7 +173,7 @@ class FakeTaskRepository : TaskRepository {
     /** Text and idempotency key of every write. */
     val written = mutableListOf<Pair<String, String>>()
     val done = mutableListOf<String>()
-    var outcome: WriteOutcome = WriteOutcome.Created
+    var outcome: WriteOutcome = WriteOutcome.Created(Cast.TASK_ID)
 
     override suspend fun write(
         text: String,
@@ -185,7 +185,25 @@ class FakeTaskRepository : TaskRepository {
 
     /** Title, deadline and key of every create from the preview. */
     val created = mutableListOf<Triple<String, Instant, String>>()
-    var createOutcome: WriteOutcome = WriteOutcome.Created
+    var createOutcome: WriteOutcome = WriteOutcome.Created(Cast.TASK_ID)
+    val cancelled = mutableListOf<String>()
+
+    /** Task, deadline and key of every edit from Düzenle. */
+    val edited = mutableListOf<Triple<String, Instant, String>>()
+    var editOutcome: WriteOutcome = WriteOutcome.Created(Cast.TASK_ID)
+
+    override suspend fun editDeadline(
+        taskId: String,
+        deadline: Instant,
+        idempotencyKey: String,
+    ): WriteOutcome {
+        edited += Triple(taskId, deadline, idempotencyKey)
+        return editOutcome
+    }
+
+    override suspend fun cancel(taskId: String) {
+        cancelled += taskId
+    }
 
     override suspend fun createForSelf(
         title: String,

@@ -181,6 +181,20 @@ class PokeAlarmTest {
         }
 
     @Test
+    fun `undo cancels the task at once, stops its alarms and queues the command`() =
+        runTest {
+            givenPlan()
+            alarms.rearm()
+            actions.cancel(Cast.TASK_ID)
+
+            assertTrue(scheduler.scheduled.isEmpty())
+            assertEquals("CANCELLED", db.tasks().get(Cast.TASK_ID)!!.status)
+            val queued = db.outbox().pending().single()
+            assertEquals("cancel", queued.command)
+            assertTrue(""""note":null""" in queued.body, queued.body)
+        }
+
+    @Test
     fun `cant today closes the task as dropped without a note`() =
         runTest {
             givenPlan()
