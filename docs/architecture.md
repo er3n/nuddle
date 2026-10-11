@@ -136,7 +136,7 @@ A staging project is added before the global launch, not before.
 
 Production wiring (stage 7):
 - Vercel project `nuddle` (team `er3ns-projects`), root `apps/web`, functions in `fra1`. `apps/web/vercel.json` skips builds whose changes are all under `apps/android/`.
-- Host `https://nuddle.app`. DNS stays at Cloudflare with two "DNS only" (not proxied) records: `A nuddle.app 76.76.21.21` and `CNAME www cname.vercel-dns.com`. `www` redirects to the apex.
+- Host `https://nuddle.app`. DNS stays at Cloudflare with "DNS only" (not proxied) records, the values Vercel recommended for this project on 2026-10-11: `A nuddle.app 216.198.79.1`, `A nuddle.app 64.29.17.1` and `CNAME www 025ac255c6824333.vercel-dns-017.com`. `www` redirects to the apex (308).
 - Vercel env is set for the Production target only (`.env.example`). Previews and `*.vercel.app` URLs sit behind Vercel Authentication, have no env and serve only `/api/v1/health` (database `not_configured`). `E2E` is never set in Vercel.
 - The API reaches Postgres through Supabase's transaction pooler (port 6543): the direct host is IPv6 only.
 - Merging to `main` deploys production.
