@@ -1,0 +1,6 @@
+packages:
+  - apps/web
+
+# lefthook's postinstall only installs hooks; the root "prepare" script already does that.
+ignoredBuiltDependencies:
+  - lefthook

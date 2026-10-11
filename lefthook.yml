@@ -1,0 +1,13 @@
+# Pre-commit: secrets, then format and fast lint on staged files only (docs/quality.md). A few seconds at most.
+pre-commit:
+  piped: true
+  jobs:
+    - name: gitleaks
+      run: mise exec -- gitleaks git --pre-commit --staged --redact --no-banner
+    - name: prettier
+      glob: "*.{ts,tsx,js,mjs,cjs,json,yaml,yml,css}"
+      run: mise exec -- pnpm exec prettier --write --ignore-unknown {staged_files}
+      stage_fixed: true
+    - name: eslint
+      glob: "*.{ts,tsx,js,mjs,cjs}"
+      run: mise exec -- pnpm exec eslint --max-warnings=0 --no-warn-ignored --cache --cache-location node_modules/.cache/eslint/ {staged_files}
