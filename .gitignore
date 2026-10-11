@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Env and secrets (the repo is public, see ADR 0001)
+.env
+.env*.local
+google-services.json
+*.keystore
+*.jks
+
+# Android / Gradle
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.kotlin/
+captures/
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+
+# E2E run artifacts
+e2e-runs/
+
+# Claude Code: local settings and agent worktrees
+.claude/settings.local.json
+.claude/worktrees/
+
+# OS / editors
+.DS_Store
+.vscode/
+*.log

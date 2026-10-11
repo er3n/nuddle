@@ -1,0 +1,88 @@
+// ESLint flat config. Rules come from docs/quality.md (TypeScript).
+import js from "@eslint/js";
+import comments from "@eslint-community/eslint-plugin-eslint-comments/configs";
+import { defineConfig, globalIgnores } from "eslint/config";
+import tseslint from "typescript-eslint";
+
+export default defineConfig(
+  globalIgnores([
+    "**/node_modules/",
+    "**/.next/",
+    "**/next-env.d.ts",
+    "apps/android/",
+    "docs/",
+    "e2e-runs/",
+  ]),
+
+  {
+    linterOptions: {
+      reportUnusedDisableDirectives: "error",
+      reportUnusedInlineConfigs: "error",
+    },
+  },
+
+  js.configs.recommended,
+  comments.recommended,
+  {
+    rules: {
+      // Every eslint-disable must say why (CLAUDE.md hard rule 10).
+      "@eslint-community/eslint-comments/require-description": ["error", { ignore: [] }],
+      "@eslint-community/eslint-comments/no-unlimited-disable": "error",
+    },
+  },
+
+  {
+    files: ["**/*.{ts,tsx,mts,cts}"],
+    extends: [tseslint.configs.strictTypeChecked],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      // A forgotten await on a DB write or a push send.
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-misused-promises": "error",
+      // The task state machine must handle every status.
+      "@typescript-eslint/switch-exhaustiveness-check": [
+        "error",
+        { considerDefaultExhaustiveForUnions: false, requireDefaultForNonUnion: true },
+      ],
+    },
+  },
+
+  // Plain JS/MJS config files are not part of a TS project.
+  {
+    files: ["**/*.{js,mjs,cjs}"],
+    extends: [tseslint.configs.disableTypeChecked],
+    languageOptions: {
+      globals: {
+        module: "readonly",
+        require: "readonly",
+        process: "readonly",
+        __dirname: "readonly",
+      },
+    },
+  },
+
+  // Domain code never reads the wall clock (ADR 0009). Time is injected.
+  {
+    files: ["apps/web/src/domain/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.object.name='Date'][callee.property.name='now']",
+          message:
+            "Do not read the wall clock in domain code. Take `now` as a parameter (ADR 0009).",
+        },
+        {
+          selector: "NewExpression[callee.name='Date'][arguments.length=0]",
+          message:
+            "Argument-less `new Date()` reads the wall clock. Take `now` as a parameter (ADR 0009).",
+        },
+      ],
+    },
+  },
+);

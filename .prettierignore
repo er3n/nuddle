@@ -1,0 +1,13 @@
+# Docs are hand-written and are the source of truth; formatting them is a deliberate change.
+docs/
+**/*.md
+
+# Generated or lock files
+pnpm-lock.yaml
+packages/contract/openapi.yaml
+
+# Android has its own formatter (ktlint via Spotless, stage 5)
+apps/android/
+
+.next/
+e2e-runs/
