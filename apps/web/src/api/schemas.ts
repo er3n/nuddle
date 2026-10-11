@@ -153,6 +153,7 @@ export const PhotoSentCommand = taskKeyed({ photoPath: z.string().min(1) }).open
 );
 export const CantTodayCommand = taskKeyed({ note: Note }).openapi("CantTodayCommand");
 export const DidItLaterCommand = taskKeyed({}).openapi("DidItLaterCommand");
+export const SnoozeCommand = taskKeyed({}).openapi("SnoozeCommand");
 export const CancelCommand = taskKeyed({ note: Note }).openapi("CancelCommand");
 export const EditCommand = taskKeyed({
   deadline: Instant.optional(),

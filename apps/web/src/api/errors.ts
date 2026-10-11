@@ -21,6 +21,7 @@ const errors = {
   deadline_not_in_future: { code: "DRT-4005", status: 409 },
   not_connected: { code: "DRT-4006", status: 409 },
   recipient_unavailable: { code: "DRT-4007", status: 409 },
+  snooze_not_allowed: { code: "DRT-4008", status: 409 },
   invite_not_open: { code: "DRT-4101", status: 409 },
   wrong_invitee: { code: "DRT-4102", status: 403 },
   self_invite: { code: "DRT-4103", status: 409 },

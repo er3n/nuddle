@@ -230,6 +230,80 @@ describe("task state machine", () => {
   });
 });
 
+describe("snooze (open-questions#1: 2 snoozes, 15 then 10 minutes, never past the deadline)", () => {
+  const at = new Date("2026-10-11T22:40:00+03:00");
+  const fired: TaskEvent = {
+    taskId: "task-1",
+    actorId: "eren",
+    type: "poke_fired",
+    payload: { seq: 2, level: "SOUND" },
+    at: new Date("2026-10-11T22:30:00+03:00"),
+  };
+  const snoozed = (minutes: number): TaskEvent => ({
+    taskId: "task-1",
+    actorId: "eren",
+    type: "snoozed",
+    payload: { minutes },
+    at,
+  });
+
+  it("first snooze: 15 minutes, the rest of the plan starts when it ends at the level reached", () => {
+    const task = aTask().build();
+    const o = apply(task, { type: "snooze" }, "eren", ctx([fired], at));
+    expect(o.task.status).toBe("SCHEDULED");
+    expect(o.task.planVersion).toBe(task.planVersion + 1);
+    expect(o.events[0]).toMatchObject({
+      type: "snoozed",
+      payload: { count: 1, minutes: 15, until: "2026-10-11T19:55:00.000Z" },
+    });
+    const until = new Date("2026-10-11T22:55:00+03:00").getTime();
+    expect(o.plan.steps.length).toBeGreaterThan(0);
+    for (const step of o.plan.steps) expect(step.plannedAt.getTime()).toBeGreaterThanOrEqual(until);
+    expect(o.plan.steps[0]?.level).toBe("SOUND");
+    expect(o.pushes).toEqual([
+      { to: "eren", hint: "plan_changed", taskId: "task-1", event: "snoozed" },
+    ]);
+  });
+
+  it("second snooze is 10 minutes, a third is refused", () => {
+    const task = aTask().build();
+    const second = apply(task, { type: "snooze" }, "eren", ctx([fired, snoozed(15)], at));
+    expect(second.events[0]?.payload).toMatchObject({ count: 2, minutes: 10 });
+    expect(
+      applyCommand(task, { type: "snooze" }, "eren", ctx([fired, snoozed(15), snoozed(10)], at)),
+    ).toEqual({ ok: false, error: "snooze_not_allowed" });
+  });
+
+  it("is refused when it would run past the deadline", () => {
+    const task = aTask()
+      .withDeadline(addMs(at, 10 * 60_000))
+      .build();
+    expect(applyCommand(task, { type: "snooze" }, "eren", ctx([fired], at))).toEqual({
+      ok: false,
+      error: "snooze_not_allowed",
+    });
+  });
+
+  it("only the recipient snoozes, and only an open task", () => {
+    expect(applyCommand(aTask().build(), { type: "snooze" }, "selin", ctx([], at))).toEqual({
+      ok: false,
+      error: "not_recipient",
+    });
+    expect(
+      applyCommand(
+        aTask().withStatus("AWAITING_APPROVAL").build(),
+        { type: "snooze" },
+        "eren",
+        ctx([], at),
+      ),
+    ).toEqual({ ok: false, error: "wrong_status" });
+    expect(
+      apply(aTask().withStatus("REJECTED").build(), { type: "snooze" }, "eren", ctx([], at)).task
+        .status,
+    ).toBe("REJECTED");
+  });
+});
+
 describe("createTask", () => {
   const input = {
     id: "task-1",

@@ -117,6 +117,7 @@ The app shows the code on the unrecoverable error screen (6f) and sends it to Cr
 | DRT-4005 | `deadline_not_in_future` | 409 | |
 | DRT-4006 | `not_connected` | 409 | No active connection to the recipient |
 | DRT-4007 | `recipient_unavailable` | 409 | Sender or recipient account deleted |
+| DRT-4008 | `snooze_not_allowed` | 409 | No snooze left, or it would run past the deadline |
 | DRT-4101 | `invite_not_open` | 409 | |
 | DRT-4102 | `wrong_invitee` | 403 | The invite is bound to another number |
 | DRT-4103 | `self_invite` | 409 | |
