@@ -1,8 +1,6 @@
-// Smoke 1 (docs/testing.md, Smoke set): sign up with a test number, a task to self, the full screen
-// poke rings, "Bitti", the task is done. Until slice 1 the task is created through the API, not the
-// app (NUD-10 decision), and "the task leaves the list" is checked on the server and the device's
-// alarms, because home has no task list yet.
-// TODO(slice 1, 2a/2b/2f): write the task in the app and assert the home list instead.
+// Smoke 1 (docs/testing.md, Smoke set): sign up with a test number, write a task to self in the
+// compose bar (2a), see it next up on home (2f), the full screen poke rings, "Bitti", the task leaves
+// home and is done on the server.
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import postgres from "postgres";
@@ -15,6 +13,25 @@ const SELIN_PHONE = "+905320000001";
 /** Compressed plans divide offsets by 60 (docs/architecture.md, E2E mode): with a deadline 90 minutes
  * away, the poke window opens in about 30 s and the FULL_SCREEN step rings about 75 s after creation. */
 const DEADLINE_MINUTES = 90;
+/** What the flow types into the compose bar; the fixture extractor answers it (docs/testing.md). */
+const TASK_TEXT = "para cek";
+
+/**
+ * The run's extraction fixtures (E2E_EXTRACTOR_FIXTURES): a confident task to self, due
+ * DEADLINE_MINUTES after `now`, so writing it creates it directly (undo toast, no preview).
+ */
+export function smokeExtractions(now: Date): Record<string, unknown> {
+  return {
+    [TASK_TEXT]: {
+      recipient: "self",
+      title: "Para çek",
+      detail: null,
+      deadline: new Date(now.getTime() + DEADLINE_MINUTES * 60_000).toISOString(),
+      finishMode: "done",
+      missing: [],
+    },
+  };
+}
 
 /** A one hour quiet window starting 12 hours after `now`, in Selin's time zone (Europe/Istanbul). */
 function quietHoursAwayFrom(now: Date): { start: string; end: string } {
@@ -67,13 +84,20 @@ export async function taskToSelf(run: RunContext, databaseUrl: string): Promise<
     }
   });
 
-  const { phone, taskId } = await run.step("create-task", async () => {
-    // A second session for Selin, as another of her phones would sign in.
+  await run.step("write-task", async (dir) => {
+    await selin.maestro("selin/write-task.yaml", dir, { TEXT: TASK_TEXT });
+  });
+
+  const { phone, taskId } = await run.step("task-created", async () => {
+    // A second session for Selin, as another of her phones would sign in, to check the server.
     const phone = new Phone(await signIn(SELIN_PHONE));
-    const deadline = new Date(Date.now() + DEADLINE_MINUTES * 60_000);
-    const id = await phone.createTaskToSelf("Para çek", deadline);
-    run.log(`task ${id}, deadline ${deadline.toISOString()}`);
-    return { phone, taskId: id };
+    const task = await waitFor(
+      "the written task on the server",
+      async () => (await phone.tasks()).find((t) => t.status === "SCHEDULED") ?? null,
+      30_000,
+    );
+    run.log(`task ${task.id}, deadline ${task.deadline}`);
+    return { phone, taskId: task.id };
   });
 
   await run.step("plan-on-device", async () => {
@@ -96,6 +120,10 @@ export async function taskToSelf(run: RunContext, databaseUrl: string): Promise<
 
   await run.step("tap-done", async (dir) => {
     await selin.maestro("selin/poke-done.yaml", dir);
+  });
+
+  await run.step("home-after-done", async (dir) => {
+    await selin.maestro("selin/home-done.yaml", dir);
   });
 
   await run.step("task-done", async () => {
