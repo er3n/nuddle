@@ -43,7 +43,7 @@ Start the backend scenario suite with: task to self, task to other with done, ph
 
 - `evals/extraction/golden.jsonl`: about 30 cases to start. Each has raw text, sender time zone, a fixed `now`, the sender's connections, and the expected recipient, title, detail, deadline, finish mode, and whether a question is expected.
 - Cover relative times ("akşama", "yarın sabah", "9dan önce", "cuma akşama kadar"), numbers in words ("bin lira"), self tasks, ambiguous recipients, missing deadline.
-- `mise run eval` runs it against the real provider and prints a score. Run when the prompt or model changes. Not part of CI.
+- `mise run eval` runs it against the real provider (OpenRouter, model from `OPENROUTER_MODEL`) and prints a score. Run when the prompt or model changes. Not part of CI.
 
 ## Android UI tests
 
