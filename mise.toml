@@ -134,7 +134,15 @@ run = "pnpm --filter @nuddle/web test:integration"
 
 [tasks.test]
 description = "Full suite before a PR"
-depends = ["test:fast", "contract:check", "test:http", "test:scenario", "test:integration"]
+depends = ["test:fast"]
+# After test:fast and one at a time: run in parallel, the database suites starve the CPU-bound
+# planPokes property test on small CI runners (it timed out on the first stage 4 CI run).
+run = [
+  "mise run contract:check",
+  "mise run test:http",
+  "mise run test:scenario",
+  "mise run test:integration",
+]
 
 [tasks."db:up"]
 hide = true
