@@ -61,7 +61,7 @@ class AndroidPokeNotifications
                     .setColor(ContextCompat.getColor(context, R.color.poke))
                     .setContentTitle(title)
                     .setContentText(context.getString(R.string.poke_time_left_sentence, context.timeLeftText(timeLeft)))
-                    .setSubText(context.getString(R.string.poke_count, step.seq + 1))
+                    .setSubText(context.getString(R.string.poke_count, step.number))
                     .setCategory(if (fullScreen) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_REMINDER)
                     .setPriority(if (silent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_HIGH)
                     .setContentIntent(open)
