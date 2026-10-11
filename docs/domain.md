@@ -120,4 +120,4 @@ If full screen is not permitted, `FULL_SCREEN` silently degrades to `SOUND` on t
 - One call per written text. Input: the raw text, the sender's local time and time zone, and the sender's connection subgraph (names, relationship types). Output (structured): recipient, title, detail, deadline, suggested finish mode, and a confidence or missing-field list.
 - Confident result: create the task directly and show the undo toast. Missing or ambiguous: open the preview and ask exactly one question.
 - Example: "eren yarın 9dan önce temizlikçi için 1000 çeksin" becomes recipient Eren, title "Temizlikçi için para çek", detail "1.000 TL", deadline tomorrow 09:00, finish mode photo (money task).
-- The default provider is OpenRouter; the model is not fixed (open-questions #16). The extractor sits behind a `TaskExtractor` interface with a fixture implementation for tests.
+- Provider OpenRouter, model `deepseek/deepseek-v4.1-flash` (set in `OPENROUTER_MODEL`). No model comparison in the MVP; the eval set guards prompt quality. The extractor sits behind a `TaskExtractor` interface with a fixture implementation for tests.
