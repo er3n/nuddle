@@ -129,7 +129,7 @@ The app shows the code on the unrecoverable error screen (6f) and sends it to Cr
 |---|---|---|---|
 | local | `next dev` on the host | `supabase start` (Docker) | `app.nuddle.debug` |
 | e2e | `next dev` with `E2E=1` | same local stack, separate database | `app.nuddle.debug`, flavor `e2e` |
-| preview | Vercel preview per PR | none (health and contract only) | none |
+| preview | none: ticket branches (`nud-*`) are not deployed (Hobby: 100 deployments a day per account) | none | none |
 | prod (= beta) | Vercel production | Supabase cloud project | `app.nuddle` (registered before the beta; until then the dev project) |
 
 A staging project is added before the global launch, not before.
@@ -137,7 +137,7 @@ A staging project is added before the global launch, not before.
 Production wiring (stage 7):
 - Vercel project `nuddle` (team `er3ns-projects`), root `apps/web`, functions in `fra1`. `apps/web/vercel.json` skips builds whose changes are all under `apps/android/`.
 - Host `https://nuddle.app`. DNS stays at Cloudflare with "DNS only" (not proxied) records, the values Vercel recommended for this project on 2026-10-11: `A nuddle.app 216.198.79.1`, `A nuddle.app 64.29.17.1` and `CNAME www 025ac255c6824333.vercel-dns-017.com`. `www` redirects to the apex (308).
-- Vercel env is set for the Production target only (`.env.example`). Previews and `*.vercel.app` URLs sit behind Vercel Authentication, have no env and serve only `/api/v1/health` (database `not_configured`). `E2E` is never set in Vercel.
+- Vercel env is set for the Production target only (`.env.example`). `apps/web/vercel.json` turns off deployments of ticket branches (`nud-*`); only `main` deploys. A deployment without env (a manual preview) serves only `/api/v1/health` (database `not_configured`). `*.vercel.app` URLs sit behind Vercel Authentication. `E2E` is never set in Vercel.
 - The API reaches Postgres through Supabase's transaction pooler (port 6543): the direct host is IPv6 only.
 - Merging to `main` deploys production.
 - Auth settings of the cloud project (phone sign-in, Send SMS hook, no test numbers) are code in `supabase/cloud/`, applied through the Management API, never with `supabase config push`.

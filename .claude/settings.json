@@ -11,7 +11,8 @@
       "Bash(supabase db reset *)",
       "Bash(maestro *)",
       "Bash(adb *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(mise exec -- supabase/cloud/configure.sh migrate*)"
     ],
     "deny": [
       "Bash(supabase db push *)",

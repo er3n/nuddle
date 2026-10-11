@@ -50,7 +50,7 @@ Use only these. They work the same for you, the human and CI.
 3. **Every behavior change comes with a test** at the lowest layer that catches it. Scenario tests for anything that spans sender and recipient.
 4. **Android talks only to our API.** No direct Supabase table access from the app (ADR 0002).
 5. **Everything is code.** No dashboard-only configuration in Supabase, Vercel or Firebase. Migrations, cron jobs, auth hooks and grants live in `supabase/migrations/`.
-6. **Do not touch production.** Never run `supabase db push` against the cloud project, `vercel --prod`, or force pushes. The human does those.
+6. **Do not touch production.** Never run `vercel --prod`, `vercel promote`, `supabase link`, anything with `--linked`, or force pushes. The human does those. Until the beta (no users yet, decided 2026-10-11, NUD-33) there is one exception: right after a PR with new migrations is merged, the agent applies them with `mise exec -- supabase/cloud/configure.sh migrate` (never a bare `supabase db push`), and it may delete cloud data when a migration needs it. From the beta on, the human applies migrations again.
 7. **Strings live in resources.** No literals in `Text()`. Turkish is the source language. No em dash (U+2014) anywhere: UI copy, docs, code comments.
 8. **Screens are stateless.** A screen composable takes `UiState` and callbacks, never a ViewModel. Every component and screen state has a `@Preview`.
 9. **No hex values or magic numbers in screen code.** Everything comes from the theme built from `docs/ux/tokens.json`.
