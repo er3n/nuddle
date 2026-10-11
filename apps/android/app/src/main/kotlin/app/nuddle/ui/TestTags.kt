@@ -34,6 +34,7 @@ object TestTags {
     const val HOME_INVITE = "home.invite"
     const val HOME_NEXT_UP = "home.nextUp"
     const val HOME_DONE_EARLY = "home.doneEarly"
+    const val HOME_UNDO = "home.undo"
     const val PREVIEW = "preview.sheet"
     const val PREVIEW_EVENING = "preview.evening"
     const val PREVIEW_MORNING = "preview.morning"

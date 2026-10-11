@@ -65,6 +65,14 @@ data class HomeUiState(
     val compose: ComposeState = ComposeState.Idle,
     val nextUp: NextUpUi? = null,
     val preview: PreviewUi? = null,
+    val undo: UndoUi? = null,
+)
+
+@Immutable
+data class UndoCallbacks(
+    val onUndo: () -> Unit = {},
+    val onEdit: () -> Unit = {},
+    val onTimeout: () -> Unit = {},
 )
 
 internal const val DASH = 6f
@@ -82,13 +90,17 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     onFinishNextUp: () -> Unit = {},
     preview: PreviewCallbacks = PreviewCallbacks(),
+    undo: UndoCallbacks = UndoCallbacks(),
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
     ScreenLayout(
         background = colors.background,
         modifier = modifier.testTag(TestTags.HOME),
-        bottom = { ComposeBar(state.compose, onComposeTextChange, onComposeSend, onVoiceStart, onVoiceEnd) },
+        bottom = {
+            state.undo?.let { SelfUndoToast(it, undo, Modifier.padding(bottom = dimens.space10)) }
+            ComposeBar(state.compose, onComposeTextChange, onComposeSend, onVoiceStart, onVoiceEnd)
+        },
     ) {
         TopBar(myName = state.myName, unread = state.unread, onBell = onBell, onProfile = onProfile)
         Text(
@@ -262,6 +274,28 @@ private fun HomeScreenTaskPreview() {
                             deadline = DeadlineText.Tomorrow("09:00"),
                             photo = false,
                         ),
+                ),
+            onBell = {},
+            onProfile = {},
+            onInvite = {},
+            onComposeTextChange = {},
+            onComposeSend = {},
+            onVoiceStart = {},
+            onVoiceEnd = {},
+        )
+    }
+}
+
+@PreviewScreens
+@Composable
+private fun HomeScreenUndoPreview() {
+    DurtTheme {
+        HomeScreen(
+            state =
+                HomeUiState(
+                    myName = "Eren",
+                    nextUp = NextUpUi("task-1", "Para çek", "1.000 TL", DeadlineText.Tomorrow("09:00"), photo = false),
+                    undo = UndoUi("task-1", "1000 tl çek yarın 9da", "Para çek", "1.000 TL", DeadlineText.Tomorrow("09:00"), photo = false),
                 ),
             onBell = {},
             onProfile = {},

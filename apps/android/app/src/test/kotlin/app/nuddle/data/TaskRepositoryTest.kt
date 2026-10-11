@@ -11,6 +11,7 @@ import app.nuddle.data.sync.SyncRepository
 import app.nuddle.testing.Cast
 import app.nuddle.testing.InMemorySessionStore
 import app.nuddle.testing.aSession
+import app.nuddle.testing.aTask
 import app.nuddle.testing.drtError
 import app.nuddle.testing.inMemoryDatabase
 import app.nuddle.testing.json
@@ -59,8 +60,18 @@ class TaskRepositoryTest {
             ApiTaskRepository(
                 commandsApi = retrofit.create(CommandsApi::class.java),
                 sync = SyncRepository(retrofit.create(SyncApi::class.java), sessions, db.tasks(), alarms, testJson),
-                closer = { closed += it },
+                closer =
+                    object : TaskCloser {
+                        override suspend fun done(taskId: String) {
+                            closed += "done $taskId"
+                        }
+
+                        override suspend fun cancel(taskId: String) {
+                            closed += "cancel $taskId"
+                        }
+                    },
                 sessions = sessions,
+                tasks = db.tasks(),
                 json = testJson,
             )
     }
@@ -93,7 +104,7 @@ class TaskRepositoryTest {
 
             val outcome = repository.write("1000 tl çek yarın 9da", "key-1")
 
-            assertEquals(WriteOutcome.Created, outcome)
+            assertEquals(WriteOutcome.Created(Cast.TASK_ID), outcome)
             val write = server.takeRequest()
             assertEquals("/api/v1/commands/write_task", write.url.encodedPath)
             val body = write.body?.utf8() ?: ""
@@ -140,7 +151,7 @@ class TaskRepositoryTest {
                     idempotencyKey = "key-4",
                 )
 
-            assertEquals(WriteOutcome.Created, outcome)
+            assertEquals(WriteOutcome.Created(Cast.TASK_ID), outcome)
             val create = server.takeRequest()
             assertEquals("/api/v1/commands/create_task", create.url.encodedPath)
             val body = create.body?.utf8() ?: ""
@@ -148,6 +159,32 @@ class TaskRepositoryTest {
             assertTrue(""""deadline":"2026-10-12T06:00:00Z"""" in body, body)
             assertTrue(""""rawText":"1000 tl çek"""" in body, body)
             assertEquals("/api/v1/sync", server.takeRequest().url.encodedPath)
+        }
+
+    @Test
+    fun `Düzenle moves the deadline and keeps detail and finish mode`() =
+        runTest {
+            db.tasks().upsert(listOf(aTask().copy(senderId = Cast.EREN_ID)))
+            server.enqueue(json(200, """{"taskId":"${Cast.TASK_ID}","status":"SCHEDULED","planVersion":2}"""))
+            server.enqueue(json(200, syncBody))
+
+            val outcome = repository.editDeadline(Cast.TASK_ID, Instant.parse("2026-10-12T19:00:00+03:00"), "key-5")
+
+            assertEquals(WriteOutcome.Created(Cast.TASK_ID), outcome)
+            val edit = server.takeRequest()
+            assertEquals("/api/v1/commands/edit", edit.url.encodedPath)
+            val body = edit.body?.utf8() ?: ""
+            assertTrue(""""deadline":"2026-10-12T16:00:00Z"""" in body, body)
+            assertTrue(""""detail":"1.000 TL"""" in body, body)
+            assertTrue(""""finishMode":"photo"""" in body, body)
+            assertEquals("/api/v1/sync", server.takeRequest().url.encodedPath)
+        }
+
+    @Test
+    fun `editing a task the device does not have fails without a call`() =
+        runTest {
+            assertEquals(WriteOutcome.Failed, repository.editDeadline(Cast.TASK_ID, Instant.parse("2026-10-12T19:00:00+03:00"), "key-6"))
+            assertEquals(0, server.requestCount)
         }
 
     @Test
@@ -161,9 +198,10 @@ class TaskRepositoryTest {
         }
 
     @Test
-    fun `done early goes to the task closer`() =
+    fun `done early and undo go to the task closer`() =
         runTest {
             repository.done(Cast.TASK_ID)
-            assertEquals(listOf(Cast.TASK_ID), closed)
+            repository.cancel(Cast.TASK_ID)
+            assertEquals(listOf("done ${Cast.TASK_ID}", "cancel ${Cast.TASK_ID}"), closed)
         }
 }

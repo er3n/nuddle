@@ -69,7 +69,7 @@ class HomeViewModelTest {
             vm.onComposeSend()
             assertEquals(ComposeState.Failed("1000 tl çek"), vm.state.value?.compose)
 
-            tasks.outcome = WriteOutcome.Created
+            tasks.outcome = WriteOutcome.Created(Cast.TASK_ID)
             vm.onComposeSend()
             assertEquals(ComposeState.Idle, vm.state.value?.compose)
             assertEquals(2, tasks.written.size)
@@ -215,6 +215,84 @@ class HomeViewModelTest {
             vm.onPreviewConfirm()
             assertNull(vm.state.value?.preview)
             assertEquals(ComposeState.Failed("1000 tl çek"), vm.state.value?.compose)
+        }
+
+    private suspend fun TestScope.sentDirectly() {
+        ready()
+        taskDao.upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, finishMode = "done")))
+        vm.onComposeTextChange("1000 tl çek yarın 9da")
+        vm.onComposeSend()
+    }
+
+    @Test
+    fun `a task that went out without a question shows the undo toast`() =
+        runTest(main.dispatcher) {
+            sentDirectly()
+            val undo = vm.state.value?.undo
+            assertEquals(Cast.TASK_ID, undo?.taskId)
+            assertEquals("Temizlikçi için para çek", undo?.title)
+            assertEquals(DeadlineText.Tomorrow("09:00"), undo?.deadline)
+
+            vm.onUndoTimeout()
+            assertNull(vm.state.value?.undo)
+            assertEquals(emptyList(), tasks.cancelled)
+        }
+
+    @Test
+    fun `Geri al cancels the task`() =
+        runTest(main.dispatcher) {
+            sentDirectly()
+            vm.onUndo()
+            assertEquals(listOf(Cast.TASK_ID), tasks.cancelled)
+            assertNull(vm.state.value?.undo)
+        }
+
+    @Test
+    fun `no toast when the created task is not on the device yet`() =
+        runTest(main.dispatcher) {
+            ready()
+            vm.onComposeTextChange("1000 tl çek yarın 9da")
+            vm.onComposeSend()
+            assertNull(vm.state.value?.undo)
+            assertEquals(ComposeState.Idle, vm.state.value?.compose)
+        }
+
+    @Test
+    fun `Düzenle opens the preview and Kur moves the deadline of the same task`() =
+        runTest(main.dispatcher) {
+            sentDirectly()
+            vm.onUndoEdit()
+            val preview = vm.state.value?.preview
+            assertEquals("1000 tl çek yarın 9da", preview?.rawText)
+            assertNull(vm.state.value?.undo)
+
+            vm.onPreviewChoice(preview!!.choices.single())
+            vm.onPreviewConfirm()
+            assertEquals(Cast.TASK_ID to Instant.parse("2026-10-12T09:00:00+03:00"), tasks.edited.single().let { it.first to it.second })
+            assertEquals(emptyList(), tasks.created)
+            assertNull(vm.state.value?.preview)
+        }
+
+    @Test
+    fun `a failed edit keeps the preview for another try`() =
+        runTest(main.dispatcher) {
+            sentDirectly()
+            vm.onUndoEdit()
+            tasks.editOutcome = WriteOutcome.Failed
+            vm.onPreviewChoice(
+                vm.state.value!!
+                    .preview!!
+                    .choices
+                    .single(),
+            )
+            vm.onPreviewConfirm()
+            assertEquals(
+                false,
+                vm.state.value
+                    ?.preview
+                    ?.sending,
+            )
+            assertEquals(ComposeState.Idle, vm.state.value?.compose)
         }
 
     private suspend fun <T> ReceiveTurbine<T>.awaitItemWhere(predicate: (T) -> Boolean): T {

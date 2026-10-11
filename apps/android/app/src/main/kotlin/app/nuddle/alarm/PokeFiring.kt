@@ -1,5 +1,6 @@
 package app.nuddle.alarm
 
+import app.nuddle.api.model.CancelCommand
 import app.nuddle.api.model.CantTodayCommand
 import app.nuddle.api.model.DeviceLevel
 import app.nuddle.api.model.DoneCommand
@@ -108,6 +109,13 @@ class PokeActions
             close(taskId, TaskStatus.DONE)
             val id = ids.next()
             outbox.enqueue("done", id, DoneCommand(idempotencyKey = id, taskId = taskId), DoneCommand.serializer())
+        }
+
+        /** "Geri al" on the undo toast: the sender takes the task back before it starts poking. */
+        override suspend fun cancel(taskId: String) {
+            close(taskId, TaskStatus.CANCELLED)
+            val id = ids.next()
+            outbox.enqueue("cancel", id, CancelCommand(idempotencyKey = id, taskId = taskId, note = null), CancelCommand.serializer())
         }
 
         /** The optional note sheet (7f) arrives with feature slice 5; until then the drop has no note. */
