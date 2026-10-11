@@ -1,0 +1,112 @@
+package app.nuddle.ui.nav
+
+import android.net.Uri
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import app.nuddle.ui.screens.LightSystemBarIcons
+import app.nuddle.ui.screens.code.CodeScreen
+import app.nuddle.ui.screens.code.CodeViewModel
+import app.nuddle.ui.screens.code.SignedInDestination
+import app.nuddle.ui.screens.home.HomeScreen
+import app.nuddle.ui.screens.home.HomeViewModel
+import app.nuddle.ui.screens.name.NameScreen
+import app.nuddle.ui.screens.name.NameViewModel
+import app.nuddle.ui.screens.phone.PhoneScreen
+import app.nuddle.ui.screens.phone.PhoneViewModel
+import app.nuddle.ui.screens.welcome.WelcomeScreen
+import app.nuddle.ui.screens.welcome.WelcomeUiState
+
+/** Route names from docs/ux/screens.md (Routes). */
+object Routes {
+    const val WELCOME = "welcome"
+    const val PHONE = "auth/phone"
+    const val CODE = "auth/code?${CodeViewModel.ARG_PHONE}={${CodeViewModel.ARG_PHONE}}"
+    const val NAME = "onboarding/name"
+    const val HOME = "home"
+
+    fun code(e164: String): String = "auth/code?${CodeViewModel.ARG_PHONE}=${Uri.encode(e164)}"
+}
+
+/** Back never returns to sign-in steps; `home` is the root of the back stack (docs/ux/platform.md, Navigation). */
+private fun NavHostController.replaceAll(route: String) {
+    navigate(route) {
+        popUpTo(graph.id) { inclusive = true }
+        launchSingleTop = true
+    }
+}
+
+@Composable
+fun NuddleNavHost(startRoute: String) {
+    val nav = rememberNavController()
+    NavHost(navController = nav, startDestination = startRoute) {
+        composable(Routes.WELCOME) {
+            LightSystemBarIcons()
+            // TODO(open-questions#13): the invited variant (0b) opens from invite App Links, built with invites (slice 2).
+            WelcomeScreen(
+                state = WelcomeUiState(),
+                onStart = { nav.navigate(Routes.PHONE) },
+                // Terms and privacy texts do not exist yet (docs/human-checklist.md, Before the beta).
+                onTerms = {},
+                onPrivacy = {},
+            )
+        }
+        composable(Routes.PHONE) {
+            val viewModel: PhoneViewModel = hiltViewModel()
+            val state by viewModel.state.collectAsStateWithLifecycle()
+            LaunchedEffect(viewModel) { viewModel.codeSent.collect { nav.navigate(Routes.code(it)) } }
+            PhoneScreen(state, viewModel::onNumberChange, viewModel::onSend, onBack = { nav.popBackStack() })
+        }
+        composable(
+            Routes.CODE,
+            arguments = listOf(navArgument(CodeViewModel.ARG_PHONE) { type = NavType.StringType }),
+        ) {
+            val viewModel: CodeViewModel = hiltViewModel()
+            val state by viewModel.state.collectAsStateWithLifecycle()
+            LaunchedEffect(viewModel) {
+                viewModel.signedIn.collect { destination ->
+                    nav.replaceAll(if (destination == SignedInDestination.Home) Routes.HOME else Routes.NAME)
+                }
+            }
+            CodeScreen(
+                state = state,
+                onCodeChange = viewModel::onCodeChange,
+                onComplete = viewModel::onComplete,
+                onResend = viewModel::onResend,
+                onChangeNumber = { nav.popBackStack() },
+                onBack = { nav.popBackStack() },
+            )
+        }
+        composable(Routes.NAME) {
+            val viewModel: NameViewModel = hiltViewModel()
+            val state by viewModel.state.collectAsStateWithLifecycle()
+            LaunchedEffect(viewModel) { viewModel.registered.collect { nav.replaceAll(Routes.HOME) } }
+            NameScreen(state, viewModel::onNameChange, viewModel::onContinue)
+        }
+        composable(Routes.HOME) {
+            val viewModel: HomeViewModel = hiltViewModel()
+            val state by viewModel.state.collectAsStateWithLifecycle()
+            // Bell, profile, invite and task writing are routes of the feature slices (docs/bootstrap-plan.md).
+            state?.let {
+                HomeScreen(
+                    state = it,
+                    onBell = {},
+                    onProfile = {},
+                    onInvite = {},
+                    onComposeTextChange = viewModel::onComposeTextChange,
+                    onComposeSend = {},
+                    onVoiceStart = {},
+                    onVoiceEnd = {},
+                )
+            }
+        }
+    }
+}

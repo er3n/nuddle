@@ -1,0 +1,74 @@
+package app.nuddle.ui.icons
+
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.addPathNodes
+import androidx.compose.ui.unit.dp
+
+/**
+ * Line icons used by the components (24x24, 2 dp stroke, drawn black and tinted by `Icon`).
+ * Kept here instead of material-icons-extended, which is large and no longer part of the Compose BOM defaults.
+ */
+object DurtIcons {
+    val Back by lazy { stroke("Back", "M15 18l-6-6 6-6") }
+    val ChevronRight by lazy { stroke("ChevronRight", "M9 18l6-6-6-6") }
+    val ChevronDown by lazy { stroke("ChevronDown", "M6 9l6 6 6-6") }
+    val Bell by lazy {
+        stroke(
+            "Bell",
+            "M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16z",
+            "M10 20.5a2 2 0 0 0 4 0",
+        )
+    }
+    val Mic by lazy {
+        stroke(
+            "Mic",
+            "M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z",
+            "M5 11a7 7 0 0 0 14 0",
+            "M12 18v3",
+        )
+    }
+    val Send by lazy { stroke("Send", "M12 19V5", "M5 12l7-7 7 7") }
+    val Check by lazy { stroke("Check", "M5 12.5l4.5 4.5L19 7.5") }
+    val Warning by lazy {
+        stroke("Warning", "M12 4L2.5 20h19L12 4z", "M12 10v4", "M12 17.5v0.5")
+    }
+    val Shield by lazy {
+        stroke("Shield", "M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z", "M9 12l2 2 4-4")
+    }
+    val Camera by lazy {
+        stroke(
+            "Camera",
+            "M4 8h3l2-3h6l2 3h3v11H4V8z",
+            "M12 16.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+        )
+    }
+    val Plus by lazy { stroke("Plus", "M12 5v14", "M5 12h14") }
+
+    private fun stroke(
+        name: String,
+        vararg paths: String,
+    ): ImageVector {
+        val builder =
+            ImageVector.Builder(
+                name = name,
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            )
+        paths.forEach { data ->
+            builder.addPath(
+                pathData = addPathNodes(data),
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            )
+        }
+        return builder.build()
+    }
+}

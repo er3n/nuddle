@@ -18,8 +18,13 @@ case "$file" in
       exit 2
     fi
     ;;
-  *.kt | *.kts)
-    # ktlint via Spotless is wired in stage 5, when apps/android exists.
+  apps/android/*.kt | apps/android/*.kts | */apps/android/*.kt | */apps/android/*.kts)
+    # ktlint through Spotless, one file (Spotless IDE hook). Uses the Gradle daemon, so it is quick after the first run.
+    if ! out=$(cd apps/android && mise exec -- ./gradlew --quiet spotlessApply -PspotlessIdeHook="$file" 2>&1); then
+      echo "ktlint failed on $file:" >&2
+      echo "$out" >&2
+      exit 2
+    fi
     ;;
 esac
 exit 0

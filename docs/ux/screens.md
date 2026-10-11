@@ -47,7 +47,7 @@ If a screen and `product.md` disagree on behavior, `product.md` wins. Copy writt
 |---|---|---|
 | No network | StatusBanner, changes `QUEUED` | 6a |
 | Extraction failed | InlineAlert + ComposeBar `Failed`, text kept | 6b |
-| Wrong code / out of attempts | CodeInput error + remaining attempts, 15 min wait | 6c |
+| Wrong code / out of attempts | CodeInput error (remaining attempts and the 15 min wait once the API counts attempts) | 6c |
 | Invalid invite | Centered empty state | 6d |
 | Photo upload failed | InlineAlert, automatic retry via WorkManager | 6e |
 | Unrecoverable | Full screen with a `DRT-xxxx` code, same code sent to Crashlytics | 6f |
@@ -65,12 +65,14 @@ Same as 0a with an inviter chip on top.
 **Copy:** Selin seni dürt'e davet etti | Önce numaranla giriş yap, sonra Selin'in davetine bakarız. | Telefonla başla
 
 ### 0c Phone · `Phone.png`
-Country code button (TR +90) + number input. Privacy note card. WhatsApp is the primary channel, SMS secondary.
-**Copy:** Numaran ne? | Şifre yok. Numarana tek seferlik bir kod gelir. | Telefon numarası | Numaran sadece eşleştiğin kişilere görünür. Reklam, pazarlama mesajı, rehber taraması yok. | Kodu WhatsApp'tan gönder | SMS ile gönder
+Country code button (TR +90) + number input. Privacy note card. The design makes WhatsApp the primary channel; until a WhatsApp template exists the code goes by SMS only (ADR 0014, decided in NUD-9), so the screen has one button.
+**Copy:** Numaran ne? | Şifre yok. Numarana tek seferlik bir kod gelir. | Telefon numarası | Numaran sadece eşleştiğin kişilere görünür. Reklam, pazarlama mesajı, rehber taraması yok. | Kodu SMS ile gönder
+WhatsApp copy for later: Kodu WhatsApp'tan gönder | SMS ile gönder
 
 ### 0d Code · `Otp.png`
-Six-box CodeInput, resend countdown, autofill hint, SMS fallback.
-**Copy:** WhatsApp'ına baktın mı? | +90 532 123 45 67 numarasına 6 haneli kod gönderdik. Numarayı değiştir | Kod gelmedi mi? 0:42 sonra tekrar gönderebilirsin. | Kod WhatsApp'a gelince klavyenin üstünde otomatik çıkar, dokunman yeter. | SMS ile dene
+Six-box CodeInput, resend countdown, autofill hint. SMS variant until WhatsApp exists (NUD-9); after the one minute countdown "Yeni kod gönder" appears in its place.
+**Copy:** Mesajlarına baktın mı? | +90 532 123 45 67 numarasına 6 haneli kod gönderdik. Numarayı değiştir | Kod gelmedi mi? 0:42 sonra tekrar gönderebilirsin. | Kod SMS ile gelince klavyenin üstünde otomatik çıkar, dokunman yeter. | Yeni kod gönder
+WhatsApp copy for later: WhatsApp'ına baktın mı? | Kod WhatsApp'a gelince klavyenin üstünde otomatik çıkar, dokunman yeter. | SMS ile dene
 
 ### 0e Name · `Name.png`
 Avatar placeholder with camera badge (photo optional, MVP shows initials only). When invited, prefilled with the inviter's name for you.
@@ -216,7 +218,8 @@ Sections: Sana yazılanlar, Senin yazdıkların, Kendine. DoneNote at the bottom
 **Copy:** Şu an anlayamadım | Sunucuya ulaşırken bir sorun oldu. Yazdığın duruyor, tekrar dene. | Tekrar dene
 
 ### 6c Wrong code · `ErrOtp.png`
-**Copy:** Kod tutmadı | +90 532 123 45 67 numarasına gelen 6 haneli kodu tekrar dene. | Kod yanlış. 2 deneme hakkın kaldı. | Hakların biterse 15 dakika sonra yeni kod isteyebilirsin. Bu, numaranı kötüye kullanılmaktan korur. | Yeni kod gönder
+**Copy:** Kod tutmadı | +90 532 123 45 67 numarasına gelen 6 haneli kodu tekrar dene. | Kod yanlış. | Yeni kod gönder
+The API does not count attempts yet, so the remaining attempts and the lockout note are not shown (NUD-9; server side attempt counting is NUD-27). Copy for when it exists: Kod yanlış. 2 deneme hakkın kaldı. | Hakların biterse 15 dakika sonra yeni kod isteyebilirsin. Bu, numaranı kötüye kullanılmaktan korur.
 
 ### 6d Invalid invite · `ErrInvite.png`
 **Copy:** Bu davet artık geçerli değil | Davet ya kullanıldı ya da süresi doldu. Seni davet edenden yeni bir link isteyebilirsin. | Ana ekrana dön | Birini ben davet edeyim

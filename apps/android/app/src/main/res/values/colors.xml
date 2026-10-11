@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- docs/ux/tokens.json: background and ink, for the window and launcher icon before Compose draws. -->
+    <color name="window_background">#F2F4F6</color>
+    <color name="ink">#11151A</color>
+    <color name="accent">#FF5A1F</color>
+    <color name="poke">#C83C08</color>
+</resources>

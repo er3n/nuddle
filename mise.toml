@@ -19,6 +19,8 @@ REDOCLY_SUPPRESS_UPDATE_NOTICE = "true"
 # (docs/human-checklist.md, Before stage 7).
 TICK_SECRET = "local-tick-secret-for-development-only"
 SEND_SMS_HOOK_SECRET = "v1,whsec_bG9jYWwtc2VuZC1zbXMtaG9vay1zZWNyZXQ="
+# Android SDK: an existing ANDROID_HOME wins (CI runners set it); otherwise the Android Studio default on macOS.
+ANDROID_HOME = "{{ env.ANDROID_HOME | default(value=env.HOME ~ '/Library/Android/sdk') }}"
 
 # ---------------------------------------------------------------------------
 # Internal
@@ -66,6 +68,12 @@ hide = true
 depends = ["_install"]
 run = "pnpm --filter @nuddle/web contract:lint"
 
+[tasks."lint:android"]
+hide = true
+# ktlint (Spotless), detekt with the Compose rules, Android Lint (docs/quality.md, Kotlin).
+dir = "apps/android"
+run = "./gradlew --console=plain spotlessCheck :app:detekt :app:lintDevDebug"
+
 [tasks."lint:secrets"]
 hide = true
 # Scan only the history reachable from HEAD; by default gitleaks scans every ref (--all).
@@ -80,6 +88,7 @@ depends = ["_install"]
 run = [
   "pnpm exec prettier --write --log-level=warn .",
   "pnpm exec eslint . --fix --cache --cache-location node_modules/.cache/eslint/",
+  "cd apps/android && ./gradlew --console=plain --quiet spotlessApply",
 ]
 
 [tasks.lint]
@@ -92,6 +101,7 @@ depends = [
   "lint:knip",
   "lint:migrations",
   "lint:contract",
+  "lint:android",
   "lint:secrets",
 ]
 
@@ -100,10 +110,18 @@ hide = true
 depends = ["_install"]
 run = "pnpm --filter @nuddle/web test:unit"
 
+[tasks."android:test"]
+description = "Android unit, UI, accessibility, Konsist and screenshot tests (Robolectric)"
+# Roborazzi is in record-only mode (docs/testing.md, Android UI tests): images go to
+# apps/android/app/screenshots, nothing is compared yet.
+dir = "apps/android"
+run = "./gradlew --console=plain :app:testDevDebugUnitTest -Proborazzi.test.record=true"
+
 [tasks."test:fast"]
 description = "Fast loop after every change (target under a minute)"
-# Android unit and UI tests arrive in stage 5 (docs/testing.md, Commands).
 depends = ["lint:eslint", "lint:typecheck", "test:unit"]
+# After the CPU-bound server unit tests, not next to them: Gradle starves them on small runners.
+run = "mise run android:test"
 
 [tasks."test:scenario"]
 hide = true

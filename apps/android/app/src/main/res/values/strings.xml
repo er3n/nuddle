@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Turkish is the source language (docs/glossary.md). Copy comes from docs/ux/screens.md; names are arguments.
+    No em dash anywhere. Strings marked "no design copy" are not in screens.md yet and are listed in the PR.
+-->
+<resources>
+    <string name="app_name">dürt</string>
+    <!-- TODO(open-questions#11): the in-app logo follows the locale through this resource. -->
+    <string name="logo_text">dürt</string>
+
+    <!-- 0a, 0b Welcome -->
+    <string name="welcome_title_line1">Bir kere söylenir.</string>
+    <string name="welcome_title_line2">Gerisini dürt halleder.</string>
+    <string name="welcome_body">Biri bir kere yazar, unutan kişi iş bitene kadar dürtülür. Kaçıncı dürtmede uyandığını da öğrenir.</string>
+    <string name="welcome_start">Telefonla başla</string>
+    <string name="welcome_terms">Devam ederek %1$s ve %2$s metnini kabul etmiş olursun.</string>
+    <string name="welcome_terms_link">Kullanım Koşulları</string>
+    <string name="welcome_privacy_link">Gizlilik</string>
+    <string name="welcome_invite_chip">%1$s seni dürt\'e davet etti</string>
+    <!-- TODO(open-questions#21): the design says "sonra Selin'in davetine bakarız"; rephrased so the name takes no suffix. -->
+    <string name="welcome_invite_body">Önce numaranla giriş yap, sonra davete bakarız.</string>
+    <string name="welcome_demo_first">Ekmek al</string>
+    <string name="welcome_demo_first_time">14:32</string>
+    <string name="welcome_demo_second">Ekmek al!</string>
+    <string name="welcome_demo_second_time">18:15</string>
+    <string name="welcome_demo_third">EKMEK.</string>
+    <string name="welcome_demo_done">Ekmek alındı · 19:02</string>
+
+    <!-- 0c Phone (SMS only until WhatsApp exists, NUD-9 decision E) -->
+    <string name="phone_title">Numaran ne?</string>
+    <string name="phone_subtitle">Şifre yok. Numarana tek seferlik bir kod gelir.</string>
+    <string name="phone_label">Telefon numarası</string>
+    <string name="phone_country">TR +90</string>
+    <string name="phone_privacy">Numaran sadece eşleştiğin kişilere görünür. Reklam, pazarlama mesajı, rehber taraması yok.</string>
+    <string name="phone_send_sms">Kodu SMS ile gönder</string>
+
+    <!-- 0d Code (SMS variant, NUD-9 decision E) and 6c Wrong code (NUD-9 decision F) -->
+    <string name="code_title">Mesajlarına baktın mı?</string>
+    <string name="code_body">%1$s numarasına 6 haneli kod gönderdik.</string>
+    <string name="code_change_number">Numarayı değiştir</string>
+    <string name="code_resend_wait">Kod gelmedi mi? %1$s sonra tekrar gönderebilirsin.</string>
+    <string name="code_hint">Kod SMS ile gelince klavyenin üstünde otomatik çıkar, dokunman yeter.</string>
+    <string name="code_resend">Yeni kod gönder</string>
+    <string name="code_wrong_title">Kod tutmadı</string>
+    <string name="code_wrong_body">%1$s numarasına gelen 6 haneli kodu tekrar dene.</string>
+    <string name="code_wrong_error">Kod yanlış.</string>
+    <!-- no design copy: accessibility label of the code boxes -->
+    <string name="code_input_label">6 haneli kod</string>
+
+    <!-- 0e Name -->
+    <string name="name_title">Sana ne diyelim?</string>
+    <string name="name_subtitle">Eşleştiğin kişiler seni bu isimle görür, görevlerde de bu isimle anılırsın.</string>
+    <string name="name_label">Adın</string>
+    <string name="name_invited_hint">%1$s seni \"%2$s\" diye eklemişti. Değiştirebilirsin.</string>
+    <string name="name_photo_note">Fotoğraf isteğe bağlı. Yoksa baş harfin görünür.</string>
+    <string name="name_continue">Devam</string>
+
+    <!-- no design copy: a sign-in request did not reach the server -->
+    <string name="error_connection_title">Sunucuya ulaşamadım</string>
+    <string name="error_connection_body">Bağlantını kontrol edip tekrar dene.</string>
+
+    <!-- 1a Home, empty -->
+    <string name="home_greeting">Merhaba %1$s</string>
+    <string name="home_invite_title">Dürt iki kişiyle güzel</string>
+    <string name="home_invite_body">Eşini, anneni ya da ev arkadaşını ekle. Birbirinize görev yazın, unutan dürtülsün.</string>
+    <string name="home_invite_action">Birini davet et</string>
+    <string name="home_empty_title">Henüz görev yok</string>
+    <string name="home_empty_body">Beklerken kendine de yazabilirsin. Zamanı gelince seni dürterim.</string>
+
+    <!-- ComposeBar -->
+    <string name="compose_label">Yeni görev</string>
+    <string name="compose_placeholder">Yaz ya da basılı tutup konuş…</string>
+    <string name="compose_hold_hint">Basılı tut</string>
+    <string name="compose_retry">Tekrar dene</string>
+    <!-- no design copy: accessibility label of the send arrow -->
+    <string name="compose_send">Gönder</string>
+
+    <!-- Accessibility labels (docs/ux/platform.md, Accessibility) -->
+    <string name="cd_bell">Bildirimler</string>
+    <plurals name="cd_bell_unread">
+        <item quantity="one">Bildirimler, %1$d okunmamış</item>
+        <item quantity="other">Bildirimler, %1$d okunmamış</item>
+    </plurals>
+    <string name="cd_profile">Profil</string>
+    <string name="cd_back">Geri</string>
+    <string name="cd_mic">Basılı tutup konuş</string>
+    <string name="badge_overflow">9+</string>
+
+    <!-- StatusPill (docs/ux/screens.md, Status to UI) -->
+    <string name="status_scheduled">Kurulu</string>
+    <string name="status_awaiting_my_approval">Onayını bekliyor</string>
+    <string name="status_awaiting_approval">Onay bekleniyor</string>
+    <string name="status_rejected">Tekrar istendi</string>
+    <string name="status_done">Tamamlandı</string>
+    <string name="status_dropped">Bırakıldı</string>
+    <string name="status_missed">Kaçırıldı</string>
+    <string name="status_cancelled">İptal edildi</string>
+    <string name="status_queued">Sırada</string>
+
+    <!-- Shared actions -->
+    <string name="action_undo">Geri al</string>
+    <string name="action_edit">Düzenle</string>
+    <string name="action_dismiss">Vazgeç</string>
+    <string name="action_ok">Tamam</string>
+    <string name="action_open_settings">Ayarları aç</string>
+
+    <!-- 3a, 3b Poke -->
+    <string name="poke_count">%1$d. dürtme</string>
+    <string name="poke_count_at">%1$d. dürtme · %2$s</string>
+    <string name="poke_done">Bitti</string>
+    <!-- TODO(open-questions#1): two snoozes, 15 then 10 minutes. -->
+    <string name="poke_snooze">%1$d dk ertele</string>
+    <string name="poke_snooze_last">%1$d dk ertele · son hakkın</string>
+    <string name="poke_cant_today_short">Bugün olmaz</string>
+    <string name="poke_cant_today">Bugün yapamayacağım</string>
+    <string name="poke_time_left">son zamana %1$s</string>
+    <string name="poke_time_left_sentence">Son zamana %1$s var.</string>
+    <string name="duration_minutes">%1$d dk</string>
+    <plurals name="duration_hours">
+        <item quantity="one">%1$d saat</item>
+        <item quantity="other">%1$d saat</item>
+    </plurals>
+    <string name="separator_dot">%1$s · %2$s</string>
+
+    <!-- Notification channels (docs/ux/platform.md) -->
+    <string name="channel_poke_silent">Sessiz dürtmeler</string>
+    <string name="channel_poke_alarm">Dürtme alarmları</string>
+    <string name="channel_tasks">Görevler ve onaylar</string>
+    <string name="channel_reach_out">Ulaşılamayan kişi haberleri</string>
+    <string name="channel_system">İzin ve kurulum uyarıları</string>
+</resources>

@@ -1,0 +1,7 @@
+# ktlint settings for the Android build (docs/quality.md). Inherits the repo root .editorconfig.
+[*.{kt,kts}]
+ktlint_code_style = ktlint_official
+# Composables are PascalCase by convention (docs/ux/components.md).
+ktlint_function_naming_ignore_when_annotated_with = Composable
+# 140 rather than ktlint's 120: Compose modifier chains and KDoc wrap less (NUD-9).
+max_line_length = 140
