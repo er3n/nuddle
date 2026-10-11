@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Hesabı sil</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#C23A06}a:hover{color:#8F2A03}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #F2F4F6; color: #11151A; font-family: 'IBM Plex Sans', system-ui, sans-serif">
+<div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 390px; box-sizing: border-box; padding: 56px 20px 0; display: flex; flex-direction: column; gap: 14px"><div style="height: 44px"></div><div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; letter-spacing: -0.02em; font-size: 26px; color: #11151A">Profil</div><div style="height: 64px; border-radius: 18px; background: transparent; border: 0"></div><div style="height: 110px; border-radius: 18px; background: #FFFFFF; border: 1px solid #DDE2E7"></div><div style="height: 140px; border-radius: 18px; background: #FFFFFF; border: 1px solid #DDE2E7"></div><div style="height: 60px; border-radius: 18px; background: #FFFFFF; border: 1px solid #DDE2E7"></div></div>
+<div style="position: absolute; inset: 0; background: rgba(17,21,26,0.5)"></div>
+<div role="dialog" aria-label="Hesabı sil" style="position: absolute; left: 0; bottom: 0; width: 390px; box-sizing: border-box; padding: 12px 20px 24px; background: #FFFFFF; border-radius: 26px 26px 0 0; display: flex; flex-direction: column; gap: 14px">
+<div style="align-self: center; width: 40px; height: 5px; border-radius: 3px; background: #C9D0D7"></div>
+<div><h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; letter-spacing: -0.02em; font-size: 26px; line-height: 1.12">Hesabın silinsin mi?</h2></div>
+<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px"><li style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.45"><span style="width: 6px; height: 6px; flex: none; margin-top: 8px; border-radius: 3px; background: #7A1A1A"></span><span>Bağlantıların, görevlerin ve fotoğrafların silinir.</span></li><li style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.45"><span style="width: 6px; height: 6px; flex: none; margin-top: 8px; border-radius: 3px; background: #7A1A1A"></span><span>Selin'in sana yazdığı açık işler iptal olur, ona haber veririm.</span></li><li style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.45"><span style="width: 6px; height: 6px; flex: none; margin-top: 8px; border-radius: 3px; background: #7A1A1A"></span><span>Seni ne kadar dürtmem gerektiğini öğrendiklerim de silinir.</span></li><li style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.45"><span style="width: 6px; height: 6px; flex: none; margin-top: 8px; border-radius: 3px; background: #7A1A1A"></span><span><b>Geri alınamaz.</b></span></li></ul>
+<a href="Welcome.dc.html" style="height: 56px; border: 0; background: #7A1A1A; color: #FFFFFF; border-radius: 16px; font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; box-sizing: border-box">Hesabımı sil</a>
+<a href="Profile.dc.html" style="height: 44px; border: 0; background: transparent; color: #11151A; border-radius: 16px; font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; box-sizing: border-box; margin-top: -8px">Vazgeç</a>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

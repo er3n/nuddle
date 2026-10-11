@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Selin'in onayı</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#C23A06}a:hover{color:#8F2A03}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 56px 20px 24px; background: #F2F4F6; color: #11151A; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<a href="#" aria-label="Geri" style="width: 44px; height: 44px; border-radius: 22px; background: #FFFFFF; color: #11151A; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a>
+<span style="font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 999px; background: #E2EAFB; color: #1A43A3">Onayını bekliyor</span>
+</div>
+<div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 26px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">Temizlikçi için para çek</h1>
+<div style="display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 14px; color: #4D5763">
+<span style="width: 24px; height: 24px; border-radius: 12px; background: #11151A; color: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 11px">E</span>
+Eren fotoğraf gönderdi · 08:24 · 1.000 TL istemiştin
+</div>
+</div>
+
+<div style="flex: 1; max-height: 380px; border-radius: 18px; background: #DDE2E7; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #4D5763">[Eren'in fotoğrafı]</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="note" style="font-size: 13px; font-weight: 500">Tekrar istersen not <span style="color: #5A6470; font-weight: 400">(isteğe bağlı)</span></label>
+<input id="note" type="text" placeholder="örn. 1.500 lazımdı" style="height: 48px; box-sizing: border-box; border: 1px solid #C9D0D7; border-radius: 12px; padding: 0 14px; font-family: 'IBM Plex Sans', sans-serif; font-size: 15px; background: #FFFFFF; color: #11151A">
+</div>
+
+<div style="flex: 0 0 4px"></div>
+<div style="display: flex; gap: 10px">
+<a href="OtherRejected.dc.html" style="flex: 1; height: 56px; border: 1.5px solid #11151A; border-radius: 16px; background: transparent; color: #11151A; font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; box-sizing: border-box">Tekrar iste</a>
+<a href="HomeFull.dc.html" style="flex: 2; height: 56px; border: 0; border-radius: 16px; background: #0F6E5C; color: #FFFFFF; font-family: 'IBM Plex Sans', sans-serif; font-weight: 700; font-size: 16px; display: flex; align-items: center; justify-content: center; text-decoration: none; box-sizing: border-box">Onayla</a>
+</div>
+<div style="font-size: 12px; color: #5A6470; text-align: center">Bakmazsan 3 saat sonra kendiliğinden onaylanır.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

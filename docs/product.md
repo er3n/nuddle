@@ -1,0 +1,124 @@
+# Product
+
+Source of truth for what we are building and why. Decided on 2026-10-10 and 2026-10-11.
+If code, design or another doc disagrees with this file, this file wins until it is changed.
+
+## Promise
+
+Someone says it once. The person who forgets gets poked until the job is done.
+The system learns how each person responds and pokes them better over time.
+
+Turkish UI tagline: "Bir kere söylenir. Gerisini dürt halleder."
+
+## Principles
+
+- **Simple on day one, smart over time.** Features are not shown up front. They appear as the system learns the person.
+- **Three concepts in the MVP:** person, task, poke. Concepts such as "backup poker", "household" or "role" never appear in the UI as concepts.
+- **The poke plan is hidden.** Neither the poked person nor the sender sees the plan. Learning is revealed only after the fact ("This time I caught you on the 2nd poke").
+- **Never a scorecard.** Counts are kept only to poke better. They are never shown to anyone as a report card.
+- **Consent is social.** Being pokeable by someone is a yes/no the poked person gives. Declining is never reported to the other side.
+- **The app informs, it never makes people call.** It can tell the sender "I can't reach Eren, a call would help", it never phones anyone by itself in the MVP.
+
+## Names and identifiers
+
+| Thing | Value |
+|---|---|
+| Global brand | **Nuddle** (nudge + cuddle, invented word). Beta is ~20 families, then straight to global. |
+| Turkey | Store name **dürt** on Turkish devices. Same app, same code, only the localized store name differs. |
+| Domain | `nuddle.app` (canonical). `durtmobil.com` redirects to it. `nuddle.com` is taken. `durt.app` is free if wanted. |
+| Android `applicationId` | `app.nuddle` (permanent after first Play upload). Kotlin `namespace` is also `app.nuddle`. Debug builds use `app.nuddle.debug`. |
+| GitHub | public monorepo `er3n/nuddle` on the personal account (see ADR 0001). The `nuddle-app` org is kept as an option for a later transfer. |
+| Rejected names | Poke (poke.com, funded AI assistant in the same space), "dürt" everywhere ("dirt", the ü problem), nudge, bump, prod, jog, tug, elbow, psst (domains taken), "Done Yet" (a very similar "Done?" app exists on Android). |
+
+In code and docs the domain verb is **poke** (`Poke`, `PokeLevel`, `PokeActivity`). Never `Durt` or `Nudge` in identifiers except the theme objects already named in the design handoff (`DurtTheme`, `DurtButton` etc. may be renamed to `Nuddle*` in stage 4, see `docs/open-questions.md`).
+
+## MVP scope
+
+### Identity and sign-in
+- The phone number is the only identity. Sign-up and sign-in are the same flow: number, code, the server decides new or existing.
+- OTP: WhatsApp authentication template first, SMS as fallback. The MVP may start with SMS only.
+- Name is asked only on first sign-up. If an inviter typed a name, it comes prefilled.
+- No social login (so Apple's Sign in with Apple requirement is never triggered).
+- **Log out:** pokes stop ringing on that phone, the other side sees the person as unreachable. Data is kept and returns on the next sign-in with the same number.
+- **Delete account:** connections, tasks, photos and learned poke behavior are deleted. The other side's open tasks are cancelled and they are told. Irreversible.
+
+### Connections (graph)
+- The only building block is a 1:1 connection. There is no group data structure. Assignments like "one of you", "the kids" are derived from the sender's own connection list.
+- Under the hood it is a graph: people are nodes, connections are edges. An edge has a type (spouse, parent, child, sibling, roommate, other), a direction and weights learned from behavior.
+- Invites are always 1:1. The inviter must choose the relationship, nothing is preselected. The invitee sees it on the consent screen and can change it.
+- The relationship never grants permissions. It is an input to the AI's "whom to tell, when" decision. All channels are on by default.
+- An invite is bound to a phone number (single contact pick, no contacts permission). Even if the link is lost, the invite lands in the person's notifications when they register with that number.
+- Sharing uses the system share sheet. The UI says "shared", never "sent".
+- Consent comes after sign-in: "Selin seni dürtebilsin mi?" (Can Selin poke you?) with "İzin ver" / "Şimdi değil". Declining is never reported.
+- A pending (not yet joined) person cannot be given tasks.
+- MVP is 1:1. Graph logic (inference, weights, third parties) is written when a third person arrives. The data model is a graph from day one.
+
+### Human channel (formerly "backup poker")
+- No separate role or choice. Every connection is a poke channel by default.
+- The AI decides whom to tell for which task. Rules: only the poked person's own connections, and only where relationship and content fit.
+- Two switches in the profile, both on by default:
+  - "Benim işlerimde tanıdıklarımı kullanabilirsin" (You may use people I know for my tasks)
+  - "Başkalarının işleri için bana haber verilebilir" (I may be told about other people's tasks)
+- The app cannot make anyone call. Copy reflects that: "I'll let them know, they will probably call you".
+- In the MVP (1:1) the human channel is the sender: when the deadline is close and other pokes failed, the sender gets "Eren'e ulaşamıyorum, bir arasan iyi olur" with Call, Message, View. Poking continues.
+
+### Writing a task
+- One input box. Who, what and when are extracted from free text by the LLM. "To whom" is never asked while typing.
+- Press-and-hold voice input is in the MVP.
+- If the AI is confident, the task goes out immediately and a 5 second "Undo / Edit" toast appears. A preview opens only when information is missing or ambiguous, and it asks at most one question at a time.
+- A photo is never mandatory. For suitable tasks (money, payments) it is suggested and preselected, one tap changes it.
+- Tasks to yourself exist. A user without any connection can still use the app.
+- Recurring tasks are out of the MVP.
+
+### Sender side and task lifecycle
+- The sender sees an ongoing task's detail: status, reachability level, recipient, deadline, detail, how it should finish. Tapping a row edits it; the change reaches the recipient with a short note.
+- **Cancel:** the sender can cancel any time, pokes stop immediately. Reason is optional ("Ben hallettim", "Gerek kalmadı"). The recipient sees "Selin ... iptal etti" on their home screen.
+- **Done without photo:** no separate push to the sender, it sits as text in the bell. Photo tasks go to approval.
+- **"Bugün yapamayacağım" (Can't today):** optional note, preset choices or free text, "Notsuz kapat" (close without note) always available.
+- **Missed:** shown to the recipient as a "Kaçırıldı" card with "Sonradan yaptım" (I did it later) and "Selin'i ara" (Call Selin). Removed from the list after one day.
+- A poke notification has three actions: Done, Snooze, Not today.
+
+### Poking
+- Plan is hidden (see Principles). The sender only sees reachability: "Eren'e şu an en fazla sesli bildirimle ulaşabilirim" (Right now I can reach Eren at most with a sound notification).
+- Channels escalate step by step: notification, sound, full screen (MVP). SMS and voice call / IVR (Premium). Human channel.
+- The sound step uses the alarm audio stream and rings until silenced. It needs only the notification permission and pierces Do Not Disturb by default. A silent notification is only ever the first step, never used alone.
+- MVP triggers are time based. Location triggers are a later phase.
+- **Quiet hours** default 23:00 to 07:00, editable in the profile. No channel works in that window. A task whose deadline falls inside it is poked earlier.
+- Full screen actions: Done (closes directly), Snooze (limited, the consequence is stated), Can't today (closes directly, reason optional, recorded as "dropped", not counted as a failure).
+
+### Photo and approval
+- Photos only from the in-app camera. They stay between the two people and are deleted when the task closes.
+- Sending a photo stops poking, the task becomes "awaiting approval".
+- The sender approves. They can ask again with a note. After a re-request, poking resumes where it stopped.
+- If approval is forgotten, the task auto-approves after 3 hours. The deadline applies to sending the photo, not to the approval.
+- AI pre-check of photos is out of the MVP.
+
+### Permissions and setup
+- **When:** for an invited user, right after "İzin ver" on the consent screen (social consent and technical permission are the same decision). For a self-only user, at their first task.
+- **Show first:** "Bir dene" plays a sample full screen poke after 3 seconds (labeled "DENEME"), then settings follow. "Denemeden kur" skips the demo.
+- **Steps:** notifications (system dialog, cannot be skipped), alarms and reminders (exact alarm, labeled "Gerekli", effectively mandatory; skipping only via a small link "Alarmsız devam et, dürtmeler geç çalabilir"), full screen.
+- **No battery setting in setup.** On stock Android `setAlarmClock` is not held back by Doze. Only aggressive OEM managers (Xiaomi, Huawei, Oppo, Vivo, partly Samsung) cause trouble.
+- **Missed-ring detection:** every alarm reports planned vs actual time. If no report arrives while the device is online, the poke counts as lost. On launch `ApplicationExitInfo` detects force stops. When a loss is detected the bell shows "Son dürtmen çalmadı" with brand specific steps.
+- On every launch a silent check runs. Missing permissions show in the bell, not on the home screen, and state their concrete effect.
+- Reachability is stored on the server. The sender sees it as a level, never as a setting name.
+- A disabled channel stays in the plan as "permission needed". When someone wants to poke harder, a social request goes out ("Selin'in dürtmesi tam ekran gelebilsin diye..."), at most once a week per permission.
+
+### Bell and communication
+- The bell is the in-app inbox: invites, approvals, permission warnings, pokes that did not ring, finished tasks, "can't reach" news, event history.
+- No in-app chat. Cards have Call and Message icons. Message opens the system app chooser. WhatsApp is not assumed.
+
+### Error states
+- No internet: pokes still ring locally, changes are queued and sent when the connection returns.
+- Send failed: typed text is never lost, "Tekrar dene".
+- Wrong code: remaining attempts are stated, then a waiting period (SMS pumping protection).
+- Invalid invite: used or expired, a new link can be requested.
+- Photo upload failed: kept on the phone, retried automatically, the deadline counts from the send attempt.
+- Generic error: says installed pokes will still ring, shows an error code.
+
+## Deliberately out of the MVP
+
+WhatsApp notification listening, widgets, recurring tasks, AI photo check, location triggers, group concept, role based permissions, showing the poke plan, in-app chat, a separate dispute flow, human channel to a third person (comes with graph logic), setting alarms in the system Clock app, dark theme, iOS.
+
+## Premium (later, not designed)
+
+SMS and voice call / IVR channels, task by e-mail. Price and scope are open.

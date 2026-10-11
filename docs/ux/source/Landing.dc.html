@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dürt · durtmobil.com</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#11151A}
+a{color:#FF8A5C}a:hover{color:#FFB596}
+@keyframes durt-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes durt-wiggle{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes durt-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.durt-marquee{animation:durt-marquee 28s linear infinite}
+.durt-wiggle{animation:durt-wiggle 1.6s ease-in-out infinite}
+.durt-shake{animation:durt-shake 0.5s ease-in-out}
+@media (prefers-reduced-motion: reduce){.durt-marquee,.durt-wiggle,.durt-shake{animation:none}}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 100vh; background: #11151A; color: #FFFFFF; font-family: 'IBM Plex Sans', system-ui, sans-serif; overflow-x: hidden">
+
+<header style="max-width: 1200px; margin: 0 auto; padding: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap">
+<a href="#top" style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px; letter-spacing: -0.03em; color: #FFFFFF; text-decoration: none">dürt<span style="color: #FF5A1F">.</span></a>
+<nav aria-label="Ana menü" style="display: flex; align-items: center; gap: 24px; flex-wrap: wrap">
+<a href="#nasil" style="color: #C9D0D7; text-decoration: none; font-size: 15px">Nasıl çalışır</a>
+<a href="#seviyeler" style="color: #C9D0D7; text-decoration: none; font-size: 15px">Dürtme seviyeleri</a>
+<a href="#fiyat" style="color: #C9D0D7; text-decoration: none; font-size: 15px">Fiyat</a>
+<a href="#indir" style="display: inline-flex; align-items: center; height: 44px; padding: 0 18px; border-radius: 999px; background: #FF5A1F; color: #11151A; font-weight: 600; font-size: 15px; text-decoration: none">Android'e indir</a>
+</nav>
+</header>
+
+<section id="top" style="max-width: 1200px; margin: 0 auto; padding: 48px 24px 72px; display: flex; flex-wrap: wrap; align-items: center; gap: 48px">
+<div style="flex: 999 1 520px; min-width: 0">
+<div class="durt-wiggle" style="display: inline-block; font-size: 14px; font-weight: 600; padding: 6px 14px; border-radius: 999px; background: #FF5A1F; color: #11151A; margin-bottom: 24px">Bu sayfa seni 0 kez dürttü. Şimdilik.</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(48px, 9vw, 120px); line-height: 0.92; letter-spacing: -0.04em">Evde biri hep unutuyor.<br><span style="color: #FF5A1F">Artık unutamayacak.</span></h1>
+<p style="margin: 28px 0 0; max-width: 560px; font-size: clamp(18px, 2vw, 22px); line-height: 1.5; color: #C9D0D7">Sen bir kere yaz. dürt, o iş bitene kadar dürter. Kaç dürtmede öğrendiğini de hatırlar, bir dahakine ona göre davranır.</p>
+<div style="display: flex; gap: 12px; margin-top: 36px; flex-wrap: wrap">
+<a href="#indir" style="display: inline-flex; align-items: center; height: 60px; padding: 0 28px; border-radius: 18px; background: #FF5A1F; color: #11151A; font-weight: 700; font-size: 18px; text-decoration: none">Unutkanı kur</a>
+<a href="#nasil" style="display: inline-flex; align-items: center; height: 60px; padding: 0 28px; border-radius: 18px; border: 2px solid #FFFFFF; color: #FFFFFF; font-weight: 600; font-size: 18px; text-decoration: none">Nasıl oluyor bu?</a>
+</div>
+</div>
+<div style="flex: 1 1 300px; display: flex; justify-content: center; position: relative; min-width: 0">
+<div style="width: 290px; height: 590px; box-sizing: border-box; border-radius: 44px; border: 10px solid #2C333B; background: #C83C08; padding: 48px 22px 28px; display: flex; flex-direction: column; align-items: center; gap: 16px; box-shadow: 0 30px 80px rgba(255,90,31,0.35)">
+<span style="font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: #A93206">4. dürtme · tam ekran</span>
+<div style="width: 120px; height: 120px; border-radius: 60px; border: 2px solid #E8774C; display: flex; align-items: center; justify-content: center; margin-top: 18px">
+<div style="width: 70px; height: 70px; border-radius: 35px; background: #FFFFFF; color: #C83C08; display: flex; align-items: center; justify-content: center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"></path></svg></div>
+</div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-size: 40px; font-weight: 700; letter-spacing: -0.02em; margin-top: 12px">EKMEK.</div>
+<div style="font-size: 14px; color: #FFF1EB; text-align: center">Bu senin son erteleme hakkın.</div>
+<div style="flex: 1"></div>
+<div style="width: 100%; height: 52px; border-radius: 16px; background: #FFFFFF; color: #A93206; display: flex; align-items: center; justify-content: center; font-weight: 700">Aldım, işte fotoğrafı</div>
+</div>
+<div class="durt-wiggle" style="position: absolute; top: 40px; left: 0; background: #FFFFFF; color: #11151A; font-weight: 600; font-size: 14px; padding: 10px 14px; border-radius: 14px 14px 14px 4px">Mesajı görmedim.</div>
+<div style="position: absolute; bottom: 70px; right: 0; background: #FF5A1F; color: #11151A; font-weight: 700; font-size: 14px; padding: 10px 14px; border-radius: 14px 14px 4px 14px">Tam ekranı da mı?</div>
+</div>
+</section>
+
+<div style="background: #FF5A1F; color: #11151A; overflow: hidden; padding: 18px 0; border-top: 3px solid #11151A; border-bottom: 3px solid #11151A">
+<div class="durt-marquee" style="display: flex; width: max-content; gap: 40px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px; white-space: nowrap">
+<span>EKMEK AL</span><span>·</span><span>PARA ÇEK</span><span>·</span><span>FATURAYI ÖDE</span><span>·</span><span>ÇÖPÜ AT</span><span>·</span><span>ANNENİ ARA</span><span>·</span><span>KURU TEMİZLEME</span><span>·</span>
+<span>EKMEK AL</span><span>·</span><span>PARA ÇEK</span><span>·</span><span>FATURAYI ÖDE</span><span>·</span><span>ÇÖPÜ AT</span><span>·</span><span>ANNENİ ARA</span><span>·</span><span>KURU TEMİZLEME</span><span>·</span>
+</div>
+</div>
+
+<section id="hikaye" style="background: #FFFFFF; color: #11151A">
+<div style="max-width: 1200px; margin: 0 auto; padding: 96px 24px">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(36px, 6vw, 72px); line-height: 1; letter-spacing: -0.03em">Bir ekmeğin hikayesi</h2>
+<p style="margin: 14px 0 0; font-size: 18px; color: #4D5763">Gerçek olaylardan esinlenilmiştir. Maalesef.</p>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 44px">
+
+<figure style="margin: 0; border: 3px solid #11151A; border-radius: 22px; overflow: hidden; background: #FFF6F1">
+<svg viewBox="0 0 300 240" width="100%" role="img" aria-label="Kanepede oyun oynayan biri. Telefon Ekmek al diyor, o tamam tamam diye düşünüyor." style="display: block" font-family="Space Grotesk, sans-serif">
+<path d="M0 216h300" stroke="#11151A" stroke-width="3"></path>
+<rect x="10" y="64" width="60" height="42" rx="6" fill="#11151A"></rect><rect x="16" y="70" width="48" height="30" rx="3" fill="#3B6FE0"></rect><path d="M40 106v12M28 118h24" stroke="#11151A" stroke-width="3" stroke-linecap="round"></path>
+<rect x="84" y="150" width="194" height="56" rx="18" fill="#FF5A1F" stroke="#11151A" stroke-width="3"></rect>
+<rect x="74" y="136" width="26" height="70" rx="12" fill="#FF5A1F" stroke="#11151A" stroke-width="3"></rect><rect x="262" y="136" width="26" height="70" rx="12" fill="#FF5A1F" stroke="#11151A" stroke-width="3"></rect>
+<rect x="140" y="102" width="64" height="70" rx="28" fill="#FFFFFF" stroke="#11151A" stroke-width="3"></rect>
+<circle cx="172" cy="78" r="28" fill="#FFE3D6" stroke="#11151A" stroke-width="3"></circle>
+<circle cx="161" cy="76" r="3.5" fill="#11151A"></circle><circle cx="177" cy="76" r="3.5" fill="#11151A"></circle>
+<path d="M162 91q7 4 14 -1" stroke="#11151A" stroke-width="3" fill="none" stroke-linecap="round"></path>
+<rect x="148" y="124" width="46" height="18" rx="9" fill="#11151A"></rect><circle cx="184" cy="133" r="3" fill="#FF5A1F"></circle><circle cx="158" cy="133" r="3" fill="#FFFFFF"></circle>
+<rect x="268" y="100" width="20" height="34" rx="4" fill="#11151A"></rect><path d="M262 104l-6-3M262 116h-7" stroke="#11151A" stroke-width="2.5" stroke-linecap="round"></path>
+<rect x="198" y="16" width="94" height="34" rx="12" fill="#FFFFFF" stroke="#11151A" stroke-width="3"></rect><text x="245" y="38" text-anchor="middle" font-size="15" font-weight="700" fill="#11151A">Ekmek al</text>
+<path d="M268 50l8 14 2-14" fill="#FFFFFF" stroke="#11151A" stroke-width="3" stroke-linejoin="round"></path>
+<rect x="64" y="12" width="118" height="32" rx="16" fill="#FFFFFF" stroke="#11151A" stroke-width="3"></rect><text x="123" y="33" text-anchor="middle" font-size="14" font-weight="600" fill="#11151A">tamam tamam</text>
+<circle cx="148" cy="50" r="3.5" fill="#FFFFFF" stroke="#11151A" stroke-width="2"></circle>
+</svg>
+<figcaption style="padding: 14px 18px; font-size: 15px; line-height: 1.4; border-top: 3px solid #11151A; background: #FFFFFF"><strong>14:32</strong> · Görev düştü. Cevap: "tamam tamam."</figcaption>
+</figure>
+
+<figure style="margin: 0; border: 3px solid #11151A; border-radius: 22px; overflow: hidden; background: #FFF6F1">
+<svg viewBox="0 0 300 240" width="100%" role="img" aria-label="Telefon sesli dürtüyor, titriyor. Kanepedeki kişi birazdan diye düşünüyor." style="display: block" font-family="Space Grotesk, sans-serif">
+<path d="M0 216h300" stroke="#11151A" stroke-width="3"></path>
+<rect x="10" y="64" width="60" height="42" rx="6" fill="#11151A"></rect><rect x="16" y="70" width="48" height="30" rx="3" fill="#3B6FE0"></rect><path d="M40 106v12M28 118h24" stroke="#11151A" stroke-width="3" stroke-linecap="round"></path>
+<rect x="84" y="150" width="194" height="56" rx="18" fill="#FF5A1F" stroke="#11151A" stroke-width="3"></rect>
+<rect x="74" y="136" width="26" height="70" rx="12" fill="#FF5A1F" stroke="#11151A" stroke-width="3"></rect><rect x="262" y="136" width="26" height="70" rx="12" fill="#FF5A1F" stroke="#11151A" stroke-width="3"></rect>
+<rect x="140" y="102" width="64" height="70" rx="28" fill="#FFFFFF" stroke="#11151A" stroke-width="3"></rect>
+<circle cx="172" cy="78" r="28" fill="#FFE3D6" stroke="#11151A" stroke-width="3"></circle>
+<path d="M156 77h10M172 77h10" stroke="#11151A" stroke-width="3.5" stroke-linecap="round"></path>
+<path d="M164 92h12" stroke="#11151A" stroke-width="3" stroke-linecap="round"></path>
+<rect x="148" y="124" width="46" height="18" rx="9" fill="#11151A"></rect><circle cx="184" cy="133" r="3" fill="#FF5A1F"></circle><circle cx="158" cy="133" r="3" fill="#FFFFFF"></circle>
+<rect x="262" y="88" width="28" height="46" rx="5" fill="#11151A"></rect><rect x="266" y="94" width="20" height="32" rx="2" fill="#FF5A1F"></rect>
+<path d="M256 90l-8-5M256 104h-10M256 118l-8 5M296 84l4-6M296 130l4 6" stroke="#11151A" stroke-width="3" stroke-linecap="round"></path>
+<rect x="190" y="14" width="102" height="40" rx="12" fill="#FF5A1F" stroke="#11151A" stroke-width="3"></rect><text x="241" y="41" text-anchor="middle" font-size="18" font-weight="700" fill="#11151A">EKMEK AL!</text>
+<path d="M266 54l8 24 4-24" fill="#FF5A1F" stroke="#11151A" stroke-width="3" stroke-linejoin="round"></path>
+<rect x="74" y="12" width="100" height="32" rx="16" fill="#FFFFFF" stroke="#11151A" stroke-width="3"></rect><text x="124" y="33" text-anchor="middle" font-size="14" font-weight="600" fill="#11151A">birazdan...</text>
+<circle cx="146" cy="50" r="3.5" fill="#FFFFFF" stroke="#11151A" stroke-width="2"></circle>
+</svg>
+<figcaption style="padding: 14px 18px; font-size: 15px; line-height: 1.4; border-top: 3px solid #11151A; background: #FFFFFF"><strong>18:15</strong> · Sesli dürtme. Cevap: "birazdan."</figcaption>
+</figure>
+
+<figure style="margin: 0; border: 3px solid #11151A; border-radius: 22px; overflow: hidden; background: #FFF6F1">
+<svg viewBox="0 0 300 240" width="100%" role="img" aria-label="Telefon devleşmiş, ekranında kocaman EKMEK yazıyor. Kişinin gözleri fırlamış, oyun kolu havaya uçmuş." style="display: block" font-family="Space Grotesk, sans-serif">
+<path d="M0 216h300" stroke="#11151A" stroke-width="3"></path>
+<rect x="44" y="150" width="140" height="56" rx="18" fill="#FF5A1F" stroke="#11151A" stroke-width="3"></rect>
+<rect x="34" y="136" width="26" height="70" rx="12" fill="#FF5A1F" stroke="#11151A" stroke-width="3"></rect>
+<rect x="86" y="102" width="64" height="70" rx="28" fill="#FFFFFF" stroke="#11151A" stroke-width="3"></rect>
+<path d="M104 52l-4-14M118 48l0-16M132 52l5-14" stroke="#11151A" stroke-width="3" stroke-linecap="round"></path>
+<circle cx="118" cy="78" r="28" fill="#FFE3D6" stroke="#11151A" stroke-width="3"></circle>
+<circle cx="108" cy="74" r="9" fill="#FFFFFF" stroke="#11151A" stroke-width="2.5"></circle><circle cx="130" cy="74" r="9" fill="#FFFFFF" stroke="#11151A" stroke-width="2.5"></circle>
+<circle cx="112" cy="74" r="3.5" fill="#11151A"></circle><circle cx="134" cy="74" r="3.5" fill="#11151A"></circle>
+<ellipse cx="120" cy="94" rx="6" ry="7" fill="#11151A"></ellipse>
+<g transform="rotate(-28 40 40)"><rect x="18" y="30" width="46" height="18" rx="9" fill="#11151A"></rect></g>
+<path d="M70 52l12 6M66 64l12 2" stroke="#11151A" stroke-width="2.5" stroke-linecap="round"></path>
+<rect x="176" y="14" width="114" height="190" rx="16" fill="#11151A"></rect>
+<rect x="183" y="24" width="100" height="170" rx="10" fill="#C83C08"></rect>
+<text x="233" y="112" text-anchor="middle" font-size="26" font-weight="700" fill="#FFFFFF">EKMEK.</text>
+<rect x="196" y="160" width="74" height="22" rx="8" fill="#FFFFFF"></rect>
+<path d="M168 30l-10-6M166 70h-12M168 120l-10 4M168 170l-10 6" stroke="#11151A" stroke-width="3" stroke-linecap="round"></path>
+</svg>
+<figcaption style="padding: 14px 18px; font-size: 15px; line-height: 1.4; border-top: 3px solid #11151A; background: #FFFFFF"><strong>18:45</strong> · Tam ekran. Cevap: yok, sadece çığlık.</figcaption>
+</figure>
+
+<figure style="margin: 0; border: 3px solid #11151A; border-radius: 22px; overflow: hidden; background: #FFF6F1">
+<svg viewBox="0 0 300 240" width="100%" role="img" aria-label="Kişi kapıda, kocaman bir ekmekle gururla poz veriyor, telefonla kanıt fotoğrafı çekiliyor. Dışarıdan Onaylandı yazısı." style="display: block" font-family="Space Grotesk, sans-serif">
+<path d="M0 216h300" stroke="#11151A" stroke-width="3"></path>
+<rect x="14" y="30" width="78" height="186" fill="#E3E7EB" stroke="#11151A" stroke-width="3"></rect><circle cx="80" cy="128" r="4" fill="#11151A"></circle>
+<path d="M140 188l-6 26M180 188l6 26" stroke="#11151A" stroke-width="4" stroke-linecap="round"></path>
+<rect x="128" y="104" width="64" height="88" rx="28" fill="#FFFFFF" stroke="#11151A" stroke-width="3"></rect>
+<circle cx="160" cy="80" r="28" fill="#FFE3D6" stroke="#11151A" stroke-width="3"></circle>
+<path d="M146 78q5-6 10 0M164 78q5-6 10 0" stroke="#11151A" stroke-width="3" fill="none" stroke-linecap="round"></path>
+<path d="M148 90q12 12 24 0" stroke="#11151A" stroke-width="3" fill="#FFFFFF" stroke-linecap="round"></path>
+<path d="M194 64q6 10 0 14q-6-4 0-14z" fill="#8FD3FF" stroke="#11151A" stroke-width="2"></path>
+<ellipse cx="214" cy="150" rx="54" ry="24" fill="#E8B26A" stroke="#11151A" stroke-width="3"></ellipse>
+<path d="M188 140l10 16M208 136l10 18M228 136l10 18" stroke="#B9823F" stroke-width="3" stroke-linecap="round"></path>
+<path d="M190 130q12 8 6 22" stroke="#11151A" stroke-width="3" fill="none" stroke-linecap="round"></path>
+<path d="M130 130q-16 -6 -20 -22" stroke="#11151A" stroke-width="3" fill="none" stroke-linecap="round"></path>
+<rect x="100" y="90" width="16" height="26" rx="3" fill="#11151A"></rect>
+<path d="M118 70l4 10 10 -2 -6 8 6 8 -10 -2 -4 10 -3 -10 -10 2 6 -8 -6 -8 10 2z" fill="#FFD23F" stroke="#11151A" stroke-width="2" stroke-linejoin="round"></path>
+<rect x="196" y="14" width="96" height="34" rx="12" fill="#0F6E5C" stroke="#11151A" stroke-width="3"></rect>
+<path d="M208 31l5 5 9-10" stroke="#FFFFFF" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+<text x="256" y="36" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF">Onaylandı</text>
+</svg>
+<figcaption style="padding: 14px 18px; font-size: 15px; line-height: 1.4; border-top: 3px solid #11151A; background: #FFFFFF"><strong>19:02</strong> · Ekmek eve geldi. Fotoğrafı da var.</figcaption>
+</figure>
+
+</div>
+</div>
+</section>
+
+<section id="nasil" style="background: #F2F4F6; color: #11151A">
+<div style="max-width: 1200px; margin: 0 auto; padding: 96px 24px">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(36px, 6vw, 72px); line-height: 1; letter-spacing: -0.03em">Üç adım.<br>Sıfır bahane.</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-top: 48px">
+<div style="background: #FFFFFF; border: 2px solid #11151A; border-radius: 24px; padding: 28px">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 64px; color: #C83C08; line-height: 1">1</div>
+<h3 style="margin: 16px 0 8px; font-size: 24px">Bir kere yaz</h3>
+<p style="margin: 0; font-size: 16px; line-height: 1.5; color: #3B4550">"Temizlikçi yarın 9'da, para çekilsin." Kime, ne, ne zamana kadar: gerisini yapay zeka çıkarır. Form yok, tarih seçici yok, sabır testi yok.</p>
+</div>
+<div style="background: #FFFFFF; border: 2px solid #11151A; border-radius: 24px; padding: 28px">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 64px; color: #C83C08; line-height: 1">2</div>
+<h3 style="margin: 16px 0 8px; font-size: 24px">O dürtülür</h3>
+<p style="margin: 0; font-size: 16px; line-height: 1.5; color: #3B4550">Doğru saatte, giderek artan şiddetle. Bir akşam önceden rahatsız etmez, son dakikaya da bırakmaz. Hangi dürtmede uyandığını öğrenir.</p>
+</div>
+<div style="background: #FFFFFF; border: 2px solid #11151A; border-radius: 24px; padding: 28px">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 64px; color: #C83C08; line-height: 1">3</div>
+<h3 style="margin: 16px 0 8px; font-size: 24px">"Bitti" de, gerekirse fotoğrafla</h3>
+<p style="margin: 0; font-size: 16px; line-height: 1.5; color: #3B4550">Çoğu iş için "Bitti" yeter. Para gibi işlerde fotoğraf önerilir: uygulama içinden çekilir, galeriden eski fotoğraf yüklenemez, onayı yazan verir. "Aldım ya" devri kapandı.</p>
+</div>
+</div>
+</div>
+</section>
+
+<section id="seviyeler" style="background: #11151A; color: #FFFFFF">
+<div style="max-width: 1200px; margin: 0 auto; padding: 96px 24px; display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-start">
+<div style="flex: 1 1 360px; min-width: 0">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(36px, 6vw, 72px); line-height: 1; letter-spacing: -0.03em">Dürtme<br><span style="color: #FF5A1F">seviyeleri</span></h2>
+<p style="margin: 20px 0 0; font-size: 18px; line-height: 1.5; color: #C9D0D7; max-width: 420px">Herkes aynı dürtmeyle uyanmaz. Kimisi fısıltıya döner, kimisi ancak telefonu ekmeğe dönüşünce. Dene bakalım, sen kaçıncıda uyanıyorsun.</p>
+<button onClick="{{ poke }}" style="margin-top: 32px; height: 64px; padding: 0 32px; border: 0; border-radius: 20px; background: #FF5A1F; color: #11151A; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; cursor: pointer">{{ pokeLabel }}</button>
+</div>
+<div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{ levels }}" as="lv" hint-placeholder-count="5">
+<div class="{{ lv.cls }}" style="display: flex; align-items: center; gap: 20px; padding: 20px 24px; border-radius: 20px; background: {{ lv.bg }}; color: {{ lv.fg }}; border: 2px solid {{ lv.border }}">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 40px; width: 44px; flex: none">{{ lv.n }}</div>
+<div style="flex: 1; min-width: 0">
+<div style="font-weight: 700; font-size: 20px">{{ lv.name }}</div>
+<div style="font-size: 16px; opacity: 0.85; margin-top: 2px">{{ lv.say }}</div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section style="background: #FF5A1F; color: #11151A">
+<div style="max-width: 1200px; margin: 0 auto; padding: 96px 24px">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(36px, 6vw, 72px); line-height: 1; letter-spacing: -0.03em">Bahane imha bölümü</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 48px">
+<sc-for list="{{ excuses }}" as="ex" hint-placeholder-count="4">
+<div style="background: #11151A; color: #FFFFFF; border-radius: 24px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+<div style="align-self: flex-start; background: #2C333B; padding: 10px 14px; border-radius: 14px 14px 14px 4px; font-size: 17px; text-decoration: line-through; text-decoration-color: #FF5A1F; text-decoration-thickness: 3px">{{ ex.a }}</div>
+<div style="align-self: flex-end; background: #FFFFFF; color: #11151A; padding: 10px 14px; border-radius: 14px 14px 4px 14px; font-size: 17px; font-weight: 600">{{ ex.b }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section id="fiyat" style="background: #F2F4F6; color: #11151A">
+<div style="max-width: 1200px; margin: 0 auto; padding: 96px 24px">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(36px, 6vw, 72px); line-height: 1; letter-spacing: -0.03em">Bir ekmekten ucuz.<br><span style="color: #C83C08">Neredeyse.</span></h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 48px">
+<div style="background: #FFFFFF; border: 2px solid #11151A; border-radius: 28px; padding: 32px; display: flex; flex-direction: column; gap: 16px">
+<div style="font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #5A6470">Ücretsiz</div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 56px; line-height: 1">0 TL</div>
+<ul style="margin: 0; padding-left: 20px; font-size: 16px; line-height: 1.8; color: #3B4550">
+<li>Uygulama içinden serbest yazma</li>
+<li>Adaptif dürtme ve tam ekran alarm</li>
+<li>İstersen fotoğraf, onayı yazan verir</li>
+<li>Bizimkiler: sınırsız unutkan</li>
+</ul>
+<a href="#indir" style="margin-top: auto; display: inline-flex; align-items: center; justify-content: center; height: 56px; border-radius: 16px; border: 2px solid #11151A; color: #11151A; font-weight: 600; font-size: 16px; text-decoration: none">Başla</a>
+</div>
+<div style="background: #11151A; color: #FFFFFF; border-radius: 28px; padding: 32px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #FF8A5C">Premium</span><span style="font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #FF5A1F; color: #11151A">Unutkanlar için</span></div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 56px; line-height: 1">[FİYAT]<span style="font-size: 20px; color: #C9D0D7"> / ay</span></div>
+<ul style="margin: 0; padding-left: 20px; font-size: 16px; line-height: 1.8; color: #C9D0D7">
+<li>E-posta ile görev: faturayı ilet, son ödeme tarihi çıksın</li>
+<li>SMS ile görev, uygulamayı açmadan</li>
+<li>En inatçılar için sesli arama</li>
+<li>Aylık dürtme karnesi (açarsan)</li>
+</ul>
+<a href="#indir" style="margin-top: auto; display: inline-flex; align-items: center; justify-content: center; height: 56px; border-radius: 16px; background: #FF5A1F; color: #11151A; font-weight: 700; font-size: 16px; text-decoration: none">Premium'u dene</a>
+</div>
+</div>
+</div>
+</section>
+
+<section style="background: #11151A; color: #FFFFFF">
+<div style="max-width: 900px; margin: 0 auto; padding: 96px 24px">
+<h2 style="margin: 0 0 32px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(32px, 5vw, 56px); line-height: 1; letter-spacing: -0.03em">Sıkça sorulan, sonra unutulan sorular</h2>
+<sc-for list="{{ faq }}" as="f" hint-placeholder-count="5">
+<details style="border-top: 1px solid #2C333B; padding: 20px 0">
+<summary style="cursor: pointer; font-size: 20px; font-weight: 600">{{ f.q }}</summary>
+<p style="margin: 12px 0 0; font-size: 17px; line-height: 1.5; color: #C9D0D7">{{ f.a }}</p>
+</details>
+</sc-for>
+</div>
+</section>
+
+<section id="indir" style="background: #FF5A1F; color: #11151A">
+<div style="max-width: 1200px; margin: 0 auto; padding: 120px 24px; text-align: center">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(48px, 10vw, 140px); line-height: 0.9; letter-spacing: -0.04em">Bir dahaki ekmek<br>garanti.</h2>
+<a href="#top" style="margin-top: 40px; display: inline-flex; align-items: center; height: 68px; padding: 0 36px; border-radius: 20px; background: #11151A; color: #FFFFFF; font-weight: 700; font-size: 20px; text-decoration: none">Google Play'den indir</a>
+<div style="margin-top: 16px; font-size: 15px; font-weight: 500">iPhone sürümü de gelecek. Unutmazsak.</div>
+</div>
+</section>
+
+<footer style="background: #11151A; color: #8A96A3">
+<div style="max-width: 1200px; margin: 0 auto; padding: 32px 24px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 14px">
+<span><span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: #FFFFFF">dürt<span style="color: #FF5A1F">.</span></span> · durtmobil.com</span>
+<span>Gizlilik · Koşullar · İletişim</span>
+<span>23:00 - 07:00 arası kimse dürtülmez.</span>
+</div>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":4900}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { level: 0 };
+}
+renderVals() {
+var lvl = this.state.level;
+var raw = [
+{ n: "1", name: "Fısıltı", say: "Ekmek? Hani şey... ekmek." },
+{ n: "2", name: "Hatırlatma", say: "Sesli bildirim. Kibar ama kararlı." },
+{ n: "3", name: "Israr", say: "EKMEK. Titreşimli." },
+{ n: "4", name: "Tam ekran", say: "Telefonun artık bir ekmek." },
+{ n: "5", name: "Eşine haber", say: "Söylüyorum ha. Söylüyorum bak." }
+];
+var self = this;
+var labels = ["Beni dürt", "Bir daha", "Hâlâ duymadım", "Tamam tamam", "Pes ediyorum", "Baştan al"];
+return {
+levels: raw.map(function (l, i) {
+var on = i < lvl;
+var cur = i === lvl - 1;
+return Object.assign({}, l, {
+bg: on ? (i >= 3 ? "#C83C08" : "#FF5A1F") : "#1C222A",
+fg: on ? (i >= 3 ? "#FFFFFF" : "#11151A") : "#C9D0D7",
+border: cur ? "#FFFFFF" : (on ? "transparent" : "#2C333B"),
+cls: cur ? "durt-shake" : ""
+});
+}),
+pokeLabel: labels[lvl] || "Beni dürt",
+poke: function () { self.setState({ level: lvl >= 5 ? 0 : lvl + 1 }); },
+excuses: [
+{ a: "Mesajı görmedim.", b: "Tam ekran alarmı da mı görmedin?" },
+{ a: "Unutmuşum.", b: "Dört kere hatırlattık. Kayıtlı." },
+{ a: "Aldım ya, arabada kaldı.", b: "Fotoğrafını alayım o zaman." },
+{ a: "Bugün dememiştin ki.", b: "14:32, kelimesi kelimesine. İster misin?" }
+],
+faq: [
+{ q: "Bunu bana eşim kurdu. Kaldırabilir miyim?", a: "Kaldırabilirsin. Ama ekmeği yine de alman gerekecek." },
+{ q: "Gece de dürter mi?", a: "Hayır. 23:00 ile 07:00 arası sessiz. Biz de insanız, yani yazılımız ama anlıyorsun." },
+{ q: "Bir akşam önceden mi başlar?", a: "Yarın sabah yapılacak iş için seni bu akşam rahatsız etmez. Doğru saati kendisi hesaplar." },
+{ q: "Galeriden eski fotoğraf yüklesem?", a: "Kamera sadece uygulama içinden açılır. Güzel deneme ama." },
+{ q: "iPhone var mı?", a: "Şimdilik sadece Android. iPhone'u da yapacağız, bize de hatırlatan biri lazım." }
+]
+};
+}
+}
+</script>
+</body>
+</html>

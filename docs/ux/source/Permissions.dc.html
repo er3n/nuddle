@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Alarm izinleri</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#C23A06}a:hover{color:#8F2A03}
+</style>
+</helmet>
+<div style="width: 390px; height: 900px; box-sizing: border-box; padding: 56px 20px 24px; background: #F2F4F6; color: #11151A; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
+<div>
+<div style="font-size: 13px; font-weight: 600; color: #9A2E05">Bir kerelik kurulum</div>
+<h1 style="margin: 6px 0 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; letter-spacing: -0.02em; font-size: 28px; line-height: 1.1">Seni zamanında dürtebilmem için 2 ayar</h1>
+<p style="margin: 8px 0 0; font-size: 14px; line-height: 1.45; color: #4D5763">Bildirim iznini verdin. Kalan ikisi Android'in ayar sayfasında, her biri tek düğme.</p>
+</div>
+<div style="height: 6px; border-radius: 3px; background: #DDE2E7; overflow: hidden"><div style="width: 33%; height: 6px; background: #0F6E5C"></div></div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="background: #FFFFFF; border: 1px solid #DDE2E7; border-radius: 16px; padding: 12px 14px; display: flex; align-items: center; gap: 12px">
+<span style="width: 28px; height: 28px; flex: none; border-radius: 14px; background: #DDF1EC; color: #0B5446; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L19 7"></path></svg></span>
+<span style="flex: 1; font-weight: 600; font-size: 15px">Bildirimler</span>
+<span style="font-size: 13px; color: #0B5446; font-weight: 600">Tamam</span>
+</div>
+
+<div style="background: #FFFFFF; border: 2px solid #11151A; border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="width: 28px; height: 28px; flex: none; border-radius: 14px; background: #11151A; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px">2</span>
+<span style="flex: 1; font-weight: 700; font-size: 17px">Alarmlar ve hatırlatıcılar</span>
+<span style="flex: none; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #FFE3D6; color: #7A2604">Gerekli</span>
+</div>
+<div style="font-size: 14px; line-height: 1.45; color: #3B4550">Dürtmelerin tam saatinde çalması için. Bu olmadan telefon onları biriktirir, dakikalarca bazen saatlerce geç çalarlar.</div>
+<div style="background: #F2F4F6; border-radius: 12px; padding: 10px 12px; font-size: 13px; line-height: 1.45; color: #3B4550"><strong>Açılan sayfada</strong> "Alarm ve hatırlatıcı ayarlamaya izin ver"i aç, sonra geri dön.</div>
+<a href="HomeTask.dc.html" style="height: 52px; border: 0; background: #FF5A1F; color: #11151A; border-radius: 16px; font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; box-sizing: border-box">Ayarları aç</a>
+
+</div>
+<div style="background: #FFFFFF; border: 1px dashed #C9D0D7; border-radius: 16px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; color: #5A6470">
+<span style="width: 28px; height: 28px; flex: none; box-sizing: border-box; border-radius: 14px; border: 2px solid #C9D0D7; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px">3</span>
+<span style="flex: 1; font-weight: 600; font-size: 15px">Tam ekran dürtme</span>
+<span style="font-size: 13px">Sırada</span>
+</div>
+
+</div>
+<div style="flex: 1"></div>
+<div style="font-size: 12px; line-height: 1.45; color: #5A6470; text-align: center">İzinleri istediğin an Ayarlar'dan geri alabilirsin. Biri kapanırsa zilde haber veririm.</div>
+<a href="HomeTask.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 44px; margin-top: -6px; font-size: 13px; color: #5A6470">Alarmsız devam et, dürtmeler geç çalabilir</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

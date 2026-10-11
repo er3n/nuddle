@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Görev gitti</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#FF8A5C}a:hover{color:#FFB596}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 56px 20px 24px; background: #F2F4F6; color: #11151A; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; letter-spacing: -0.02em">dürt<span style="color: #FF5A1F">.</span></span>
+<div style="width: 44px; height: 44px; border-radius: 22px; background: #C83C08; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 600">S</div>
+</div>
+<h1 style="margin: 2px 0 0; font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.02em">Merhaba Selin</h1>
+
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5A6470">Eren'e yazdıkların</div>
+<div style="background: #FFFFFF; border: 2px solid #FF5A1F; border-radius: 20px; padding: 14px 16px; display: flex; align-items: center; gap: 12px">
+<span style="width: 36px; height: 36px; flex: none; border-radius: 18px; background: #11151A; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700">E</span>
+<div style="flex: 1; min-width: 0">
+<div style="font-weight: 600; font-size: 16px">Temizlikçi için para çek</div>
+<div style="font-size: 13px; color: #4D5763; margin-top: 2px">1.000 TL · yarın 09:00 · fotoğrafla</div>
+</div>
+<span style="font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #E3E7EB; color: #3B4550">Yeni</span>
+</div>
+
+<div style="flex: 1"></div>
+
+<div role="status" style="background: #11151A; color: #FFFFFF; border-radius: 18px; padding: 14px 14px 12px 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 12px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7FD8C3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="M5 12l5 5L19 7"></path></svg>
+<div style="flex: 1; min-width: 0">
+<div style="font-weight: 600; font-size: 15px">Eren'e gitti</div>
+<div style="font-size: 13px; color: #C9D0D7; margin-top: 2px">Para çek · yarın 09:00 · bitince fotoğraf</div>
+</div>
+</div>
+<div style="display: flex; gap: 8px">
+<button style="flex: 1; height: 40px; border: 0; border-radius: 12px; background: #2C333B; color: #FFFFFF; font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 14px">Geri al</button>
+<a href="OtherPreview.dc.html" style="flex: 1; display: flex; align-items: center; justify-content: center; height: 40px; border-radius: 12px; background: #2C333B; color: #FFFFFF; font-weight: 600; font-size: 14px; text-decoration: none">Düzenle</a>
+</div>
+<div aria-hidden="true" style="height: 3px; border-radius: 2px; background: #2C333B; overflow: hidden"><div style="width: 60%; height: 3px; background: #FF5A1F"></div></div>
+</div>
+
+<div style="background: #FFFFFF; border: 1px solid #DDE2E7; border-radius: 18px; padding: 12px 12px 12px 16px; display: flex; gap: 8px; align-items: center">
+<label for="nt" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Yeni görev</label>
+<input id="nt" type="text" placeholder="Yaz ya da basılı tutup konuş..." style="flex: 1; min-width: 0; height: 44px; border: 0; font-family: 'IBM Plex Sans', sans-serif; font-size: 16px; color: #11151A; background: transparent; outline: none">
+<a href="VoiceHold.dc.html" aria-label="Basılı tutup konuş" style="width: 52px; height: 52px; flex: none; border-radius: 26px; background: #FF5A1F; color: #11151A; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg></a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

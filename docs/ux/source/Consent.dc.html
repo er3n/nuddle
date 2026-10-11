@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Dürtme izni</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#C23A06}a:hover{color:#8F2A03}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 64px 24px 28px; background: #F2F4F6; color: #11151A; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column; gap: 20px; overflow: hidden">
+<div style="display: flex; justify-content: center; padding-top: 12px">
+<div style="width: 96px; height: 96px; border-radius: 48px; background: #C83C08; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 40px">S</div>
+</div>
+<h1 style="margin: 0; text-align: center; font-family: 'Space Grotesk', sans-serif; font-size: 32px; line-height: 1.08; font-weight: 700; letter-spacing: -0.02em">Selin seni<br>dürtebilsin mi?</h1>
+
+<div style="background: #FFFFFF; border: 1px solid #DDE2E7; border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<div style="font-size: 15px; line-height: 1.4">Selin seni <strong>eşi</strong> olarak ekledi.</div>
+<a href="#" style="flex: none; display: flex; align-items: center; min-height: 44px; font-size: 14px; font-weight: 600">Değiştir</a>
+</div>
+
+<div style="background: #FFFFFF; border: 1px solid #DDE2E7; border-radius: 16px; padding: 4px 16px">
+<div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid #EEF1F4">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F6E5C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5L19 7"></path></svg>
+<div style="font-size: 14px; line-height: 1.45">Birbirinize görev yazabilirsiniz.</div>
+</div>
+<div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid #EEF1F4">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F6E5C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5L19 7"></path></svg>
+<div style="font-size: 14px; line-height: 1.45">Gerekirse tam ekran alarmla dürtülebilirsin.</div>
+</div>
+<div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid #EEF1F4">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F6E5C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5L19 7"></path></svg>
+<div style="font-size: 14px; line-height: 1.45">23:00 ile 07:00 arası kimse dürtülmez.</div>
+</div>
+<div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid #EEF1F4">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F6E5C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5L19 7"></path></svg>
+<div style="font-size: 14px; line-height: 1.45">Selin bir işi tüm hatırlatmalara rağmen kaçırırsa sana da haber verebilirim. İstemezsen kapatabilirsin.</div>
+</div>
+<div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 0">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F6E5C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5L19 7"></path></svg>
+<div style="font-size: 14px; line-height: 1.45">İstediğin an bağlantıyı kaldırabilirsin. Selin'e bildirim gitmez.</div>
+</div>
+</div>
+
+<div style="flex: 1"></div>
+<a href="SetupDemo.dc.html" style="height: 58px; border: 0; border-radius: 18px; background: #FF5A1F; color: #11151A; font-family: 'IBM Plex Sans', sans-serif; font-weight: 700; font-size: 16px; display: flex; align-items: center; justify-content: center; text-decoration: none; box-sizing: border-box">İzin ver</a>
+<a href="Home.dc.html" style="height: 48px; margin-top: -8px; border: 0; background: transparent; color: #11151A; font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; box-sizing: border-box">Şimdi değil</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

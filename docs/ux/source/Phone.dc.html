@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Telefon</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#C23A06}a:hover{color:#8F2A03}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 52px 24px 28px; background: #F2F4F6; color: #11151A; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column; gap: 20px; overflow: hidden">
+<button aria-label="Geri" style="width: 44px; height: 44px; border: 0; border-radius: 22px; background: #FFFFFF; color: #11151A; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+<div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 32px; line-height: 1.08; font-weight: 700; letter-spacing: -0.02em">Numaran ne?</h1>
+<p style="margin: 8px 0 0; font-size: 15px; line-height: 1.45; color: #4D5763">Şifre yok. Numarana tek seferlik bir kod gelir.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="phone" style="font-size: 13px; font-weight: 600">Telefon numarası</label>
+<div style="display: flex; gap: 8px">
+<button aria-label="Ülke kodu: Türkiye +90" style="flex: none; height: 60px; padding: 0 14px; border: 1.5px solid #C9D0D7; border-radius: 16px; background: #FFFFFF; color: #11151A; font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 17px; display: flex; align-items: center; gap: 6px">TR +90<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+<input id="phone" type="tel" inputmode="tel" value="532 123 45 67" style="flex: 1; min-width: 0; height: 60px; box-sizing: border-box; border: 2px solid #11151A; border-radius: 16px; padding: 0 16px; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 22px; letter-spacing: 0.02em; color: #11151A; background: #FFFFFF; outline: none">
+</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #DDE2E7; border-radius: 16px; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start">
+<div style="width: 32px; height: 32px; flex: none; border-radius: 10px; background: #DDF1EC; color: #0B5446; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"></path><path d="M9 12l2 2 4-4"></path></svg></div>
+<div style="font-size: 13px; line-height: 1.45; color: #3B4550">Numaran sadece eşleştiğin kişilere görünür. Reklam, pazarlama mesajı, rehber taraması yok.</div>
+</div>
+<div style="flex: 1"></div>
+<a href="Otp.dc.html" style="height: 58px; border: 0; border-radius: 18px; background: #11151A; color: #FFFFFF; font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; box-sizing: border-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.8 7L4 20l1-4.9A8 8 0 1 1 21 12z"></path></svg>Kodu WhatsApp'tan gönder</a>
+<a href="Otp.dc.html" style="height: 48px; margin-top: -8px; border: 0; background: transparent; color: #11151A; font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; box-sizing: border-box">SMS ile gönder</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

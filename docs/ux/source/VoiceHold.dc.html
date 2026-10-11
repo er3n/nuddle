@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Sesle yazma</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#C23A06}a:hover{color:#8F2A03}
+@keyframes durt-pulse{0%{transform:scale(1);opacity:.55}100%{transform:scale(1.7);opacity:0}}
+.durt-ring{animation:durt-pulse 1.6s ease-out infinite}
+@media (prefers-reduced-motion: reduce){.durt-ring{animation:none}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 56px 20px 28px; background: #F2F4F6; color: #11151A; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column; gap: 16px; overflow: hidden">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; letter-spacing: -0.02em">dürt<span style="color: #FF5A1F">.</span></span>
+<div style="width: 44px; height: 44px; border-radius: 22px; background: #C83C08; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 600">S</div>
+</div>
+<h1 style="margin: 2px 0 0; font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.02em">Merhaba Selin</h1>
+
+<div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 24px; padding-bottom: 8px">
+<div aria-live="polite" style="background: #FFFFFF; border: 2px solid #11151A; border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #9A2E05"><span style="width: 8px; height: 8px; border-radius: 4px; background: #C83C08"></span>Dinliyorum</div>
+<div style="font-size: 20px; line-height: 1.4">eren yarın dokuzdan önce temizlikçi için bin lira <span style="color: #8A96A3">çeksin</span></div>
+</div>
+
+<div style="display: flex; flex-direction: column; align-items: center; gap: 14px">
+<div style="position: relative; width: 112px; height: 112px">
+<span class="durt-ring" aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 112px; height: 112px; border-radius: 56px; background: #FF5A1F"></span>
+<button aria-label="Konuşuyorsun, bırakınca gönderilir" style="position: absolute; left: 0; top: 0; width: 112px; height: 112px; border: 0; border-radius: 56px; background: #FF5A1F; color: #11151A; display: flex; align-items: center; justify-content: center"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg></button>
+</div>
+<div style="font-size: 14px; font-weight: 600">Bırakınca gönderirim</div>
+<div style="font-size: 13px; color: #5A6470">Vazgeçmek için parmağını sola kaydır</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
