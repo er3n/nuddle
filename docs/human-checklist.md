@@ -15,8 +15,8 @@ Things only the human can do: accounts, payments, logins, secrets, production pu
 
 ## Before stage 5
 
-- [ ] Create a Firebase project. Register the Android app `app.nuddle.debug` and download `google-services.json` for it (or let the agent use `firebase` CLI after `firebase login`).
-- [ ] `firebase login`.
+- [x] Create a Firebase project. Register the Android app `app.nuddle.debug` and download `google-services.json` for it (or let the agent use `firebase` CLI after `firebase login`). Done in NUD-9 with the Firebase MCP: project `nuddle-app-er3n` ("Nuddle"), app "Nuddle debug". `google-services.json` goes to `apps/android/app/src/dev/` and `src/e2e/` (git-ignored).
+- [x] `firebase login`.
 
 ## Before stage 6
 

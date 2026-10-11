@@ -1,0 +1,55 @@
+# detekt for apps/android (docs/quality.md, Kotlin). Builds on the default config; only deviations are listed.
+# detekt 2.0 is still alpha; it is the first version that runs on Kotlin 2.4 and AGP 9 and the one the current
+# Compose rules (io.nlopez.compose.rules) require. Decided in NUD-9.
+
+style:
+  ForbiddenMethodCall:
+    active: true
+    # Time is injected (ADR 0009). The real clock exists only in the DI module.
+    excludes: ['**/app/nuddle/di/**']
+    methods:
+      - value: 'java.lang.System.currentTimeMillis'
+        reason: 'Inject kotlin.time.Clock (ADR 0009).'
+      - value: 'java.time.Instant.now'
+        reason: 'Inject kotlin.time.Clock (ADR 0009).'
+      - value: 'java.time.LocalDateTime.now'
+        reason: 'Inject kotlin.time.Clock (ADR 0009).'
+      - value: 'kotlin.time.Clock.System.now'
+        reason: 'Inject kotlin.time.Clock (ADR 0009).'
+      - value: 'kotlinx.datetime.Clock.System.now'
+        reason: 'Inject kotlin.time.Clock (ADR 0009).'
+  MagicNumber:
+    # Theme tokens, icon paths and Compose previews are where numbers live (CLAUDE.md rule 9).
+    excludes: ['**/test/**', '**/app/nuddle/ui/theme/**', '**/app/nuddle/ui/icons/**']
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreAnnotated: ['Preview', 'PreviewComponent', 'PreviewScreens']
+  MaxLineLength:
+    # Same limit as ktlint (.editorconfig).
+    maxLineLength: 140
+  ReturnCount:
+    # `?: return` guard clauses at the top of a function read better than nesting.
+    max: 3
+    excludeGuardClauses: true
+
+naming:
+  MatchingDeclarationName:
+    # A screen file holds its UiState next to the composable it is named after (docs/testing.md, stateless screens).
+    active: false
+  FunctionNaming:
+    # Composables are PascalCase (docs/ux/components.md).
+    ignoreAnnotated: ['Composable']
+
+complexity:
+  LongParameterList:
+    # Stateless screens take UiState plus one lambda per event (docs/testing.md).
+    ignoreAnnotated: ['Composable']
+  LongMethod:
+    ignoreAnnotated: ['Composable']
+
+Compose:
+  ModifierMissing:
+    active: true
+  CompositionLocalAllowlist:
+    # The theme is provided through CompositionLocals by design (docs/ux/components.md, Theme).
+    allowedCompositionLocals: LocalDurtColors,LocalDurtType,LocalDurtDimens

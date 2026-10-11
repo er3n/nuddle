@@ -20,7 +20,7 @@ Start strict with zero warnings and **no baseline files**. Tightening later is f
 - Compiler: `allWarningsAsErrors = true`.
 - ktlint via Spotless for formatting.
 - detekt with the Compose rule set (`io.nlopez.compose.rules`) and:
-  - `ForbiddenMethodCall`: `System.currentTimeMillis`, `java.time.Instant.now`, `LocalDateTime.now`, `kotlinx.datetime.Clock.System.now` outside the DI module.
+  - `ForbiddenMethodCall`: `System.currentTimeMillis`, `java.time.Instant.now`, `LocalDateTime.now`, `kotlin.time.Clock.System.now` (and the deprecated `kotlinx.datetime.Clock.System.now`) outside the DI module.
 - Android Lint with these as errors: `NewApi`, `MissingPermission`, exact alarm permission checks, notification permission checks.
 - Konsist architecture tests (run as unit tests):
   - `domain` package does not import `android.*`.

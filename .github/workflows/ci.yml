@@ -48,11 +48,13 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('apps/android/**/*.gradle*', 'apps/android/gradle/libs.versions.toml', 'apps/android/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: gradle-${{ runner.os }}-
 
-      - run: mise run lint
-
       # Integration, HTTP and scenario tests need the local Supabase stack (migrations and seed
       # applied on start). `mise exec` provides SEND_SMS_HOOK_SECRET, which config.toml reads.
+      # Started before lint: the Gradle daemon that lint leaves running takes ports from the
+      # ephemeral range, which includes Supabase's fixed ports (54322 collided once, NUD-9).
       - name: Start local Supabase
         run: mise exec -- supabase start
+
+      - run: mise run lint
 
       - run: mise run test

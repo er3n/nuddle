@@ -7,7 +7,7 @@ Almost every rule in this product is about time: poke steps, quiet hours, deadli
 
 ## Decision
 - TS: domain code receives `now` or a `Clock` interface. `Date.now()` and argument-less `new Date()` are banned in `src/domain` by ESLint (`no-restricted-syntax`). The real clock exists only in `src/infra/clock.ts`.
-- Kotlin: `kotlinx.datetime.Clock` is injected. detekt `ForbiddenMethodCall` bans `System.currentTimeMillis`, `Instant.now()`, `LocalDateTime.now()`, `Clock.System` outside the DI module.
+- Kotlin: `kotlin.time.Clock` is injected (the standard library type; kotlinx-datetime deprecated its own `Clock` in 0.7 and points to it, NUD-9). detekt `ForbiddenMethodCall` bans `System.currentTimeMillis`, `Instant.now()`, `LocalDateTime.now()`, `Clock.System` outside the DI module.
 - Compose tests use `mainClock.advanceTimeBy`. Coroutine tests use virtual time.
 - E2E mode exposes `/test/advance-clock` which shifts the server's injected clock.
 
