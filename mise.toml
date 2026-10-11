@@ -40,7 +40,14 @@ run = "pnpm exec eslint . --max-warnings=0 --cache --cache-location node_modules
 [tasks."lint:typecheck"]
 hide = true
 depends = ["_install"]
-run = ["pnpm --filter @nuddle/web typecheck", "pnpm --filter @nuddle/e2e typecheck"]
+run = "pnpm --filter @nuddle/web typecheck"
+
+[tasks."lint:typecheck:e2e"]
+hide = true
+# Only in `lint`, not in test:fast: next to the CPU-bound planPokes property test it starves it on
+# small CI runners (timed out on the first stage 6 CI run).
+depends = ["_install"]
+run = "pnpm --filter @nuddle/e2e typecheck"
 
 [tasks."lint:format"]
 hide = true
@@ -97,6 +104,7 @@ depends = [
   "lint:format",
   "lint:eslint",
   "lint:typecheck",
+  "lint:typecheck:e2e",
   "lint:deps",
   "lint:knip",
   "lint:migrations",
