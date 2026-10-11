@@ -21,6 +21,9 @@ data class PokeStep(
     val level: PokeLevel,
 ) {
     val key: AlarmKey get() = AlarmKey(taskId, planVersion, seq)
+
+    /** The number shown as "N. dürtme" (screens 3a, 3b). The server's `seq` is already 1-based. */
+    val number: Int get() = seq
 }
 
 /** What the task looks like on the device when an alarm fires. */

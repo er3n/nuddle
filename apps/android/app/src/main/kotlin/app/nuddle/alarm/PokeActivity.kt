@@ -93,7 +93,7 @@ class PokeActivity : ComponentActivity() {
             val time = step.plannedAt.toLocalDateTime(timeZone).time
             state =
                 PokeUiState(
-                    pokeNumber = step.seq + 1,
+                    pokeNumber = step.number,
                     time = time.format(HOUR_MINUTE),
                     title = task.title,
                     detail = task.detail,
