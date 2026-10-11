@@ -36,3 +36,4 @@ Things not yet decided. If you hit one while building, do not decide silently: p
 24. **Dark theme:** after the MVP. Tokens are structured for it.
 25. **License for the public repo.** Without a LICENSE file the code is visible but all rights are reserved. *Default:* a short `LICENSE` stating "Copyright (c) 2026 Eren Öztürk. All rights reserved." until an open source license is chosen.
 26. **OTP SMS text.** No copy exists for the code message. *Default:* "dürt kodun: 123456", followed by the SMS Retriever app hash on its own line. Under 140 bytes.
+27. **Next-up card copy not in the design** (screen 2f). The design shows only "Yarın 09:00" and a done task. *Default:* "Bugün 18:00" and "Yarın 09:00", otherwise day and month name ("14 Ekim 09:00"); for a photo task to self "Bitince | Fotoğrafını çek".

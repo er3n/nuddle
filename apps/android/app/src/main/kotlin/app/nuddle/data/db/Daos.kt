@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TaskDao {
@@ -17,6 +18,9 @@ interface TaskDao {
 
     @Query("SELECT * FROM tasks")
     suspend fun all(): List<TaskEntity>
+
+    @Query("SELECT * FROM tasks")
+    fun observeAll(): Flow<List<TaskEntity>>
 
     @Query("UPDATE tasks SET status = :status WHERE id = :id")
     suspend fun setStatus(

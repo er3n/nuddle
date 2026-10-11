@@ -10,8 +10,10 @@ import app.nuddle.domain.TimeLeft
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.screens.code.CodeScreen
 import app.nuddle.ui.screens.code.CodeUiState
+import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.HomeScreen
 import app.nuddle.ui.screens.home.HomeUiState
+import app.nuddle.ui.screens.home.NextUpUi
 import app.nuddle.ui.screens.name.NameScreen
 import app.nuddle.ui.screens.name.NameUiState
 import app.nuddle.ui.screens.phone.PhoneScreen
@@ -159,6 +161,29 @@ class TestTagsTest {
         }
         assertShown(TestTags.POKE)
         assertTaps(TestTags.POKE_DONE to "done", TestTags.POKE_SNOOZE to "snooze", TestTags.POKE_CANT_TODAY to "cant")
+    }
+
+    @Test
+    fun `home with a task next up`() {
+        content {
+            HomeScreen(
+                state =
+                    HomeUiState(
+                        myName = "Eren",
+                        nextUp = NextUpUi("task-1", "Para çek", "1.000 TL", DeadlineText.Tomorrow("09:00"), photo = false),
+                    ),
+                onBell = { clicked += "bell" },
+                onProfile = { clicked += "profile" },
+                onInvite = { clicked += "invite" },
+                onComposeTextChange = {},
+                onComposeSend = { clicked += "send" },
+                onVoiceStart = {},
+                onVoiceEnd = {},
+                onFinishNextUp = { clicked += "doneEarly" },
+            )
+        }
+        assertShown(TestTags.HOME_NEXT_UP)
+        assertTaps(TestTags.HOME_DONE_EARLY to "doneEarly", TestTags.HOME_INVITE to "invite")
     }
 
     private fun homeWith(compose: ComposeState) {

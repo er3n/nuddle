@@ -32,6 +32,8 @@ object TestTags {
 
     const val HOME = "home.screen"
     const val HOME_INVITE = "home.invite"
+    const val HOME_NEXT_UP = "home.nextUp"
+    const val HOME_DONE_EARLY = "home.doneEarly"
 
     const val COMPOSE_INPUT = "compose.input"
     const val COMPOSE_SEND = "compose.send"
