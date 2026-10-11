@@ -24,17 +24,27 @@ Things only the human can do: accounts, payments, logins, secrets, production pu
 
 ## Before stage 7
 
-- [ ] Buy `nuddle.app` (first year about 9.99 USD, then about 15 USD/year). Optional: `durt.app`.
-- [ ] Supabase account, create the cloud project in `eu-central-1` (Frankfurt). `supabase login`.
-- [ ] Vercel account linked to GitHub. `vercel login`.
-- [ ] Register `app.nuddle` (prod) in Firebase. Create a service account key for `firebase-admin` and put it in Vercel env.
-- [ ] Generate the shared secrets (tick endpoint, OTP hook) and put them in Vercel and Supabase.
-- [ ] Run `supabase db push` yourself when the agent says the migrations are ready. Promote the Vercel deployment yourself.
+- [x] Buy `nuddle.app` (first year about 9.99 USD, then about 15 USD/year). Bought at Cloudflare on 2026-10-11; DNS stays at Cloudflare. `durt.app` not bought.
+- [x] Supabase account, create the cloud project in `eu-central-1` (Frankfurt). `supabase login`. Project `nuddle`, ref `hksqgdkbxalaixjghlvi`.
+- [x] Vercel account linked to GitHub. `vercel login`. Project `nuddle` in team `er3ns-projects`.
+- [ ] Put the production secrets in files, one raw value per file, never in the repo or a chat: `mkdir -p -m 700 ~/.nuddle/prod`, then for each name `pbpaste | tr -d '\n' > ~/.nuddle/prod/<NAME> && chmod 600 ~/.nuddle/prod/<NAME>`. The agent adds them to Vercel (sensitive, Production only) without reading them.
+  - `DATABASE_URL`: Supabase dashboard, Connect, "Transaction pooler" URI (port 6543) with the database password filled in, plus `?sslmode=require`. A password with special characters must be URL-encoded; easier to reset it to a long alphanumeric one.
+  - `SUPABASE_SECRET_KEY`: Project Settings, API Keys, a new secret key named `vercel`.
+  - `OPENROUTER_API_KEY`: a separate production key with a monthly credit limit.
+  - `FIREBASE_SERVICE_ACCOUNT`: an FCM-only service account of the dev project (the prod Firebase app comes before the beta). Google Cloud console, project `nuddle-app-er3n`, IAM & Admin, Service Accounts, create `nuddle-fcm-sender` with the role "Firebase Cloud Messaging API Admin" and no user access. Keys, Add key, JSON. Then `jq -c . <downloaded file> > ~/.nuddle/prod/FIREBASE_SERVICE_ACCOUNT` and delete the download.
+  - `SUPABASE_ACCESS_TOKEN`: a personal access token (supabase.com, Account, Access Tokens) with a short expiry, for the Auth settings. Revoke it after stage 7.
+- [ ] Link and migrate the cloud project yourself when the agent says the migrations are ready (`supabase/README.md`, Cloud project): `supabase link`, `supabase db push` (never with `--include-seed`).
+- [ ] Generate the shared secrets and apply the Auth settings: `mise exec -- supabase/cloud/configure.sh secrets`, then `... auth`. The agent then adds `TICK_SECRET` and `SEND_SMS_HOOK_SECRET` to Vercel from the same files.
+- [ ] Approve each Vercel domain and Cloudflare DNS change the agent proposes.
+- [ ] Promote the first production deployment yourself: `vercel promote <preview URL> --scope er3ns-projects` (Vercel rebuilds it with the Production env). From then on, merging to `main` deploys production; after an env change, `vercel redeploy <production URL> --target production --scope er3ns-projects`.
+- [ ] Once `https://nuddle.app/api/v1/health` is green, switch the tick job on: `mise exec -- supabase/cloud/configure.sh tick`.
 
 ## Before the beta (about 20 families)
 
+- [ ] Register `app.nuddle` (prod) in Firebase (in `nuddle-app-er3n` or a separate project: decide then), put its `google-services.json` in `apps/android/app/src/prod/` (git-ignored), and give Vercel a service account of that project (moved from stage 7, NUD-11).
+
 - [ ] Google Play Console account. Declare the app as an alarm app (`USE_EXACT_ALARM`, full screen intent). Upload an early closed test build to learn the policy outcome.
-- [ ] SMS provider account (WhatsApp Business authentication template later). Configure sender, add credentials to env.
+- [ ] SMS provider account (WhatsApp Business authentication template later). Configure sender, add credentials to env (`TWILIO_*` and, with the signed prod app, `SMS_RETRIEVER_HASH` in Vercel Production).
 - [ ] Privacy notice and terms (KVKK): name the cross-border transfer (Supabase Frankfurt, Vercel, Firebase), photo retention (deleted when the task closes), account deletion.
 - [ ] Physical test phones: at least one Xiaomi and one Samsung, plus your own.
 - [ ] Run the manual checklist in `testing.md` on each beta build.

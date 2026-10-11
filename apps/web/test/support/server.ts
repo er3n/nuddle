@@ -59,6 +59,7 @@ export async function startTestServer(overrides: Partial<AppDeps> = {}): Promise
     auth: new FakeAuthGateway(tokenFor),
     tickSecret: TICK_SECRET,
     smsHookSecret: SMS_HOOK_SECRET,
+    version: "test",
     e2e: null,
     ...overrides,
   };

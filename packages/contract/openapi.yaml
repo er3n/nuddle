@@ -17,6 +17,28 @@ components:
       bearerFormat: JWT
       description: Supabase Auth access token from /api/v1/auth/verify
   schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - error
+        version:
+          type: string
+          example: 14c0f9e
+          description: Git commit of the deployment, `dev` outside Vercel
+        database:
+          type: string
+          enum:
+            - ok
+            - down
+            - not_configured
+      required:
+        - status
+        - version
+        - database
     Ok:
       type: object
       properties:
@@ -967,6 +989,26 @@ components:
         - idempotencyKey
   parameters: {}
 paths:
+  /api/v1/health:
+    get:
+      operationId: getHealth
+      summary: Deployment version and database connectivity
+      tags:
+        - health
+      security: []
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          description: The database is down, or missing where it is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
   /api/v1/auth/otp:
     post:
       operationId: sendOtp

@@ -13,6 +13,8 @@ next-env.d.ts
 google-services.json
 *.keystore
 *.jks
+# Created by `vercel link`; the project is addressed with --project/--scope instead.
+.vercel/
 
 # Android / Gradle
 .gradle/
