@@ -52,7 +52,7 @@ Agents run `mise run fix` before `mise run lint`.
 
 - Hooks: after file edits, run the formatter for the touched language.
 - `settings.json` allow list: `mise run *`, `pnpm *`, `./gradlew *`, `supabase start|stop|status|db reset`, `maestro *`, `adb *`, `git` (non-force).
-- Deny or always ask: `supabase db push` and anything with `--linked` against the cloud project, `vercel --prod`, `vercel env rm`, `git push --force`, deleting branches on the remote.
+- Deny or always ask: `supabase db push`, `supabase link` and anything with `--linked` against the cloud project, `vercel --prod`, `vercel promote`, `vercel env rm`, `git push --force`, deleting branches on the remote. Until the beta the agent applies merged migrations only through `supabase/cloud/configure.sh migrate` (CLAUDE.md hard rule 6).
 
 ## Deliberately not used
 

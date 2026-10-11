@@ -10,6 +10,9 @@
 #            enable the local test numbers in the cloud (ADR 0011).
 #   tick     store tick_url and tick_secret in Vault, which switches the nuddle-tick job on
 #            (needs `supabase link`; run it once production health is green)
+#   migrate [--dry-run]
+#            apply new migrations (`supabase db push`, never the seed) through the session pooler.
+#            Until the beta the agent runs it right after merging a migration (CLAUDE.md rule 6).
 set -euo pipefail
 umask 077
 
@@ -99,8 +102,23 @@ SQL
       "select jobname, schedule, active, (select count(*) from vault.secrets where name in ('tick_url', 'tick_secret')) as vault_secrets from cron.job where jobname = 'nuddle-tick'"
     ;;
 
+  migrate)
+    need DATABASE_URL
+    if [[ $# -gt 2 || ($# -eq 2 && "$2" != "--dry-run") ]]; then
+      echo "usage: $0 migrate [--dry-run]" >&2
+      exit 2
+    fi
+    # Migrations need session semantics: same pooler host and user, port 5432 instead of 6543.
+    url="$(sed -E 's|(\.pooler\.supabase\.com):6543/|\1:5432/|' "$dir/DATABASE_URL")"
+    if [[ "$url" != *".pooler.supabase.com:5432/"* ]]; then
+      echo "DATABASE_URL is not a Supabase pooler URL on port 6543" >&2
+      exit 1
+    fi
+    supabase db push --db-url "$url" --yes ${2:+"$2"}
+    ;;
+
   *)
-    echo "usage: $0 secrets|auth|tick" >&2
+    echo "usage: $0 secrets|auth|tick|migrate [--dry-run]" >&2
     exit 2
     ;;
 esac
