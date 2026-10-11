@@ -43,6 +43,7 @@ Return only JSON that matches the schema.
 recipient
 - "self" when the sender writes to themselves: first person ("ödeyeyim"), "bana", "beni", or a plain imperative with no person named.
 - Otherwise exactly one name from the connection list, spelled as in the list. A relationship word ("annem", "eşim", "babam") means the single connection with that relationship.
+- The recipient is the person who must do the task (the subject of the verb). A person who is only the object ("annemi ara", "Eren'e yaz") is not the recipient.
 - If the person is not in the list, or more than one connection could be meant ("çocuklar", "biri"), use null and add "recipient" to missing.
 
 title
