@@ -214,4 +214,14 @@ class PokeAlarmTest {
             assertEquals(clock.now + 15.minutes, scheduler.scheduled.getValue(key(1)).plannedAt)
             assertEquals(listOf(Cast.TASK_ID), notifications.cancelled)
         }
+
+    @Test
+    fun `snooze is queued for the server`() =
+        runTest {
+            givenPlan()
+            actions.snooze(key(1))
+            val queued = db.outbox().pending().single()
+            assertEquals("snooze", queued.command)
+            assertTrue(""""taskId":"${Cast.TASK_ID}"""" in queued.body, queued.body)
+        }
 }

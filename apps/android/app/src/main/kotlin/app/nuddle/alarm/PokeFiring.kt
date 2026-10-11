@@ -5,6 +5,7 @@ import app.nuddle.api.model.CantTodayCommand
 import app.nuddle.api.model.DeviceLevel
 import app.nuddle.api.model.DoneCommand
 import app.nuddle.api.model.ReportFiredCommand
+import app.nuddle.api.model.SnoozeCommand
 import app.nuddle.api.model.TaskStatus
 import app.nuddle.data.TaskCloser
 import app.nuddle.data.db.PokeStepDao
@@ -131,13 +132,16 @@ class PokeActions
         }
 
         /**
-         * Rings the same step again later. TODO(open-questions#1): limit to two snoozes (15 then 10 minutes, never
-         * past the deadline). The contract has no snooze command yet, so the server does not hear about it.
+         * Rings the same step again later and tells the server, which counts snoozes, refuses one too many and shifts
+         * the rest of the plan (NUD-22). TODO(open-questions#1): the device does not know the count yet, so every
+         * snooze here is 15 minutes and never says "son hakkın".
          */
         suspend fun snooze(key: AlarmKey) {
             notifications.cancel(key.taskId)
             val step = alarms.step(key) ?: return
             scheduler.schedule(step.copy(plannedAt = clock.now() + SNOOZE_MINUTES.minutes))
+            val id = ids.next()
+            outbox.enqueue("snooze", id, SnoozeCommand(idempotencyKey = id, taskId = key.taskId), SnoozeCommand.serializer())
         }
 
         private suspend fun close(
