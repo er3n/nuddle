@@ -61,6 +61,13 @@ data class UndoUi(
     val photo: Boolean,
 )
 
+/** 5c: shown for 4 s after a task is done; [caughtAt] is the poke number that caught the person, if one rang. */
+@Immutable
+data class DoneNoteUi(
+    val title: String,
+    val caughtAt: Int?,
+)
+
 /** "Bugün akşam" only while this evening is still ahead, then "Yarın sabah". */
 fun quickDeadlines(
     now: Instant,

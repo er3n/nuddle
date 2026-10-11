@@ -29,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import app.nuddle.R
 import app.nuddle.ui.TestTags
+import app.nuddle.ui.components.DoneNote
 import app.nuddle.ui.components.DurtButton
 import app.nuddle.ui.components.DurtButtonKind
 import app.nuddle.ui.components.DurtButtonSize
@@ -181,5 +182,18 @@ internal fun SelfUndoToast(
         onEdit = callbacks.onEdit,
         onTimeout = callbacks.onTimeout,
         modifier = modifier.testTag(TestTags.HOME_UNDO),
+    )
+}
+
+/** 5c: "\"Para çek\" tamamlandı" and, when a poke had rung, which one caught the person. */
+@Composable
+internal fun TaskDoneNote(
+    note: DoneNoteUi,
+    modifier: Modifier = Modifier,
+) {
+    DoneNote(
+        title = stringResource(R.string.done_note_title, note.title),
+        learning = note.caughtAt?.let { stringResource(R.string.done_note_caught, it) },
+        modifier = modifier.testTag(TestTags.HOME_DONE_NOTE),
     )
 }

@@ -217,8 +217,12 @@ class FakeTaskRepository : TaskRepository {
         return createOutcome
     }
 
-    override suspend fun done(taskId: String) {
+    /** What [done] answers: the poke number that caught the person. */
+    var caughtAt: Int? = null
+
+    override suspend fun done(taskId: String): Int? {
         done += taskId
+        return caughtAt
     }
 }
 

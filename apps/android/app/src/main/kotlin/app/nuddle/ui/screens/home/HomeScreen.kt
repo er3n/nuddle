@@ -66,6 +66,7 @@ data class HomeUiState(
     val nextUp: NextUpUi? = null,
     val preview: PreviewUi? = null,
     val undo: UndoUi? = null,
+    val doneNote: DoneNoteUi? = null,
 )
 
 @Immutable
@@ -99,6 +100,7 @@ fun HomeScreen(
         modifier = modifier.testTag(TestTags.HOME),
         bottom = {
             state.undo?.let { SelfUndoToast(it, undo, Modifier.padding(bottom = dimens.space10)) }
+            state.doneNote?.let { TaskDoneNote(it, Modifier.padding(bottom = dimens.space10)) }
             ComposeBar(state.compose, onComposeTextChange, onComposeSend, onVoiceStart, onVoiceEnd)
         },
     ) {
@@ -297,6 +299,23 @@ private fun HomeScreenUndoPreview() {
                     nextUp = NextUpUi("task-1", "Para çek", "1.000 TL", DeadlineText.Tomorrow("09:00"), photo = false),
                     undo = UndoUi("task-1", "1000 tl çek yarın 9da", "Para çek", "1.000 TL", DeadlineText.Tomorrow("09:00"), photo = false),
                 ),
+            onBell = {},
+            onProfile = {},
+            onInvite = {},
+            onComposeTextChange = {},
+            onComposeSend = {},
+            onVoiceStart = {},
+            onVoiceEnd = {},
+        )
+    }
+}
+
+@PreviewScreens
+@Composable
+private fun HomeScreenDoneNotePreview() {
+    DurtTheme {
+        HomeScreen(
+            state = HomeUiState(myName = "Eren", doneNote = DoneNoteUi("Para çek", caughtAt = 2)),
             onBell = {},
             onProfile = {},
             onInvite = {},

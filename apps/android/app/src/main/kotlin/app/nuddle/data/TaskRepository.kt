@@ -8,6 +8,7 @@ import app.nuddle.api.model.WriteTaskCommand
 import app.nuddle.api.model.WriteTaskResult
 import app.nuddle.data.api.ApiResult
 import app.nuddle.data.api.apiCall
+import app.nuddle.data.db.PokeStepDao
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.sync.SyncRepository
@@ -72,8 +73,11 @@ interface TaskRepository {
         idempotencyKey: String,
     ): WriteOutcome
 
-    /** "Şimdiden bitti": applied locally at once, then sent through the outbox. */
-    suspend fun done(taskId: String)
+    /**
+     * "Şimdiden bitti": applied locally at once, then sent through the outbox. Returns the number of the poke that
+     * caught the person (the last one that rang in the current plan), or null when none had rung.
+     */
+    suspend fun done(taskId: String): Int?
 
     /** "Geri al": applied locally at once, then sent through the outbox. */
     suspend fun cancel(taskId: String)
@@ -87,6 +91,7 @@ class ApiTaskRepository
         private val closer: TaskCloser,
         private val sessions: SessionStore,
         private val tasks: TaskDao,
+        private val pokeSteps: PokeStepDao,
         private val json: Json,
     ) : TaskRepository {
         override suspend fun write(
@@ -158,7 +163,16 @@ class ApiTaskRepository
             return WriteOutcome.Created(taskId)
         }
 
-        override suspend fun done(taskId: String) = closer.done(taskId)
+        override suspend fun done(taskId: String): Int? {
+            val planVersion = tasks.get(taskId)?.planVersion
+            val caught =
+                pokeSteps
+                    .forTask(taskId)
+                    .filter { it.planVersion == planVersion && it.firedAt != null }
+                    .maxOfOrNull { it.seq }
+            closer.done(taskId)
+            return caught
+        }
 
         override suspend fun cancel(taskId: String) = closer.cancel(taskId)
     }

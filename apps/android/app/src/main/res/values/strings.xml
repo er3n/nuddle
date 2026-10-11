@@ -89,6 +89,8 @@
     <string name="undo_finish_photo">bitince fotoğraf</string>
     <string name="deadline_today_inline">bugün %1$s</string>
     <string name="deadline_tomorrow_inline">yarın %1$s</string>
+    <string name="done_note_title">\"%1$s\" tamamlandı</string>
+    <string name="done_note_caught">Bu sefer seni %1$d. dürtmede yakaladım.</string>
     <string name="deadline_today">Bugün %1$s</string>
     <string name="deadline_tomorrow">Yarın %1$s</string>
     <!-- Day, month name, time: "14 Ekim 09:00". TODO(open-questions#27). -->

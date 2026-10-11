@@ -19,9 +19,12 @@ import app.nuddle.testing.aTask
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.DeadlineText
+import app.nuddle.ui.screens.home.DoneNoteUi
 import app.nuddle.ui.screens.home.HomeViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
@@ -293,6 +296,27 @@ class HomeViewModelTest {
                     ?.sending,
             )
             assertEquals(ComposeState.Idle, vm.state.value?.compose)
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class) // Reason: advanceTimeBy is how virtual time moves (ADR 0009).
+    @Test
+    fun `Şimdiden bitti shows the done note for 4 seconds`() =
+        runTest(main.dispatcher) {
+            ready()
+            taskDao.upsert(listOf(aTask().copy(senderId = Cast.EREN_ID)))
+            tasks.caughtAt = 2
+            vm.onFinishNextUp()
+            assertEquals(DoneNoteUi("Temizlikçi için para çek", 2), vm.state.value?.doneNote)
+
+            advanceTimeBy(3_999)
+            assertEquals(
+                2,
+                vm.state.value
+                    ?.doneNote
+                    ?.caughtAt,
+            )
+            advanceTimeBy(2)
+            assertNull(vm.state.value?.doneNote)
         }
 
     private suspend fun <T> ReceiveTurbine<T>.awaitItemWhere(predicate: (T) -> Boolean): T {
