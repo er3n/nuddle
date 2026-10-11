@@ -43,6 +43,7 @@ describe("local Supabase adapters", () => {
       auth: new SupabaseAuthGateway(url, secretKey),
       tickSecret: "unused-in-this-test",
       smsHookSecret: "v1,whsec_dW51c2Vk",
+      version: "test",
       e2e: null,
     });
 

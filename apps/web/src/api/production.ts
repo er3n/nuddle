@@ -17,6 +17,7 @@ import { logPushSender } from "../infra/push/log";
 import { SupabasePhotoStorage } from "../infra/storage/supabase-photos";
 import { createApp, type App } from "./app";
 import type { AppDeps } from "./deps";
+import { deploymentVersion } from "./health";
 
 const optional = z
   .string()
@@ -97,6 +98,7 @@ export async function createProductionApp(
     auth: new SupabaseAuthGateway(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY),
     tickSecret: env.TICK_SECRET,
     smsHookSecret: env.SEND_SMS_HOOK_SECRET,
+    version: deploymentVersion(source),
     e2e,
   };
   return createApp(deps);

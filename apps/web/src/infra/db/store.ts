@@ -30,6 +30,25 @@ type Executor = Db | Tx;
 
 const nextSeq = sql`nextval('sync_seq')`;
 
+/** Health check: whether `select 1` returns within `timeoutMs`. Never throws. */
+export async function databaseAnswers(db: Db, timeoutMs: number): Promise<boolean> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<boolean>((resolve) => {
+    timer = setTimeout(() => {
+      resolve(false);
+    }, timeoutMs);
+  });
+  const query = db.execute(sql`select 1`).then(
+    () => true,
+    () => false,
+  );
+  try {
+    return await Promise.race([query, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** A write transaction holding the sync write lock (see the file comment). */
 export function inWriteTx<T>(db: Db, fn: (tx: Tx) => Promise<T>): Promise<T> {
   return db.transaction(async (tx) => {

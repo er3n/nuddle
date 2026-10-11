@@ -8,13 +8,25 @@ Local stack config (`config.toml`), migrations (Drizzle output and hand-written 
 - The Send SMS hook (`[auth.hook.send_sms]`) calls the web app on the host at `/api/internal/otp-hook`, signed with `SEND_SMS_HOOK_SECRET` (a local-only value in `mise.toml`). Test numbers never reach it; any other number needs `mise run dev` running and Twilio env (otherwise the hook answers 500 and sign-in fails, which is intended).
 - The private `task-photos` bucket is created by a migration.
 
-## Tick job (stage 7, human)
+## Cloud project (stage 7, human)
 
-The `nuddle-tick` `pg_cron` job (migration `20261011143500_tick_job.sql`) calls the API every minute once two Vault secrets exist. In the cloud project's SQL editor, with the production values:
+Project `nuddle`, ref `hksqgdkbxalaixjghlvi`, `eu-central-1`. Agents never run these commands (CLAUDE.md hard rule 6); the human runs them from the repo root. The supabase CLI is pinned in `mise.toml`, hence `mise exec --`. Secrets come from `~/.nuddle/prod/` (`docs/human-checklist.md`, Before stage 7).
 
-```sql
-select vault.create_secret('https://<production host>/api/internal/tick', 'tick_url');
-select vault.create_secret('<TICK_SECRET from Vercel>', 'tick_secret');
+1. Link (asks for the database password): `mise exec -- supabase link --project-ref hksqgdkbxalaixjghlvi`
+2. Check what is applied (read-only): `mise exec -- supabase migration list --linked`
+3. Apply the migrations: `mise exec -- supabase db push --linked --dry-run`, then without `--dry-run`. **Never `--include-seed`**: `seed.sql` is local test data.
+4. Shared secrets and Auth settings: `mise exec -- supabase/cloud/configure.sh secrets`, then `mise exec -- supabase/cloud/configure.sh auth`. The second applies `cloud/auth.json` (phone sign-in, Send SMS hook to `https://nuddle.app/api/internal/otp-hook`, no test numbers) through the Management API. **Never `supabase config push` to the cloud project**: it would push `config.toml`, including the test numbers (ADR 0011).
+5. After production health is green, the tick job (below): `mise exec -- supabase/cloud/configure.sh tick`
+
+## Tick job
+
+The `nuddle-tick` `pg_cron` job (migration `20261011143500_tick_job.sql`) calls the API every minute once two Vault secrets exist: `tick_url` (`https://nuddle.app/api/internal/tick`) and `tick_secret` (the `TICK_SECRET` Vercel has). `configure.sh tick` stores both, or updates them when they exist. Without them the job runs and does nothing, which is how it stays off locally.
+
+Check it:
+
+```sh
+mise exec -- supabase db query --linked "select status, return_message, start_time from cron.job_run_details order by start_time desc limit 5"
+mise exec -- supabase db query --linked "select status_code, created from net._http_response order by created desc limit 5"
 ```
 
-Check it with `select * from cron.job_run_details order by start_time desc limit 5;`. Without the secrets the job runs and does nothing, which is how it stays off locally.
+`cron.job_run_details` shows the job ran; `net._http_response` shows the API's answer (200 with `{"handled":n}`).

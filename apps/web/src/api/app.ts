@@ -1,15 +1,19 @@
 // The Hono app (ADR 0003): request id, Supabase JWT verification, DRT error mapping, the public
-// routes, the internal endpoints and, only in E2E mode, the test endpoints.
+// routes, the internal endpoints and, only in E2E mode, the test endpoints. Without a database
+// (preview) only health is served.
 import { OpenAPIHono, z } from "@hono/zod-openapi";
 import { requestId } from "hono/request-id";
+import { databaseAnswers } from "../infra/db/store";
 import type { AppDeps } from "./deps";
 import { ApiError, errorBody } from "./errors";
+import { registerHealth } from "./health";
 import { internalRoutes } from "./internal";
 import { registerRoutes, type AppEnv } from "./routes";
 
 export type App = OpenAPIHono<AppEnv>;
 
-export async function createApp(deps: AppDeps): Promise<App> {
+/** Request id, DRT error mapping and the 404 shape shared by every app variant. */
+function baseApp(): App {
   const app = new OpenAPIHono<AppEnv>({
     defaultHook: (result, c) => {
       if (!result.success) {
@@ -31,10 +35,15 @@ export async function createApp(deps: AppDeps): Promise<App> {
     return c.json(errorBody("internal", "internal error", id), 500);
   });
   app.notFound((c) => c.json(errorBody("not_found", "no such route", c.get("requestId")), 404));
+  return app;
+}
 
-  // Every /api/v1 route except sign-in needs a Supabase access token.
+export async function createApp(deps: AppDeps): Promise<App> {
+  const app = baseApp();
+
+  // Every /api/v1 route except sign-in and health needs a Supabase access token.
   app.use("/api/v1/*", async (c, next) => {
-    if (c.req.path.startsWith("/api/v1/auth/")) return next();
+    if (c.req.path.startsWith("/api/v1/auth/") || c.req.path === "/api/v1/health") return next();
     const header = c.req.header("authorization") ?? "";
     const token = header.startsWith("Bearer ") ? header.slice("Bearer ".length) : "";
     try {
@@ -53,6 +62,11 @@ export async function createApp(deps: AppDeps): Promise<App> {
   });
 
   const api = new OpenAPIHono<AppEnv>({ defaultHook: app.defaultHook });
+  registerHealth(api, {
+    version: () => deps.version,
+    database: async () => ((await databaseAnswers(deps.db, 2000)) ? "ok" : "down"),
+    databaseRequired: true,
+  });
   registerRoutes(api, deps);
   app.route("/api", api);
   app.route("/api/internal", internalRoutes(deps));
@@ -62,6 +76,22 @@ export async function createApp(deps: AppDeps): Promise<App> {
     const { e2eRoutes } = await import("./e2e");
     app.route("/api/test", e2eRoutes(deps, deps.e2e));
   }
+  return app;
+}
+
+/**
+ * A deployment without a database (Vercel preview, docs/architecture.md Environments): only
+ * health, which reports the database as not configured. Every other route answers 404.
+ */
+export function createHealthOnlyApp(options: { version: string; databaseRequired: boolean }): App {
+  const app = baseApp();
+  const api = new OpenAPIHono<AppEnv>({ defaultHook: app.defaultHook });
+  registerHealth(api, {
+    version: () => options.version,
+    database: () => Promise.resolve("not_configured"),
+    databaseRequired: options.databaseRequired,
+  });
+  app.route("/api", api);
   return app;
 }
 

@@ -93,7 +93,7 @@ nuddle/
 
 ## API
 
-- Public routes under `/api/v1` are defined with `@hono/zod-openapi` (ADR 0003, 0008): `auth/otp`, `auth/verify`, `auth/refresh` (no token), `sync`, `devices`, `photos/upload-url`, and one `commands/<name>` per action in `domain.md`. Every command body carries a UUIDv7 `idempotencyKey`; a replay returns the stored result, a failed command stores nothing.
+- Public routes under `/api/v1` are defined with `@hono/zod-openapi` (ADR 0003, 0008): `auth/otp`, `auth/verify`, `auth/refresh`, `health` (no token), `sync`, `devices`, `photos/upload-url`, and one `commands/<name>` per action in `domain.md`. Every command body carries a UUIDv7 `idempotencyKey`; a replay returns the stored result, a failed command stores nothing.
 - Internal routes: `POST /api/internal/tick` (bearer `TICK_SECRET`), `POST /api/internal/otp-hook` (Supabase Send SMS hook, Standard Webhooks signature with `SEND_SMS_HOOK_SECRET`). Not in the contract.
 - Every response carries `X-Request-Id`. Errors have the shape `{ "error": { "code", "name", "message", "requestId" } }`.
 
@@ -130,9 +130,18 @@ The app shows the code on the unrecoverable error screen (6f) and sends it to Cr
 | local | `next dev` on the host | `supabase start` (Docker) | `app.nuddle.debug` |
 | e2e | `next dev` with `E2E=1` | same local stack, separate database | `app.nuddle.debug`, flavor `e2e` |
 | preview | Vercel preview per PR | none (health and contract only) | none |
-| prod (= beta) | Vercel production | Supabase cloud project | `app.nuddle` |
+| prod (= beta) | Vercel production | Supabase cloud project | `app.nuddle` (registered before the beta; until then the dev project) |
 
 A staging project is added before the global launch, not before.
+
+Production wiring (stage 7):
+- Vercel project `nuddle` (team `er3ns-projects`), root `apps/web`, functions in `fra1`. `apps/web/vercel.json` skips builds whose changes are all under `apps/android/`.
+- Host `https://nuddle.app`. DNS stays at Cloudflare with two "DNS only" (not proxied) records: `A nuddle.app 76.76.21.21` and `CNAME www cname.vercel-dns.com`. `www` redirects to the apex.
+- Vercel env is set for the Production target only (`.env.example`). Previews and `*.vercel.app` URLs sit behind Vercel Authentication, have no env and serve only `/api/v1/health` (database `not_configured`). `E2E` is never set in Vercel.
+- The API reaches Postgres through Supabase's transaction pooler (port 6543): the direct host is IPv6 only.
+- Merging to `main` deploys production.
+- Auth settings of the cloud project (phone sign-in, Send SMS hook, no test numbers) are code in `supabase/cloud/`, applied through the Management API, never with `supabase config push`.
+- Until the beta, push uses an FCM-only service account of the dev Firebase project `nuddle-app-er3n`.
 
 ## Costs (rough, to confirm)
 

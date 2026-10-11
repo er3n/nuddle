@@ -20,6 +20,8 @@ export interface AppDeps {
   tickSecret: string;
   /** Standard Webhooks secret ("v1,whsec_...") of the Supabase Send SMS hook. */
   smsHookSecret: string;
+  /** Shown by GET /api/v1/health: the short Git commit of the deployment. */
+  version: string;
   /** E2E mode only (docs/architecture.md, E2E mode): compressed plans and the shiftable clock. */
   e2e: { clock: OffsetClock; adjustOutcome: (o: Outcome, now: Date) => Outcome } | null;
 }

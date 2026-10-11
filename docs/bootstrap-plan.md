@@ -109,10 +109,13 @@ Prompt template for each stage:
 **Read first:** `docs/architecture.md` (Environments), `docs/human-checklist.md` (Before stage 7).
 
 **Tasks (agent prepares, human executes production steps)**
-- Vercel project linked to the repo, root `apps/web`, region `fra1`, ignored build step for Android-only changes, env variables listed in a checked-in `.env.example`.
-- Supabase cloud project linked. The agent prepares the exact commands; **the human runs `supabase db push`**.
-- `pg_cron` tick job enabled in the cloud project with the shared secret.
-- Firebase prod app `app.nuddle`, service account in Vercel env (human adds the secret).
+- Vercel project linked to the repo, root `apps/web`, region `fra1` and an ignored build step for Android-only changes (`apps/web/vercel.json`), env variables listed in a checked-in `.env.example`. Env is set for Production only; previews have none and serve only health.
+- Domain `nuddle.app` on the Vercel project, DNS kept at Cloudflare (records in `architecture.md`, Environments).
+- Supabase cloud project linked. The agent prepares the exact commands; **the human runs `supabase link` and `supabase db push`**.
+- Cloud Auth settings (phone sign-in, Send SMS hook, no test numbers) as code in `supabase/cloud/`, applied by the human.
+- `pg_cron` tick job enabled in the cloud project with the shared secret (Vault).
+- Push: until the beta, Vercel uses an FCM-only service account of the dev Firebase project `nuddle-app-er3n`. Registering the prod app `app.nuddle` moved to "Before the beta" (decided 2026-10-11, NUD-11).
+- Secrets: the human puts each value in a file under `~/.nuddle/prod/`; the agent adds them to Vercel as sensitive variables without reading them; the human writes the Supabase side (`supabase/cloud/configure.sh`).
 - `/api/v1/health` returns version and DB connectivity.
 
 **Done when:** a Vercel preview deploy answers `/api/v1/health`; after the human's `db push` and promote, production health is green and the tick job is running (visible in `task_events` or logs).
