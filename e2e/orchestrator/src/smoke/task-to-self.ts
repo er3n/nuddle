@@ -16,6 +16,19 @@ const SELIN_PHONE = "+905320000001";
  * away, the poke window opens in about 30 s and the FULL_SCREEN step rings about 75 s after creation. */
 const DEADLINE_MINUTES = 90;
 
+/** A one hour quiet window starting 12 hours after `now`, in Selin's time zone (Europe/Istanbul). */
+function quietHoursAwayFrom(now: Date): { start: string; end: string } {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Istanbul",
+      hour: "2-digit",
+      hourCycle: "h23",
+    }).format(now),
+  );
+  const at = (h: number) => `${String(h % 24).padStart(2, "0")}:00`;
+  return { start: at(hour + 12), end: at(hour + 13) };
+}
+
 export async function taskToSelf(run: RunContext, databaseUrl: string): Promise<void> {
   const selin = devices.selin;
 
@@ -43,6 +56,12 @@ export async function taskToSelf(run: RunContext, databaseUrl: string): Promise<
         60_000,
       );
       writeFileSync(join(dir, "permissions.json"), JSON.stringify(device.permissions, null, 2));
+      // The default quiet hours (23:00-07:00) would swallow the whole poke window of a run at night
+      // and leave an empty plan (NUD-35). Move them 12 hours away from now; the device gets them with
+      // the sync that the new task's hint starts.
+      const { start, end } = quietHoursAwayFrom(new Date());
+      await db`update people set quiet_hours_start = ${start}, quiet_hours_end = ${end} where phone = ${SELIN_PHONE}`;
+      run.log(`quiet hours ${start}-${end}`);
     } finally {
       await db.end();
     }
