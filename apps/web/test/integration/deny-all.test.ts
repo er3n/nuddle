@@ -3,7 +3,7 @@
 // default grants exist only there, not in a per-run test database.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type postgres from "postgres";
-import { connectAdmin } from "./db";
+import { connectAdmin } from "../support/db";
 
 describe("deny-all safety net", () => {
   let sql: postgres.Sql;

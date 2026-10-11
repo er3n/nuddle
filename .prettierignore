@@ -5,6 +5,7 @@ docs/
 # Generated or lock files
 pnpm-lock.yaml
 packages/contract/openapi.yaml
+packages/contract/openapi.d.ts
 supabase/migrations/meta/
 
 # Android has its own formatter (ktlint via Spotless, stage 5)

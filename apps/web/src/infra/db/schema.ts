@@ -2,12 +2,14 @@
 // supabase/migrations/. Grants, RLS and cron jobs are hand-written SQL in the same folder.
 // There is no group, household or role table, and there must never be one (ADR 0010).
 import { sql } from "drizzle-orm";
+import type { PermissionSummary } from "../../domain/reachability";
 import {
   bigint,
   boolean,
   index,
   jsonb,
   pgEnum,
+  pgSequence,
   pgTable,
   primaryKey,
   text,
@@ -19,6 +21,16 @@ import {
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 const updatedAt = () => timestamp("updated_at", { withTimezone: true }).notNull().defaultNow();
+
+// One sequence for every row the sync feed exposes (ADR 0006). Inserts take the next value by
+// default; every update sets `change_seq = nextval('sync_seq')`. `GET /api/v1/sync?cursor=`
+// returns rows with a larger value. Writers serialize on an advisory lock so values become
+// visible in order (src/infra/db/store.ts).
+export const syncSeq = pgSequence("sync_seq");
+const changeSeq = () =>
+  bigint("change_seq", { mode: "number" })
+    .notNull()
+    .default(sql`nextval('sync_seq')`);
 
 export const edgeType = pgEnum("edge_type", [
   "spouse",
@@ -109,6 +121,7 @@ export const edges = pgTable(
     weights: jsonb("weights").notNull().default({}),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
+    changeSeq: changeSeq(),
   },
   (t) => [
     primaryKey({ columns: [t.fromPersonId, t.toPersonId] }),
@@ -132,6 +145,7 @@ export const invites = pgTable(
     status: inviteStatus("status").notNull().default("open"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
+    changeSeq: changeSeq(),
   },
   (t) => [
     index("invites_inviter_idx").on(t.inviterId),
@@ -160,7 +174,10 @@ export const tasks = pgTable(
     late: boolean("late").notNull().default(false),
     planVersion: bigint("plan_version", { mode: "number" }).notNull().default(0),
     createdAt: createdAt(),
+    // When the status last changed (the domain's `Task.statusChangedAt`); written on every
+    // status change and only then. The missed card expiry counts from here.
     updatedAt: updatedAt(),
+    changeSeq: changeSeq(),
   },
   (t) => [index("tasks_sender_idx").on(t.senderId), index("tasks_recipient_idx").on(t.recipientId)],
 );
@@ -176,8 +193,9 @@ export const taskEvents = pgTable(
     // Null when the server acts (deadline passed, auto-approve).
     actorId: uuid("actor_id").references(() => people.id),
     type: taskEventType("type").notNull(),
-    payload: jsonb("payload").notNull().default({}),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
     createdAt: createdAt(),
+    changeSeq: changeSeq(),
   },
   (t) => [index("task_events_task_idx").on(t.taskId)],
 );
@@ -208,8 +226,11 @@ export const scheduledActions = pgTable(
     kind: scheduledActionKind("kind").notNull(),
     taskId: uuid("task_id").references(() => tasks.id),
     dueAt: timestamp("due_at", { withTimezone: true }).notNull(),
-    payload: jsonb("payload").notNull().default({}),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
     doneAt: timestamp("done_at", { withTimezone: true }),
+    // Lease set by tick's claim (FOR UPDATE SKIP LOCKED); another tick skips the row until it
+    // runs out, so a crashed run is retried.
+    claimedUntil: timestamp("claimed_until", { withTimezone: true }),
     createdAt: createdAt(),
   },
   (t) => [
@@ -231,7 +252,10 @@ export const devices = pgTable(
     platform: devicePlatform("platform").notNull(),
     appVersion: text("app_version").notNull(),
     // Notifications, exact alarm, full screen and channel states as reported by the device.
-    permissions: jsonb("permissions").notNull().default({}),
+    permissions: jsonb("permissions")
+      .$type<PermissionSummary>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
     createdAt: createdAt(),
   },
@@ -247,7 +271,7 @@ export const idempotencyKeys = pgTable(
       .notNull()
       .references(() => people.id),
     command: text("command").notNull(),
-    result: jsonb("result").notNull(),
+    result: jsonb("result").$type<unknown>().notNull(),
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.callerId, t.key] })],

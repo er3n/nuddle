@@ -1,0 +1,8 @@
+# redocly lint for packages/contract/openapi.yaml (ADR 0008, docs/quality.md): every operation has
+# an operationId, which becomes the Kotlin function name.
+extends:
+  - recommended
+rules:
+  operation-operationId: error
+  operation-operationId-unique: error
+  operation-operationId-url-safe: error

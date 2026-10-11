@@ -30,7 +30,7 @@ Android app (Kotlin, Compose)                       Vercel
 | Android | Kotlin, Jetpack Compose, single Activity + Navigation Compose, `PokeActivity` separate. Hilt, Retrofit or Ktor client with kotlinx.serialization (generated), Room, WorkManager, CameraX, kotlinx-datetime. Min SDK 26, target current (35+). |
 | API | Next.js on Vercel. The API is Hono mounted in a Next route handler (`app/api/[[...route]]/route.ts`) with `@hono/zod-openapi`. Next itself serves the landing page and later the sender web page (ADR 0003). |
 | Database | Supabase Postgres, Drizzle ORM. Drizzle generates SQL into `supabase/migrations/`. Hand-written SQL migrations (grants, `pg_cron` jobs, auth hooks) live in the same folder (ADR 0002). |
-| Auth | Supabase Auth, phone OTP. Send SMS hook calls our endpoint, which sends via WhatsApp template or SMS. Supabase issues the JWT, the API verifies it (ADR 0011). |
+| Auth | Supabase Auth, phone OTP, reached through our API (`/api/v1/auth/*`). Send SMS hook calls our endpoint, which sends via SMS (Twilio) and later a WhatsApp template. Supabase issues the JWT, the API verifies it against Supabase's JWKS; the person id is the JWT `sub` (ADR 0011, 0014). |
 | Storage | Supabase Storage, private bucket, signed upload URLs. Photos deleted when the task closes. |
 | Scheduler | `scheduled_actions` table + pure `tick(now)`. In the cloud, `pg_cron` calls `POST /api/internal/tick` every minute via `pg_net`. Locally, `mise run tick` (ADR 0007). |
 | Push | FCM data messages, sent with `firebase-admin`. Crashlytics and App Distribution from the same Firebase project. One project, debug build registered as `app.nuddle.debug`. |
@@ -77,18 +77,51 @@ nuddle/
 
 ## Sync model (ADR 0006)
 
-- **Reads:** `GET /api/v1/sync?cursor=<event id>` returns everything that changed for this person since the cursor: tasks, events, connections, invites, inbox items, plan steps for their own device. The cursor is the `task_events` (and related) sequence.
+- **Reads:** `GET /api/v1/sync?cursor=<n>` returns everything that changed for this person since the cursor: tasks, events, connections (with reachability), sent and received invites, and plan steps for tasks they receive. The cursor is the shared `sync_seq` sequence behind the `change_seq` column of `tasks`, `task_events`, `edges` and `invites`; writers serialize on one advisory lock so the cursor never skips a late commit (ADR 0014). Omit the cursor for a full sync.
+- **Hidden plan in sync:** plan steps and `plan_generated` events go only to the recipient; `HUMAN` steps never leave the server. A declined invite does not move the inviter's cursor.
 - **Writes:** commands, `POST /api/v1/commands/<name>` with a client generated UUIDv7 idempotency key. Replaying a command is safe.
 - **Android:** an outbox table in Room. WorkManager drains it with backoff. Local effects are applied immediately (`QUEUED` tasks, stopped alarms).
 - **Push:** FCM data messages are only hints ("sync now", "plan changed", "task cancelled"). The sync endpoint is the source of truth.
 
 ## Server timers (ADR 0007)
 
-`scheduled_actions(id, kind, task_id, due_at, payload, done_at)` rows are created by domain transitions. `tick(now)` claims due rows with `FOR UPDATE SKIP LOCKED`, runs the matching domain handler, and is idempotent. Kinds: `deadline`, `approval_timeout`, `human_check`, `lost_poke_check`, `missed_expiry`, `permission_request_cooldown` **(proposed)**.
+`scheduled_actions(id, kind, task_id, due_at, payload, done_at, claimed_until)` rows are created by domain transitions. `tick(now)` claims due rows with `FOR UPDATE SKIP LOCKED` and a one minute lease (`claimed_until`), runs the matching domain handler, and completes each row in its own transaction; a row a task transition already finished is skipped. Idempotent and safe to run concurrently. The `pg_cron` job (`nuddle-tick`, every minute) reads the URL and secret from Supabase Vault (`tick_url`, `tick_secret`) and does nothing without them, which keeps it off locally. Kinds: `deadline`, `approval_timeout`, `human_check`, `lost_poke_check`, `missed_expiry`, `permission_request_cooldown` **(proposed)**.
 
 ## E2E mode
 
-`E2E=1` on the web app turns on: fixture `TaskExtractor`, fixed test OTP codes, compressed poke plans (seconds instead of minutes), and the test endpoints `/test/reset`, `/test/seed`, `/test/tick`, `/test/advance-clock`. The code for these lives in a module that is not imported in production builds, and a test asserts the routes return 404 when `E2E` is not set. Details in `testing.md`.
+`E2E=1` on the web app turns on: fixture `TaskExtractor` (`e2e/fixtures/extractions.json`), fixed test OTP codes, compressed poke plans (step offsets divided by 60: minutes become seconds; deadlines unchanged), and the test endpoints `/api/test/reset`, `/api/test/seed`, `/api/test/tick`, `/api/test/advance-clock` (under `/api` because Hono is mounted there). The code lives in `src/api/e2e.ts`, loaded only with a dynamic import when `E2E=1`, and a test asserts the routes return 404 when `E2E` is not set. Details in `testing.md`.
+
+## API
+
+- Public routes under `/api/v1` are defined with `@hono/zod-openapi` (ADR 0003, 0008): `auth/otp`, `auth/verify`, `auth/refresh` (no token), `sync`, `devices`, `photos/upload-url`, and one `commands/<name>` per action in `domain.md`. Every command body carries a UUIDv7 `idempotencyKey`; a replay returns the stored result, a failed command stores nothing.
+- Internal routes: `POST /api/internal/tick` (bearer `TICK_SECRET`), `POST /api/internal/otp-hook` (Supabase Send SMS hook, Standard Webhooks signature with `SEND_SMS_HOOK_SECRET`). Not in the contract.
+- Every response carries `X-Request-Id`. Errors have the shape `{ "error": { "code", "name", "message", "requestId" } }`.
+
+### Error codes
+
+The app shows the code on the unrecoverable error screen (6f) and sends it to Crashlytics. Codes never change meaning; add new ones at the end of a range.
+
+| Code | Name | HTTP | Meaning |
+|---|---|---|---|
+| DRT-1001 | `validation_failed` | 400 | Body or query does not match the schema |
+| DRT-1002 | `unauthorized` | 401 | Missing, expired or foreign access token; bad internal secret |
+| DRT-1003 | `not_registered` | 403 | Signed in, but `register` was not sent yet (or the account is deleted) |
+| DRT-1004 | `not_found` | 404 | No such route, or a task, invite the caller cannot see |
+| DRT-1005 | `idempotency_key_reused` | 422 | The key was used for a different command |
+| DRT-1006 | `invalid_otp` | 401 | Wrong or expired code, or an unknown refresh token |
+| DRT-1007 | `forbidden` | 403 | Reserved |
+| DRT-4001 | `wrong_status` | 409 | The task's status does not allow the command |
+| DRT-4002 | `not_sender` | 403 | Only the sender can do this |
+| DRT-4003 | `not_recipient` | 403 | Only the recipient can do this |
+| DRT-4004 | `wrong_finish_mode` | 409 | Done on a photo task (without camera fallback) or a photo on a done task |
+| DRT-4005 | `deadline_not_in_future` | 409 | |
+| DRT-4006 | `not_connected` | 409 | No active connection to the recipient |
+| DRT-4007 | `recipient_unavailable` | 409 | Sender or recipient account deleted |
+| DRT-4101 | `invite_not_open` | 409 | |
+| DRT-4102 | `wrong_invitee` | 403 | The invite is bound to another number |
+| DRT-4103 | `self_invite` | 409 | |
+| DRT-5001 | `internal` | 500 | Unexpected server error |
+| DRT-5002 | `upstream_failed` | 502 | Supabase Auth, the SMS provider or the LLM failed |
 
 ## Environments
 

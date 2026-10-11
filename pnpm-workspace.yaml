@@ -7,3 +7,8 @@ ignoredBuiltDependencies:
   # esbuild (via drizzle-kit and vitest) ships its binary as an optional platform package; its
   # postinstall only verifies that binary.
   - esbuild
+  # msw's postinstall copies a browser service worker; we only use msw/node in tests.
+  - msw
+  # firebase-admin dependencies: postinstall scripts only print notices or check versions.
+  - protobufjs
+  - "@firebase/util"

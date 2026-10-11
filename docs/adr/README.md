@@ -19,3 +19,4 @@ To change a decision: add a new ADR that supersedes the old one, set the old one
 | 0011 | Phone number is the only identity |
 | 0012 | Testing strategy with E2E mode and Maestro |
 | 0013 | No alarms in the system Clock app |
+| 0014 | API sign-in proxy, person id = JWT `sub`, one sync sequence, Twilio for SMS |

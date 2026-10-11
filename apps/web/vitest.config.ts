@@ -10,10 +10,23 @@ export default defineConfig({
         },
       },
       {
-        // In-memory server and simulated phones (docs/testing.md, Scenario tests).
+        // Hono app.request() against a fresh copy of the migrated template database.
+        test: {
+          name: "http",
+          include: ["test/http/**/*.test.ts"],
+          globalSetup: ["test/support/global-setup.ts"],
+          testTimeout: 30_000,
+          hookTimeout: 60_000,
+        },
+      },
+      {
+        // Simulated phones against the HTTP API and Postgres (docs/testing.md, Scenario tests).
         test: {
           name: "scenario",
           include: ["test/scenario/**/*.test.ts"],
+          globalSetup: ["test/support/global-setup.ts"],
+          testTimeout: 60_000,
+          hookTimeout: 60_000,
         },
       },
       {

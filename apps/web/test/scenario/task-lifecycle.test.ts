@@ -48,7 +48,7 @@ describe("scenarios: task lifecycle", () => {
 
   it("task to self: rings, done, nobody else is told", async () => {
     const world = emptyWorld();
-    const eren = world.addPerson("Eren");
+    const eren = await world.addPerson("Eren");
     const taskId = await writeTask(eren, TEXT.selfSport);
     expect(world.task(taskId)).toMatchObject({ senderId: "eren", recipientId: "eren" });
 
@@ -256,8 +256,8 @@ describe("scenarios: task lifecycle", () => {
 
   it("full screen without the permission degrades to sound and is reported", async () => {
     const world = emptyWorld();
-    const selin = world.addPerson("Selin");
-    const eren = world.addPerson("Eren", {
+    const selin = await world.addPerson("Selin");
+    const eren = await world.addPerson("Eren", {
       notifications: true,
       exactAlarm: true,
       fullScreen: false,

@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { people, tasks } from "../../src/infra/db/schema";
-import { createTestDatabase, type TestDatabase } from "./db";
+import { createTestDatabase, type TestDatabase } from "../support/db";
 
 describe("tasks table", () => {
   let t: TestDatabase;

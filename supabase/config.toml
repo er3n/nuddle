@@ -294,6 +294,15 @@ max_frequency = "5s"
 # enabled = true
 # uri = "pg-functions://<database>/<schema>/<hook_name>"
 
+# Send SMS hook (ADR 0011): Supabase Auth hands the code to our API, which sends it through the SMS
+# provider (Twilio, decided in NUD-8). The test_otp numbers never reach it. Locally the API runs on
+# the host (`mise run dev`); the secret is the local-only value from mise.toml. In the cloud the
+# URI is the production API and the secret comes from the Supabase env (stage 7).
+[auth.hook.send_sms]
+enabled = true
+uri = "http://host.docker.internal:3000/api/internal/otp-hook"
+secrets = "env(SEND_SMS_HOOK_SECRET)"
+
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
 # Local placeholder only: Supabase Auth refuses phone sign-in without an enabled provider, even for
 # the test_otp numbers above, which never reach it. Real delivery is the Send SMS hook calling

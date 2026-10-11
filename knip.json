@@ -3,5 +3,7 @@
   "workspaces": {
     ".": {},
     "apps/web": {}
-  }
+  },
+  "ignore": ["packages/contract/openapi.d.ts"],
+  "ignoreBinaries": ["supabase"]
 }

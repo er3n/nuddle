@@ -35,3 +35,4 @@ Things not yet decided. If you hit one while building, do not decide silently: p
 23. **Pricing confirmations:** Supabase and Vercel plan limits and prices at launch time.
 24. **Dark theme:** after the MVP. Tokens are structured for it.
 25. **License for the public repo.** Without a LICENSE file the code is visible but all rights are reserved. *Default:* a short `LICENSE` stating "Copyright (c) 2026 Eren Öztürk. All rights reserved." until an open source license is chosen.
+26. **OTP SMS text.** No copy exists for the code message. *Default:* "dürt kodun: 123456", followed by the SMS Retriever app hash on its own line. Under 140 bytes.

@@ -16,7 +16,7 @@ export interface Invite {
   status: InviteStatus;
 }
 
-type ConnectionError = "invite_not_open" | "wrong_invitee" | "self_invite";
+export type ConnectionError = "invite_not_open" | "wrong_invitee" | "self_invite";
 
 export type ConnectionResult<T> = { ok: true; value: T } | { ok: false; error: ConnectionError };
 
