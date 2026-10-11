@@ -1,0 +1,43 @@
+# Sign up with a test number on a fresh install: welcome (0a), phone (0c), code (0d), name (0e), home (1a).
+# Elements are found only by test tag (apps/android ui/TestTags.kt). PHONE is the ten national digits.
+appId: app.nuddle.debug
+env:
+  PHONE: "5320000001"
+  CODE: "123456"
+  NAME: Selin
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: welcome.start
+    timeout: 30000
+- tapOn:
+    id: welcome.start
+- tapOn:
+    id: phone.input
+- inputText: ${PHONE}
+- hideKeyboard
+- tapOn:
+    id: phone.send
+- extendedWaitUntil:
+    visible:
+      id: code.input
+    timeout: 30000
+- tapOn:
+    id: code.input
+- inputText: ${CODE}
+- extendedWaitUntil:
+    visible:
+      id: name.input
+    timeout: 30000
+- tapOn:
+    id: name.input
+- inputText: ${NAME}
+- hideKeyboard
+- tapOn:
+    id: name.continue
+- extendedWaitUntil:
+    visible:
+      id: home.screen
+    timeout: 30000

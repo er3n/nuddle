@@ -22,12 +22,14 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import app.nuddle.R
+import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.Avatar
 import app.nuddle.ui.components.ComposeBar
 import app.nuddle.ui.components.ComposeState
@@ -65,7 +67,7 @@ fun HomeScreen(
     val dimens = DurtTheme.dimens
     ScreenLayout(
         background = colors.background,
-        modifier = modifier,
+        modifier = modifier.testTag(TestTags.HOME),
         bottom = { ComposeBar(state.compose, onComposeTextChange, onComposeSend, onVoiceStart, onVoiceEnd) },
     ) {
         TopBar(myName = state.myName, unread = state.unread, onBell = onBell, onProfile = onProfile)
@@ -132,7 +134,7 @@ private fun InviteCard(
             text = stringResource(R.string.home_invite_action),
             onClick = onInvite,
             kind = DurtButtonKind.Accent,
-            modifier = Modifier.padding(top = dimens.space8),
+            modifier = Modifier.padding(top = dimens.space8).testTag(TestTags.HOME_INVITE),
         )
     }
 }

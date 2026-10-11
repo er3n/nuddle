@@ -1,0 +1,8 @@
+# Waits for the full screen poke (3b) over the lock screen. The orchestrator turned the screen off and
+# screenshots both devices after this flow, so the run folder shows the poke as it rang.
+appId: app.nuddle.debug
+---
+- extendedWaitUntil:
+    visible:
+      id: poke.done
+    timeout: 180000

@@ -2,7 +2,8 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {},
-    "apps/web": {}
+    "apps/web": {},
+    "e2e/orchestrator": {}
   },
   "ignore": ["packages/contract/openapi.d.ts"],
   "ignoreBinaries": ["supabase"]

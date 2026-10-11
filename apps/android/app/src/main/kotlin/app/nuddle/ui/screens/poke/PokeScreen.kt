@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -21,6 +22,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import app.nuddle.R
 import app.nuddle.domain.TimeLeft
+import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.DurtButton
 import app.nuddle.ui.components.DurtButtonKind
 import app.nuddle.ui.components.DurtButtonSize
@@ -64,7 +66,7 @@ fun PokeScreen(
     val timeLeft = stringResource(R.string.poke_time_left, timeLeftText(state.timeLeft))
     ScreenLayout(
         background = colors.poke,
-        modifier = modifier,
+        modifier = modifier.testTag(TestTags.POKE),
         horizontalAlignment = Alignment.CenterHorizontally,
         bottom = {
             DurtButton(
@@ -73,6 +75,7 @@ fun PokeScreen(
                 kind = DurtButtonKind.OnPoke,
                 size = DurtButtonSize.Poke,
                 leadingIcon = DurtIcons.Check,
+                modifier = Modifier.testTag(TestTags.POKE_DONE),
             )
             DurtButton(
                 text =
@@ -83,12 +86,14 @@ fun PokeScreen(
                 onClick = onSnooze,
                 kind = DurtButtonKind.OnPokeOutline,
                 size = DurtButtonSize.Medium,
+                modifier = Modifier.testTag(TestTags.POKE_SNOOZE),
             )
             TextLink(
                 text = stringResource(R.string.poke_cant_today),
                 onClick = onCantToday,
                 color = colors.surface,
                 style = DurtTheme.type.button,
+                modifier = Modifier.testTag(TestTags.POKE_CANT_TODAY),
             )
         },
     ) {

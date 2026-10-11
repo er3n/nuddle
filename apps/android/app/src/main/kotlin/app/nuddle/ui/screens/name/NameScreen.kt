@@ -18,12 +18,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import app.nuddle.R
+import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.Avatar
 import app.nuddle.ui.components.DurtButton
 import app.nuddle.ui.components.InlineAlert
@@ -70,6 +72,7 @@ fun NameScreen(
                 onClick = onContinue,
                 enabled = state.canContinue || state.saving,
                 loading = state.saving,
+                modifier = Modifier.testTag(TestTags.NAME_CONTINUE),
             )
         },
     ) {
@@ -114,7 +117,7 @@ fun NameScreen(
                         imeAction = ImeAction.Done,
                     ),
                 keyboardActions = KeyboardActions(onDone = { if (state.canContinue) onContinue() }),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag(TestTags.NAME_INPUT),
             )
             if (state.invitedBy != null) {
                 Text(

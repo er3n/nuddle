@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import app.nuddle.R
+import app.nuddle.ui.TestTags
 import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewComponent
 import app.nuddle.ui.preview.PreviewSurface
@@ -63,6 +65,7 @@ fun DurtLogo(
 private fun CircleIconButton(
     onClick: () -> Unit,
     description: String,
+    testTag: String,
     content: @Composable () -> Unit,
 ) {
     val dimens = DurtTheme.dimens
@@ -73,7 +76,8 @@ private fun CircleIconButton(
                 .clip(CircleShape)
                 .background(DurtTheme.colors.surface)
                 .clickable(role = Role.Button, onClick = onClick)
-                .semantics { contentDescription = description },
+                .semantics { contentDescription = description }
+                .testTag(testTag),
         contentAlignment = Alignment.Center,
     ) { content() }
 }
@@ -102,7 +106,7 @@ fun TopBar(
     ) {
         DurtLogo(Modifier.weight(1f))
         Box {
-            CircleIconButton(onClick = onBell, description = bellDescription) {
+            CircleIconButton(onClick = onBell, description = bellDescription, testTag = TestTags.BELL) {
                 Icon(
                     DurtIcons.Bell,
                     contentDescription = null,
@@ -139,7 +143,8 @@ fun TopBar(
                 Modifier
                     .clip(CircleShape)
                     .clickable(role = Role.Button, onClick = onProfile)
-                    .semantics { contentDescription = profileDescription },
+                    .semantics { contentDescription = profileDescription }
+                    .testTag(TestTags.PROFILE),
         )
     }
 }
@@ -158,7 +163,7 @@ fun BackBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(dimens.space12),
     ) {
-        CircleIconButton(onClick = onBack, description = stringResource(R.string.cd_back)) {
+        CircleIconButton(onClick = onBack, description = stringResource(R.string.cd_back), testTag = TestTags.BACK) {
             Icon(
                 DurtIcons.Back,
                 contentDescription = null,

@@ -1,5 +1,6 @@
 packages:
   - apps/web
+  - e2e/orchestrator
 
 # lefthook's postinstall only installs hooks; the root "prepare" script already does that.
 ignoredBuiltDependencies:

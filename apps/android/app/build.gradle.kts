@@ -33,16 +33,20 @@ android {
             applicationIdSuffix = ".debug"
             // The emulator reaches `mise run dev` through `adb reverse tcp:3000 tcp:3000`.
             buildConfigField("String", "API_BASE_URL", "\"http://localhost:3000/\"")
+            buildConfigField("boolean", "EXPOSE_TEST_TAGS", "false")
         }
         create("e2e") {
             dimension = "env"
             applicationIdSuffix = ".debug"
             buildConfigField("String", "API_BASE_URL", "\"http://localhost:3000/\"")
+            // Maestro finds elements by test tag exposed as resource id (docs/testing.md, Android `e2e` flavor).
+            buildConfigField("boolean", "EXPOSE_TEST_TAGS", "true")
         }
         create("prod") {
             dimension = "env"
             // TODO(open-questions#13): the production host is wired in stage 7 (docs/bootstrap-plan.md).
             buildConfigField("String", "API_BASE_URL", "\"https://nuddle.app/\"")
+            buildConfigField("boolean", "EXPOSE_TEST_TAGS", "false")
         }
     }
 

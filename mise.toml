@@ -6,7 +6,7 @@ node = "22.23.3"
 pnpm = "10.34.6"
 java = "temurin-21.0.12+8.0.LTS"
 supabase = "2.120.0"
-maestro = "cli-2.11.0"
+maestro = "cli-2.10.0"
 gitleaks = "8.30.1"
 "github:sbdchd/squawk" = "2.68.0"
 
@@ -28,7 +28,7 @@ ANDROID_HOME = "{{ env.ANDROID_HOME | default(value=env.HOME ~ '/Library/Android
 [tasks._install]
 description = "Install pnpm dependencies when the lockfile or a manifest changed"
 hide = true
-sources = ["pnpm-lock.yaml", "package.json", "pnpm-workspace.yaml", "apps/*/package.json"]
+sources = ["pnpm-lock.yaml", "package.json", "pnpm-workspace.yaml", "apps/*/package.json", "e2e/orchestrator/package.json"]
 outputs = ["node_modules/.pnpm/lock.yaml"]
 run = "pnpm install --frozen-lockfile"
 
@@ -40,7 +40,7 @@ run = "pnpm exec eslint . --max-warnings=0 --cache --cache-location node_modules
 [tasks."lint:typecheck"]
 hide = true
 depends = ["_install"]
-run = "pnpm --filter @nuddle/web typecheck"
+run = ["pnpm --filter @nuddle/web typecheck", "pnpm --filter @nuddle/e2e typecheck"]
 
 [tasks."lint:format"]
 hide = true
@@ -181,7 +181,21 @@ pnpm --filter @nuddle/web dev
 
 [tasks."e2e:smoke"]
 description = "Two-emulator smoke set before merging"
-run = "echo 'not yet: arrives in stage 6 (docs/bootstrap-plan.md)'"
+# Foreground with a 20 minute hard timeout; prints the run folder (e2e-runs/<timestamp>/) first and
+# last. Long: agents start it in the background and poll <run folder>/orchestrator.log (CLAUDE.md).
+# Needs FIREBASE_SERVICE_ACCOUNT in apps/web/.env.local and :3000 free (e2e/README.md).
+depends = ["_install"]
+run = "pnpm --filter @nuddle/e2e smoke"
+
+[tasks."e2e:emulators"]
+hide = true
+description = "Create and boot the two E2E emulators headless (emulator-5554 Selin, emulator-5556 Eren)"
+run = "e2e/scripts/emulators.sh boot"
+
+[tasks."e2e:emulators:stop"]
+hide = true
+description = "Shut down the two E2E emulators"
+run = "e2e/scripts/emulators.sh stop"
 
 [tasks.tick]
 description = "Run server timers once locally"
