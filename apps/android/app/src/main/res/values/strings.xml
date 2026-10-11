@@ -66,6 +66,33 @@
     <string name="home_invite_action">Birini davet et</string>
     <string name="home_empty_title">Henüz görev yok</string>
     <string name="home_empty_body">Beklerken kendine de yazabilirsin. Zamanı gelince seni dürterim.</string>
+    <string name="home_next_up">Sıradaki</string>
+    <string name="home_to_self">Kendine</string>
+    <string name="home_deadline_label">Son zaman</string>
+    <string name="home_finish_label">Bitince</string>
+    <string name="home_finish_done">\"Bitti\" demen yeter</string>
+    <!-- TODO(open-questions#27): no design copy for a photo task to self. -->
+    <string name="home_finish_photo">Fotoğrafını çek</string>
+    <string name="home_done_early">Şimdiden bitti</string>
+    <string name="home_invite_compact_body">Birini davet et, birbirinize görev yazın</string>
+    <string name="deadline_today">Bugün %1$s</string>
+    <string name="deadline_tomorrow">Yarın %1$s</string>
+    <!-- Day, month name, time: "14 Ekim 09:00". TODO(open-questions#27). -->
+    <string name="deadline_on_date">%1$d %2$s %3$s</string>
+    <string-array name="month_names">
+        <item>Ocak</item>
+        <item>Şubat</item>
+        <item>Mart</item>
+        <item>Nisan</item>
+        <item>Mayıs</item>
+        <item>Haziran</item>
+        <item>Temmuz</item>
+        <item>Ağustos</item>
+        <item>Eylül</item>
+        <item>Ekim</item>
+        <item>Kasım</item>
+        <item>Aralık</item>
+    </string-array>
 
     <!-- ComposeBar -->
     <string name="compose_label">Yeni görev</string>

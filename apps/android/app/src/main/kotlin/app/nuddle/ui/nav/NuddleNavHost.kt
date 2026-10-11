@@ -94,7 +94,7 @@ fun NuddleNavHost(startRoute: String) {
         composable(Routes.HOME) {
             val viewModel: HomeViewModel = hiltViewModel()
             val state by viewModel.state.collectAsStateWithLifecycle()
-            // Bell, profile, invite and task writing are routes of the feature slices (docs/bootstrap-plan.md).
+            // Bell, profile, invite and voice are routes of the feature slices (docs/bootstrap-plan.md).
             state?.let {
                 HomeScreen(
                     state = it,
@@ -102,9 +102,10 @@ fun NuddleNavHost(startRoute: String) {
                     onProfile = {},
                     onInvite = {},
                     onComposeTextChange = viewModel::onComposeTextChange,
-                    onComposeSend = {},
+                    onComposeSend = viewModel::onComposeSend,
                     onVoiceStart = {},
                     onVoiceEnd = {},
+                    onFinishNextUp = viewModel::onFinishNextUp,
                 )
             }
         }

@@ -5,6 +5,7 @@ import app.nuddle.api.model.DeviceLevel
 import app.nuddle.api.model.DoneCommand
 import app.nuddle.api.model.ReportFiredCommand
 import app.nuddle.api.model.TaskStatus
+import app.nuddle.data.TaskCloser
 import app.nuddle.data.db.PokeStepDao
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEntity
@@ -99,16 +100,19 @@ class PokeActions
         private val outbox: Outbox,
         private val ids: IdGenerator,
         private val clock: Clock,
-    ) {
-        suspend fun done(key: AlarmKey) {
-            close(key, TaskStatus.DONE)
+    ) : TaskCloser {
+        suspend fun done(key: AlarmKey) = done(key.taskId)
+
+        /** Also "Şimdiden bitti" on home (2f), before any alarm rang. */
+        override suspend fun done(taskId: String) {
+            close(taskId, TaskStatus.DONE)
             val id = ids.next()
-            outbox.enqueue("done", id, DoneCommand(idempotencyKey = id, taskId = key.taskId), DoneCommand.serializer())
+            outbox.enqueue("done", id, DoneCommand(idempotencyKey = id, taskId = taskId), DoneCommand.serializer())
         }
 
         /** The optional note sheet (7f) arrives with feature slice 5; until then the drop has no note. */
         suspend fun cantToday(key: AlarmKey) {
-            close(key, TaskStatus.DROPPED)
+            close(key.taskId, TaskStatus.DROPPED)
             val id = ids.next()
             outbox.enqueue(
                 "cant_today",
@@ -129,12 +133,12 @@ class PokeActions
         }
 
         private suspend fun close(
-            key: AlarmKey,
+            taskId: String,
             status: TaskStatus,
         ) {
-            tasks.setStatus(key.taskId, status.value)
-            alarms.stopTask(key.taskId)
-            notifications.cancel(key.taskId)
+            tasks.setStatus(taskId, status.value)
+            alarms.stopTask(taskId)
+            notifications.cancel(taskId)
         }
 
         private companion object {

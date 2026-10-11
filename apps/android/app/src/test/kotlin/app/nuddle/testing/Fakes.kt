@@ -4,7 +4,10 @@ import app.nuddle.alarm.FullScreenPermission
 import app.nuddle.alarm.PokeNotifications
 import app.nuddle.data.AuthRepository
 import app.nuddle.data.SessionStarter
+import app.nuddle.data.TaskRepository
 import app.nuddle.data.VerifyOutcome
+import app.nuddle.data.WriteOutcome
+import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.outbox.OutboxDrainer
 import app.nuddle.data.session.SessionStore
@@ -163,4 +166,45 @@ class FakeFullScreen(
     var allowed: Boolean = true,
 ) : FullScreenPermission {
     override fun granted(): Boolean = allowed
+}
+
+class FakeTaskRepository : TaskRepository {
+    /** Text and idempotency key of every write. */
+    val written = mutableListOf<Pair<String, String>>()
+    val done = mutableListOf<String>()
+    var outcome: WriteOutcome = WriteOutcome.Created
+
+    override suspend fun write(
+        text: String,
+        idempotencyKey: String,
+    ): WriteOutcome {
+        written += text to idempotencyKey
+        return outcome
+    }
+
+    override suspend fun done(taskId: String) {
+        done += taskId
+    }
+}
+
+/** Tasks in memory; [observeAll] emits at once, unlike Room's flow on its own executor. */
+class InMemoryTaskDao : TaskDao {
+    private val tasks = MutableStateFlow<Map<String, TaskEntity>>(emptyMap())
+
+    override suspend fun upsert(tasks: List<TaskEntity>) {
+        this.tasks.value += tasks.associateBy { it.id }
+    }
+
+    override suspend fun get(id: String): TaskEntity? = tasks.value[id]
+
+    override suspend fun all(): List<TaskEntity> = tasks.value.values.toList()
+
+    override fun observeAll(): Flow<List<TaskEntity>> = tasks.map { it.values.toList() }
+
+    override suspend fun setStatus(
+        id: String,
+        status: String,
+    ) {
+        tasks.value[id]?.let { tasks.value += id to it.copy(status = status) }
+    }
 }

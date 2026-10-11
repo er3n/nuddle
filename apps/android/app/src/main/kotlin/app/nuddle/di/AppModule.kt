@@ -11,11 +11,15 @@ import androidx.work.WorkManager
 import app.nuddle.alarm.AlarmManagerScheduler
 import app.nuddle.alarm.AndroidPokeNotifications
 import app.nuddle.alarm.FullScreenPermission
+import app.nuddle.alarm.PokeActions
 import app.nuddle.alarm.PokeAlarms
 import app.nuddle.alarm.PokeNotifications
 import app.nuddle.data.ApiAuthRepository
+import app.nuddle.data.ApiTaskRepository
 import app.nuddle.data.AuthRepository
 import app.nuddle.data.SessionStarter
+import app.nuddle.data.TaskCloser
+import app.nuddle.data.TaskRepository
 import app.nuddle.data.db.NuddleDatabase
 import app.nuddle.data.db.OutboxDao
 import app.nuddle.data.db.PokeStepDao
@@ -121,4 +125,10 @@ abstract class BindingsModule {
 
     @Binds
     abstract fun sessionStarter(impl: AppSessionStarter): SessionStarter
+
+    @Binds
+    abstract fun taskRepository(impl: ApiTaskRepository): TaskRepository
+
+    @Binds
+    abstract fun taskCloser(impl: PokeActions): TaskCloser
 }
