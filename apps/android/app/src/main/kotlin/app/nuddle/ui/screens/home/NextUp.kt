@@ -13,7 +13,7 @@ import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
 
-private val HOUR_MINUTE =
+internal val HOUR_MINUTE =
     LocalTime.Format {
         hour()
         char(':')

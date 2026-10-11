@@ -2,6 +2,7 @@ package app.nuddle.data
 
 import app.nuddle.api.CommandsApi
 import app.nuddle.api.SyncApi
+import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.WriteTaskResult
 import app.nuddle.data.db.NuddleDatabase
 import app.nuddle.data.db.PokeStepEntity
@@ -26,6 +27,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 /** `write_task` from home (docs/ux/screens.md 2a): created, ask, or failed. */
 @RunWith(RobolectricTestRunner::class)
@@ -58,6 +60,7 @@ class TaskRepositoryTest {
                 commandsApi = retrofit.create(CommandsApi::class.java),
                 sync = SyncRepository(retrofit.create(SyncApi::class.java), sessions, db.tasks(), alarms, testJson),
                 closer = { closed += it },
+                sessions = sessions,
                 json = testJson,
             )
     }
@@ -113,9 +116,38 @@ class TaskRepositoryTest {
                 ),
             )
 
-            assertEquals(WriteOutcome.Ask(WriteTaskResult.Question.DEADLINE), repository.write("1000 tl çek", "key-2"))
+            assertEquals(
+                WriteOutcome.Ask(WriteTaskResult.Question.DEADLINE, TaskDraft("Para çek", "1.000 TL", FinishMode.DONE)),
+                repository.write("1000 tl çek", "key-2"),
+            )
             assertEquals(1, server.requestCount)
             assertNull(db.tasks().get(Cast.TASK_ID))
+        }
+
+    @Test
+    fun `the preview creates a task to self, then syncs`() =
+        runTest {
+            server.enqueue(json(200, """{"taskId":"${Cast.TASK_ID}","status":"SCHEDULED","planVersion":1}"""))
+            server.enqueue(json(200, syncBody))
+
+            val outcome =
+                repository.createForSelf(
+                    title = "Para çek",
+                    detail = "1.000 TL",
+                    deadline = Instant.parse("2026-10-12T09:00:00+03:00"),
+                    finishMode = FinishMode.DONE,
+                    rawText = "1000 tl çek",
+                    idempotencyKey = "key-4",
+                )
+
+            assertEquals(WriteOutcome.Created, outcome)
+            val create = server.takeRequest()
+            assertEquals("/api/v1/commands/create_task", create.url.encodedPath)
+            val body = create.body?.utf8() ?: ""
+            assertTrue(""""recipientId":"${Cast.EREN_ID}"""" in body, body)
+            assertTrue(""""deadline":"2026-10-12T06:00:00Z"""" in body, body)
+            assertTrue(""""rawText":"1000 tl çek"""" in body, body)
+            assertEquals("/api/v1/sync", server.takeRequest().url.encodedPath)
         }
 
     @Test

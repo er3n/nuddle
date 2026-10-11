@@ -2,6 +2,7 @@ package app.nuddle.testing
 
 import app.nuddle.alarm.FullScreenPermission
 import app.nuddle.alarm.PokeNotifications
+import app.nuddle.api.model.FinishMode
 import app.nuddle.data.AuthRepository
 import app.nuddle.data.SessionStarter
 import app.nuddle.data.TaskRepository
@@ -180,6 +181,22 @@ class FakeTaskRepository : TaskRepository {
     ): WriteOutcome {
         written += text to idempotencyKey
         return outcome
+    }
+
+    /** Title, deadline and key of every create from the preview. */
+    val created = mutableListOf<Triple<String, Instant, String>>()
+    var createOutcome: WriteOutcome = WriteOutcome.Created
+
+    override suspend fun createForSelf(
+        title: String,
+        detail: String?,
+        deadline: Instant,
+        finishMode: FinishMode,
+        rawText: String,
+        idempotencyKey: String,
+    ): WriteOutcome {
+        created += Triple(title, deadline, idempotencyKey)
+        return createOutcome
     }
 
     override suspend fun done(taskId: String) {
