@@ -18,6 +18,7 @@ import app.nuddle.ui.screens.code.CodeViewModel
 import app.nuddle.ui.screens.code.SignedInDestination
 import app.nuddle.ui.screens.home.HomeScreen
 import app.nuddle.ui.screens.home.HomeViewModel
+import app.nuddle.ui.screens.home.PreviewCallbacks
 import app.nuddle.ui.screens.name.NameScreen
 import app.nuddle.ui.screens.name.NameViewModel
 import app.nuddle.ui.screens.phone.PhoneScreen
@@ -106,6 +107,13 @@ fun NuddleNavHost(startRoute: String) {
                     onVoiceStart = {},
                     onVoiceEnd = {},
                     onFinishNextUp = viewModel::onFinishNextUp,
+                    preview =
+                        PreviewCallbacks(
+                            onChoice = viewModel::onPreviewChoice,
+                            onTimePicked = viewModel::onPreviewTimePicked,
+                            onConfirm = viewModel::onPreviewConfirm,
+                            onDismiss = viewModel::onPreviewDismiss,
+                        ),
                 )
             }
         }

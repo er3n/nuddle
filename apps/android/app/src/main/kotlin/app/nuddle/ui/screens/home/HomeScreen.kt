@@ -64,6 +64,7 @@ data class HomeUiState(
     val unread: Int = 0,
     val compose: ComposeState = ComposeState.Idle,
     val nextUp: NextUpUi? = null,
+    val preview: PreviewUi? = null,
 )
 
 internal const val DASH = 6f
@@ -80,6 +81,7 @@ fun HomeScreen(
     onVoiceEnd: (cancelled: Boolean) -> Unit,
     modifier: Modifier = Modifier,
     onFinishNextUp: () -> Unit = {},
+    preview: PreviewCallbacks = PreviewCallbacks(),
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
@@ -110,6 +112,7 @@ fun HomeScreen(
             CompactInviteCard(onInvite)
         }
     }
+    state.preview?.let { PreviewSheet(it, preview) }
 }
 
 @Composable

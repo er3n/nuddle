@@ -14,11 +14,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import app.nuddle.R
+import app.nuddle.ui.TestTags
 import app.nuddle.ui.preview.PreviewComponent
 import app.nuddle.ui.preview.PreviewSurface
 import app.nuddle.ui.theme.DurtTheme
@@ -27,6 +30,8 @@ data class SheetAction(
     val text: String,
     val onClick: () -> Unit,
     val destructive: Boolean = false,
+    val enabled: Boolean = true,
+    val loading: Boolean = false,
 )
 
 /**
@@ -47,6 +52,8 @@ fun DurtBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         modifier = modifier,
+        // Always fully open: half open would hide the primary action under a tall sheet (2b).
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         shape = RoundedCornerShape(topStart = dimens.radiusSheet, topEnd = dimens.radiusSheet),
         containerColor = DurtTheme.colors.surface,
         scrimColor = DurtTheme.colors.scrim,
@@ -91,12 +98,16 @@ fun DurtBottomSheetContent(
             text = primary.text,
             onClick = primary.onClick,
             kind = if (primary.destructive) DurtButtonKind.Danger else DurtButtonKind.Primary,
+            enabled = primary.enabled,
+            loading = primary.loading,
+            modifier = Modifier.testTag(TestTags.SHEET_PRIMARY),
         )
         DurtButton(
             text = stringResource(R.string.action_dismiss),
             onClick = onDismiss,
             kind = DurtButtonKind.Ghost,
             size = DurtButtonSize.Small,
+            modifier = Modifier.testTag(TestTags.SHEET_DISMISS),
         )
     }
 }

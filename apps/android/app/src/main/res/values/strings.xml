@@ -75,6 +75,15 @@
     <string name="home_finish_photo">Fotoğrafını çek</string>
     <string name="home_done_early">Şimdiden bitti</string>
     <string name="home_invite_compact_body">Birini davet et, birbirinize görev yazın</string>
+    <string name="preview_you_wrote">Yazdığın: \"%1$s\"</string>
+    <string name="preview_to">Kime</string>
+    <string name="preview_detail">Detay</string>
+    <string name="preview_question_deadline">Ne zamana kadar?</string>
+    <string name="preview_tonight">Bugün akşam</string>
+    <string name="preview_tomorrow_morning">Yarın sabah</string>
+    <string name="preview_pick_time">Saat seç</string>
+    <string name="preview_quiet_hint">Zamanı gelince seni dürterim. Gece %1$s ile %2$s arası asla.</string>
+    <string name="preview_confirm">Kur</string>
     <string name="deadline_today">Bugün %1$s</string>
     <string name="deadline_tomorrow">Yarın %1$s</string>
     <!-- Day, month name, time: "14 Ekim 09:00". TODO(open-questions#27). -->
