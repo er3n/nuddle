@@ -49,7 +49,7 @@ run = "pnpm exec knip"
 
 [tasks."lint:secrets"]
 hide = true
-run = "gitleaks git --redact --no-banner ."
+run = "gitleaks git --redact --verbose --no-banner ."
 
 # ---------------------------------------------------------------------------
 # Public tasks (listed in CLAUDE.md)
