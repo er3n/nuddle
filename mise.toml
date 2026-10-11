@@ -49,7 +49,8 @@ run = "pnpm exec knip"
 
 [tasks."lint:secrets"]
 hide = true
-run = "gitleaks git --redact --verbose --no-banner ."
+# Scan only the history reachable from HEAD; by default gitleaks scans every ref (--all).
+run = "gitleaks git --redact --verbose --no-banner --log-opts=HEAD ."
 
 # ---------------------------------------------------------------------------
 # Public tasks (listed in CLAUDE.md)
