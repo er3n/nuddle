@@ -4,3 +4,6 @@ packages:
 # lefthook's postinstall only installs hooks; the root "prepare" script already does that.
 ignoredBuiltDependencies:
   - lefthook
+  # esbuild (via drizzle-kit and vitest) ships its binary as an optional platform package; its
+  # postinstall only verifies that binary.
+  - esbuild
