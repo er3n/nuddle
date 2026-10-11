@@ -46,6 +46,37 @@ describe("scenarios: task lifecycle", () => {
     expect(world.violations).toEqual([]);
   });
 
+  it("snooze: 15 minutes, then 10 as the last one, then no more (open-questions#1)", async () => {
+    const { world, selin, eren } = await selinAndEren();
+    const taskId = await writeTask(selin, TEXT.photoToEren);
+
+    await world.advanceTo(at("2026-10-12T08:01:00"));
+    expect(rings(eren.phone.ringsFor(taskId))).toEqual(["SILENT@08:00"]);
+    expect(await eren.command(taskId, { type: "snooze" })).toEqual({ ok: true });
+
+    // Nothing rings while snoozed; the rest of the plan starts when the snooze ends.
+    await world.advanceTo(at("2026-10-12T08:15:00"));
+    expect(eren.phone.ringsFor(taskId)).toHaveLength(1);
+    await world.advanceTo(at("2026-10-12T08:17:00"));
+    expect(rings(eren.phone.ringsFor(taskId))).toEqual(["SILENT@08:00", "SILENT@08:16"]);
+
+    expect(await eren.command(taskId, { type: "snooze" })).toEqual({ ok: true });
+    expect(
+      world
+        .eventsOf(taskId)
+        .filter((e) => e.type === "snoozed")
+        .map((e) => e.payload.minutes),
+    ).toEqual([15, 10]);
+
+    await world.advanceTo(at("2026-10-12T08:28:00"));
+    expect(await eren.command(taskId, { type: "snooze" })).toEqual({
+      ok: false,
+      error: "snooze_not_allowed",
+    });
+    expect(world.task(taskId).status).toBe("SCHEDULED");
+    expect(world.violations).toEqual([]);
+  });
+
   it("task to self: rings, done, nobody else is told", async () => {
     const world = emptyWorld();
     const eren = await world.addPerson("Eren");

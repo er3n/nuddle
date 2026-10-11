@@ -353,6 +353,15 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
     }),
   );
   taskCommand(
+    "snooze",
+    "snooze",
+    "Recipient: Ertele. 15 then 10 minutes, at most twice, never past the deadline",
+    s.SnoozeCommand,
+    () => ({
+      type: "snooze",
+    }),
+  );
+  taskCommand(
     "did_it_later",
     "didItLater",
     "Recipient: Sonradan yaptım (after missed)",

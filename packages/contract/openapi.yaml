@@ -74,6 +74,7 @@ components:
                 - deadline_not_in_future
                 - not_connected
                 - recipient_unavailable
+                - snooze_not_allowed
                 - invite_not_open
                 - wrong_invitee
                 - self_invite
@@ -740,6 +741,19 @@ components:
         - idempotencyKey
         - taskId
         - note
+    SnoozeCommand:
+      type: object
+      properties:
+        idempotencyKey:
+          type: string
+          format: uuid
+          description: Client generated UUIDv7; a replay returns the first result (ADR 0006)
+        taskId:
+          type: string
+          format: uuid
+      required:
+        - idempotencyKey
+        - taskId
     DidItLaterCommand:
       type: object
       properties:
@@ -1556,6 +1570,63 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CantTodayCommand"
+      responses:
+        "200":
+          description: The result; a replay with the same key returns it again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskCommandResult"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/commands/snooze:
+    post:
+      operationId: snooze
+      summary: "Recipient: Ertele. 15 then 10 minutes, at most twice, never past the deadline"
+      tags:
+        - commands
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SnoozeCommand"
       responses:
         "200":
           description: The result; a replay with the same key returns it again

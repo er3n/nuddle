@@ -261,6 +261,8 @@ export class Client {
         return post("/api/v1/commands/cant_today", { note: cmd.note });
       case "did_it_later":
         return post("/api/v1/commands/did_it_later", {});
+      case "snooze":
+        return post("/api/v1/commands/snooze", {});
       case "cancel":
         return post("/api/v1/commands/cancel", { note: cmd.note });
       case "edit":

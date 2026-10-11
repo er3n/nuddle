@@ -25,6 +25,11 @@ export const AUTO_APPROVE_AFTER_MS = 3 * HOUR;
 export const MISSED_CARD_TTL_MS = 1 * DAY;
 /** (proposed) A step with no fired report this long after its planned time counts as lost. */
 const LOST_POKE_GRACE_MS = 5 * MINUTE;
+/**
+ * Snooze lengths in order; their count is the limit, the last one is "son hakkın".
+ * TODO(open-questions#1): 2 snoozes, 15 then 10 minutes, never past the deadline.
+ */
+const SNOOZE_MS: readonly number[] = [15 * MINUTE, 10 * MINUTE];
 
 export type Command =
   // Recipient
@@ -32,6 +37,7 @@ export type Command =
   | { type: "photo_sent"; photoPath: string }
   | { type: "cant_today"; note: string | null }
   | { type: "did_it_later" }
+  | { type: "snooze" }
   // Sender
   | { type: "cancel"; note: string | null }
   | { type: "edit"; deadline?: Date; detail?: string | null; finishMode?: FinishMode }
@@ -53,7 +59,8 @@ export type DomainError =
   | "wrong_finish_mode"
   | "deadline_not_in_future"
   | "not_connected"
-  | "recipient_unavailable";
+  | "recipient_unavailable"
+  | "snooze_not_allowed";
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: DomainError };
 
@@ -89,6 +96,7 @@ function transitionsFrom(status: TaskStatus): Partial<Record<CommandType, TaskSt
         done: "DONE",
         photo_sent: "AWAITING_APPROVAL",
         cant_today: "DROPPED",
+        snooze: "SCHEDULED",
         deadline_passed: "MISSED",
         cancel: "CANCELLED",
         edit: "SCHEDULED",
@@ -107,6 +115,7 @@ function transitionsFrom(status: TaskStatus): Partial<Record<CommandType, TaskSt
       return {
         photo_sent: "AWAITING_APPROVAL",
         cant_today: "DROPPED",
+        snooze: "REJECTED",
         deadline_passed: "MISSED",
         cancel: "CANCELLED",
         account_deleted: "CANCELLED",
@@ -140,6 +149,7 @@ function actorOf(type: CommandType): Actor {
     case "photo_sent":
     case "cant_today":
     case "did_it_later":
+    case "snooze":
       return "recipient";
     case "cancel":
     case "edit":
@@ -169,6 +179,29 @@ function resumeLevel(history: readonly TaskEvent[]): DeviceLevel {
   return best;
 }
 
+interface Snooze {
+  /** 1 for the first snooze of this task. */
+  count: number;
+  minutes: number;
+  /** When poking resumes. */
+  until: Date;
+  /** No snooze left after this one: "son hakkın". */
+  last: boolean;
+}
+
+/** The next snooze of a task, or null when none is left or it would run past the deadline. */
+function nextSnooze(
+  task: Pick<Task, "deadline">,
+  ctx: Pick<TaskContext, "history" | "now">,
+): Snooze | null {
+  const used = ctx.history.filter((e) => e.type === "snoozed").length;
+  const length = SNOOZE_MS[used];
+  if (length === undefined) return null;
+  const until = addMs(ctx.now, length);
+  if (until.getTime() >= task.deadline.getTime()) return null;
+  return { count: used + 1, minutes: length / MINUTE, until, last: used + 1 === SNOOZE_MS.length };
+}
+
 export function isOpen(status: TaskStatus): boolean {
   return status === "SCHEDULED" || status === "REJECTED";
 }
@@ -178,6 +211,8 @@ function effectsOfStatus(
   task: Task,
   ctx: TaskContext,
   resume: boolean,
+  /** Plan as if it were this time: the end of a snooze. Defaults to `ctx.now`. */
+  planFrom?: Date,
 ): Pick<Outcome, "plan" | "scheduledActions" | "deletePhotos"> & { planEvent: TaskEvent | null } {
   const version = task.planVersion;
   const { now } = ctx;
@@ -192,7 +227,7 @@ function effectsOfStatus(
         sender: ctx.sender,
         reachability: ctx.reachability,
         history: ctx.history,
-        now,
+        now: planFrom ?? now,
         floor: resume ? resumeLevel(ctx.history) : "SILENT",
       });
       const actions: ScheduledAction[] = [
@@ -294,9 +329,12 @@ function pushesFor(task: Task, e: TaskEvent): PushMessage[] {
   const { senderId, recipientId } = task;
   const self = senderId === recipientId;
   switch (e.type) {
+    // After a snooze the device rings the snoozed step again itself; the hint brings the shifted
+    // rest of the plan.
     case "created":
     case "edited":
     case "re_requested":
+    case "snoozed":
       return [push(recipientId, "plan_changed", task, e.type)];
     case "photo_sent":
       return self ? [] : [push(senderId, "sync", task, e.type)];
@@ -324,14 +362,31 @@ function pushesFor(task: Task, e: TaskEvent): PushMessage[] {
     case "done":
     case "plan_generated":
     case "poke_fired":
-    case "snoozed":
     case "permission_missing":
       return [];
   }
 }
 
-function eventFor(task: Task, cmd: Command, actorId: PersonId | null, now: Date): TaskEvent[] {
+function eventFor(
+  task: Task,
+  cmd: Command,
+  actorId: PersonId | null,
+  now: Date,
+  snooze: Snooze | null,
+): TaskEvent[] {
   switch (cmd.type) {
+    case "snooze":
+      return snooze
+        ? [
+            event(
+              task,
+              actorId,
+              "snoozed",
+              { count: snooze.count, minutes: snooze.minutes, until: snooze.until.toISOString() },
+              now,
+            ),
+          ]
+        : [];
     case "done":
       return [
         event(task, actorId, "done", { cameraUnavailable: cmd.cameraUnavailable === true }, now),
@@ -421,7 +476,12 @@ export function applyCommand(
   if (actorError) return { ok: false, error: actorError };
 
   const next: Task = { ...task };
+  let snooze: Snooze | null = null;
   switch (cmd.type) {
+    case "snooze":
+      snooze = nextSnooze(task, ctx);
+      if (!snooze) return { ok: false, error: "snooze_not_allowed" };
+      break;
     case "done":
       // If the camera permission is denied, a photo task falls back to plain "Bitti".
       if (task.finishMode === "photo" && cmd.cameraUnavailable !== true) {
@@ -470,8 +530,15 @@ export function applyCommand(
   next.status = target;
   next.planVersion = task.planVersion + 1;
 
-  const events = eventFor(next, cmd, actorId, now);
-  const effects = effectsOfStatus(next, ctx, cmd.type === "re_request");
+  const events = eventFor(next, cmd, actorId, now, snooze);
+  // After a re-request or a snooze poking resumes at the level it had reached; a snooze also starts
+  // the new plan where the snooze ends.
+  const effects = effectsOfStatus(
+    next,
+    ctx,
+    cmd.type === "re_request" || snooze !== null,
+    snooze?.until,
+  );
   if (effects.planEvent) events.push(effects.planEvent);
 
   return {
