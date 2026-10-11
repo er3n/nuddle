@@ -12,6 +12,13 @@ gitleaks = "8.30.1"
 
 [env]
 NEXT_TELEMETRY_DISABLED = "1"
+REDOCLY_TELEMETRY = "off"
+REDOCLY_SUPPRESS_UPDATE_NOTICE = "true"
+# Local-only shared secrets for the internal endpoints (tick, Send SMS hook). Not secrets: the
+# local stack is not reachable from outside. The cloud values live in Vercel and Supabase env
+# (docs/human-checklist.md, Before stage 7).
+TICK_SECRET = "local-tick-secret-for-development-only"
+SEND_SMS_HOOK_SECRET = "v1,whsec_bG9jYWwtc2VuZC1zbXMtaG9vay1zZWNyZXQ="
 
 # ---------------------------------------------------------------------------
 # Internal
@@ -53,6 +60,12 @@ hide = true
 # Safe-migration rules (docs/quality.md); config in .squawk.toml.
 run = "squawk supabase/migrations/*.sql"
 
+[tasks."lint:contract"]
+hide = true
+# operationId on every operation, consistent naming (ADR 0008); config in redocly.yaml.
+depends = ["_install"]
+run = "pnpm --filter @nuddle/web contract:lint"
+
 [tasks."lint:secrets"]
 hide = true
 # Scan only the history reachable from HEAD; by default gitleaks scans every ref (--all).
@@ -78,6 +91,7 @@ depends = [
   "lint:deps",
   "lint:knip",
   "lint:migrations",
+  "lint:contract",
   "lint:secrets",
 ]
 
@@ -93,9 +107,24 @@ depends = ["lint:eslint", "lint:typecheck", "test:unit"]
 
 [tasks."test:scenario"]
 hide = true
-# In-memory server and simulated phones in stage 3; through HTTP and Postgres from stage 4.
+# Simulated phones against the HTTP API and a per-test Postgres database; needs local Supabase.
 depends = ["_install"]
 run = "pnpm --filter @nuddle/web test:scenario"
+
+[tasks."test:http"]
+hide = true
+# Hono app.request() against a per-run Postgres database; needs local Supabase.
+depends = ["_install"]
+run = "pnpm --filter @nuddle/web test:http"
+
+[tasks."contract:check"]
+hide = true
+# Fails when the committed contract differs from the zod schemas (ADR 0008).
+depends = ["contract:gen"]
+run = [
+  "git diff --exit-code -- packages/contract/openapi.yaml packages/contract/openapi.d.ts",
+  "test -z \"$(git status --porcelain -- packages/contract/openapi.yaml packages/contract/openapi.d.ts)\" || { echo 'contract files are not committed'; exit 1; }",
+]
 
 [tasks."test:integration"]
 hide = true
@@ -105,8 +134,7 @@ run = "pnpm --filter @nuddle/web test:integration"
 
 [tasks.test]
 description = "Full suite before a PR"
-# Contract checks arrive in stage 4 (docs/testing.md, Commands).
-depends = ["test:fast", "test:scenario", "test:integration"]
+depends = ["test:fast", "contract:check", "test:http", "test:scenario", "test:integration"]
 
 [tasks."db:up"]
 hide = true
@@ -119,7 +147,11 @@ run = [
 [tasks.dev]
 description = "Start local Supabase, apply migrations and seed, start the web app"
 depends = ["_install", "db:up"]
-run = "pnpm --filter @nuddle/web dev"
+# Local Supabase URLs and keys come from `supabase status`; OPENROUTER_* from apps/web/.env.local.
+run = """
+eval "$(supabase status -o env | sed -n -e 's/^API_URL=/export SUPABASE_URL=/p' -e 's/^SECRET_KEY=/export SUPABASE_SECRET_KEY=/p' -e 's/^DB_URL=/export DATABASE_URL=/p')"
+pnpm --filter @nuddle/web dev
+"""
 
 [tasks."e2e:smoke"]
 description = "Two-emulator smoke set before merging"
@@ -127,11 +159,13 @@ run = "echo 'not yet: arrives in stage 6 (docs/bootstrap-plan.md)'"
 
 [tasks.tick]
 description = "Run server timers once locally"
-run = "echo 'not yet: arrives in stage 4 (docs/bootstrap-plan.md)'"
+# Calls the running `mise run dev` server the way pg_cron does in the cloud (ADR 0007).
+run = "curl -fsS -X POST -H \"Authorization: Bearer $TICK_SECRET\" http://localhost:3000/api/internal/tick && echo"
 
 [tasks."contract:gen"]
 description = "Regenerate packages/contract/openapi.yaml"
-run = "echo 'not yet: arrives in stage 4 (docs/bootstrap-plan.md)'"
+depends = ["_install"]
+run = "pnpm --filter @nuddle/web contract:gen"
 
 [tasks.eval]
 description = "LLM extraction golden set (needs an API key)"

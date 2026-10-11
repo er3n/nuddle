@@ -65,8 +65,8 @@ const fixtures: Record<string, Extraction> = {
 /** Selin and Eren, signed up and connected as spouses. */
 export async function selinAndEren(): Promise<{ world: World; selin: Client; eren: Client }> {
   const world = new World(fixtures);
-  const selin = world.addPerson("Selin");
-  const eren = world.addPerson("Eren");
+  const selin = await world.addPerson("Selin");
+  const eren = await world.addPerson("Eren");
   await world.connect(selin, eren, "spouse", "spouse");
   return { world, selin, eren };
 }

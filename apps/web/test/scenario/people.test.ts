@@ -5,8 +5,8 @@ import { at, emptyWorld, selinAndEren, TEXT, writeTask } from "./fixtures";
 describe("scenarios: people", () => {
   it("invite accepted: both are connected and Selin can write a task to Eren", async () => {
     const world = emptyWorld();
-    const selin = world.addPerson("Selin");
-    const eren = world.addPerson("Eren");
+    const selin = await world.addPerson("Selin");
+    const eren = await world.addPerson("Eren");
 
     // Before the invite is accepted, Eren is not a connection.
     expect(await selin.write(TEXT.trashToEren)).toEqual({ kind: "ask", question: "recipient" });
@@ -25,12 +25,12 @@ describe("scenarios: people", () => {
 
   it("invite declined: stored, but invisible to the inviter", async () => {
     const world = emptyWorld();
-    const selin = world.addPerson("Selin");
-    const defne = world.addPerson("Defne");
+    const selin = await world.addPerson("Selin");
+    const defne = await world.addPerson("Defne");
 
     const code = await selin.invite(defne.person.phone, "child", "Defne");
     const pushesBefore = world.push.to("selin").length;
-    defne.declineInvite(code);
+    await defne.declineInvite(code);
 
     expect(world.invitesSeenBy("selin")).toEqual([{ code, status: "open" }]);
     expect(world.push.to("selin")).toHaveLength(pushesBefore);
@@ -42,7 +42,7 @@ describe("scenarios: people", () => {
     const { world, selin, eren } = await selinAndEren();
     expect(world.reachabilityOf("eren")).toBe("FULL_SCREEN");
 
-    eren.logOut();
+    await eren.logOut();
     expect(world.reachabilityOf("eren")).toBe("NONE");
 
     const taskId = await writeTask(selin, TEXT.trashToEren);

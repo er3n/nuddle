@@ -1,3 +1,3 @@
 # src/infra
 
-Adapters behind interfaces: db (Drizzle), push, otp, llm, storage, clock. Arrives in stages 2 to 4. See `docs/architecture.md`.
+Adapters behind interfaces (`docs/architecture.md`, Layering rules): `db` (Drizzle schema, connection, `store.ts` queries), `auth` (JWT verification, Supabase Auth gateway), `push` (FCM, log), `otp` (Twilio), `storage` (Supabase Storage photos), `llm` (OpenRouter, fixtures), `clock.ts` (the only wall clock, plus the E2E offset clock).

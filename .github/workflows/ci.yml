@@ -50,8 +50,9 @@ jobs:
 
       - run: mise run lint
 
-      # Integration tests need the local Supabase stack (migrations and seed applied on start).
+      # Integration, HTTP and scenario tests need the local Supabase stack (migrations and seed
+      # applied on start). `mise exec` provides SEND_SMS_HOOK_SECRET, which config.toml reads.
       - name: Start local Supabase
-        run: supabase start
+        run: mise exec -- supabase start
 
       - run: mise run test

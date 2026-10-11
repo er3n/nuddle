@@ -31,7 +31,7 @@ Why: one person reviews agent-written code. Tests are the spec and the reviewer'
 
 ## Scenario tests (the most valuable layer)
 
-Two simulated clients (Selin, Eren) call the API through the generated TS client. Time moves only through `tick(now)` and the injected clock. The fake `PushSender` records what went to whom.
+Two simulated clients (Selin, Eren) call the API through the generated TS client (`packages/contract/openapi.d.ts` + `openapi-fetch`, in-process via `app.request()`), each scenario on a fresh copy of a migrated template database. Time moves only through the injected clock and `POST /api/internal/tick`. The fake `PushSender` records what went to whom, by name.
 
 Example:
 
@@ -62,7 +62,7 @@ Start the backend scenario suite with: task to self, task to other with done, ph
 - Fixture `TaskExtractor` keyed by input text.
 - Fixed OTP codes for test numbers.
 - Compressed plans: steps seconds apart instead of minutes.
-- `/test/reset`, `/test/seed`, `/test/tick`, `/test/advance-clock`.
+- `/api/test/reset`, `/api/test/seed`, `/api/test/tick`, `/api/test/advance-clock` (under `/api`, where Hono is mounted).
 
 ### Android `e2e` flavor
 - Base URL points at the host (`adb reverse tcp:3000 tcp:3000`).
@@ -109,7 +109,7 @@ The full set runs nightly or on demand. Because the repo is public, standard Git
 | Command | Contents | When |
 |---|---|---|
 | `mise run test:fast` | lint (fast), typecheck, server unit, Android domain unit, UI behavior, a11y, screenshot record | after every change, under ~1 minute target |
-| `mise run test` | + integration, scenario, contract diff, Roborazzi verify, Konsist | before opening a PR, in CI |
+| `mise run test` | + contract diff, HTTP, scenario, integration, Roborazzi verify, Konsist | before opening a PR, in CI |
 | `mise run e2e:smoke` | smoke set on two emulators | before merging, background with timeout |
 | `mise run e2e` | full E2E set | nightly or on demand |
 | `mise run eval` | LLM golden set | when prompt or model changes |

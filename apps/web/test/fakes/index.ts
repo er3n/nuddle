@@ -1,7 +1,9 @@
 // Recording fakes for the external service interfaces (docs/testing.md, Ground rules 2).
 // Assertions read the records.
+import { randomUUID } from "node:crypto";
 import type { Clock, OtpSender, PhotoStorage, PushSender } from "../../src/domain/ports";
 import type { PushMessage, TaskId } from "../../src/domain/types";
+import type { AuthGateway, Session } from "../../src/infra/auth/supabase-auth";
 
 export class FakeClock implements Clock {
   private current: Date;
@@ -67,5 +69,40 @@ export class FakePhotoStorage implements PhotoStorage {
     this.stored.delete(taskId);
     this.deleted.push(taskId);
     return Promise.resolve();
+  }
+}
+
+/** Supabase Auth for HTTP tests: code "123456" signs in, anything else is wrong. */
+export class FakeAuthGateway implements AuthGateway {
+  readonly otpSentTo: string[] = [];
+  private readonly users = new Map<string, string>();
+
+  constructor(private readonly mint: (userId: string, phone: string) => Promise<string>) {}
+
+  sendOtp(phone: string): Promise<void> {
+    this.otpSentTo.push(phone);
+    return Promise.resolve();
+  }
+
+  async verifyOtp(phone: string, code: string): Promise<Session | null> {
+    if (code !== "123456") return null;
+    const userId = await this.ensureUser(phone);
+    return {
+      accessToken: await this.mint(userId, phone),
+      refreshToken: `refresh-${userId}`,
+      expiresAt: new Date("2030-01-01T00:00:00Z"),
+      userId,
+    };
+  }
+
+  async refresh(refreshToken: string): Promise<Session | null> {
+    const entry = [...this.users].find(([, id]) => `refresh-${id}` === refreshToken);
+    return entry ? this.verifyOtp(entry[0], "123456") : null;
+  }
+
+  ensureUser(phone: string): Promise<string> {
+    const id = this.users.get(phone) ?? randomUUID();
+    this.users.set(phone, id);
+    return Promise.resolve(id);
   }
 }

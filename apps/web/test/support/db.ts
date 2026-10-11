@@ -1,6 +1,7 @@
-// Integration test database (docs/testing.md, Server integration). Each run gets its own database
+// Test databases (docs/testing.md, Server integration). Each integration file gets its own database
 // `nuddle_test_<id>` in the local Supabase Postgres, migrated from supabase/migrations/, and
-// dropped afterwards. Needs `supabase start` (or `mise run dev`).
+// dropped afterwards. HTTP and scenario tests copy a template migrated once per run (much faster
+// than migrating per test). Needs `supabase start` (or `mise run dev`).
 import { randomUUID } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
@@ -51,18 +52,42 @@ export async function createTestDatabase(): Promise<TestDatabase> {
   const name = `nuddle_test_${randomUUID().replaceAll("-", "")}`;
   const admin = await connectAdmin();
   await admin.unsafe(`create database ${name}`);
+  const t = open(name, admin);
+  try {
+    await applyMigrations(t.sql);
+  } catch (error) {
+    await t.drop();
+    throw error;
+  }
+  return t;
+}
 
-  const sql = postgres(withDatabase(localDatabaseUrl, name), { onnotice: () => undefined });
+function open(name: string, admin: postgres.Sql): TestDatabase {
+  const sql = postgres(withDatabase(localDatabaseUrl, name), { max: 4, onnotice: () => undefined });
   const drop = async () => {
     await sql.end();
     await admin.unsafe(`drop database if exists ${name} with (force)`);
     await admin.end();
   };
-  try {
-    await applyMigrations(sql);
-  } catch (error) {
-    await drop();
-    throw error;
-  }
   return { db: drizzle({ client: sql, schema }), sql, drop };
+}
+
+/** A migrated database to copy from, created once per run (test/support/global-setup.ts). */
+export async function createTemplateDatabase(): Promise<{
+  name: string;
+  drop: () => Promise<void>;
+}> {
+  const t = await createTestDatabase();
+  const [row] = await t.sql<{ name: string }[]>`select current_database() as name`;
+  // A template may have no open connections while it is copied.
+  await t.sql.end();
+  return { name: row?.name ?? "", drop: t.drop };
+}
+
+/** A fresh copy of the template: one per HTTP test file or scenario. */
+export async function createDatabaseFromTemplate(template: string): Promise<TestDatabase> {
+  const name = `nuddle_test_${randomUUID().replaceAll("-", "")}`;
+  const admin = await connectAdmin();
+  await admin.unsafe(`create database ${name} template ${template}`);
+  return open(name, admin);
 }
