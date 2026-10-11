@@ -105,6 +105,8 @@ export async function startBackend(
   supabase: LocalSupabase,
   databaseUrl: string,
   logFile: string,
+  /** The run's extraction fixtures (E2E_EXTRACTOR_FIXTURES). */
+  extractionsFile: string,
 ): Promise<ChildProcess> {
   if (await portTaken(API_PORT)) {
     throw new Error(
@@ -122,6 +124,7 @@ export async function startBackend(
         ...process.env,
         E2E: "1",
         DATABASE_URL: databaseUrl,
+        E2E_EXTRACTOR_FIXTURES: extractionsFile,
         SUPABASE_URL: supabase.apiUrl,
         SUPABASE_SECRET_KEY: supabase.secretKey,
         NEXT_TELEMETRY_DISABLED: "1",

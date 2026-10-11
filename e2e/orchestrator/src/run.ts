@@ -6,6 +6,7 @@
 // Prints the run folder first, stops itself after a hard timeout, exits non-zero on failure.
 // Usage: tsx src/run.ts --set smoke [--cold]
 import type { ChildProcess } from "node:child_process";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { testApi } from "./api";
@@ -19,7 +20,7 @@ import {
 import { repoRoot, RunContext } from "./context";
 import { allDevices } from "./devices";
 import { run, waitFor } from "./proc";
-import { taskToSelf } from "./smoke/task-to-self";
+import { smokeExtractions, taskToSelf } from "./smoke/task-to-self";
 
 const TIMEOUT_MS = 20 * 60_000;
 const APK = join(
@@ -108,7 +109,9 @@ async function main(): Promise<void> {
   const databaseUrl = await ctx.step("database", () => recreateDatabase(supabase.dbUrl));
 
   await ctx.step("backend", async () => {
-    backend = await startBackend(supabase, databaseUrl, ctx.path("server.log"));
+    const extractions = ctx.path("extractions.json");
+    writeFileSync(extractions, JSON.stringify(smokeExtractions(new Date()), null, 2));
+    backend = await startBackend(supabase, databaseUrl, ctx.path("server.log"), extractions);
     // The first request compiles the route; a 404 here means the server is not in E2E mode.
     await waitFor(
       "the backend in E2E mode (POST /api/test/reset)",
