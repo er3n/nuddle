@@ -8,6 +8,7 @@ java = "temurin-21.0.12+8.0.LTS"
 supabase = "2.120.0"
 maestro = "cli-2.11.0"
 gitleaks = "8.30.1"
+"github:sbdchd/squawk" = "2.68.0"
 
 [env]
 NEXT_TELEMETRY_DISABLED = "1"
@@ -47,6 +48,11 @@ hide = true
 depends = ["_install"]
 run = "pnpm exec knip"
 
+[tasks."lint:migrations"]
+hide = true
+# Safe-migration rules (docs/quality.md); config in .squawk.toml.
+run = "squawk supabase/migrations/*.sql"
+
 [tasks."lint:secrets"]
 hide = true
 # Scan only the history reachable from HEAD; by default gitleaks scans every ref (--all).
@@ -71,6 +77,7 @@ depends = [
   "lint:typecheck",
   "lint:deps",
   "lint:knip",
+  "lint:migrations",
   "lint:secrets",
 ]
 
@@ -79,14 +86,29 @@ description = "Fast loop after every change (target under a minute)"
 # Server unit tests arrive in stage 3, Android unit and UI tests in stage 5 (docs/testing.md, Commands).
 depends = ["lint:eslint", "lint:typecheck"]
 
+[tasks."test:integration"]
+hide = true
+# Needs the local Supabase stack (`supabase start` or `mise run dev`); fails, never skips, without it.
+depends = ["_install"]
+run = "pnpm --filter @nuddle/web test:integration"
+
 [tasks.test]
 description = "Full suite before a PR"
-# Integration, scenario and contract checks arrive in stages 2 to 4 (docs/testing.md, Commands).
-depends = ["test:fast"]
+# Scenario and contract checks arrive in stages 3 and 4 (docs/testing.md, Commands).
+depends = ["test:fast", "test:integration"]
+
+[tasks."db:up"]
+hide = true
+description = "Start local Supabase if needed, then rebuild the database from migrations and seed"
+run = [
+  "supabase status >/dev/null 2>&1 || supabase start",
+  "supabase db reset",
+]
 
 [tasks.dev]
 description = "Start local Supabase, apply migrations and seed, start the web app"
-run = "echo 'not yet: arrives in stage 2 (docs/bootstrap-plan.md)'"
+depends = ["_install", "db:up"]
+run = "pnpm --filter @nuddle/web dev"
 
 [tasks."e2e:smoke"]
 description = "Two-emulator smoke set before merging"

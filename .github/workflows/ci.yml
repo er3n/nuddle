@@ -49,4 +49,9 @@ jobs:
           restore-keys: gradle-${{ runner.os }}-
 
       - run: mise run lint
+
+      # Integration tests need the local Supabase stack (migrations and seed applied on start).
+      - name: Start local Supabase
+        run: supabase start
+
       - run: mise run test

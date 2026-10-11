@@ -1,0 +1,3 @@
+# squawk for supabase/migrations (docs/quality.md, Contract and database).
+# The Supabase CLI runs every migration file inside a transaction.
+assume_in_transaction = true
