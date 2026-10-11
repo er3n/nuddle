@@ -11,7 +11,7 @@ Things only the human can do: accounts, payments, logins, secrets, production pu
 - [ ] `gh auth login`.
 - [ ] Linear: workspace **Nuddle** exists. Install the Linear GitHub integration for `er3n/nuddle` (links branches and PRs, closes issues on merge).
 - [ ] Add the Linear MCP server to Claude Code on this machine and authorize it for the Nuddle workspace: `claude mcp add --transport http linear https://mcp.linear.app/mcp`, then run `/mcp` inside Claude Code to log in. (The claude.ai connector does not carry over to Claude Code.)
-- [ ] Create an OpenRouter API key (default LLM provider, open-questions #16; needed by stage 3 for `mise run eval`). Put `OPENROUTER_API_KEY=...` in `apps/web/.env.local`, never in the repo. Set a monthly credit limit on the key.
+- [ ] Create an OpenRouter API key (default LLM provider, open-questions #16; needed by stage 3 for `mise run eval`). Put `OPENROUTER_API_KEY=...` and `OPENROUTER_MODEL=deepseek/deepseek-v4.1-flash` in `apps/web/.env.local`, never in the repo. Set a monthly credit limit on the key.
 
 ## Before stage 5
 
