@@ -27,7 +27,7 @@ Things not yet decided. If you hit one while building, do not decide silently: p
 
 16. **LLM provider and model.** *Decided 2026-10-11:* OpenRouter with `deepseek/deepseek-v4.1-flash` (`OPENROUTER_API_KEY`, `OPENROUTER_MODEL`). Models are not compared in the MVP; `mise run eval` checks the prompt against this model. Kept here so the number stays stable.
 17. **Speech recognition:** on-device Android `SpeechRecognizer` vs server-side, Turkish accuracy and cost. *Default for MVP:* on-device, send the transcript as text.
-18. **Poke plan heuristic** (step count, spacing, escalation, when the human channel fires). Designed with scenario tests in stage 3.
+18. **Poke plan heuristic** (step count, spacing, escalation, when the human channel fires). *v0 (stage 3):* `domain.md`, "Poke plan v0". Revisit the offsets and the human step with real usage.
 19. **Play policy** for `USE_EXACT_ALARM` and `USE_FULL_SCREEN_INTENT` as an alarm app. Submit an early closed test build.
 20. **Avatar color palette:** six colors, each 4.5:1 with white text.
 21. **Turkish suffixes after user content** (e.g. `Eren "Çöpü at"ı bitirdi`). *Default:* rephrase strings so user content is never suffixed (`Eren bitirdi: "Çöpü at"`).

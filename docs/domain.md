@@ -95,6 +95,21 @@ If full screen is not permitted, `FULL_SCREEN` silently degrades to `SOUND` on t
 - Every regeneration bumps the plan version. Devices ignore steps from older versions.
 - In E2E mode the plan is compressed to seconds (see `testing.md`).
 
+### Poke plan v0
+
+The MVP heuristic, implemented in `apps/web/src/domain/plan-pokes.ts` (open-questions #18). It ignores history; learning replaces it later without changing callers.
+
+1. **Window end:** the deadline, or the start of quiet hours if the deadline falls inside them.
+2. **Window:** the last 60 minutes before the end. It never starts before now. If it overlaps quiet hours it starts when they end; if less than 2 minutes would remain (a deadline at 07:00), the window moves before quiet hours instead.
+3. **Ladder** at nominal offsets before the end: `SILENT` -60 min, `SOUND` -30, `FULL_SCREEN` -15, `HUMAN` -5. A shorter window shrinks every offset proportionally.
+4. **Resume:** after a re-request the plan starts at the highest device level that already fired (no new `SILENT`).
+5. **`HUMAN`** is planned only when someone else can be told: not a task to self, and both human channel switches allow it. It is always the last step. The server fires it through a `human_check` timer only if the task is still open, and it does not stop poking.
+6. **Very short window** (under 2 minutes): a single `SOUND` step, no `HUMAN`.
+7. **No time left** outside quiet hours before the deadline: no steps; the deadline timer still marks the task missed.
+8. Reachability does not remove steps: a level the device cannot reach stays in the plan and degrades on the device.
+
+Each device step also gets a `lost_poke_check` timer at planned time + 5 minutes.
+
 ## Device execution
 
 1. Server sends the plan to the recipient's device as a high priority FCM data message and also exposes it through sync.

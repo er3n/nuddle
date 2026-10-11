@@ -81,10 +81,21 @@ depends = [
   "lint:secrets",
 ]
 
+[tasks."test:unit"]
+hide = true
+depends = ["_install"]
+run = "pnpm --filter @nuddle/web test:unit"
+
 [tasks."test:fast"]
 description = "Fast loop after every change (target under a minute)"
-# Server unit tests arrive in stage 3, Android unit and UI tests in stage 5 (docs/testing.md, Commands).
-depends = ["lint:eslint", "lint:typecheck"]
+# Android unit and UI tests arrive in stage 5 (docs/testing.md, Commands).
+depends = ["lint:eslint", "lint:typecheck", "test:unit"]
+
+[tasks."test:scenario"]
+hide = true
+# In-memory server and simulated phones in stage 3; through HTTP and Postgres from stage 4.
+depends = ["_install"]
+run = "pnpm --filter @nuddle/web test:scenario"
 
 [tasks."test:integration"]
 hide = true
@@ -94,8 +105,8 @@ run = "pnpm --filter @nuddle/web test:integration"
 
 [tasks.test]
 description = "Full suite before a PR"
-# Scenario and contract checks arrive in stages 3 and 4 (docs/testing.md, Commands).
-depends = ["test:fast", "test:integration"]
+# Contract checks arrive in stage 4 (docs/testing.md, Commands).
+depends = ["test:fast", "test:scenario", "test:integration"]
 
 [tasks."db:up"]
 hide = true
@@ -124,4 +135,6 @@ run = "echo 'not yet: arrives in stage 4 (docs/bootstrap-plan.md)'"
 
 [tasks.eval]
 description = "LLM extraction golden set (needs an API key)"
-run = "echo 'not yet: arrives in stage 3 (docs/bootstrap-plan.md)'"
+# OPENROUTER_API_KEY and OPENROUTER_MODEL from the environment or apps/web/.env.local.
+depends = ["_install"]
+run = "pnpm --filter @nuddle/web eval"
