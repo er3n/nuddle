@@ -11,6 +11,7 @@ import app.nuddle.data.sync.SyncRepository
 import app.nuddle.testing.Cast
 import app.nuddle.testing.InMemorySessionStore
 import app.nuddle.testing.aSession
+import app.nuddle.testing.aStep
 import app.nuddle.testing.aTask
 import app.nuddle.testing.drtError
 import app.nuddle.testing.inMemoryDatabase
@@ -72,6 +73,7 @@ class TaskRepositoryTest {
                     },
                 sessions = sessions,
                 tasks = db.tasks(),
+                pokeSteps = db.pokeSteps(),
                 json = testJson,
             )
     }
@@ -195,6 +197,29 @@ class TaskRepositoryTest {
 
             server.close()
             assertEquals(WriteOutcome.Failed, repository.write("asdf", "key-3"))
+        }
+
+    @Test
+    fun `done answers which poke of the current plan caught the person`() =
+        runTest {
+            db.tasks().upsert(listOf(aTask(planVersion = 2)))
+            db.pokeSteps().replacePlan(
+                Cast.TASK_ID,
+                2,
+                listOf(
+                    aStep(1, "2026-10-12T08:00:00+03:00", planVersion = 2, firedAt = 1L),
+                    aStep(2, "2026-10-12T08:30:00+03:00", planVersion = 2, firedAt = 2L),
+                    aStep(3, "2026-10-12T08:45:00+03:00", planVersion = 2),
+                ),
+            )
+            assertEquals(2, repository.done(Cast.TASK_ID))
+        }
+
+    @Test
+    fun `done before any poke rang has nothing to tell`() =
+        runTest {
+            db.tasks().upsert(listOf(aTask()))
+            assertNull(repository.done(Cast.TASK_ID))
         }
 
     @Test

@@ -11,7 +11,9 @@ import app.nuddle.data.session.SessionStore
 import app.nuddle.domain.IdGenerator
 import app.nuddle.domain.QuietHours
 import app.nuddle.ui.components.ComposeState
+import app.nuddle.ui.theme.DurtMotion
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -45,6 +47,7 @@ class HomeViewModel
         private val compose = MutableStateFlow<ComposeState>(ComposeState.Idle)
         private val preview = MutableStateFlow<OpenPreview?>(null)
         private val undo = MutableStateFlow<UndoUi?>(null)
+        private val doneNote = MutableStateFlow<DoneNoteUi?>(null)
 
         /** The preview on screen plus what is needed to create the task from it, or to edit [editing]. */
         private data class OpenPreview(
@@ -63,8 +66,20 @@ class HomeViewModel
             }
 
         val state: StateFlow<HomeUiState?> =
-            combine(sessions.displayName.filterNotNull(), compose, nextUp, preview, undo) { name, compose, nextUp, preview, undo ->
-                HomeUiState(myName = name, compose = compose, nextUp = nextUp, preview = preview?.ui, undo = undo)
+            combine(
+                combine(sessions.displayName.filterNotNull(), compose, nextUp, ::Triple),
+                preview,
+                undo,
+                doneNote,
+            ) { (name, compose, nextUp), preview, undo, doneNote ->
+                HomeUiState(
+                    myName = name,
+                    compose = compose,
+                    nextUp = nextUp,
+                    preview = preview?.ui,
+                    undo = undo,
+                    doneNote = doneNote,
+                )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
         fun onComposeTextChange(text: String) {
@@ -208,8 +223,14 @@ class HomeViewModel
             }
         }
 
+        /** Şimdiden bitti, then the done note for 4 s (domain.md, Done note). */
         fun onFinishNextUp() {
-            val taskId = state.value?.nextUp?.taskId ?: return
-            viewModelScope.launch { tasks.done(taskId) }
+            val task = state.value?.nextUp ?: return
+            viewModelScope.launch {
+                val note = DoneNoteUi(task.title, tasks.done(task.taskId))
+                doneNote.value = note
+                delay(DurtMotion.DONE_NOTE_MS)
+                doneNote.compareAndSet(note, null)
+            }
         }
     }
