@@ -18,6 +18,10 @@ import app.nuddle.domain.Snooze
 import app.nuddle.domain.TimeLeft
 import app.nuddle.testing.Cast
 import app.nuddle.ui.components.ComposeState
+import app.nuddle.ui.screens.approve.ApproveCallbacks
+import app.nuddle.ui.screens.approve.ApproveScreen
+import app.nuddle.ui.screens.approve.ApproveUiState
+import app.nuddle.ui.screens.approve.PhotoView
 import app.nuddle.ui.screens.code.CodeScreen
 import app.nuddle.ui.screens.code.CodeUiState
 import app.nuddle.ui.screens.consent.ConsentCallbacks
@@ -241,10 +245,10 @@ class TestTagsTest {
                 onComposeSend = {},
                 onVoiceStart = {},
                 onVoiceEnd = {},
-                onOpenTask = { clicked += "open $it" },
+                onOpenTask = { taskId, approval -> clicked += "open $taskId $approval" },
             )
         }
-        assertTaps(TestTags.HOME_SENT to "open task-1")
+        assertTaps(TestTags.HOME_SENT to "open task-1 false")
     }
 
     @Test
@@ -319,6 +323,22 @@ class TestTagsTest {
             )
         }
         assertTaps(TestTags.HOME_TAKE_PHOTO to "photo task-1")
+    }
+
+    @Test
+    fun `approval of a photo`() {
+        content {
+            ApproveScreen(
+                ApproveUiState("Para çek", "Eren", "08:24", null, photo = PhotoView.Failed),
+                ApproveCallbacks(
+                    onApprove = { clicked += "approve" },
+                    onReRequest = { clicked += "again" },
+                    onRetryPhoto = { clicked += "retry" },
+                ),
+            )
+        }
+        assertShown(TestTags.APPROVE, TestTags.APPROVE_NOTE)
+        assertTaps(TestTags.APPROVE_RETRY_PHOTO to "retry", TestTags.APPROVE_REREQUEST to "again", TestTags.APPROVE_OK to "approve")
     }
 
     @Test

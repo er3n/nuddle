@@ -46,7 +46,13 @@ interface TaskAnnouncer {
         senderName: String,
     )
 
-    /** The task closed before I looked, e.g. Geri al within the undo window: the note goes too. */
+    /** My task's photo came from [recipientName]: it waits for my approval (4f). */
+    fun photoArrived(
+        task: TaskEntity,
+        recipientName: String,
+    )
+
+    /** The moment passed (Geri al within the undo window, the photo answered): the note goes too. */
     fun withdraw(taskId: String)
 }
 
@@ -81,27 +87,48 @@ class SyncRepository
                 QuietHours.parse(me.quietHours.start, me.quietHours.end, me.quietHours.timeZone),
             )
             connections.upsert(response.connections.map(SyncConnection::toEntity))
-            val arrived =
-                if (cursor == null) {
-                    emptyList()
-                } else {
-                    response.tasks.filter {
-                        it.recipientId == session.personId && it.senderId != session.personId &&
-                            tasks.get(it.id) == null
-                    }
-                }
+            // Compared with what this phone had before the sync; a full sync (cursor null) is old news.
+            val news = if (cursor == null) emptyList() else news(response.tasks, session.personId)
             tasks.upsert(response.tasks.map(SyncTask::toEntity))
             invites.upsert(response.sentInvites.map(SyncSentInvite::toEntity) + response.receivedInvites.map(SyncReceivedInvite::toEntity))
             response.plans.forEach { plan -> alarms.applyPlan(plan.taskId, plan.version, plan.toEntities()) }
             sessions.saveSyncCursor(response.cursor)
             alarms.rearm()
-            arrived.filter { it.status.value in OPEN_STATUSES }.forEach { task ->
-                connections.get(task.senderId)?.let { announcer.announce(task.toEntity(), it.displayName) }
-            }
-            response.tasks
-                .filter { it.recipientId == session.personId && it.senderId != session.personId && it.status.value !in OPEN_STATUSES }
-                .forEach { announcer.withdraw(it.id) }
+            tell(news, response.tasks, session.personId)
             return true
+        }
+
+        /** Tasks to me that are new here, and my tasks to others whose photo just came (4f). */
+        private suspend fun news(
+            synced: List<SyncTask>,
+            me: String,
+        ): List<SyncTask> =
+            synced.filter { task ->
+                val before = tasks.get(task.id)
+                when {
+                    task.senderId == task.recipientId -> false
+                    task.recipientId == me -> before == null && task.status.value in OPEN_STATUSES
+                    else -> task.status == TaskStatus.AWAITING_APPROVAL && before?.status != TaskStatus.AWAITING_APPROVAL.value
+                }
+            }
+
+        /** 4b for a new task to me, "Eren fotoğraf gönderdi" for a photo; a note whose moment passed goes away. */
+        private suspend fun tell(
+            news: List<SyncTask>,
+            synced: List<SyncTask>,
+            me: String,
+        ) {
+            news.forEach { task ->
+                if (task.recipientId == me) {
+                    connections.get(task.senderId)?.let { announcer.announce(task.toEntity(), it.displayName) }
+                } else {
+                    connections.get(task.recipientId)?.let { announcer.photoArrived(task.toEntity(), it.displayName) }
+                }
+            }
+            synced
+                .filter { it.senderId != it.recipientId }
+                .filter { if (it.recipientId == me) it.status.value !in OPEN_STATUSES else it.status != TaskStatus.AWAITING_APPROVAL }
+                .forEach { announcer.withdraw(it.id) }
         }
     }
 

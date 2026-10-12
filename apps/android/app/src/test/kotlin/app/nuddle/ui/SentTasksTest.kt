@@ -37,6 +37,20 @@ class SentTasksTest {
     }
 
     @Test
+    fun `a photo waiting for my approval comes first, and a re-requested task stays listed`() {
+        val tasks =
+            listOf(
+                toSelin("soon", "2026-10-12T09:00:00+03:00"),
+                toSelin("photo", "2026-10-13T09:00:00+03:00", status = "AWAITING_APPROVAL"),
+                toSelin("again", "2026-10-12T10:00:00+03:00", status = "REJECTED"),
+            )
+        val sent = sentTasks(tasks, Cast.EREN_ID, selin, now, istanbul)
+        assertEquals(listOf("photo", "soon", "again"), sent.map { it.taskId })
+        assertEquals(listOf(true, false, false), sent.map { it.awaitingApproval })
+        assertEquals(listOf(false, false, true), sent.map { it.reRequested })
+    }
+
+    @Test
     fun `tasks to self, tasks to me, and tasks to someone without a connection are not listed`() {
         val toSelf = aTask(id = "self").copy(senderId = Cast.EREN_ID)
         val toMe = aTask(id = "to-me")

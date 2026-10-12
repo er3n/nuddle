@@ -6,7 +6,9 @@ import app.nuddle.alarm.AndroidTaskAnnouncer
 import app.nuddle.alarm.PokeActions
 import app.nuddle.data.ApiInviteRepository
 import app.nuddle.data.ApiTaskRepository
+import app.nuddle.data.Approvals
 import app.nuddle.data.InviteRepository
+import app.nuddle.data.OutboxApprovals
 import app.nuddle.data.TaskCloser
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.db.ConnectionDao
@@ -90,4 +92,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun photoLoader(impl: ApiPhotoLoader): PhotoLoader
+
+    @Binds
+    abstract fun approvals(impl: OutboxApprovals): Approvals
 }
