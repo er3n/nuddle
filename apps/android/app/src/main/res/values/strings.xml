@@ -496,6 +496,33 @@
     <string name="profile_failed_title">Olmadı</string>
     <string name="profile_failed_body">Bağlantını kontrol edip tekrar dene.</string>
     <string name="rename_title">Adın</string>
+    <!-- 5b: person detail (open-questions#37, #4); names take no suffix (#21) -->
+    <string name="person_since_today">%1$s · bugün bağlandınız</string>
+    <plurals name="person_since_days">
+        <item quantity="one">%1$s · %2$d gündür bağlısınız</item>
+        <item quantity="other">%1$s · %2$d gündür bağlısınız</item>
+    </plurals>
+    <plurals name="person_since_months">
+        <item quantity="one">%1$s · %2$d aydır bağlısınız</item>
+        <item quantity="other">%1$s · %2$d aydır bağlısınız</item>
+    </plurals>
+    <plurals name="person_since_years">
+        <item quantity="one">%1$s · %2$d yıldır bağlısınız</item>
+        <item quantity="other">%1$s · %2$d yıldır bağlısınız</item>
+    </plurals>
+    <string name="person_this_connection">Bu bağlantı</string>
+    <string name="person_relationship">İlişki</string>
+    <string name="person_notify_me">İşleri için bana haber verilebilir</string>
+    <string name="person_notify_me_body">%1$s bir işi kaçırırsa sana da söyleyebilirim.</string>
+    <string name="person_together">Birlikte</string>
+    <string name="person_written">Birbirinize yazdığınız</string>
+    <plurals name="person_tasks">
+        <item quantity="one">%1$d görev</item>
+        <item quantity="other">%1$d görev</item>
+    </plurals>
+    <string name="person_remove">Bağlantıyı kaldır</string>
+    <string name="person_remove_note">%1$s bildirim almaz. Açık görevleriniz iptal olur.</string>
+    <string name="person_remove_title">Bağlantı kaldırılsın mı?</string>
     <!-- 7g -->
     <string name="quiet_title">Sessiz saatler</string>
     <string name="quiet_body">Bu saatlerde hiçbir dürtme çalmaz, tam ekran dahil.</string>

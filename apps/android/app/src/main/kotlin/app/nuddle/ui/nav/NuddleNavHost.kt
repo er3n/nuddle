@@ -35,6 +35,7 @@ import app.nuddle.ui.screens.inbox.InboxScreen
 import app.nuddle.ui.screens.inbox.InboxViewModel
 import app.nuddle.ui.screens.name.NameScreen
 import app.nuddle.ui.screens.name.NameViewModel
+import app.nuddle.ui.screens.person.PersonViewModel
 import app.nuddle.ui.screens.phone.PhoneScreen
 import app.nuddle.ui.screens.phone.PhoneViewModel
 import app.nuddle.ui.screens.photo.PhotoViewModel
@@ -54,6 +55,10 @@ object Routes {
     const val INVITE = "invite"
     const val INBOX = "inbox"
     const val PROFILE = "profile"
+    const val PERSON = "person/{${PersonViewModel.ARG_PERSON}}"
+
+    fun person(personId: String): String = "person/$personId"
+
     const val CONSENT =
         "consent/{${ConsentViewModel.ARG_INVITE}}?${ConsentViewModel.ARG_FROM_BELL}={${ConsentViewModel.ARG_FROM_BELL}}"
     const val ARG_NAME = "name"
@@ -259,11 +264,13 @@ fun NuddleNavHost(
         composable(Routes.PROFILE) {
             ProfileRoute(
                 onBack = { nav.popBackStack() },
-                // Person detail (5b) comes with its own route.
-                onOpenPerson = {},
+                onOpenPerson = { nav.navigate(Routes.person(it)) { launchSingleTop = true } },
                 onInvite = { nav.navigate(Routes.INVITE) { launchSingleTop = true } },
                 onSignedOut = { nav.replaceAll(Routes.WELCOME) },
             )
+        }
+        composable(Routes.PERSON, arguments = listOf(navArgument(PersonViewModel.ARG_PERSON) { type = NavType.StringType })) {
+            PersonRoute(onBack = { nav.popBackStack() })
         }
         composable(Routes.INBOX) {
             val viewModel: InboxViewModel = hiltViewModel()
