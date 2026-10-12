@@ -23,6 +23,11 @@ import type {
 
 export const AUTO_APPROVE_AFTER_MS = 3 * HOUR;
 export const MISSED_CARD_TTL_MS = 1 * DAY;
+/**
+ * Photos are deleted right after a photo task closes; this timer deletes them again later, and
+ * keeps retrying, so a Storage outage at that moment cannot leave them behind (NUD-25).
+ */
+export const PHOTO_CLEANUP_RETRY_MS = 15 * MINUTE;
 /** (proposed) A step with no fired report this long after its planned time counts as lost. */
 const LOST_POKE_GRACE_MS = 5 * MINUTE;
 /**
@@ -305,6 +310,7 @@ function effectsOfStatus(
             dueAt: addMs(now, MISSED_CARD_TTL_MS),
             payload: { planVersion: version },
           },
+          ...photoCleanup(task, now),
         ],
         deletePhotos: task.finishMode === "photo",
         planEvent: null,
@@ -314,11 +320,25 @@ function effectsOfStatus(
     case "CANCELLED":
       return {
         plan: stop,
-        scheduledActions: [],
+        scheduledActions: photoCleanup(task, now),
         deletePhotos: task.finishMode === "photo",
         planEvent: null,
       };
   }
+}
+
+/** The later retry of the photo deletion for a photo task that closes (NUD-25). */
+function photoCleanup(task: Task, now: Date): ScheduledAction[] {
+  return task.finishMode === "photo"
+    ? [
+        {
+          kind: "photo_cleanup",
+          taskId: task.id,
+          dueAt: addMs(now, PHOTO_CLEANUP_RETRY_MS),
+          payload: {},
+        },
+      ]
+    : [];
 }
 
 function event(

@@ -24,6 +24,7 @@ import {
   createTask as createTaskDomain,
   isOpen,
   MISSED_CARD_TTL_MS,
+  PHOTO_CLEANUP_RETRY_MS,
   takenInTime,
   type Command,
   type Outcome,
@@ -74,6 +75,7 @@ import {
   markActionDone,
   markPersonDeleted,
   markStepFired,
+  rescheduleAction,
   persistOutcome,
   pokedTasks,
   saveIdempotentResult,
@@ -118,7 +120,7 @@ async function afterCommit(deps: AppDeps, effects: Effects): Promise<void> {
     try {
       await deps.photos.deleteForTask(taskId);
     } catch (error) {
-      // TODO(NUD-25): retry photo deletion from a timer.
+      // The task's photo_cleanup timer tries again (NUD-25).
       console.error("photo deletion failed", taskId, error);
     }
   }
@@ -774,8 +776,16 @@ class PgTickPort implements TickPort {
     };
   }
 
+  private cleanUpPhotos(action: ClaimedAction, taskId: TaskId, now: Date): Promise<void> {
+    return cleanUpPhotosOnce(this.deps, action, taskId, now);
+  }
+
   async complete(action: ClaimedAction, result: ActionResult): Promise<void> {
     const now = this.deps.clock.now();
+    if (result.kind === "delete_photos") {
+      await this.cleanUpPhotos(action, result.taskId, now);
+      return;
+    }
     const effects = await inWriteTx(this.deps.db, async (tx): Promise<Effects> => {
       // A task transition since the claim already finished this timer.
       if (!(await lockOpenAction(tx, action.id))) return noEffects;
@@ -804,6 +814,25 @@ class PgTickPort implements TickPort {
     });
     await afterCommit(this.deps, effects);
   }
+}
+
+/** Done once Storage deleted them; otherwise the same timer runs again later (NUD-25). */
+async function cleanUpPhotosOnce(
+  deps: AppDeps,
+  action: ClaimedAction,
+  taskId: TaskId,
+  now: Date,
+): Promise<void> {
+  try {
+    await deps.photos.deleteForTask(taskId);
+  } catch (error) {
+    console.error("photo deletion failed again", taskId, error);
+    await rescheduleAction(deps.db, action.id, new Date(now.getTime() + PHOTO_CLEANUP_RETRY_MS));
+    return;
+  }
+  await inWriteTx(deps.db, async (tx) => {
+    if (await lockOpenAction(tx, action.id)) await markActionDone(tx, action.id, now);
+  });
 }
 
 /** Run every due server timer once. */

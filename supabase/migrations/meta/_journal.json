@@ -29,6 +29,13 @@
       "when": 1791827988018,
       "tag": "20261012175948_otp_attempts",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791829600251,
+      "tag": "20261012182640_photo_cleanup_action",
+      "breakpoints": true
     }
   ]
 }

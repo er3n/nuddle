@@ -1,6 +1,6 @@
 // Scenario list from docs/testing.md (Scenario tests): task lifecycles across sender and recipient.
 import { describe, expect, it } from "vitest";
-import { MISSED_CARD_TTL_MS } from "../../src/domain/task-machine";
+import { MISSED_CARD_TTL_MS, PHOTO_CLEANUP_RETRY_MS } from "../../src/domain/task-machine";
 import { visibleToRecipient } from "../../src/domain/tick";
 import { MINUTE } from "../../src/domain/time";
 import { at, emptyWorld, hhmm, selinAndEren, TEXT, writeTask } from "./fixtures";
@@ -144,6 +144,9 @@ describe("scenarios: task lifecycle", () => {
     expect(world.task(taskId).status).toBe("DONE");
     expect(world.push.to("eren").at(-1)).toMatchObject({ taskId, event: "approved" });
     expect(world.photos.deleted).toContain(taskId);
+    // Only the later cleanup is left (NUD-25); it deletes again, then nothing is pending.
+    expect(world.pendingActions(taskId).map((a) => a.kind)).toEqual(["photo_cleanup"]);
+    await world.advanceBy(PHOTO_CLEANUP_RETRY_MS);
     expect(world.pendingActions(taskId)).toEqual([]);
   });
 
@@ -410,5 +413,38 @@ describe("scenarios: task lifecycle", () => {
       rang: "SOUND",
     });
     expect(world.eventsOf(taskId).map((e) => e.type)).toContain("permission_missing");
+  });
+
+  it("a photo delete that fails when the task closes is retried until Storage answers (NUD-25)", async () => {
+    const { world, selin, eren } = await selinAndEren();
+    const taskId = await writeTask(selin, TEXT.photoToEren);
+    await world.advanceTo(at("2026-10-12T08:31:00"));
+    await eren.sendPhoto(taskId);
+
+    world.photos.failing = true;
+    expect(await selin.command(taskId, { type: "approve" })).toEqual({ ok: true });
+    expect(world.photos.stored.has(taskId)).toBe(true);
+
+    // Still down at the first retry: it is planned again.
+    await world.advanceBy(PHOTO_CLEANUP_RETRY_MS);
+    expect(world.photos.stored.has(taskId)).toBe(true);
+    expect(world.pendingActions(taskId).map((a) => a.kind)).toEqual(["photo_cleanup"]);
+
+    world.photos.failing = false;
+    await world.advanceBy(PHOTO_CLEANUP_RETRY_MS);
+    expect(world.photos.stored.has(taskId)).toBe(false);
+    expect(world.pendingActions(taskId)).toEqual([]);
+  });
+
+  it("a cleanup timer leaves a late photo alone: the task opened again for approval (6e)", async () => {
+    const { world, selin, eren } = await selinAndEren();
+    const taskId = await writeTask(selin, TEXT.photoToEren);
+    await world.advanceTo(at("2026-10-12T09:01:00"));
+    expect(world.task(taskId).status).toBe("MISSED");
+
+    expect(await eren.sendPhoto(taskId, at("2026-10-12T08:58:00"))).toEqual({ ok: true });
+    await world.advanceBy(PHOTO_CLEANUP_RETRY_MS);
+    expect(world.task(taskId).status).toBe("AWAITING_APPROVAL");
+    expect(world.photos.stored.has(taskId)).toBe(true);
   });
 });

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AUTO_APPROVE_AFTER_MS,
   applyCommand,
+  PHOTO_CLEANUP_RETRY_MS,
   createTask,
   type Command,
   type TaskContext,
@@ -163,6 +164,23 @@ describe("task state machine", () => {
         c,
       ),
     ).toEqual({ ok: false, error: "wrong_status" });
+  });
+
+  it("closing a photo task plans a later photo cleanup (NUD-25); a Bitti task does not", () => {
+    const photo = aTask().withStatus("AWAITING_APPROVAL").withFinishMode("photo").build();
+    const approved = apply(photo, { type: "approve" }, "selin");
+    expect(approved.deletePhotos).toBe(true);
+    expect(approved.scheduledActions).toEqual([
+      {
+        kind: "photo_cleanup",
+        taskId: photo.id,
+        dueAt: addMs(ctx().now, PHOTO_CLEANUP_RETRY_MS),
+        payload: {},
+      },
+    ]);
+
+    const done = apply(aTask().withFinishMode("done").build(), { type: "done" }, "eren");
+    expect(done.scheduledActions).toEqual([]);
   });
 
   it("a missed task takes a Bitti tapped offline before the deadline (6a)", () => {

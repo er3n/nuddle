@@ -57,6 +57,8 @@ export class RecordingOtpSender implements OtpSender {
 export class FakePhotoStorage implements PhotoStorage {
   readonly stored = new Map<TaskId, string[]>();
   readonly deleted: TaskId[] = [];
+  /** A Storage outage: deletes fail until it is set back. */
+  failing = false;
 
   createUploadUrl(taskId: TaskId): Promise<{ path: string; url: string }> {
     const paths = this.stored.get(taskId) ?? [];
@@ -70,6 +72,7 @@ export class FakePhotoStorage implements PhotoStorage {
   }
 
   deleteForTask(taskId: TaskId): Promise<void> {
+    if (this.failing) return Promise.reject(new Error("storage unavailable"));
     this.stored.delete(taskId);
     this.deleted.push(taskId);
     return Promise.resolve();

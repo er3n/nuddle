@@ -31,7 +31,7 @@ Android app (Kotlin, Compose)                       Vercel
 | API | Next.js on Vercel. The API is Hono mounted in a Next route handler (`app/api/[[...route]]/route.ts`) with `@hono/zod-openapi`. Next itself serves the landing page and later the sender web page (ADR 0003). |
 | Database | Supabase Postgres, Drizzle ORM. Drizzle generates SQL into `supabase/migrations/`. Hand-written SQL migrations (grants, `pg_cron` jobs, auth hooks) live in the same folder (ADR 0002). |
 | Auth | Supabase Auth, phone OTP, reached through our API (`/api/v1/auth/*`). Send SMS hook calls our endpoint, which sends via SMS (Twilio) and later a WhatsApp template. Supabase issues the JWT, the API verifies it against Supabase's JWKS; the person id is the JWT `sub` (ADR 0011, 0014). |
-| Storage | Supabase Storage, private bucket, signed upload URLs. Photos deleted when the task closes. |
+| Storage | Supabase Storage, private bucket, signed upload URLs. Photos deleted when the task closes, and again by a `photo_cleanup` timer 15 minutes later that keeps retrying until Storage answers (NUD-25). |
 | Scheduler | `scheduled_actions` table + pure `tick(now)`. In the cloud, `pg_cron` calls `POST /api/internal/tick` every minute via `pg_net`. Locally, `mise run tick` (ADR 0007). |
 | Push | FCM data messages, sent with `firebase-admin`. Crashlytics and App Distribution from the same Firebase project. One project, debug build registered as `app.nuddle.debug`. |
 | LLM | Behind a `TaskExtractor` interface. Default provider: OpenRouter (OpenAI-compatible API, one key, model switched by config). Env: `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`. Model: `deepseek/deepseek-v4.1-flash` (decided 2026-10-11, no model comparison in the MVP). |
@@ -85,7 +85,7 @@ nuddle/
 
 ## Server timers (ADR 0007)
 
-`scheduled_actions(id, kind, task_id, due_at, payload, done_at, claimed_until)` rows are created by domain transitions. `tick(now)` claims due rows with `FOR UPDATE SKIP LOCKED` and a one minute lease (`claimed_until`), runs the matching domain handler, and completes each row in its own transaction; a row a task transition already finished is skipped. Idempotent and safe to run concurrently. The `pg_cron` job (`nuddle-tick`, every minute) reads the URL and secret from Supabase Vault (`tick_url`, `tick_secret`) and does nothing without them, which keeps it off locally. Kinds: `deadline`, `approval_timeout`, `human_check`, `lost_poke_check`, `missed_expiry`, `permission_request_cooldown` **(proposed)**.
+`scheduled_actions(id, kind, task_id, due_at, payload, done_at, claimed_until)` rows are created by domain transitions. `tick(now)` claims due rows with `FOR UPDATE SKIP LOCKED` and a one minute lease (`claimed_until`), runs the matching domain handler, and completes each row in its own transaction; a row a task transition already finished is skipped. Idempotent and safe to run concurrently. The `pg_cron` job (`nuddle-tick`, every minute) reads the URL and secret from Supabase Vault (`tick_url`, `tick_secret`) and does nothing without them, which keeps it off locally. Kinds: `deadline`, `approval_timeout`, `human_check`, `lost_poke_check`, `missed_expiry`, `permission_request_cooldown`, `photo_cleanup` **(proposed)**. A `photo_cleanup` that Storage does not answer is not completed but moved 15 minutes later; it does nothing for a task that is open or waits for approval again (a late photo, 6e).
 
 ## E2E mode
 

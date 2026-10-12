@@ -108,7 +108,9 @@ type ScheduledActionKind =
   | "human_check"
   | "lost_poke_check"
   | "missed_expiry"
-  | "permission_request_cooldown";
+  | "permission_request_cooldown"
+  /** Deletes a closed task's photos again in case the delete right after closing failed (NUD-25). */
+  | "photo_cleanup";
 
 export interface ScheduledAction {
   kind: ScheduledActionKind;
