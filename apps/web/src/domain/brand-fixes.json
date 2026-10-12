@@ -1,0 +1,167 @@
+{
+  "aliases": {
+    "xiaomi": { "fix": "xiaomi", "name": "Xiaomi" },
+    "redmi": { "fix": "xiaomi", "name": "Redmi" },
+    "poco": { "fix": "xiaomi", "name": "Poco" },
+    "samsung": { "fix": "samsung", "name": "Samsung" },
+    "huawei": { "fix": "huawei", "name": "Huawei" },
+    "honor": { "fix": "huawei", "name": "Honor" },
+    "oppo": { "fix": "oppo", "name": "Oppo" },
+    "realme": { "fix": "oppo", "name": "Realme" },
+    "oneplus": { "fix": "oppo", "name": "OnePlus" },
+    "vivo": { "fix": "vivo", "name": "Vivo" },
+    "iqoo": { "fix": "vivo", "name": "iQOO" }
+  },
+  "fixes": {
+    "xiaomi": {
+      "reason": "{name} telefonlar uygulamaları arka planda durdurabiliyor.",
+      "steps": [
+        {
+          "id": "autostart",
+          "title": "Otomatik başlatma",
+          "hint": "Açılan sayfada \"dürt\"ün yanındaki düğmeyi aç.",
+          "targets": [
+            {
+              "component": "com.miui.securitycenter/com.miui.permcenter.autostart.AutoStartManagementActivity"
+            },
+            { "action": "android.settings.APPLICATION_DETAILS_SETTINGS", "withPackage": true }
+          ]
+        },
+        {
+          "id": "battery",
+          "title": "Pil tasarrufu: Kısıtlama yok",
+          "hint": "Açılan sayfada \"dürt\"ü bul, \"Kısıtlama yok\"u seç.",
+          "targets": [
+            {
+              "component": "com.miui.powerkeeper/com.miui.powerkeeper.ui.HiddenAppsConfigActivity"
+            },
+            { "action": "android.settings.APPLICATION_DETAILS_SETTINGS", "withPackage": true }
+          ]
+        }
+      ]
+    },
+    "samsung": {
+      "reason": "{name} telefonlar kullanılmayan uygulamaları uyutabiliyor.",
+      "steps": [
+        {
+          "id": "battery",
+          "title": "Pil: Kısıtlanmamış",
+          "hint": "Açılan sayfada \"Pil\"e dokun, \"Kısıtlanmamış\"ı seç.",
+          "check": "battery_optimization",
+          "targets": [
+            { "action": "android.settings.APPLICATION_DETAILS_SETTINGS", "withPackage": true }
+          ]
+        },
+        {
+          "id": "never_sleeping",
+          "title": "Hiç uyumayan uygulamalar",
+          "hint": "\"Arka plan kullanım sınırları\"nda \"Hiç uyumayan uygulamalar\"a \"dürt\"ü ekle.",
+          "targets": [
+            {
+              "component": "com.samsung.android.lool/com.samsung.android.sm.battery.ui.BatteryActivity"
+            },
+            { "action": "android.settings.APPLICATION_DETAILS_SETTINGS", "withPackage": true }
+          ]
+        }
+      ]
+    },
+    "huawei": {
+      "reason": "{name} telefonlar uygulamaları arka planda kapatabiliyor.",
+      "steps": [
+        {
+          "id": "app_launch",
+          "title": "Uygulama başlatma",
+          "hint": "Açılan sayfada \"dürt\"ü bul, otomatik yönetimi kapat, üç düğmeyi de açık bırak.",
+          "targets": [
+            {
+              "component": "com.huawei.systemmanager/com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"
+            },
+            {
+              "component": "com.huawei.systemmanager/com.huawei.systemmanager.optimize.process.ProtectActivity"
+            },
+            { "action": "android.settings.APPLICATION_DETAILS_SETTINGS", "withPackage": true }
+          ]
+        },
+        {
+          "id": "battery",
+          "title": "Pil optimizasyonu: İzin verme",
+          "hint": "\"Tüm uygulamalar\"ı seç, \"dürt\"ü bul, \"İzin verme\"yi seç.",
+          "check": "battery_optimization",
+          "targets": [
+            { "action": "android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS" },
+            { "action": "android.settings.APPLICATION_DETAILS_SETTINGS", "withPackage": true }
+          ]
+        }
+      ]
+    },
+    "oppo": {
+      "reason": "{name} telefonlar uygulamaları arka planda durdurabiliyor.",
+      "steps": [
+        {
+          "id": "autostart",
+          "title": "Otomatik başlatma",
+          "hint": "Açılan sayfada \"dürt\"ün yanındaki düğmeyi aç.",
+          "targets": [
+            {
+              "component": "com.coloros.safecenter/com.coloros.safecenter.permission.startup.StartupAppListActivity"
+            },
+            {
+              "component": "com.coloros.safecenter/com.coloros.safecenter.startupapp.StartupAppListActivity"
+            },
+            {
+              "component": "com.oppo.safe/com.oppo.safe.permission.startup.StartupAppListActivity"
+            },
+            { "action": "android.settings.APPLICATION_DETAILS_SETTINGS", "withPackage": true }
+          ]
+        },
+        {
+          "id": "battery",
+          "title": "Pil kullanımı: Arka planda çalışabilir",
+          "hint": "Açılan sayfada \"Pil kullanımı\"na dokun, arka planda çalışmaya izin ver.",
+          "targets": [
+            { "action": "android.settings.APPLICATION_DETAILS_SETTINGS", "withPackage": true }
+          ]
+        }
+      ]
+    },
+    "vivo": {
+      "reason": "{name} telefonlar uygulamaları arka planda durdurabiliyor.",
+      "steps": [
+        {
+          "id": "autostart",
+          "title": "Otomatik başlatma",
+          "hint": "Açılan sayfada \"dürt\"ün yanındaki düğmeyi aç.",
+          "targets": [
+            {
+              "component": "com.vivo.permissionmanager/com.vivo.permissionmanager.activity.BgStartUpManagerActivity"
+            },
+            { "component": "com.iqoo.secure/com.iqoo.secure.ui.phoneoptimize.BgStartUpManager" },
+            { "action": "android.settings.APPLICATION_DETAILS_SETTINGS", "withPackage": true }
+          ]
+        },
+        {
+          "id": "battery",
+          "title": "Arka planda yüksek güç kullanımı",
+          "hint": "Açılan sayfada \"Pil\"e dokun, arka planda yüksek güç kullanımına izin ver.",
+          "targets": [
+            { "action": "android.settings.APPLICATION_DETAILS_SETTINGS", "withPackage": true }
+          ]
+        }
+      ]
+    },
+    "default": {
+      "reason": null,
+      "steps": [
+        {
+          "id": "battery",
+          "title": "Pil kullanımı: Kısıtlanmamış",
+          "hint": "Açılan sayfada \"Pil\"e dokun, \"Kısıtlanmamış\"ı seç.",
+          "check": "battery_optimization",
+          "targets": [
+            { "action": "android.settings.APPLICATION_DETAILS_SETTINGS", "withPackage": true }
+          ]
+        }
+      ]
+    }
+  }
+}

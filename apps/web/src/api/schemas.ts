@@ -237,6 +237,43 @@ export const RegisterDeviceResult = z
   .object({ deviceId: Id, reachability: Reachability })
   .openapi("RegisterDeviceResult");
 
+export const BrandFixQuery = z.object({
+  manufacturer: z
+    .string()
+    .max(64)
+    .openapi({ param: { name: "manufacturer", in: "query" }, description: "Build.MANUFACTURER" }),
+});
+const BrandFixTarget = z
+  .object({
+    /** An explicit activity, `package/class`. */
+    component: z.string().optional(),
+    /** A settings action. */
+    action: z.string().optional(),
+    /** The action needs `package:<application id>` as its data. */
+    withPackage: z.boolean().optional(),
+  })
+  .openapi("BrandFixTarget");
+const BrandFixStep = z
+  .object({
+    id: z.string(),
+    title: z.string(),
+    hint: z.string(),
+    /** The device can tell by itself that the step is done; otherwise it counts once opened. */
+    check: z.enum(["battery_optimization"]).optional(),
+    /** Tried in order; the first that opens wins. */
+    targets: z.array(BrandFixTarget).min(1),
+  })
+  .openapi("BrandFixStep");
+export const BrandFix = z
+  .object({
+    /** The fix used: a brand key, or `default`. */
+    brand: z.string(),
+    name: z.string().nullable(),
+    reason: z.string().nullable(),
+    steps: z.array(BrandFixStep).min(1),
+  })
+  .openapi("BrandFix");
+
 export const PhotoUploadUrlRequest = z
   .object({
     taskId: Id,
