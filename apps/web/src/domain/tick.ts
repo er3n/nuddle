@@ -22,6 +22,8 @@ export interface ActionContext extends Omit<TaskContext, "reachability"> {
 export type ActionResult =
   | { kind: "transition"; outcome: Outcome }
   | { kind: "notify"; events: TaskEvent[]; pushes: PushMessage[] }
+  /** Delete the task's photos; on failure the timer runs again later (NUD-25). */
+  | { kind: "delete_photos"; taskId: Task["id"] }
   | { kind: "noop" };
 
 const noop: ActionResult = { kind: "noop" };
@@ -96,6 +98,12 @@ export function handleAction(action: ScheduledAction, ctx: ActionContext): Actio
         events: [],
         pushes: [{ to: task.recipientId, hint: "sync", taskId: task.id, event: "missed" }],
       };
+    case "photo_cleanup":
+      // Only while the task stays closed: a late photo (6e) or a new deadline opened it again,
+      // and its next close schedules another cleanup.
+      return isOpen(task.status) || task.status === "AWAITING_APPROVAL"
+        ? noop
+        : { kind: "delete_photos", taskId: task.id };
     case "permission_request_cooldown":
       // The cooldown is enforced when a social permission request is made; the row only marks
       // when it ends. Social permission requests arrive with their feature slice.

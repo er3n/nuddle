@@ -114,6 +114,24 @@ describe("tick handlers", () => {
     });
   });
 
+  it("photo_cleanup: deletes the photos of a closed task, never of one waiting for approval", () => {
+    for (const status of ["DONE", "MISSED", "DROPPED", "CANCELLED"] as const) {
+      expect(
+        handleAction(action("photo_cleanup"), context(aTask().withStatus(status).build())),
+      ).toEqual({
+        kind: "delete_photos",
+        taskId: "task-1",
+      });
+    }
+    for (const status of ["AWAITING_APPROVAL", "SCHEDULED", "REJECTED"] as const) {
+      expect(
+        handleAction(action("photo_cleanup"), context(aTask().withStatus(status).build())),
+      ).toEqual({
+        kind: "noop",
+      });
+    }
+  });
+
   it("permission_request_cooldown: nothing to do", () => {
     expect(handleAction(action("permission_request_cooldown"), context(aTask().build()))).toEqual({
       kind: "noop",

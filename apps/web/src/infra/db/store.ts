@@ -624,6 +624,14 @@ export async function lockOpenAction(tx: Tx, id: string): Promise<boolean> {
   return row !== undefined && row.doneAt === null;
 }
 
+/** Run a claimed timer again at [dueAt] (a photo cleanup that Storage did not answer). */
+export async function rescheduleAction(ex: Executor, id: string, dueAt: Date): Promise<void> {
+  await ex
+    .update(scheduledActions)
+    .set({ dueAt, claimedUntil: null })
+    .where(and(eq(scheduledActions.id, id), isNull(scheduledActions.doneAt)));
+}
+
 export async function markActionDone(tx: Tx, id: string, now: Date): Promise<void> {
   await tx.update(scheduledActions).set({ doneAt: now }).where(eq(scheduledActions.id, id));
 }

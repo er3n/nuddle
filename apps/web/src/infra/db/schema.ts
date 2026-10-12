@@ -85,6 +85,7 @@ export const scheduledActionKind = pgEnum("scheduled_action_kind", [
   "lost_poke_check",
   "missed_expiry",
   "permission_request_cooldown",
+  "photo_cleanup",
 ]);
 export const devicePlatform = pgEnum("device_platform", ["android", "ios"]);
 
