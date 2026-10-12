@@ -2,6 +2,7 @@ package app.nuddle.ui
 
 import app.cash.turbine.test
 import app.nuddle.data.db.InviteEntity
+import app.nuddle.data.sync.Syncer
 import app.nuddle.domain.IdGenerator
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
@@ -22,7 +23,13 @@ class HomeInvitesViewModelTest {
 
     private val inviteDao = InMemoryInviteDao()
     private val prompts = InMemoryConsentPrompts()
-    private val vm by lazy { HomeInvitesViewModel(inviteDao, prompts, FakeInviteRepository(), IdGenerator(FakeClock())) }
+    private var syncs = 0
+    private val syncer =
+        Syncer {
+            syncs++
+            true
+        }
+    private val vm by lazy { HomeInvitesViewModel(inviteDao, prompts, FakeInviteRepository(), IdGenerator(FakeClock()), syncer) }
 
     private fun invite(
         id: String,
@@ -48,9 +55,18 @@ class HomeInvitesViewModelTest {
                 awaitComplete()
             }
             assertEquals(setOf("old"), prompts.ids)
-            HomeInvitesViewModel(inviteDao, prompts, FakeInviteRepository(), IdGenerator(FakeClock())).openConsent.test {
+            HomeInvitesViewModel(inviteDao, prompts, FakeInviteRepository(), IdGenerator(FakeClock()), syncer).openConsent.test {
                 assertEquals("new", awaitItem())
                 awaitComplete()
             }
+        }
+
+    @Test
+    fun `an invite link finds my invite after a sync, or nothing`() =
+        runTest(main.dispatcher) {
+            inviteDao.upsert(listOf(invite("a"), invite("mine-sent", sent = true)))
+            assertEquals("a", vm.inviteForLink("c-a"))
+            assertEquals(1, syncs)
+            assertEquals(null, vm.inviteForLink("c-mine-sent"), "my own invite's link is not an invite to me")
         }
 }

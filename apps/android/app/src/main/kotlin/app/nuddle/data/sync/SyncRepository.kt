@@ -19,6 +19,11 @@ import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import kotlin.time.Instant
 
+/** A sync right now, for screens that need fresh data (an invite link opened before its invite arrived). */
+fun interface Syncer {
+    suspend fun sync(): Boolean
+}
+
 /** Keeps alarms equal to the stored plans (implemented by the alarm package). */
 interface AlarmRearmer {
     /** Stores a plan version for a task; alarms of the versions it replaces are cancelled first. */
@@ -44,8 +49,8 @@ class SyncRepository
         private val invites: InviteDao,
         private val alarms: AlarmRearmer,
         private val json: Json,
-    ) {
-        suspend fun sync(): Boolean {
+    ) : Syncer {
+        override suspend fun sync(): Boolean {
             if (sessions.current()?.registered != true) return true
             val result = apiCall(json) { api.sync(cursor = sessions.syncCursor(), deviceId = sessions.deviceId()) }
             if (result !is ApiResult.Success) return false

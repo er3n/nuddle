@@ -10,13 +10,27 @@ import app.nuddle.data.api.ApiResult
 import app.nuddle.data.api.apiCall
 import app.nuddle.data.sync.SyncRepository
 import kotlinx.serialization.json.Json
+import java.net.URI
 import javax.inject.Inject
 
-/** The link that goes into the share sheet. TODO(open-questions#13): `https://nuddle.app/i/{code}` as App Links host. */
+/** Invite links: `https://nuddle.app/i/{code}`, verified App Links (open-questions#13). */
 object InviteLinks {
-    private const val BASE = "https://nuddle.app/i/"
+    private const val HOST = "nuddle.app"
+    private const val PATH = "/i/"
+    private const val BASE = "https://$HOST$PATH"
 
     fun of(code: String): String = BASE + code
+
+    /** The code in an opened link, or null when the link is not an invite. */
+    fun codeOf(link: String?): String? {
+        val uri = link?.let { runCatching { URI(it) }.getOrNull() } ?: return null
+        if (uri.scheme != "https" || uri.host != HOST) return null
+        return uri.path
+            ?.takeIf { it.startsWith(PATH) }
+            ?.removePrefix(PATH)
+            ?.trimEnd('/')
+            ?.takeIf { it.isNotEmpty() && '/' !in it }
+    }
 }
 
 /**

@@ -44,7 +44,7 @@ android {
         }
         create("prod") {
             dimension = "env"
-            // TODO(open-questions#13): the production host is wired in stage 7 (docs/bootstrap-plan.md).
+            // The production API, also the invite link host (open-questions#13).
             buildConfigField("String", "API_BASE_URL", "\"https://nuddle.app/\"")
             buildConfigField("boolean", "EXPOSE_TEST_TAGS", "false")
         }
