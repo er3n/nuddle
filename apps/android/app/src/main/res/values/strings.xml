@@ -107,6 +107,34 @@
     <string name="undo_sent_title">Gönderildi</string>
     <!-- 4i. open-questions#34: the design says "Eren\'e yazdıkların"; the 5c section name. -->
     <string name="home_sent">Senin yazdıkların</string>
+    <!-- 7e, 5d: what needs an answer on home (open-questions#36) -->
+    <string name="home_to_me">Sana yazılanlar</string>
+    <string name="issue_from_deadline">%1$s · son zaman %2$s</string>
+    <string name="issue_self_deadline">Kendine · son zaman %1$s</string>
+    <string name="issue_missed_to_me">Son zaman geçti. %1$s haberdar, yeni bir zaman verebilir.</string>
+    <string name="issue_missed_self">Son zaman geçti.</string>
+    <string name="issue_did_it_later">Sonradan yaptım</string>
+    <string name="issue_cancelled_title">%1$s iptal etti: \"%2$s\"</string>
+    <string name="issue_pokes_stopped">Dürtmeler durdu</string>
+    <string name="issue_note">Not: %1$s</string>
+    <string name="issues_footer">Kaçırılan iş bir gün sonra listeden kalkar. Sayılar sadece seni daha iyi dürtmek için tutulur, kimseye karne olarak gösterilmez.</string>
+    <string name="two_sentences">%1$s %2$s</string>
+    <string name="issue_sent_deadline">Son zaman %1$s</string>
+    <string name="issue_dropped">%1$s bugün yapamayacağını söyledi.</string>
+    <string name="issue_missed_photo">Son zaman geçti, fotoğraf gelmedi.</string>
+    <string name="issue_missed_done">Son zaman geçti, %1$s bitti demedi.</string>
+    <plurals name="issue_pokes">
+        <item quantity="one">%1$d kez dürttüm.</item>
+        <item quantity="other">%1$d kez dürttüm.</item>
+    </plurals>
+    <plurals name="issue_pokes_told_me">
+        <item quantity="one">%1$d kez dürttüm, sana da haber verdim.</item>
+        <item quantity="other">%1$d kez dürttüm, sana da haber verdim.</item>
+    </plurals>
+    <string name="issue_new_time">Yeni zaman ver</string>
+    <string name="issue_i_handle">Ben hallederim</string>
+    <string name="issue_extend">Süreyi uzat</string>
+    <string name="issue_new_time_body">%1$s yeni zamanı görür, dürtmeler baştan başlar.</string>
     <string name="sent_photo">fotoğrafla</string>
     <string name="undo_finish_photo">bitince fotoğraf</string>
     <string name="deadline_today_inline">bugün %1$s</string>

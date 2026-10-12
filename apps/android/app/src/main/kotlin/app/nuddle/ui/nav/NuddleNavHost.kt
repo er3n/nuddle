@@ -22,8 +22,11 @@ import app.nuddle.ui.screens.code.CodeViewModel
 import app.nuddle.ui.screens.code.SignedInDestination
 import app.nuddle.ui.screens.consent.ConsentViewModel
 import app.nuddle.ui.screens.home.HomeInvitesViewModel
+import app.nuddle.ui.screens.home.HomeIssuesViewModel
 import app.nuddle.ui.screens.home.HomeScreen
 import app.nuddle.ui.screens.home.HomeViewModel
+import app.nuddle.ui.screens.home.IssueCallbacks
+import app.nuddle.ui.screens.home.NewDeadlineCallbacks
 import app.nuddle.ui.screens.home.NextUpCallbacks
 import app.nuddle.ui.screens.home.PendingInviteCallbacks
 import app.nuddle.ui.screens.home.PreviewCallbacks
@@ -149,6 +152,9 @@ fun NuddleNavHost(
         composable(Routes.HOME) {
             val viewModel: HomeViewModel = hiltViewModel()
             val invites: HomeInvitesViewModel = hiltViewModel()
+            val issues: HomeIssuesViewModel = hiltViewModel()
+            val issuesUi by issues.issues.collectAsStateWithLifecycle()
+            val newDeadline by issues.newDeadline.collectAsStateWithLifecycle()
             val activity = LocalActivity.current
             val state by viewModel.state.collectAsStateWithLifecycle()
             LaunchedEffect(viewModel) { viewModel.openSetup.collect { nav.navigate(Routes.SETUP) { launchSingleTop = true } } }
@@ -175,7 +181,7 @@ fun NuddleNavHost(
             // Bell, profile and voice are routes of the feature slices (docs/bootstrap-plan.md).
             state?.let {
                 HomeScreen(
-                    state = it.copy(unread = unread),
+                    state = it.copy(unread = unread, issues = issuesUi, newDeadline = newDeadline),
                     onBell = { nav.navigate(Routes.INBOX) { launchSingleTop = true } },
                     onProfile = {},
                     onInvite = { nav.navigate(Routes.INVITE) { launchSingleTop = true } },
@@ -213,6 +219,21 @@ fun NuddleNavHost(
                         PendingInviteCallbacks(
                             onReshare = { activity?.shareInvite(InviteLinks.of(it.code)) },
                             onRevoke = invites::onRevoke,
+                        ),
+                    issueActions =
+                        IssueCallbacks(
+                            onDidItLater = issues::onDidItLater,
+                            onCall = { activity?.dial(it) },
+                            onNewDeadline = issues::onNewDeadline,
+                            onSenderHandles = issues::onSenderHandles,
+                            onCancel = issues::onCancel,
+                        ),
+                    newDeadline =
+                        NewDeadlineCallbacks(
+                            onChoice = issues::onDeadlineChoice,
+                            onTimePicked = issues::onTimePicked,
+                            onSave = issues::onSave,
+                            onDismiss = issues::onDismiss,
                         ),
                 )
             }

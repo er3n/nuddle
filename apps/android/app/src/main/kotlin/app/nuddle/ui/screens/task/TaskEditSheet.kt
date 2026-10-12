@@ -26,6 +26,7 @@ import app.nuddle.ui.components.DurtBottomSheetContent
 import app.nuddle.ui.components.InlineAlert
 import app.nuddle.ui.components.SheetAction
 import app.nuddle.ui.preview.PreviewScreens
+import app.nuddle.ui.screens.home.DeadlineChips
 import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.TimePickerDialog
@@ -68,51 +69,15 @@ internal fun EditSheet(
     ) { EditBody(state, callbacks) }
 }
 
-@OptIn(ExperimentalLayoutApi::class) // Reason: FlowRow is the layout for wrapping chips; no stable alternative.
 @Composable
 private fun ColumnScope.EditBody(
     state: TaskDetailUiState,
     callbacks: TaskDetailCallbacks,
 ) {
     val dimens = DurtTheme.dimens
-    var pickingTime by remember { mutableStateOf(false) }
     when (state.editing) {
         EditRow.Deadline -> {
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(dimens.space8),
-                verticalArrangement = Arrangement.spacedBy(dimens.space8),
-            ) {
-                state.deadlineChoices.forEach { choice ->
-                    val (text, tag) =
-                        when (choice) {
-                            is DeadlineChoice.TonightEvening -> {
-                                stringResource(R.string.preview_tonight) to TestTags.PREVIEW_EVENING
-                            }
-
-                            is DeadlineChoice.TomorrowMorning -> {
-                                stringResource(R.string.preview_tomorrow_morning) to
-                                    TestTags.PREVIEW_MORNING
-                            }
-
-                            is DeadlineChoice.Picked -> {
-                                choice.time to TestTags.PREVIEW_PICK_TIME
-                            }
-                        }
-                    ChoiceChip(
-                        text,
-                        selected = state.pickedDeadline == choice,
-                        onClick = { callbacks.onDeadlineChoice(choice) },
-                        modifier = Modifier.testTag(tag),
-                    )
-                }
-                val picked = state.pickedDeadline as? DeadlineChoice.Picked
-                ChoiceChip(
-                    text = picked?.time ?: stringResource(R.string.preview_pick_time),
-                    selected = picked != null,
-                    onClick = { pickingTime = true },
-                    modifier = Modifier.testTag(TestTags.PREVIEW_PICK_TIME),
-                )
-            }
+            DeadlineChips(state.deadlineChoices, state.pickedDeadline, callbacks.onDeadlineChoice, callbacks.onTimePicked)
         }
 
         EditRow.Finish -> {
@@ -135,15 +100,6 @@ private fun ColumnScope.EditBody(
         null -> {}
     }
     if (state.saveFailed) InlineAlert(stringResource(R.string.task_edit_failed_title), stringResource(R.string.invite_failed_body))
-    if (pickingTime) {
-        TimePickerDialog(
-            onPick = {
-                pickingTime = false
-                callbacks.onTimePicked(it)
-            },
-            onDismiss = { pickingTime = false },
-        )
-    }
 }
 
 @PreviewScreens

@@ -29,8 +29,8 @@ private val SENT_STATUSES =
     setOf(TaskStatus.SCHEDULED.value, TaskStatus.AWAITING_APPROVAL.value, TaskStatus.REJECTED.value)
 
 /**
- * My open tasks to other people: a photo waiting for my approval on top, then due first. Dropped and missed come
- * with slice 5. A task to someone sync has no connection for is left out: there is no name.
+ * My open tasks to other people: a photo waiting for my approval on top, then due first. Dropped and missed are
+ * cards of their own ([issues], 5d). A task to someone sync has no connection for is left out: there is no name.
  */
 fun sentTasks(
     tasks: List<TaskEntity>,
