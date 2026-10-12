@@ -11,6 +11,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import app.nuddle.MainActivity
 import app.nuddle.R
+import app.nuddle.api.model.FinishMode
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeRules
@@ -67,7 +68,11 @@ class AndroidPokeNotifications
                     .setCategory(if (fullScreen) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_REMINDER)
                     .setPriority(if (silent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_HIGH)
                     .setContentIntent(open)
-                    .addPokeActions(step, SnoozeRules.next(task.snoozesUsed, clock.now(), Instant.fromEpochMilliseconds(task.deadline)))
+                    .addPokeActions(
+                        step,
+                        SnoozeRules.next(task.snoozesUsed, clock.now(), Instant.fromEpochMilliseconds(task.deadline)),
+                        photo = task.finishMode == FinishMode.PHOTO.value,
+                    )
             val manager = NotificationManagerCompat.from(context)
             if (fullScreen) {
                 builder.setFullScreenIntent(fullScreenIntent(step), true).setOngoing(true)
@@ -97,8 +102,21 @@ class AndroidPokeNotifications
         private fun NotificationCompat.Builder.addPokeActions(
             step: PokeStep,
             snooze: Snooze?,
+            photo: Boolean,
         ): NotificationCompat.Builder {
-            addAction(0, context.getString(R.string.poke_done), action(PokeIntents.ACTION_DONE, step))
+            // A photo task ends with the photo: Bitti opens the camera (4d) instead of closing the task.
+            val done =
+                if (photo) {
+                    PendingIntent.getActivity(
+                        context,
+                        step.key.hashCode(),
+                        MainActivity.takePhoto(context, step.key.taskId),
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                    )
+                } else {
+                    action(PokeIntents.ACTION_DONE, step)
+                }
+            addAction(0, context.getString(R.string.poke_done), done)
             if (snooze != null) {
                 val label = if (snooze.last) R.string.poke_snooze_last else R.string.poke_snooze
                 addAction(0, context.getString(label, snooze.minutes), action(PokeIntents.ACTION_SNOOZE, step))

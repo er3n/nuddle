@@ -86,9 +86,12 @@ fun NuddleNavHost(
     startRoute: String,
     inviteCode: String? = null,
     onInviteCodeTake: () -> Unit = {},
+    photoTask: String? = null,
+    onPhotoTaskTake: () -> Unit = {},
 ) {
     val nav = rememberNavController()
     val takeInviteCode by rememberUpdatedState(onInviteCodeTake)
+    val takePhotoTask by rememberUpdatedState(onPhotoTaskTake)
     NavHost(navController = nav, startDestination = startRoute) {
         composable(Routes.WELCOME) {
             LightSystemBarIcons()
@@ -151,6 +154,12 @@ fun NuddleNavHost(
                 nav.navigate(if (inviteId != null) Routes.consent(inviteId, fromBell = true) else Routes.INBOX) {
                     launchSingleTop = true
                 }
+            }
+            // Bitti on a photo task's poke or notification: the camera for it (4d).
+            LaunchedEffect(photoTask) {
+                val taskId = photoTask ?: return@LaunchedEffect
+                takePhotoTask()
+                nav.navigate(Routes.photo(taskId)) { launchSingleTop = true }
             }
             val unread by invites.unread.collectAsStateWithLifecycle()
             // Bell, profile and voice are routes of the feature slices (docs/bootstrap-plan.md).
