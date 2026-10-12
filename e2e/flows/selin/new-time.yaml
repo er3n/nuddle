@@ -1,0 +1,23 @@
+# Eren dropped the task with a note: it sits on top of "Senin yazdıkların" as "Bırakıldı" with the note (5d).
+# "Yeni zaman ver", "Yarın sabah", Kaydet; the card leaves her home.
+appId: app.nuddle.debug
+---
+- launchApp
+- extendedWaitUntil:
+    visible: ".*Not: Yarın hallederim.*"
+    timeout: 60000
+- assertVisible: "Bırakıldı"
+- tapOn:
+    id: issue.newTime
+- extendedWaitUntil:
+    visible:
+      id: preview.morning
+    timeout: 15000
+- tapOn:
+    id: preview.morning
+- tapOn:
+    id: sheet.primary
+- extendedWaitUntil:
+    notVisible:
+      id: issue.newTime
+    timeout: 30000
