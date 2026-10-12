@@ -239,6 +239,19 @@ class FakeTaskRepository : TaskRepository {
         return editOutcome
     }
 
+    /** Deadline and finish mode of every row edit in the task detail (7c); null is "unchanged". */
+    val rowEdits = mutableListOf<Pair<Instant?, FinishMode?>>()
+
+    override suspend fun edit(
+        taskId: String,
+        deadline: Instant?,
+        finishMode: FinishMode?,
+        idempotencyKey: String,
+    ): WriteOutcome {
+        rowEdits += deadline to finishMode
+        return editOutcome
+    }
+
     /** The note of each cancel, in order; null for Geri al or a cancel without a reason. */
     val cancelNotes = mutableListOf<String?>()
 

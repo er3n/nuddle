@@ -38,6 +38,8 @@ object TestTags {
     const val HOME_SENT = "home.sent"
     const val TASK_DETAIL = "task.screen"
     const val TASK_CANCEL = "task.cancel"
+    const val TASK_EDIT_DEADLINE = "task.editDeadline"
+    const val TASK_EDIT_FINISH = "task.editFinish"
 
     fun cancelReason(name: String) = "task.cancelReason.$name"
 
