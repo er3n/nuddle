@@ -110,6 +110,52 @@
         <item>Aralık</item>
     </string-array>
 
+    <!-- 2c, 2d, 2e Setup. The invited variants (Selin's name) come with invites (slice 2). -->
+    <string name="setup_eyebrow">Bir kerelik kurulum</string>
+    <string name="setup_demo_title">Önce bir dene, dürtme nasıl hissettiriyor gör</string>
+    <!-- TODO(open-questions#5): copy for users who write only to themselves. -->
+    <string name="setup_demo_body_self">İşlerini kaçırmaya başlarsan böyle dürterim. 3 saniye sonra çalar, sonra birlikte kuralım.</string>
+    <string name="setup_demo_task">Ekmek al</string>
+    <string name="setup_demo_phone_caption">Ekranı kaplar, sesi susturana kadar çalar</string>
+    <string name="setup_try">Bir dene</string>
+    <string name="setup_skip_demo">Denemeden kur</string>
+    <string name="setup_demo_badge">DENEME · gerçek bir iş değil</string>
+    <!-- TODO(open-questions#30): the design has only "Selin'den · örnek" (invited). -->
+    <string name="setup_demo_from_self">Kendine · örnek</string>
+    <string name="setup_demo_message">İşte bu. Telefonun kilitliyken de ekranı açar. Gerçek bir işte buna nadiren gerek kalır, önce kibarca denerim.</string>
+    <string name="setup_demo_ok">Anladım, kuralım</string>
+    <plurals name="setup_demo_settings_left">
+        <item quantity="one">Bu ekranın her seferinde çıkabilmesi için %1$d ayar gerekiyor.</item>
+        <item quantity="other">Bu ekranın her seferinde çıkabilmesi için %1$d ayar gerekiyor.</item>
+    </plurals>
+    <plurals name="setup_steps_title">
+        <item quantity="one">Seni zamanında dürtebilmem için %1$d ayar</item>
+        <item quantity="other">Seni zamanında dürtebilmem için %1$d ayar</item>
+    </plurals>
+    <string name="setup_steps_body_two">Bildirim iznini verdin. Kalan ikisi Android\'in ayar sayfasında, her biri tek düğme.</string>
+    <!-- TODO(open-questions#30): the design shows only the case with both settings left and notifications allowed. -->
+    <string name="setup_steps_body_one">Bildirim iznini verdin. Kalanı Android\'in ayar sayfasında, tek düğme.</string>
+    <string name="setup_steps_title_notifications">Seni dürtebilmem için bildirim izni gerekiyor</string>
+    <string name="setup_steps_body_notifications">Önce bildirim izni, kalanlar Android\'in ayar sayfasında, her biri tek düğme.</string>
+    <string name="setup_step_notifications">Bildirimler</string>
+    <!-- TODO(open-questions#30): the notifications and full screen steps open have no design copy. -->
+    <string name="setup_step_notifications_body">Dürtmeler bildirim olarak gelir. Bu izin olmadan sana hiç ulaşamam.</string>
+    <string name="setup_step_notifications_action">İzin ver</string>
+    <string name="setup_step_alarm">Alarmlar ve hatırlatıcılar</string>
+    <string name="setup_step_alarm_body">Dürtmelerin tam saatinde çalması için. Bu olmadan telefon onları biriktirir, dakikalarca bazen saatlerce geç çalarlar.</string>
+    <string name="setup_hint_lead">Açılan sayfada</string>
+    <string name="setup_step_alarm_hint">\"Alarm ve hatırlatıcı ayarlamaya izin ver\"i aç, sonra geri dön.</string>
+    <string name="setup_step_full_screen">Tam ekran dürtme</string>
+    <string name="setup_step_full_screen_body">Telefonun kilitliyken de dürtmenin ekranı açması için. Bu olmadan dürtmeler sadece bildirim olarak gelir.</string>
+    <string name="setup_step_full_screen_hint">\"Tam ekran bildirimlere izin ver\"i aç, sonra geri dön.</string>
+    <string name="setup_required">Gerekli</string>
+    <string name="setup_next">Sırada</string>
+    <!-- TODO(open-questions#30): "Atlandı" and the full screen skip link have no design copy. -->
+    <string name="setup_skipped">Atlandı</string>
+    <string name="setup_footer">İzinleri istediğin an Ayarlar\'dan geri alabilirsin. Biri kapanırsa zilde haber veririm.</string>
+    <string name="setup_skip_alarm">Alarmsız devam et, dürtmeler geç çalabilir</string>
+    <string name="setup_skip_full_screen">Tam ekransız devam et, dürtmeler bildirim olarak gelir</string>
+
     <!-- ComposeBar -->
     <string name="compose_label">Yeni görev</string>
     <string name="compose_placeholder">Yaz ya da basılı tutup konuş…</string>

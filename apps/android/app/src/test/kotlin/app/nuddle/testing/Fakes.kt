@@ -12,9 +12,12 @@ import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.outbox.OutboxDrainer
 import app.nuddle.data.session.SessionStore
+import app.nuddle.data.session.SetupStore
 import app.nuddle.data.session.StoredSession
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.AlarmScheduler
+import app.nuddle.domain.GrantedPermissions
+import app.nuddle.domain.PermissionReader
 import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeStep
 import app.nuddle.domain.QuietHours
@@ -161,6 +164,23 @@ class RecordingDrainer : OutboxDrainer {
     override fun drainSoon() {
         kicks++
     }
+}
+
+class InMemorySetupStore(
+    var done: Boolean = false,
+) : SetupStore {
+    override suspend fun done(): Boolean = done
+
+    override suspend fun markDone() {
+        done = true
+    }
+}
+
+/** Permissions the test can change between reads, like the user in system settings. */
+class FakePermissions(
+    var granted: GrantedPermissions = GrantedPermissions(notifications = true, exactAlarm = true, fullScreen = true),
+) : PermissionReader {
+    override fun read(): GrantedPermissions = granted
 }
 
 class FakeFullScreen(
