@@ -259,9 +259,10 @@ class SyncAndOutboxTest {
             approvals.approve(Cast.TASK_ID)
             assertEquals("DONE", db.tasks().get(Cast.TASK_ID)!!.status)
 
-            val queued = db.outbox().pending()
-            assertEquals(listOf("re_request", "approve"), queued.map { it.command })
-            assertTrue(""""note":"1.500 lazımdı"""" in queued.first().body)
+            // Both are queued at the same fake instant, so their order in the outbox is not what is checked here.
+            val queued = db.outbox().pending().associateBy { it.command }
+            assertEquals(setOf("re_request", "approve"), queued.keys)
+            assertTrue(""""note":"1.500 lazımdı"""" in queued.getValue("re_request").body)
         }
 
     @Test

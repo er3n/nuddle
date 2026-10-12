@@ -8,15 +8,18 @@ import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import app.nuddle.data.photo.PhotoUploadScheduler
 import app.nuddle.data.photo.PhotoUploader
+import app.nuddle.data.photo.PhotoUploads
 import app.nuddle.data.sync.SyncRepository
 import app.nuddle.domain.SendOutcome
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import java.util.concurrent.TimeUnit
 
 private const val BACKOFF_SECONDS = 30L
@@ -56,8 +59,7 @@ class PhotoUploadWorker
     ) : CoroutineWorker(context, params) {
         override suspend fun doWork(): Result {
             val taskId = inputData.getString(KEY_TASK) ?: return Result.failure()
-            val key = inputData.getString(KEY_IDEMPOTENCY) ?: return Result.failure()
-            return when (uploader.upload(taskId, key)) {
+            return when (uploader.upload(taskId)) {
                 SendOutcome.SENT -> Result.success()
                 SendOutcome.RETRY -> Result.retry()
                 SendOutcome.DROP -> Result.failure()
@@ -66,14 +68,13 @@ class PhotoUploadWorker
 
         companion object {
             const val KEY_TASK = "taskId"
-            const val KEY_IDEMPOTENCY = "idempotencyKey"
         }
     }
 
 class WorkManagerScheduling(
     private val workManager: WorkManager,
 ) : OutboxDrainer,
-    PhotoUploadScheduler {
+    PhotoUploads {
     private val online = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
     override fun drainSoon() {
@@ -85,19 +86,23 @@ class WorkManagerScheduling(
         workManager.enqueueUniqueWork("outbox", ExistingWorkPolicy.APPEND_OR_REPLACE, request)
     }
 
-    override fun uploadSoon(
-        taskId: String,
-        idempotencyKey: String,
-    ) {
+    override fun uploadSoon(taskId: String) {
         val request =
             OneTimeWorkRequestBuilder<PhotoUploadWorker>()
                 .setConstraints(online)
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
-                .setInputData(workDataOf(PhotoUploadWorker.KEY_TASK to taskId, PhotoUploadWorker.KEY_IDEMPOTENCY to idempotencyKey))
+                .setInputData(workDataOf(PhotoUploadWorker.KEY_TASK to taskId))
                 .build()
-        // A new photo for the same task (after Tekrar iste) replaces a pending upload of the old one.
-        workManager.enqueueUniqueWork("photo-$taskId", ExistingWorkPolicy.REPLACE, request)
+        // A new photo for the same task (after Tekrar iste), or Şimdi tekrar dene, replaces the waiting try.
+        workManager.enqueueUniqueWork(photoWork(taskId), ExistingWorkPolicy.REPLACE, request)
     }
+
+    override fun failing(taskId: String): Flow<Boolean> =
+        workManager.getWorkInfosForUniqueWorkFlow(photoWork(taskId)).map { infos ->
+            infos.any { it.state == WorkInfo.State.ENQUEUED && it.runAttemptCount > 0 }
+        }
+
+    private fun photoWork(taskId: String) = "photo-$taskId"
 
     fun syncSoon() {
         val request =

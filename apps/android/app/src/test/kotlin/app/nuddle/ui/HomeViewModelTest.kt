@@ -18,6 +18,7 @@ import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.FakePermissions
 import app.nuddle.testing.FakePhotoLoader
+import app.nuddle.testing.FakePhotoUploads
 import app.nuddle.testing.FakeTaskRepository
 import app.nuddle.testing.InMemoryConnectionDao
 import app.nuddle.testing.InMemoryInviteDao
@@ -74,6 +75,7 @@ class HomeViewModelTest {
     private val inviteDao = InMemoryInviteDao()
     private val connectionDao = InMemoryConnectionDao()
     private val photos = FakePhotoLoader()
+    private val uploads = FakePhotoUploads()
     private val vm by lazy {
         HomeViewModel(
             sessions,
@@ -85,6 +87,7 @@ class HomeViewModelTest {
             SetupGate(setup, permissions),
             doneNotes,
             photos,
+            uploads,
             clock,
             istanbul,
         )
@@ -186,6 +189,19 @@ class HomeViewModelTest {
                 cancelAndIgnoreRemainingEvents()
             }
             assertEquals(listOf(Cast.TASK_ID), photos.loaded)
+        }
+
+    @Test
+    fun `a photo whose upload failed says so on the card (6e)`() =
+        runTest(main.dispatcher) {
+            signedIn()
+            connectionDao.upsert(listOf(selinConnection()))
+            taskDao.upsert(listOf(aTask(status = "AWAITING_APPROVAL")))
+            uploads.failing.value = true
+            vm.state.test {
+                assertEquals(true, awaitItemWhere { it?.nextUp?.uploadFailed == true }?.nextUp?.uploadFailed)
+                cancelAndIgnoreRemainingEvents()
+            }
         }
 
     @Test

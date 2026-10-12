@@ -35,6 +35,7 @@ import app.nuddle.ui.screens.name.NameViewModel
 import app.nuddle.ui.screens.phone.PhoneScreen
 import app.nuddle.ui.screens.phone.PhoneViewModel
 import app.nuddle.ui.screens.photo.PhotoViewModel
+import app.nuddle.ui.screens.photo.UnsentPhotoViewModel
 import app.nuddle.ui.screens.task.TaskDetailViewModel
 import app.nuddle.ui.screens.welcome.WelcomeScreen
 import app.nuddle.ui.screens.welcome.WelcomeUiState
@@ -62,6 +63,10 @@ object Routes {
     const val APPROVE = "approve/{${ApproveViewModel.ARG_TASK}}"
 
     fun approve(taskId: String): String = "approve/$taskId"
+
+    const val UNSENT = "unsent/{${UnsentPhotoViewModel.ARG_TASK}}"
+
+    fun unsent(taskId: String): String = "unsent/$taskId"
 
     fun task(taskId: String): String = "task/$taskId"
 
@@ -182,6 +187,7 @@ fun NuddleNavHost(
                         NextUpCallbacks(
                             onDone = viewModel::onFinishNextUp,
                             onTakePhoto = { nav.navigate(Routes.photo(it)) { launchSingleTop = true } },
+                            onOpenUnsentPhoto = { nav.navigate(Routes.unsent(it)) { launchSingleTop = true } },
                             onCall = { activity?.dial(it) },
                             onMessage = { activity?.message(it) },
                         ),
@@ -219,6 +225,9 @@ fun NuddleNavHost(
         }
         composable(Routes.APPROVE, arguments = listOf(navArgument(ApproveViewModel.ARG_TASK) { type = NavType.StringType })) {
             ApproveRoute(onBack = { nav.popBackStack() })
+        }
+        composable(Routes.UNSENT, arguments = listOf(navArgument(UnsentPhotoViewModel.ARG_TASK) { type = NavType.StringType })) {
+            UnsentPhotoRoute(onBack = { nav.popBackStack() })
         }
         composable(Routes.INVITE) {
             InviteRoute(onBack = { nav.popBackStack() }, onShare = { nav.popBackStack(Routes.HOME, inclusive = false) })

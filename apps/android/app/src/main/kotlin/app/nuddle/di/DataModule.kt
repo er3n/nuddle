@@ -20,7 +20,7 @@ import app.nuddle.data.db.TaskDao
 import app.nuddle.data.outbox.WorkManagerScheduling
 import app.nuddle.data.photo.ApiPhotoLoader
 import app.nuddle.data.photo.PhotoLoader
-import app.nuddle.data.photo.PhotoUploadScheduler
+import app.nuddle.data.photo.PhotoUploads
 import app.nuddle.data.session.ConsentPrompts
 import app.nuddle.data.session.DataStoreConsentPrompts
 import app.nuddle.data.sync.SyncRepository
@@ -85,7 +85,7 @@ abstract class RepositoryModule {
     abstract fun taskAnnouncer(impl: AndroidTaskAnnouncer): TaskAnnouncer
 
     @Binds
-    abstract fun photoUploadScheduler(impl: WorkManagerScheduling): PhotoUploadScheduler
+    abstract fun photoUploads(impl: WorkManagerScheduling): PhotoUploads
 
     @Binds
     abstract fun cameraSource(impl: CameraXSource): CameraSource

@@ -2,6 +2,7 @@ package app.nuddle.ui.screens.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,9 +19,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import app.nuddle.R
+import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.Avatar
 import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewScreens
@@ -34,11 +38,23 @@ import app.nuddle.ui.theme.DurtTheme
 internal fun PhotoWaiting(
     task: NextUpUi,
     photo: ImageBitmap?,
+    onOpenUnsent: (String) -> Unit,
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
     val thumbShape = RoundedCornerShape(dimens.radiusS)
-    Row(horizontalArrangement = Arrangement.spacedBy(dimens.space14), verticalAlignment = Alignment.CenterVertically) {
+    // A failed upload opens 6e: the kept photo and Şimdi tekrar dene.
+    val open =
+        if (task.uploadFailed) {
+            Modifier.clickable(role = Role.Button) { onOpenUnsent(task.taskId) }.testTag(TestTags.HOME_UNSENT_PHOTO)
+        } else {
+            Modifier
+        }
+    Row(
+        modifier = open,
+        horizontalArrangement = Arrangement.spacedBy(dimens.space14),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Box(
             Modifier
                 .size(dimens.photoThumb)
@@ -60,9 +76,13 @@ internal fun PhotoWaiting(
                 color = colors.ink,
             )
             Text(
-                task.photoSentAt?.let { stringResource(R.string.photo_waiting_sent, it) } ?: stringResource(R.string.photo_waiting_sending),
-                style = DurtTheme.type.caption,
-                color = colors.textSecondary,
+                when {
+                    task.photoSentAt != null -> stringResource(R.string.photo_waiting_sent, task.photoSentAt)
+                    task.uploadFailed -> stringResource(R.string.photo_waiting_failed)
+                    else -> stringResource(R.string.photo_waiting_sending)
+                },
+                style = if (task.uploadFailed) DurtTheme.type.captionStrong else DurtTheme.type.caption,
+                color = if (task.uploadFailed) colors.warning else colors.textSecondary,
             )
         }
     }

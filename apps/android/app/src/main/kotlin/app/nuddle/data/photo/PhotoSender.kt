@@ -3,16 +3,18 @@ package app.nuddle.data.photo
 import app.nuddle.data.TaskCloser
 import app.nuddle.domain.IdGenerator
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import kotlin.time.Clock
 
-/** Starts the upload of a kept photo once there is a network (implemented with WorkManager). */
-fun interface PhotoUploadScheduler {
-    /** [idempotencyKey] is the one `photo_sent` carries for this photo, kept across retries (ADR 0006). */
-    fun uploadSoon(
-        taskId: String,
-        idempotencyKey: String,
-    )
+/** The uploads of kept photos, run with WorkManager (docs/ux/platform.md: retried until the server has them). */
+interface PhotoUploads {
+    /** Starts the upload once there is a network; again now for "Şimdi tekrar dene" (6e). */
+    fun uploadSoon(taskId: String)
+
+    /** True while the upload of [taskId] has failed and waits for its next try (6e). */
+    fun failing(taskId: String): Flow<Boolean>
 }
 
 /**
@@ -24,15 +26,17 @@ class PhotoSender
     constructor(
         private val files: PhotoFiles,
         private val closer: TaskCloser,
-        private val scheduler: PhotoUploadScheduler,
+        private val uploads: PhotoUploads,
         private val ids: IdGenerator,
+        private val clock: Clock,
     ) {
         suspend fun send(
             taskId: String,
             jpeg: ByteArray,
         ) {
-            withContext(Dispatchers.IO) { files.save(taskId, jpeg) }
+            val sending = PendingPhoto(ids.next(), clock.now())
+            withContext(Dispatchers.IO) { files.save(taskId, jpeg, sending) }
             closer.photoTaken(taskId)
-            scheduler.uploadSoon(taskId, ids.next())
+            uploads.uploadSoon(taskId)
         }
     }

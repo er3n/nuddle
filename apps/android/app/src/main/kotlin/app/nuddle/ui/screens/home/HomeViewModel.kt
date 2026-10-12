@@ -18,6 +18,7 @@ import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.InviteDao
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.photo.PhotoLoader
+import app.nuddle.data.photo.PhotoUploads
 import app.nuddle.data.session.SessionStore
 import app.nuddle.domain.IdGenerator
 import app.nuddle.domain.QuietHours
@@ -37,6 +38,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onStart
@@ -68,6 +71,7 @@ class HomeViewModel
         private val setupGate: SetupGate,
         private val doneNotes: DoneNotes,
         private val photos: PhotoLoader,
+        private val uploads: PhotoUploads,
         private val clock: Clock,
         private val timeZone: TimeZone,
     ) : ViewModel() {
@@ -133,10 +137,24 @@ class HomeViewModel
                     taskId?.let { photos.load(it) }?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() }
                 }.onStart { emit(null) }
 
+        /** Whether the upload of a next-up photo has failed and waits for its next try (6e). */
+        @OptIn(ExperimentalCoroutinesApi::class) // Reason: flatMapLatest follows the task that is next up now.
+        private val nextUpUploadFailing: Flow<Boolean> =
+            tasksPart
+                .map { part -> part.nextUp?.takeIf { it.status == NextUpStatus.AwaitingApproval && it.photoSentAt == null }?.taskId }
+                .distinctUntilChanged()
+                .flatMapLatest { taskId -> taskId?.let { uploads.failing(it) } ?: flowOf(false) }
+
         val state: StateFlow<HomeUiState?> =
             combine(
-                combine(sessions.displayName.filterNotNull(), compose, tasksPart, nextUpPhoto) { name, compose, part, photo ->
-                    Triple(name, compose, part.copy(photo = photo))
+                combine(sessions.displayName.filterNotNull(), compose, tasksPart, nextUpPhoto, nextUpUploadFailing) {
+                    name,
+                    compose,
+                    part,
+                    photo,
+                    failing,
+                    ->
+                    Triple(name, compose, part.copy(nextUp = part.nextUp?.copy(uploadFailed = failing), photo = photo))
                 },
                 preview,
                 undo,

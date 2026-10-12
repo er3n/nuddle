@@ -34,6 +34,7 @@ import app.nuddle.ui.screens.home.FromUi
 import app.nuddle.ui.screens.home.HomeScreen
 import app.nuddle.ui.screens.home.HomeUiState
 import app.nuddle.ui.screens.home.NextUpCallbacks
+import app.nuddle.ui.screens.home.NextUpStatus
 import app.nuddle.ui.screens.home.NextUpUi
 import app.nuddle.ui.screens.home.PendingInviteCallbacks
 import app.nuddle.ui.screens.home.PendingInviteUi
@@ -56,6 +57,8 @@ import app.nuddle.ui.screens.photo.PhotoCallbacks
 import app.nuddle.ui.screens.photo.PhotoScreen
 import app.nuddle.ui.screens.photo.PhotoStage
 import app.nuddle.ui.screens.photo.PhotoUiState
+import app.nuddle.ui.screens.photo.UnsentPhotoScreen
+import app.nuddle.ui.screens.photo.UnsentPhotoUiState
 import app.nuddle.ui.screens.poke.PokeDemoScreen
 import app.nuddle.ui.screens.poke.PokeScreen
 import app.nuddle.ui.screens.poke.PokeUiState
@@ -339,6 +342,45 @@ class TestTagsTest {
         }
         assertShown(TestTags.APPROVE, TestTags.APPROVE_NOTE)
         assertTaps(TestTags.APPROVE_RETRY_PHOTO to "retry", TestTags.APPROVE_REREQUEST to "again", TestTags.APPROVE_OK to "approve")
+    }
+
+    @Test
+    fun `photo upload failed`() {
+        content { UnsentPhotoScreen(UnsentPhotoUiState("Selin", null), onBack = { clicked += "back" }, onRetry = { clicked += "retry" }) }
+        assertTaps(TestTags.UNSENT_RETRY to "retry")
+    }
+
+    @Test
+    fun `home with a photo that did not go out`() {
+        content {
+            HomeScreen(
+                state =
+                    HomeUiState(
+                        myName = "Eren",
+                        connected = true,
+                        nextUp =
+                            NextUpUi(
+                                "task-1",
+                                "Para çek",
+                                null,
+                                DeadlineText.Today("09:00"),
+                                photo = true,
+                                from = FromUi("Selin", WrittenText.Today("08:00"), null),
+                                status = NextUpStatus.AwaitingApproval,
+                                uploadFailed = true,
+                            ),
+                    ),
+                onBell = {},
+                onProfile = {},
+                onInvite = {},
+                onComposeTextChange = {},
+                onComposeSend = {},
+                onVoiceStart = {},
+                onVoiceEnd = {},
+                nextUpActions = NextUpCallbacks(onOpenUnsentPhoto = { clicked += "unsent $it" }),
+            )
+        }
+        assertTaps(TestTags.HOME_UNSENT_PHOTO to "unsent task-1")
     }
 
     @Test

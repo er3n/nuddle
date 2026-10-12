@@ -32,14 +32,12 @@ class PhotoUploader
         private val files: PhotoFiles,
         private val json: Json,
     ) {
-        suspend fun upload(
-            taskId: String,
-            idempotencyKey: String,
-        ): SendOutcome {
+        suspend fun upload(taskId: String): SendOutcome {
             val file = files.of(taskId)
-            if (!file.exists()) return SendOutcome.SENT
+            val sending = files.pending(taskId) ?: return SendOutcome.SENT
+            val takenAt = sending.takenAt.toString()
             val target =
-                when (val r = apiCall(json) { photos.createPhotoUploadUrl(PhotoUploadUrlRequest(taskId)) }) {
+                when (val r = apiCall(json) { photos.createPhotoUploadUrl(PhotoUploadUrlRequest(taskId, takenAt)) }) {
                     is ApiResult.Success -> r.value
                     is ApiResult.Failure -> return finish(taskId, r.failure)
                 }
@@ -56,7 +54,8 @@ class PhotoUploader
                     false
                 }
             if (!stored) return SendOutcome.RETRY
-            val sent = apiCall(json) { commands.photoSent(PhotoSentCommand(idempotencyKey, taskId, target.path)) }
+            val sent =
+                apiCall(json) { commands.photoSent(PhotoSentCommand(sending.idempotencyKey, taskId, target.path, takenAt)) }
             return when (sent) {
                 is ApiResult.Success -> {
                     files.delete(taskId)

@@ -279,6 +279,14 @@
     <string name="photo_arrived_title">%1$s fotoğraf gönderdi</string>
     <string name="photo_arrived_body">%1$s · onayını bekliyor.</string>
     <string name="sent_photo_arrived">fotoğraf geldi</string>
+    <!-- 6e Photo upload failed. open-questions#35: the design says "Selin\'e gönderilemedi"; rephrased so the name
+         takes no suffix. -->
+    <string name="photo_waiting_failed">Gönderilemedi · Dürtme durdu</string>
+    <string name="unsent_title">Fotoğraf</string>
+    <string name="unsent_kept">Telefonunda saklı, kaybolmadı.</string>
+    <string name="unsent_title_alert">Gönderilemedi: %1$s</string>
+    <string name="unsent_body">Bağlantı gelince kendiliğinden tekrar denerim. Son zaman, gönderdiğin ana göre sayılır.</string>
+    <string name="unsent_retry">Şimdi tekrar dene</string>
     <!-- 4c: the next-up card of a photo task. -->
     <string name="home_done_photo">Bitti, çek</string>
 
