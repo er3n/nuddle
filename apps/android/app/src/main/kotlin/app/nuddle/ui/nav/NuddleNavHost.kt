@@ -33,6 +33,7 @@ import app.nuddle.ui.screens.name.NameScreen
 import app.nuddle.ui.screens.name.NameViewModel
 import app.nuddle.ui.screens.phone.PhoneScreen
 import app.nuddle.ui.screens.phone.PhoneViewModel
+import app.nuddle.ui.screens.task.TaskDetailViewModel
 import app.nuddle.ui.screens.welcome.WelcomeScreen
 import app.nuddle.ui.screens.welcome.WelcomeUiState
 
@@ -51,6 +52,9 @@ object Routes {
     const val ARG_NAME = "name"
     const val ARG_SETUP = "setup"
     const val MATCHED = "matched/{$ARG_NAME}?$ARG_SETUP={$ARG_SETUP}"
+    const val TASK = "task/{${TaskDetailViewModel.ARG_TASK}}"
+
+    fun task(taskId: String): String = "task/$taskId"
 
     fun consent(
         inviteId: String,
@@ -162,6 +166,7 @@ fun NuddleNavHost(
                             onCall = { activity?.dial(it) },
                             onMessage = { activity?.message(it) },
                         ),
+                    onOpenTask = { nav.navigate(Routes.task(it)) { launchSingleTop = true } },
                     preview =
                         PreviewCallbacks(
                             onChoice = viewModel::onPreviewChoice,
@@ -182,6 +187,9 @@ fun NuddleNavHost(
                         ),
                 )
             }
+        }
+        composable(Routes.TASK, arguments = listOf(navArgument(TaskDetailViewModel.ARG_TASK) { type = NavType.StringType })) {
+            TaskDetailRoute(onBack = { nav.popBackStack() })
         }
         composable(Routes.INVITE) {
             InviteRoute(onBack = { nav.popBackStack() }, onShare = { nav.popBackStack(Routes.HOME, inclusive = false) })

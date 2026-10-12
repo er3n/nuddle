@@ -239,7 +239,14 @@ class FakeTaskRepository : TaskRepository {
         return editOutcome
     }
 
-    override suspend fun cancel(taskId: String) {
+    /** The note of each cancel, in order; null for Geri al or a cancel without a reason. */
+    val cancelNotes = mutableListOf<String?>()
+
+    override suspend fun cancel(
+        taskId: String,
+        note: String?,
+    ) {
+        cancelNotes += note
         cancelled += taskId
     }
 

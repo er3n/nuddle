@@ -123,11 +123,14 @@ class PokeActions
             outbox.enqueue("done", id, DoneCommand(idempotencyKey = id, taskId = taskId), DoneCommand.serializer())
         }
 
-        /** "Geri al" on the undo toast: the sender takes the task back before it starts poking. */
-        override suspend fun cancel(taskId: String) {
+        /** The sender takes the task back: "Geri al" on the undo toast, or "İptal et" in 7d with an optional note. */
+        override suspend fun cancel(
+            taskId: String,
+            note: String?,
+        ) {
             close(taskId, TaskStatus.CANCELLED)
             val id = ids.next()
-            outbox.enqueue("cancel", id, CancelCommand(idempotencyKey = id, taskId = taskId, note = null), CancelCommand.serializer())
+            outbox.enqueue("cancel", id, CancelCommand(idempotencyKey = id, taskId = taskId, note = note), CancelCommand.serializer())
         }
 
         /** The optional note sheet (7f) arrives with feature slice 5; until then the drop has no note. */

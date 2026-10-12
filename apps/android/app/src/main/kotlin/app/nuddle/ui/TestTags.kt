@@ -36,6 +36,11 @@ object TestTags {
     const val HOME_DONE_EARLY = "home.doneEarly"
     const val HOME_CALL = "home.call"
     const val HOME_SENT = "home.sent"
+    const val TASK_DETAIL = "task.screen"
+    const val TASK_CANCEL = "task.cancel"
+
+    fun cancelReason(name: String) = "task.cancelReason.$name"
+
     const val HOME_MESSAGE = "home.message"
     const val HOME_UNDO = "home.undo"
     const val HOME_DONE_NOTE = "home.doneNote"

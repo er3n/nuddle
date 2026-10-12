@@ -196,13 +196,28 @@ class PokeAlarmTest {
         runTest {
             givenPlan()
             alarms.rearm()
-            actions.cancel(Cast.TASK_ID)
+            actions.cancel(Cast.TASK_ID, note = null)
 
             assertTrue(scheduler.scheduled.isEmpty())
             assertEquals("CANCELLED", db.tasks().get(Cast.TASK_ID)!!.status)
             val queued = db.outbox().pending().single()
             assertEquals("cancel", queued.command)
             assertTrue(""""note":null""" in queued.body, queued.body)
+        }
+
+    @Test
+    fun `a cancel from the task detail carries the reason as the note`() =
+        runTest {
+            givenPlan()
+            actions.cancel(Cast.TASK_ID, note = "Ben hallettim")
+            assertTrue(
+                """"note":"Ben hallettim"""" in
+                    db
+                        .outbox()
+                        .pending()
+                        .single()
+                        .body,
+            )
         }
 
     @Test

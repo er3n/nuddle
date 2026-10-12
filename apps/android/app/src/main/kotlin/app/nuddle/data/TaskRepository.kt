@@ -44,8 +44,11 @@ interface TaskCloser {
     /** The recipient finished it. */
     suspend fun done(taskId: String)
 
-    /** The sender takes it back: "Geri al" on the undo toast. */
-    suspend fun cancel(taskId: String)
+    /** The sender takes it back: "Geri al" on the undo toast, or "Görevi iptal et" (7d) with an optional note. */
+    suspend fun cancel(
+        taskId: String,
+        note: String? = null,
+    )
 }
 
 /** Writing and finishing tasks from home (docs/ux/screens.md 2a, 2f). */
@@ -79,8 +82,11 @@ interface TaskRepository {
      */
     suspend fun done(taskId: String): Int?
 
-    /** "Geri al": applied locally at once, then sent through the outbox. */
-    suspend fun cancel(taskId: String)
+    /** "Geri al" or "İptal et" (7d): applied locally at once, then sent through the outbox. */
+    suspend fun cancel(
+        taskId: String,
+        note: String? = null,
+    )
 }
 
 class ApiTaskRepository
@@ -174,5 +180,8 @@ class ApiTaskRepository
             return caught
         }
 
-        override suspend fun cancel(taskId: String) = closer.cancel(taskId)
+        override suspend fun cancel(
+            taskId: String,
+            note: String?,
+        ) = closer.cancel(taskId, note)
     }
