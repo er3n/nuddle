@@ -46,6 +46,25 @@ describe("scenarios: task lifecycle", () => {
     expect(world.violations).toEqual([]);
   });
 
+  it("photo upload late (6e): taken before the deadline, it still counts after the task was missed", async () => {
+    const { world, selin, eren } = await selinAndEren();
+    const taskId = await writeTask(selin, TEXT.photoToEren);
+
+    // The phone was offline until 09:20; the deadline was 09:00, so the task is missed by then.
+    await world.advanceTo(at("2026-10-12T09:20:00"));
+    expect(world.task(taskId).status).toBe("MISSED");
+
+    // Taken after the deadline: still missed.
+    expect(await eren.sendPhoto(taskId, at("2026-10-12T09:10:00"))).toEqual({
+      ok: false,
+      error: "wrong_status",
+    });
+    // Taken at 08:58: it counts.
+    expect(await eren.sendPhoto(taskId, at("2026-10-12T08:58:00"))).toEqual({ ok: true });
+    expect(world.task(taskId).status).toBe("AWAITING_APPROVAL");
+    expect(world.violations).toEqual([]);
+  });
+
   it("snooze: 15 minutes, then 10 as the last one, then no more (open-questions#1)", async () => {
     const { world, selin, eren } = await selinAndEren();
     const taskId = await writeTask(selin, TEXT.photoToEren);

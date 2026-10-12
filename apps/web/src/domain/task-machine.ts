@@ -34,7 +34,7 @@ const SNOOZE_MS: readonly number[] = [15 * MINUTE, 10 * MINUTE];
 export type Command =
   // Recipient
   | { type: "done"; cameraUnavailable?: boolean }
-  | { type: "photo_sent"; photoPath: string }
+  | { type: "photo_sent"; photoPath: string; takenAt?: Date }
   | { type: "cant_today"; note: string | null }
   | { type: "did_it_later" }
   | { type: "snooze" }
@@ -124,6 +124,8 @@ function transitionsFrom(status: TaskStatus): Partial<Record<CommandType, TaskSt
       return {
         // TODO(open-questions#9): "Sonradan yaptım" closes as DONE with late = true.
         did_it_later: "DONE",
+        // Only for a photo taken before the deadline whose upload came late (6e); checked below.
+        photo_sent: "AWAITING_APPROVAL",
         new_deadline: "SCHEDULED",
         cancel: "CANCELLED",
         account_deleted: "CANCELLED",
@@ -463,6 +465,15 @@ function checkActor(task: Task, cmd: Command, actorId: PersonId | null): DomainE
 }
 
 /** Apply a command to a task. `actorId` is null for server commands. */
+/** A photo taken (on the device clock) before the deadline and not in the future. */
+export function takenInTime(task: Task, takenAt: Date | undefined, now: Date): boolean {
+  return (
+    takenAt !== undefined &&
+    takenAt.getTime() <= task.deadline.getTime() &&
+    takenAt.getTime() <= now.getTime()
+  );
+}
+
 export function applyCommand(
   task: Task,
   cmd: Command,
@@ -490,6 +501,11 @@ export function applyCommand(
       break;
     case "photo_sent":
       if (task.finishMode !== "photo") return { ok: false, error: "wrong_finish_mode" };
+      // The deadline counts from the send attempt (docs/product.md, Errors): a photo taken in time whose upload
+      // was late still counts after the task was marked missed.
+      if (task.status === "MISSED" && !takenInTime(task, cmd.takenAt, now)) {
+        return { ok: false, error: "wrong_status" };
+      }
       if (task.senderId === task.recipientId) target = "DONE";
       break;
     case "did_it_later":

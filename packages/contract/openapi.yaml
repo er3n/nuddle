@@ -590,6 +590,11 @@ components:
         taskId:
           type: string
           format: uuid
+        takenAt:
+          type: string
+          format: date-time
+          example: 2026-10-12T09:00:00+03:00
+          description: ISO 8601 with offset
       required:
         - taskId
     PhotoViewUrlResult:
@@ -774,6 +779,11 @@ components:
         photoPath:
           type: string
           minLength: 1
+        takenAt:
+          type: string
+          format: date-time
+          example: 2026-10-12T09:00:00+03:00
+          description: ISO 8601 with offset
       required:
         - idempotencyKey
         - taskId

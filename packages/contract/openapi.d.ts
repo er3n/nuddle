@@ -748,6 +748,12 @@ export interface components {
         PhotoUploadUrlRequest: {
             /** Format: uuid */
             taskId: string;
+            /**
+             * Format: date-time
+             * @description ISO 8601 with offset
+             * @example 2026-10-12T09:00:00+03:00
+             */
+            takenAt?: string;
         };
         PhotoViewUrlResult: {
             url: string;
@@ -839,6 +845,12 @@ export interface components {
             /** Format: uuid */
             taskId: string;
             photoPath: string;
+            /**
+             * Format: date-time
+             * @description ISO 8601 with offset
+             * @example 2026-10-12T09:00:00+03:00
+             */
+            takenAt?: string;
         };
         CantTodayCommand: {
             /**

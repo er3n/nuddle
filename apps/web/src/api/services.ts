@@ -21,6 +21,7 @@ import {
   createTask as createTaskDomain,
   isOpen,
   MISSED_CARD_TTL_MS,
+  takenInTime,
   type Command,
   type Outcome,
   type TaskContext,
@@ -382,15 +383,18 @@ export async function reportFired(
 export async function photoUploadUrl(
   deps: AppDeps,
   caller: Person,
-  taskId: TaskId,
+  input: { taskId: TaskId; takenAt?: string },
 ): Promise<{ path: string; url: string }> {
+  const { taskId } = input;
   const task = await findTask(deps.db, taskId);
   if (!task || (task.senderId !== caller.id && task.recipientId !== caller.id)) {
     throw new ApiError("not_found");
   }
   if (task.recipientId !== caller.id) throw new ApiError("not_recipient");
   if (task.finishMode !== "photo") throw new ApiError("wrong_finish_mode");
-  if (!isOpen(task.status)) throw new ApiError("wrong_status");
+  const takenAt = input.takenAt === undefined ? undefined : new Date(input.takenAt);
+  const lateButInTime = task.status === "MISSED" && takenInTime(task, takenAt, deps.clock.now());
+  if (!isOpen(task.status) && !lateButInTime) throw new ApiError("wrong_status");
   return deps.photos.createUploadUrl(taskId);
 }
 

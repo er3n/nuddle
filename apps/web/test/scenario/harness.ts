@@ -264,7 +264,10 @@ export class Client {
       case "done":
         return post("/api/v1/commands/done", { cameraUnavailable: cmd.cameraUnavailable });
       case "photo_sent":
-        return post("/api/v1/commands/photo_sent", { photoPath: cmd.photoPath });
+        return post("/api/v1/commands/photo_sent", {
+          photoPath: cmd.photoPath,
+          takenAt: cmd.takenAt?.toISOString(),
+        });
       case "cant_today":
         return post("/api/v1/commands/cant_today", { note: cmd.note });
       case "did_it_later":
@@ -294,12 +297,14 @@ export class Client {
     }
   }
 
-  async sendPhoto(taskId: TaskId): Promise<CommandResult> {
-    const upload = ok(
-      await this.api.POST("/api/v1/photos/upload-url", { body: { taskId } }),
-      "upload-url",
-    );
-    return this.command(taskId, { type: "photo_sent", photoPath: upload.path });
+  /** Gönder; [takenAt] is when the photo was taken, for an upload that comes late (6e). */
+  async sendPhoto(taskId: TaskId, takenAt?: Date): Promise<CommandResult> {
+    const iso = takenAt?.toISOString();
+    const upload = await this.api.POST("/api/v1/photos/upload-url", {
+      body: { taskId, takenAt: iso },
+    });
+    if (!upload.data) return { ok: false, error: upload.error.error.name as DomainError };
+    return this.command(taskId, { type: "photo_sent", photoPath: upload.data.path, takenAt });
   }
 
   async invite(phone: string, relationship: EdgeType, prefilledName: string): Promise<string> {
