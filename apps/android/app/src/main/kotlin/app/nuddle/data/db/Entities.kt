@@ -21,6 +21,22 @@ data class TaskEntity(
     val inRecipientList: Boolean,
     /** From sync, and bumped locally on Ertele so the next one is right offline too (NUD-36). */
     @ColumnInfo(defaultValue = "0") val snoozesUsed: Int = 0,
+    /** Epoch milliseconds; "Selin yazdı · 14:32" (4c). 0 when an older server did not send it. */
+    @ColumnInfo(defaultValue = "0") val createdAt: Long = 0,
+    /** What the sender typed: "Yazdığın: ..." (7c). Only the sender gets it. */
+    val rawText: String? = null,
+)
+
+/** A connection from sync (SyncConnection): what [displayName] is to me, how far pokes reach them, their phone. */
+@Entity(tableName = "connections")
+data class ConnectionEntity(
+    @PrimaryKey val personId: String,
+    val displayName: String,
+    val relationship: String,
+    val status: String,
+    val reachability: String,
+    /** For Call and Message; null once the connection is gone. */
+    val phone: String?,
 )
 
 /**

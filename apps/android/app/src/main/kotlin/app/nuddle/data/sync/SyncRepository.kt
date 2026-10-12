@@ -1,6 +1,7 @@
 package app.nuddle.data.sync
 
 import app.nuddle.api.SyncApi
+import app.nuddle.api.model.SyncConnection
 import app.nuddle.api.model.SyncPlan
 import app.nuddle.api.model.SyncReceivedInvite
 import app.nuddle.api.model.SyncSentInvite
@@ -8,6 +9,8 @@ import app.nuddle.api.model.SyncTask
 import app.nuddle.api.model.TaskStatus
 import app.nuddle.data.api.ApiResult
 import app.nuddle.data.api.apiCall
+import app.nuddle.data.db.ConnectionDao
+import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.InviteDao
 import app.nuddle.data.db.InviteEntity
 import app.nuddle.data.db.PokeStepEntity
@@ -36,9 +39,22 @@ interface AlarmRearmer {
     suspend fun rearm()
 }
 
+/** Tells me about a task someone else just wrote to me (4b). Implemented by the alarm package. */
+interface TaskAnnouncer {
+    fun announce(
+        task: TaskEntity,
+        senderName: String,
+    )
+
+    /** The task closed before I looked, e.g. Geri al within the undo window: the note goes too. */
+    fun withdraw(taskId: String)
+}
+
 /**
- * `GET /api/v1/sync?cursor=&deviceId=` (ADR 0006, 0014): stores `me`, tasks and received plans, moves the cursor,
- * then re-arms alarms. The server is the source of truth; FCM only says when to call this.
+ * `GET /api/v1/sync?cursor=&deviceId=` (ADR 0006, 0014): stores `me`, connections, tasks, invites and received
+ * plans, moves the cursor, then re-arms alarms. The server is the source of truth; FCM only says when to call this.
+ * A task from someone else that arrives in a later sync is announced once; a full sync (sign-in, reinstall) brings
+ * old ones too, so it announces nothing.
  */
 class SyncRepository
     @Inject
@@ -47,12 +63,16 @@ class SyncRepository
         private val sessions: SessionStore,
         private val tasks: TaskDao,
         private val invites: InviteDao,
+        private val connections: ConnectionDao,
         private val alarms: AlarmRearmer,
+        private val announcer: TaskAnnouncer,
         private val json: Json,
     ) : Syncer {
         override suspend fun sync(): Boolean {
-            if (sessions.current()?.registered != true) return true
-            val result = apiCall(json) { api.sync(cursor = sessions.syncCursor(), deviceId = sessions.deviceId()) }
+            val session = sessions.current()
+            if (session?.registered != true) return true
+            val cursor = sessions.syncCursor()
+            val result = apiCall(json) { api.sync(cursor = cursor, deviceId = sessions.deviceId()) }
             if (result !is ApiResult.Success) return false
             val response = result.value
             val me = response.me
@@ -60,11 +80,27 @@ class SyncRepository
                 me.displayName,
                 QuietHours.parse(me.quietHours.start, me.quietHours.end, me.quietHours.timeZone),
             )
+            connections.upsert(response.connections.map(SyncConnection::toEntity))
+            val arrived =
+                if (cursor == null) {
+                    emptyList()
+                } else {
+                    response.tasks.filter {
+                        it.recipientId == session.personId && it.senderId != session.personId &&
+                            tasks.get(it.id) == null
+                    }
+                }
             tasks.upsert(response.tasks.map(SyncTask::toEntity))
             invites.upsert(response.sentInvites.map(SyncSentInvite::toEntity) + response.receivedInvites.map(SyncReceivedInvite::toEntity))
             response.plans.forEach { plan -> alarms.applyPlan(plan.taskId, plan.version, plan.toEntities()) }
             sessions.saveSyncCursor(response.cursor)
             alarms.rearm()
+            arrived.filter { it.status.value in OPEN_STATUSES }.forEach { task ->
+                connections.get(task.senderId)?.let { announcer.announce(task.toEntity(), it.displayName) }
+            }
+            response.tasks
+                .filter { it.recipientId == session.personId && it.senderId != session.personId && it.status.value !in OPEN_STATUSES }
+                .forEach { announcer.withdraw(it.id) }
             return true
         }
     }
@@ -82,6 +118,18 @@ internal fun SyncTask.toEntity() =
         planVersion = planVersion,
         inRecipientList = inRecipientList,
         snoozesUsed = snoozesUsed ?: 0,
+        createdAt = createdAt?.let { Instant.parse(it).toEpochMilliseconds() } ?: 0,
+        rawText = rawText,
+    )
+
+internal fun SyncConnection.toEntity() =
+    ConnectionEntity(
+        personId = personId,
+        displayName = displayName,
+        relationship = relationship.value,
+        status = status.value,
+        reachability = reachability.value,
+        phone = phone,
     )
 
 internal fun SyncSentInvite.toEntity() =

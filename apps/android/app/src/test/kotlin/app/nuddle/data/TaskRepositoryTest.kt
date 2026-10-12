@@ -10,6 +10,7 @@ import app.nuddle.data.sync.AlarmRearmer
 import app.nuddle.data.sync.SyncRepository
 import app.nuddle.testing.Cast
 import app.nuddle.testing.InMemorySessionStore
+import app.nuddle.testing.RecordingAnnouncer
 import app.nuddle.testing.aSession
 import app.nuddle.testing.aStep
 import app.nuddle.testing.aTask
@@ -60,7 +61,17 @@ class TaskRepositoryTest {
         repository =
             ApiTaskRepository(
                 commandsApi = retrofit.create(CommandsApi::class.java),
-                sync = SyncRepository(retrofit.create(SyncApi::class.java), sessions, db.tasks(), db.invites(), alarms, testJson),
+                sync =
+                    SyncRepository(
+                        retrofit.create(SyncApi::class.java),
+                        sessions,
+                        db.tasks(),
+                        db.invites(),
+                        db.connections(),
+                        alarms,
+                        RecordingAnnouncer(),
+                        testJson,
+                    ),
                 closer =
                     object : TaskCloser {
                         override suspend fun done(taskId: String) {

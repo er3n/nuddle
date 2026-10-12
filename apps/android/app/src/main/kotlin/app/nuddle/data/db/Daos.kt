@@ -45,6 +45,18 @@ interface InviteDao {
 }
 
 @Dao
+interface ConnectionDao {
+    @Upsert
+    suspend fun upsert(connections: List<ConnectionEntity>)
+
+    @Query("SELECT * FROM connections WHERE personId = :personId")
+    suspend fun get(personId: String): ConnectionEntity?
+
+    @Query("SELECT * FROM connections")
+    fun observeAll(): Flow<List<ConnectionEntity>>
+}
+
+@Dao
 interface PokeStepDao {
     @Query("SELECT * FROM poke_steps")
     suspend fun all(): List<PokeStepEntity>

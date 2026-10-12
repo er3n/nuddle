@@ -19,6 +19,7 @@ import app.nuddle.data.session.ConsentPrompts
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.session.SetupStore
 import app.nuddle.data.session.StoredSession
+import app.nuddle.data.sync.TaskAnnouncer
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.AlarmScheduler
 import app.nuddle.domain.GrantedPermissions
@@ -342,5 +343,22 @@ class FakeInviteRepository : InviteRepository {
     ): Boolean {
         if (answerOk) declined += code
         return answerOk
+    }
+}
+
+/** Records 4b announcements instead of posting notifications. */
+class RecordingAnnouncer : TaskAnnouncer {
+    val announced = mutableListOf<Pair<String, String>>()
+    val withdrawn = mutableListOf<String>()
+
+    override fun announce(
+        task: TaskEntity,
+        senderName: String,
+    ) {
+        announced += task.id to senderName
+    }
+
+    override fun withdraw(taskId: String) {
+        withdrawn += taskId
     }
 }
