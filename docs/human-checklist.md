@@ -53,5 +53,5 @@ Things only the human can do: accounts, payments, logins, secrets, production pu
 ## Before the global launch
 
 - [ ] Trademark check for Nuddle (US/EU) and the status of `nuddle.com`.
-- [ ] English strings, English landing page.
+- [ ] English strings in the app (`values-en`). The English landing page is done (NUD-21); read its copy once (`apps/web/src/i18n/messages/en.ts`).
 - [ ] Switch Vercel and Supabase to paid plans; add a staging Supabase project.

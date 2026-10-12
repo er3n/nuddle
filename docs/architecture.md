@@ -50,7 +50,9 @@ nuddle/
   apps/
     android/                Gradle project, applicationId app.nuddle, flavors: dev, e2e, prod
     web/
-      src/app/              Next.js (landing, later sender page)
+      src/app/              Next.js routes: landing `/` (en) and `/tr`, invite link page, later sender page
+      src/landing/          landing, invite and 404 components; colors from docs/ux/tokens.json
+      src/i18n/             web locales and dictionaries (tr is the source, en must match it)
       src/api/              Hono app, routes, zod schemas
       src/domain/           pure TS: state machine, planPokes, tick, rules. No I/O imports.
       src/infra/            db (Drizzle), push, otp, llm, storage, clock
