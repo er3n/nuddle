@@ -197,6 +197,21 @@ class TaskRepositoryTest {
         }
 
     @Test
+    fun `changing how it ends keeps the deadline and the detail`() =
+        runTest {
+            db.tasks().upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SELIN_ID)))
+            server.enqueue(json(200, """{"taskId":"${Cast.TASK_ID}","status":"SCHEDULED","planVersion":2}"""))
+            server.enqueue(json(200, syncBody))
+
+            assertEquals(WriteOutcome.Created(Cast.TASK_ID), repository.edit(Cast.TASK_ID, null, FinishMode.DONE, "key-7"))
+
+            val body = server.takeRequest().body?.utf8() ?: ""
+            assertTrue(""""deadline":"2026-10-12T06:00:00Z"""" in body, body)
+            assertTrue(""""detail":"1.000 TL"""" in body, body)
+            assertTrue(""""finishMode":"done"""" in body, body)
+        }
+
+    @Test
     fun `editing a task the device does not have fails without a call`() =
         runTest {
             assertEquals(WriteOutcome.Failed, repository.editDeadline(Cast.TASK_ID, Instant.parse("2026-10-12T19:00:00+03:00"), "key-6"))

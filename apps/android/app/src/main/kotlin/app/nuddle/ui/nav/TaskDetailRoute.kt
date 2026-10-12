@@ -29,6 +29,12 @@ fun TaskDetailRoute(
                 onReason = viewModel::onReason,
                 onCancelDismiss = viewModel::onCancelDismiss,
                 onCancelConfirm = viewModel::onCancelConfirm,
+                onEdit = viewModel::onEdit,
+                onDeadlineChoice = viewModel::onDeadlineChoice,
+                onTimePicked = viewModel::onTimePicked,
+                onPhotoChoice = viewModel::onPhotoChoice,
+                onEditDismiss = viewModel::onEditDismiss,
+                onEditSave = viewModel::onEditSave,
             ),
     )
 }

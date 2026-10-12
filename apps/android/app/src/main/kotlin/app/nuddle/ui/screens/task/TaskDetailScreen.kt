@@ -41,9 +41,11 @@ import app.nuddle.ui.components.SheetAction
 import app.nuddle.ui.components.StatusPill
 import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.screens.ScreenLayout
+import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.text
 import app.nuddle.ui.theme.DurtTheme
+import kotlinx.datetime.LocalTime
 
 @Immutable
 data class TaskDetailCallbacks(
@@ -53,6 +55,12 @@ data class TaskDetailCallbacks(
     val onCancelDismiss: () -> Unit = {},
     /** The chosen reason's text as the note, or null. */
     val onCancelConfirm: (note: String?) -> Unit = {},
+    val onEdit: (EditRow) -> Unit = {},
+    val onDeadlineChoice: (DeadlineChoice) -> Unit = {},
+    val onTimePicked: (LocalTime) -> Unit = {},
+    val onPhotoChoice: (Boolean) -> Unit = {},
+    val onEditDismiss: () -> Unit = {},
+    val onEditSave: () -> Unit = {},
 )
 
 private val CancelReason.label: Int
@@ -105,7 +113,12 @@ fun TaskDetailScreen(
         SettingsGroup(title = stringResource(R.string.preview_detail)) {
             LineRow(label = stringResource(R.string.preview_to), value = state.toName)
             GroupDivider()
-            LineRow(label = stringResource(R.string.home_deadline_label), value = state.deadline.text())
+            LineRow(
+                label = stringResource(R.string.home_deadline_label),
+                value = state.deadline.text(),
+                onClick = { callbacks.onEdit(EditRow.Deadline) },
+                modifier = Modifier.testTag(TestTags.TASK_EDIT_DEADLINE),
+            )
             state.detail?.let {
                 GroupDivider()
                 LineRow(label = stringResource(R.string.preview_detail), value = it)
@@ -114,10 +127,19 @@ fun TaskDetailScreen(
             LineRow(
                 label = stringResource(R.string.task_finish_label),
                 value = stringResource(if (state.photo) R.string.task_finish_photo else R.string.task_finish_done),
+                onClick = { callbacks.onEdit(EditRow.Finish) },
+                modifier = Modifier.testTag(TestTags.TASK_EDIT_FINISH),
             )
         }
+        Text(
+            stringResource(R.string.task_edit_hint, state.toName),
+            style = DurtTheme.type.caption,
+            color = colors.textSecondary,
+            modifier = Modifier.padding(horizontal = dimens.space8),
+        )
     }
     if (state.cancelling) CancelSheet(state, callbacks)
+    if (state.editing != null) EditSheet(state, callbacks)
 }
 
 /** Kurulu and "Şu an Eren için en güçlü dürtme: **tam ekran**. Bitince sana yazarım." (open-questions#34). */

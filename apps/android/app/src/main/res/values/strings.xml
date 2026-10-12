@@ -226,6 +226,11 @@
     <string name="task_finish_photo">Fotoğrafla, sen onayla</string>
     <string name="task_finish_done">\"Bitti\" yeter</string>
     <string name="task_cancel">Görevi iptal et</string>
+    <!-- open-questions#34: the design says "Değişiklik Eren\'e kısa bir notla gider."; rephrased so the name takes no suffix. -->
+    <string name="task_edit_hint">Bir satıra dokunup değiştirebilirsin. %1$s değişikliği kısa bir notla görür.</string>
+    <!-- No design copy: the sheet behind a tapped row, and a save that did not go through. -->
+    <string name="task_edit_note">%1$s değişikliği kısa bir notla görür.</string>
+    <string name="task_edit_failed_title">Değişiklik gitmedi</string>
 
     <!-- 7d Cancel. open-questions#34: the design says "Eren\'e kısa bir not giderim"; rephrased so the name takes no suffix. -->
     <string name="cancel_title">Görev iptal edilsin mi?</string>
@@ -339,6 +344,7 @@
     <string name="action_edit">Düzenle</string>
     <string name="action_dismiss">Vazgeç</string>
     <string name="action_ok">Tamam</string>
+    <string name="action_save">Kaydet</string>
     <string name="action_open_settings">Ayarları aç</string>
 
     <!-- 3a, 3b Poke -->

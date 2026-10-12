@@ -287,7 +287,7 @@ private fun ReachNote(
 /** "Saat seç": the system time picker in a dialog (24 hour clock). */
 @OptIn(ExperimentalMaterial3Api::class) // Reason: TimePicker is still experimental in Material 3.
 @Composable
-private fun TimePickerDialog(
+internal fun TimePickerDialog(
     onPick: (LocalTime) -> Unit,
     onDismiss: () -> Unit,
 ) {

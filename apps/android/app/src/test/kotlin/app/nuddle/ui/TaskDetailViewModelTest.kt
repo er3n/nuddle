@@ -2,7 +2,10 @@ package app.nuddle.ui
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.Reachability
+import app.nuddle.data.WriteOutcome
+import app.nuddle.domain.IdGenerator
 import app.nuddle.domain.QuietHours
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
@@ -16,6 +19,7 @@ import app.nuddle.testing.aTask
 import app.nuddle.testing.selinConnection
 import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.task.CancelReason
+import app.nuddle.ui.screens.task.EditRow
 import app.nuddle.ui.screens.task.TaskDetailViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -45,6 +49,7 @@ class TaskDetailViewModelTest {
             connectionDao,
             sessions,
             tasks,
+            IdGenerator(clock),
             clock,
             istanbul,
         )
@@ -102,5 +107,38 @@ class TaskDetailViewModelTest {
             vm.onCancelDismiss()
             assertEquals(false, vm.state.value?.cancelling)
             assertTrue(tasks.cancelled.isEmpty())
+        }
+
+    @Test
+    fun `Son zaman takes a new deadline, sent with the rest unchanged`() =
+        runTest(main.dispatcher) {
+            ready()
+            vm.onEdit(EditRow.Deadline)
+            val morning =
+                vm.state.value!!
+                    .deadlineChoices
+                    .single()
+            vm.onDeadlineChoice(morning)
+            vm.onEditSave()
+            assertEquals(listOf<Pair<Instant?, FinishMode?>>(morning.at to null), tasks.rowEdits)
+            assertNull(vm.state.value?.editing)
+        }
+
+    @Test
+    fun `Nasıl bitsin switches photo off, and a failed save keeps the sheet for another try`() =
+        runTest(main.dispatcher) {
+            ready()
+            vm.onEdit(EditRow.Finish)
+            assertTrue(vm.state.value!!.pickedPhoto, "starts at what the task has")
+            vm.onPhotoChoice(false)
+            tasks.editOutcome = WriteOutcome.Failed
+            vm.onEditSave()
+            assertEquals(EditRow.Finish, vm.state.value?.editing)
+            assertTrue(vm.state.value!!.saveFailed)
+
+            tasks.editOutcome = WriteOutcome.Created(Cast.TASK_ID)
+            vm.onEditSave()
+            assertEquals(listOf<Pair<Instant?, FinishMode?>>(null to FinishMode.DONE, null to FinishMode.DONE), tasks.rowEdits)
+            assertNull(vm.state.value?.editing)
         }
 }

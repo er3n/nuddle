@@ -82,6 +82,14 @@ interface TaskRepository {
         idempotencyKey: String,
     ): WriteOutcome
 
+    /** A row changed in the sender's task detail (7c): the deadline or how it ends, the rest kept. */
+    suspend fun edit(
+        taskId: String,
+        deadline: Instant?,
+        finishMode: FinishMode?,
+        idempotencyKey: String,
+    ): WriteOutcome
+
     /**
      * "Şimdiden bitti": applied locally at once, then sent through the outbox. Returns the number of the poke that
      * caught the person (the last one that rang in the current plan), or null when none had rung.
@@ -167,16 +175,23 @@ class ApiTaskRepository
             taskId: String,
             deadline: Instant,
             idempotencyKey: String,
+        ): WriteOutcome = edit(taskId, deadline, null, idempotencyKey)
+
+        override suspend fun edit(
+            taskId: String,
+            deadline: Instant?,
+            finishMode: FinishMode?,
+            idempotencyKey: String,
         ): WriteOutcome {
             val task = tasks.get(taskId) ?: return WriteOutcome.Failed
             val command =
                 EditCommand(
                     idempotencyKey = idempotencyKey,
                     taskId = taskId,
-                    deadline = deadline.toString(),
-                    // Sent as they are: the edit command replaces every field it carries.
+                    // What did not change is sent as it is: the edit command replaces every field it carries.
+                    deadline = (deadline ?: Instant.fromEpochMilliseconds(task.deadline)).toString(),
                     detail = task.detail,
-                    finishMode = FinishMode.entries.first { it.value == task.finishMode },
+                    finishMode = finishMode ?: FinishMode.entries.first { it.value == task.finishMode },
                 )
             val result = apiCall(json) { commandsApi.edit(command) }
             if (result !is ApiResult.Success) return WriteOutcome.Failed
