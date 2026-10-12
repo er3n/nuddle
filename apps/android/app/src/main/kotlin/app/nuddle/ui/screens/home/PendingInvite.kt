@@ -68,7 +68,7 @@ fun pendingInvite(
         }
 
 /** "Eşin", "Annen / Baban" ...; null for "Diğer", which has no "X olarak". */
-private val EdgeType.asYours: Int?
+internal val EdgeType.asYours: Int?
     get() =
         when (this) {
             EdgeType.SPOUSE -> R.string.relationship_as_spouse

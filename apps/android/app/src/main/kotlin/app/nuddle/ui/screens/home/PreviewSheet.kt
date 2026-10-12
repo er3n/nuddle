@@ -227,6 +227,7 @@ private fun DeadlineQuestion(
 }
 
 /** "Nasıl bitsin?" with "Para işlerinde fotoğraf öneririm" when the extraction chose a photo (4a). */
+@OptIn(ExperimentalLayoutApi::class) // Reason: FlowRow is the layout for wrapping; no stable alternative.
 @Composable
 private fun ColumnScope.FinishChoice(
     preview: PreviewUi,
@@ -234,13 +235,13 @@ private fun ColumnScope.FinishChoice(
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            stringResource(R.string.preview_finish_question),
-            style = DurtTheme.type.body,
-            color = colors.textSecondary,
-            modifier = Modifier.weight(1f),
-        )
+    // Wraps at large font scales instead of squeezing the question to nothing.
+    FlowRow(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        itemVerticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(stringResource(R.string.preview_finish_question), style = DurtTheme.type.body, color = colors.textSecondary)
         if (preview.photoSuggested) {
             Text(stringResource(R.string.preview_photo_suggested), style = DurtTheme.type.captionStrong, color = colors.warning)
         }

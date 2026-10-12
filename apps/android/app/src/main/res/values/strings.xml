@@ -471,6 +471,50 @@
     <string name="drop_hint">Görev \"bırakıldı\" olarak kapanır, dürtmeler durur. Başarısız sayılmaz.</string>
     <string name="drop_send_note">Notla gönder</string>
     <string name="drop_without_note">Notsuz kapat</string>
+    <!-- 5a: profile and settings (open-questions#37) -->
+    <string name="profile_title">Profil</string>
+    <string name="profile_edit">Düzenle</string>
+    <string name="profile_people">Bizimkiler</string>
+    <string name="profile_invite">+ Birini davet et</string>
+    <string name="profile_pending">Bekliyor</string>
+    <string name="profile_poking">Dürtme</string>
+    <string name="profile_use_connections">Benim işlerimde tanıdıklarımı kullanabilirsin</string>
+    <string name="profile_use_connections_body">Her şeyi kaçırırsam bir yakınıma haber verebilirsin.</string>
+    <string name="profile_notify_me">Başkalarının işleri için bana haber verilebilir</string>
+    <string name="profile_notify_me_body">Bir tanıdığım işini kaçırırsa bana söyleyebilirsin.</string>
+    <string name="profile_quiet_hours">Sessiz saatler</string>
+    <string name="profile_quiet_row">Kimse dürtülmez</string>
+    <string name="profile_quiet_range">%1$s-%2$s</string>
+    <string name="profile_permissions">İzinler</string>
+    <string name="profile_permission_notifications">Bildirimler</string>
+    <string name="profile_permission_alarms">Alarmlar ve hatırlatıcılar</string>
+    <string name="profile_permission_full_screen">Tam ekran alarm</string>
+    <string name="profile_permission_off">Kapalı · Düzelt</string>
+    <string name="cd_permission_on">Açık</string>
+    <string name="profile_log_out">Çıkış yap</string>
+    <string name="profile_delete">Hesabı sil</string>
+    <string name="profile_failed_title">Olmadı</string>
+    <string name="profile_failed_body">Bağlantını kontrol edip tekrar dene.</string>
+    <string name="rename_title">Adın</string>
+    <!-- 7g -->
+    <string name="quiet_title">Sessiz saatler</string>
+    <string name="quiet_body">Bu saatlerde hiçbir dürtme çalmaz, tam ekran dahil.</string>
+    <string name="quiet_start">Başlangıç</string>
+    <string name="quiet_end">Bitiş</string>
+    <string name="quiet_hint">Son zamanı bu aralığa düşen bir iş varsa seni önceden dürterim.</string>
+    <!-- 7h -->
+    <string name="logout_title">Çıkış yapılsın mı?</string>
+    <string name="logout_body">Bu telefonda dürtmeler çalmaz. Sana yazılan işler kaçabilir, yazan kişi de sana ulaşamadığımı görür.</string>
+    <string name="logout_body_alone">Bu telefonda dürtmeler çalmaz, işlerin kaçabilir.</string>
+    <string name="logout_kept">Görevlerin ve bağlantıların silinmez. Aynı numarayla girince hepsi geri gelir.</string>
+    <string name="logout_confirm">Çıkış yap</string>
+    <!-- 7i -->
+    <string name="delete_title">Hesabın silinsin mi?</string>
+    <string name="delete_point_data">Bağlantıların, görevlerin ve fotoğrafların silinir.</string>
+    <string name="delete_point_others">Sana yazılan açık işler iptal olur, yazana haber veririm.</string>
+    <string name="delete_point_learning">Seni ne kadar dürtmem gerektiğini öğrendiklerim de silinir.</string>
+    <string name="delete_point_final">Geri alınamaz.</string>
+    <string name="delete_confirm">Hesabımı sil</string>
     <string name="poke_time_left">son zamana %1$s</string>
     <string name="poke_time_left_sentence">Son zamana %1$s var.</string>
     <string name="duration_minutes">%1$d dk</string>
