@@ -1,5 +1,7 @@
 package app.nuddle.alarm
 
+import app.nuddle.data.DoneNote
+import app.nuddle.data.DoneNotes
 import app.nuddle.data.db.NuddleDatabase
 import app.nuddle.data.outbox.Outbox
 import app.nuddle.domain.AlarmKey
@@ -44,6 +46,7 @@ class PokeAlarmTest {
     private val fullScreen = FakeFullScreen()
     private val sessions = InMemorySessionStore(aSession())
     private val drainer = RecordingDrainer()
+    private val doneNotes = DoneNotes()
     private lateinit var alarms: PokeAlarms
     private lateinit var firing: PokeFiring
     private lateinit var actions: PokeActions
@@ -69,7 +72,7 @@ class PokeAlarmTest {
                 clock,
                 TimeZone.UTC,
             )
-        actions = PokeActions(db.tasks(), alarms, scheduler, notifications, outbox, ids, clock)
+        actions = PokeActions(db.tasks(), alarms, scheduler, notifications, outbox, ids, clock, doneNotes)
     }
 
     @After
@@ -178,6 +181,14 @@ class PokeAlarmTest {
             clock.advance(40.minutes)
             firing.fire(key(2))
             assertTrue(notifications.shown.isEmpty())
+        }
+
+    @Test
+    fun `Bitti on the poke leaves the done note for home with that poke's number`() =
+        runTest {
+            givenPlan()
+            actions.done(key(2))
+            assertEquals(DoneNote(Cast.TASK_ID, "Temizlikçi için para çek", caughtAt = 2), doneNotes.pending.value)
         }
 
     @Test
