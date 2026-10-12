@@ -15,6 +15,8 @@ import app.nuddle.data.db.PokeStepDao
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.session.ConsentPrompts
 import app.nuddle.data.session.DataStoreConsentPrompts
+import app.nuddle.data.sync.SyncRepository
+import app.nuddle.data.sync.Syncer
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -61,4 +63,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun consentPrompts(impl: DataStoreConsentPrompts): ConsentPrompts
+
+    @Binds
+    abstract fun syncer(impl: SyncRepository): Syncer
 }

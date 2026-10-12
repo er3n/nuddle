@@ -5,21 +5,26 @@ import androidx.lifecycle.viewModelScope
 import app.nuddle.data.InviteRepository
 import app.nuddle.data.db.InviteDao
 import app.nuddle.data.session.ConsentPrompts
+import app.nuddle.data.sync.Syncer
 import app.nuddle.domain.IdGenerator
 import app.nuddle.ui.screens.inbox.openReceived
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 private const val STOP_TIMEOUT_MS = 5_000L
+private const val LINK_WAIT_MS = 5_000L
 
 /**
  * Invites as home sees them: the bell badge (open invites to me), the consent screen (0f) that opens by itself once
@@ -33,8 +38,10 @@ class HomeInvitesViewModel
         private val prompts: ConsentPrompts,
         private val invites: InviteRepository,
         private val ids: IdGenerator,
+        private val syncer: Syncer,
     ) : ViewModel() {
-        private val received = inviteDao.observeAll().map(::openReceived)
+        private val all = inviteDao.observeAll()
+        private val received = all.map(::openReceived)
 
         val unread: StateFlow<Int> =
             received.map { it.size }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), 0)
@@ -45,6 +52,22 @@ class HomeInvitesViewModel
                 .mapNotNull { open -> open.lastOrNull { !prompts.shown(it.id) }?.id }
                 .take(1)
                 .onEach { prompts.markShown(it) }
+
+        /**
+         * An invite link was opened (`nuddle.app/i/{code}`): the invite to me with that code, after a sync since the
+         * link may come before the invite reached this phone. Null when it is not mine or not there, and the bell
+         * opens instead.
+         */
+        suspend fun inviteForLink(code: String): String? {
+            syncer.sync()
+            return withTimeoutOrNull(LINK_WAIT_MS) {
+                all
+                    .map { invites -> invites.firstOrNull { !it.sent && it.code == code } }
+                    .filterNotNull()
+                    .first()
+                    .id
+            }
+        }
 
         fun onRevoke(invite: PendingInviteUi) {
             viewModelScope.launch { invites.revoke(invite.inviteId, ids.next()) }

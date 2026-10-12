@@ -19,7 +19,7 @@ Things not yet decided. If you hit one while building, do not decide silently: p
 
 11. **In-app logo and English UI.** Store name is "dürt" in Turkey and Nuddle elsewhere. Does the in-app logo follow the locale ("dürt." vs "nuddle.")? *Default:* follow the locale via a string resource.
 12. **Theme and component prefix.** Handoff uses `DurtTheme`, `DurtButton`. *Default:* keep `Durt*` in the MVP, rename in one PR before the global launch if wanted.
-13. **Invite link host and path.** Handoff used `durtmobil.com/d/{inviteCode}`. *Default:* `https://nuddle.app/i/{inviteCode}` as the App Links host, with `durtmobil.com` redirecting.
+13. **Invite link host and path.** Handoff used `durtmobil.com/d/{inviteCode}`. *Decided 2026-10-12:* `https://nuddle.app/i/{inviteCode}` as the App Links host, with `durtmobil.com` redirecting. Kept here so the number stays stable.
 14. **Landing page.** Canvas landing is Turkish and branded dürt. *Default:* Next serves `/` in English (Nuddle) and `/tr` in Turkish (dürt).
 15. **Trademark check** for Nuddle in the US/EU and the status of nuddle.com, before the global launch.
 

@@ -5,6 +5,7 @@ import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -72,12 +73,17 @@ private fun NavHostController.replaceAll(route: String) {
 }
 
 @Composable
-fun NuddleNavHost(startRoute: String) {
+fun NuddleNavHost(
+    startRoute: String,
+    inviteCode: String? = null,
+    onInviteCodeTake: () -> Unit = {},
+) {
     val nav = rememberNavController()
+    val takeInviteCode by rememberUpdatedState(onInviteCodeTake)
     NavHost(navController = nav, startDestination = startRoute) {
         composable(Routes.WELCOME) {
             LightSystemBarIcons()
-            // TODO(open-questions#13): the invited variant (0b) opens from invite App Links, built with invites (slice 2).
+            // The invited variant (0b) needs an invite preview before sign-in: NUD-38.
             WelcomeScreen(
                 state = WelcomeUiState(),
                 onStart = { nav.navigate(Routes.PHONE) },
@@ -126,6 +132,16 @@ fun NuddleNavHost(startRoute: String) {
             LaunchedEffect(viewModel) { viewModel.openSetup.collect { nav.navigate(Routes.SETUP) { launchSingleTop = true } } }
             LaunchedEffect(invites) {
                 invites.openConsent.collect { nav.navigate(Routes.consent(it, fromBell = false)) { launchSingleTop = true } }
+            }
+            // An invite link: its consent screen, or the bell when the invite is not (yet) mine. Signed out, the
+            // link waits here until sign-in reaches home.
+            LaunchedEffect(inviteCode) {
+                val code = inviteCode ?: return@LaunchedEffect
+                takeInviteCode()
+                val inviteId = invites.inviteForLink(code)
+                nav.navigate(if (inviteId != null) Routes.consent(inviteId, fromBell = true) else Routes.INBOX) {
+                    launchSingleTop = true
+                }
             }
             val unread by invites.unread.collectAsStateWithLifecycle()
             // Bell, profile and voice are routes of the feature slices (docs/bootstrap-plan.md).
