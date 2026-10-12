@@ -125,7 +125,23 @@ object TestTags {
     const val ISSUE_CANCEL = "issue.cancel"
     const val ISSUE_CANCELLED = "issue.cancelled"
 
+    const val PROFILE_SCREEN = "profile.screen"
+    const val PROFILE_EDIT = "profile.edit"
+    const val PROFILE_INVITE = "profile.invite"
+    const val PROFILE_USE_CONNECTIONS = "profile.useConnections"
+    const val PROFILE_NOTIFY_ME = "profile.notifyMe"
+    const val PROFILE_QUIET = "profile.quiet"
+    const val PROFILE_LOG_OUT = "profile.logOut"
+    const val PROFILE_DELETE = "profile.delete"
+    const val QUIET_START = "quiet.start"
+    const val QUIET_END = "quiet.end"
+    const val RENAME_INPUT = "rename.input"
+
     fun dropReason(name: String) = "drop.reason.$name"
+
+    fun profilePerson(name: String) = "profile.person.$name"
+
+    fun profilePermission(step: String) = "profile.permission.$step"
 }
 
 /** Root of an activity's content: exposes the test tags as resource ids in the `e2e` flavor only. */

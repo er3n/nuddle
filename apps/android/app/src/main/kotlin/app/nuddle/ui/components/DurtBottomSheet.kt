@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -87,7 +89,10 @@ fun DurtBottomSheetContent(
                 .background(
                     colors.surface,
                     RoundedCornerShape(topStart = dimens.radiusSheet, topEnd = dimens.radiusSheet),
-                ).padding(start = dimens.space20, end = dimens.space20, top = dimens.space12, bottom = dimens.space24),
+                )
+                // Large font scales make a sheet taller than the screen; the actions must stay reachable.
+                .verticalScroll(rememberScrollState())
+                .padding(start = dimens.space20, end = dimens.space20, top = dimens.space12, bottom = dimens.space24),
         verticalArrangement = Arrangement.spacedBy(dimens.space12),
     ) {
         Box(

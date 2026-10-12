@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewComponent
@@ -61,13 +62,19 @@ fun GroupDivider(modifier: Modifier = Modifier) {
     HorizontalDivider(modifier, thickness = DurtTheme.dimens.borderCard, color = DurtTheme.colors.surfaceMuted)
 }
 
-/** 52 dp row with a label and an optional value; with `onClick` it shows a chevron and the row is tappable. */
+/**
+ * 52 dp row with a label and an optional value or [trailing] mark; with `onClick` it shows a chevron and the row is
+ * tappable.
+ */
 @Composable
 fun LineRow(
     label: String,
     modifier: Modifier = Modifier,
     value: String? = null,
     leading: @Composable (() -> Unit)? = null,
+    trailing: @Composable (() -> Unit)? = null,
+    labelColor: Color = DurtTheme.colors.ink,
+    labelStyle: TextStyle = DurtTheme.type.body,
     valueColor: Color = DurtTheme.colors.ink,
     onClick: (() -> Unit)? = null,
 ) {
@@ -79,8 +86,9 @@ fun LineRow(
         horizontalArrangement = Arrangement.spacedBy(dimens.space12),
     ) {
         leading?.invoke()
-        Text(label, style = DurtTheme.type.body, color = DurtTheme.colors.ink, modifier = Modifier.weight(1f))
+        Text(label, style = labelStyle, color = labelColor, modifier = Modifier.weight(1f))
         if (value != null) Text(value, style = DurtTheme.type.bodyStrong, color = valueColor, textAlign = TextAlign.End)
+        trailing?.invoke()
         if (onClick != null) {
             Icon(
                 DurtIcons.ChevronRight,

@@ -5,6 +5,7 @@ import app.nuddle.alarm.FullScreenPermission
 import app.nuddle.alarm.PokeNotifications
 import app.nuddle.api.model.EdgeType
 import app.nuddle.api.model.FinishMode
+import app.nuddle.data.AccountRepository
 import app.nuddle.data.Approvals
 import app.nuddle.data.AuthRepository
 import app.nuddle.data.InviteRepository
@@ -34,10 +35,12 @@ import app.nuddle.domain.PermissionReader
 import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeStep
 import app.nuddle.domain.QuietHours
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.LocalTime
 import java.io.ByteArrayOutputStream
 import kotlin.time.Clock
 import kotlin.time.Duration
@@ -514,4 +517,45 @@ class FakePhotoUploads : PhotoUploads {
     }
 
     override fun failing(taskId: String): Flow<Boolean> = failing
+}
+
+/** Records profile and settings commands; [ok] answers them, [gate] holds them until completed. */
+class FakeAccountRepository : AccountRepository {
+    val calls = mutableListOf<String>()
+    var ok = true
+    var gate: CompletableDeferred<Unit>? = null
+
+    private suspend fun answer(call: String): Boolean {
+        calls += call
+        gate?.await()
+        return ok
+    }
+
+    override suspend fun setQuietHours(
+        start: LocalTime,
+        end: LocalTime,
+    ) = answer("quiet $start-$end")
+
+    override suspend fun setUseConnectionsForMyTasks(on: Boolean) = answer("useConnections $on")
+
+    override suspend fun setNotifyMeForOthersTasks(on: Boolean) = answer("notifyMeForOthers $on")
+
+    override suspend fun setRelationship(
+        personId: String,
+        relationship: EdgeType,
+    ) = answer("relationship $personId ${relationship.value}")
+
+    override suspend fun setNotifyMe(
+        personId: String,
+        on: Boolean,
+    ) = answer("notifyMe $personId $on")
+
+    override suspend fun removeConnection(
+        personId: String,
+        idempotencyKey: String,
+    ) = answer("remove $personId $idempotencyKey")
+
+    override suspend fun logOut(idempotencyKey: String) = answer("logOut $idempotencyKey")
+
+    override suspend fun deleteAccount(idempotencyKey: String) = answer("delete $idempotencyKey")
 }

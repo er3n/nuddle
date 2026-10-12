@@ -53,6 +53,7 @@ object Routes {
     const val SETUP = "setup"
     const val INVITE = "invite"
     const val INBOX = "inbox"
+    const val PROFILE = "profile"
     const val CONSENT =
         "consent/{${ConsentViewModel.ARG_INVITE}}?${ConsentViewModel.ARG_FROM_BELL}={${ConsentViewModel.ARG_FROM_BELL}}"
     const val ARG_NAME = "name"
@@ -180,12 +181,12 @@ fun NuddleNavHost(
             val unreadInvites by invites.unread.collectAsStateWithLifecycle()
             val unreached by issues.unreached.collectAsStateWithLifecycle()
             val unread = unreadInvites + unreached
-            // Bell, profile and voice are routes of the feature slices (docs/bootstrap-plan.md).
+            // Voice is a route of a later feature slice (docs/bootstrap-plan.md).
             state?.let {
                 HomeScreen(
                     state = it.copy(unread = unread, issues = issuesUi, newDeadline = newDeadline),
                     onBell = { nav.navigate(Routes.INBOX) { launchSingleTop = true } },
-                    onProfile = {},
+                    onProfile = { nav.navigate(Routes.PROFILE) { launchSingleTop = true } },
                     onInvite = { nav.navigate(Routes.INVITE) { launchSingleTop = true } },
                     onComposeTextChange = viewModel::onComposeTextChange,
                     onComposeSend = viewModel::onComposeSend,
@@ -254,6 +255,15 @@ fun NuddleNavHost(
         }
         composable(Routes.INVITE) {
             InviteRoute(onBack = { nav.popBackStack() }, onShare = { nav.popBackStack(Routes.HOME, inclusive = false) })
+        }
+        composable(Routes.PROFILE) {
+            ProfileRoute(
+                onBack = { nav.popBackStack() },
+                // Person detail (5b) comes with its own route.
+                onOpenPerson = {},
+                onInvite = { nav.navigate(Routes.INVITE) { launchSingleTop = true } },
+                onSignedOut = { nav.replaceAll(Routes.WELCOME) },
+            )
         }
         composable(Routes.INBOX) {
             val viewModel: InboxViewModel = hiltViewModel()

@@ -102,7 +102,7 @@ private fun canAskForNotifications(
     askedOnce: Boolean,
 ): Boolean = !askedOnce || activity.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
 
-private fun settingsIntent(
+internal fun settingsIntent(
     activity: Activity,
     step: SetupStep,
 ): Intent {
