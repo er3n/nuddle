@@ -76,6 +76,12 @@
     <!-- Copy for a photo task to self: open-questions#27. -->
     <string name="home_finish_photo">Fotoğrafını çek</string>
     <string name="home_done_early">Şimdiden bitti</string>
+    <!-- 4c A task from someone else. open-questions#34 for the day in front of the time. -->
+    <string name="home_from_wrote">%1$s yazdı · %2$s</string>
+    <string name="written_yesterday">Dün %1$s</string>
+    <string name="home_finish_photo_from">Fotoğraf, %1$s onaylar</string>
+    <string name="home_call">Ara</string>
+    <string name="home_message">Mesaj</string>
     <string name="home_invite_compact_body">Birini davet et, birbirinize görev yazın</string>
     <string name="preview_you_wrote">Yazdığın: \"%1$s\"</string>
     <string name="preview_to">Kime</string>

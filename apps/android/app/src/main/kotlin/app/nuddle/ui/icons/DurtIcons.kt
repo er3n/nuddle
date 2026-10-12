@@ -52,6 +52,16 @@ object DurtIcons {
         stroke("PersonPlus", "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", "M3 20a6 6 0 0 1 12 0", "M19 8v6", "M16 11h6")
     }
 
+    val Phone by lazy {
+        stroke(
+            "Phone",
+            "M21 16.5v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 1.1 3.7 2 2 0 0 1 3.1 1.5h3" +
+                "a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L7 9.4a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7" +
+                "a2 2 0 0 1 1.8 2.1z",
+        )
+    }
+    val Message by lazy { stroke("Message", "M7.9 20A9 9 0 1 0 4 16.1L2 22l5.9-2z") }
+
     private fun fill(
         name: String,
         path: String,

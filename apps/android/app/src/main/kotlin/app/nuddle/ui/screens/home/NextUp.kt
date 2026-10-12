@@ -3,6 +3,7 @@ package app.nuddle.ui.screens.home
 import androidx.compose.runtime.Immutable
 import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.TaskStatus
+import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.TaskEntity
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
@@ -40,7 +41,36 @@ sealed interface DeadlineText {
     ) : DeadlineText
 }
 
-/** 2f: the "Sıradaki" card for the task that is due first. */
+/** When someone else wrote a task: "14:32" today, "Dün 14:32", otherwise "12 Ekim 14:32" (open-questions#34). */
+sealed interface WrittenText {
+    val time: String
+
+    data class Today(
+        override val time: String,
+    ) : WrittenText
+
+    data class Yesterday(
+        override val time: String,
+    ) : WrittenText
+
+    /** `month` is 1 to 12. */
+    data class OnDate(
+        val day: Int,
+        val month: Int,
+        override val time: String,
+    ) : WrittenText
+}
+
+/** 4c: who wrote the task, when, and how to reach them (Call, Message). */
+@Immutable
+data class FromUi(
+    val name: String,
+    val writtenAt: WrittenText,
+    /** Null when sync has no phone (an older server): no Call and Message icons then. */
+    val phone: String?,
+)
+
+/** 2f and 4c: the "Sıradaki" card for the task that is due first. [from] is null for a task to self. */
 @Immutable
 data class NextUpUi(
     val taskId: String,
@@ -48,20 +78,24 @@ data class NextUpUi(
     val detail: String?,
     val deadline: DeadlineText,
     val photo: Boolean,
+    val from: FromUi? = null,
 )
 
 /**
- * The open task to self that is due first, or null. Tasks from other people arrive with slice 3, the other
- * statuses (awaiting approval, missed) with slices 4 and 5.
+ * The open task to me that is due first, to self or from a connection, or null. A task from someone sync has no
+ * connection for is left out: there is no name to show. The other statuses (awaiting approval, missed) come with
+ * slices 4 and 5.
  */
 fun nextUp(
     tasks: List<TaskEntity>,
     me: String,
+    connections: Map<String, ConnectionEntity>,
     now: Instant,
     timeZone: TimeZone,
 ): NextUpUi? =
     tasks
-        .filter { it.senderId == me && it.recipientId == me && it.inRecipientList && it.status == TaskStatus.SCHEDULED.value }
+        .filter { it.recipientId == me && it.inRecipientList && it.status == TaskStatus.SCHEDULED.value }
+        .filter { it.senderId == me || it.senderId in connections }
         .minByOrNull { it.deadline }
         ?.let { task ->
             NextUpUi(
@@ -70,8 +104,26 @@ fun nextUp(
                 detail = task.detail,
                 deadline = deadlineText(Instant.fromEpochMilliseconds(task.deadline), now, timeZone),
                 photo = task.finishMode == FinishMode.PHOTO.value,
+                from =
+                    connections[task.senderId]?.takeIf { task.senderId != me }?.let {
+                        FromUi(it.displayName, writtenText(Instant.fromEpochMilliseconds(task.createdAt), now, timeZone), it.phone)
+                    },
             )
         }
+
+fun writtenText(
+    at: Instant,
+    now: Instant,
+    timeZone: TimeZone,
+): WrittenText {
+    val local = at.toLocalDateTime(timeZone)
+    val time = local.time.format(HOUR_MINUTE)
+    return when (local.date.daysUntil(now.toLocalDateTime(timeZone).date)) {
+        0 -> WrittenText.Today(time)
+        1 -> WrittenText.Yesterday(time)
+        else -> WrittenText.OnDate(local.date.day, local.date.month.number, time)
+    }
+}
 
 fun deadlineText(
     deadline: Instant,

@@ -1,5 +1,6 @@
 package app.nuddle.testing
 
+import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.PokeStepEntity
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.session.StoredSession
@@ -58,3 +59,13 @@ fun aStep(
     level = level.name,
     firedAt = firedAt,
 )
+
+fun selinConnection(phone: String? = Cast.SELIN_PHONE) =
+    ConnectionEntity(
+        personId = Cast.SELIN_ID,
+        displayName = "Selin",
+        relationship = "spouse",
+        status = "active",
+        reachability = "FULL_SCREEN",
+        phone = phone,
+    )

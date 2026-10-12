@@ -56,7 +56,7 @@ import app.nuddle.ui.theme.DurtTheme
 import app.nuddle.ui.uppercaseForUi
 
 /**
- * 1a: home with nobody connected and no tasks; 2f: the task due first as the "Sıradaki" card. Lists and the other
+ * 1a: home with nobody connected and no tasks; 2f and 4c: the task due first as the "Sıradaki" card. Lists and the other
  * home states arrive with the feature slices.
  */
 @Immutable
@@ -68,6 +68,8 @@ data class HomeUiState(
     val preview: PreviewUi? = null,
     val undo: UndoUi? = null,
     val doneNote: DoneNoteUi? = null,
+    /** Someone to write to: no invite card then (open-questions#34). */
+    val connected: Boolean = false,
     /** 1g: shown instead of the invite card while my invite waits. */
     val pendingInvite: PendingInviteUi? = null,
 )
@@ -98,7 +100,7 @@ fun HomeScreen(
     onVoiceStart: () -> Unit,
     onVoiceEnd: (cancelled: Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    onFinishNextUp: () -> Unit = {},
+    nextUpActions: NextUpCallbacks = NextUpCallbacks(),
     preview: PreviewCallbacks = PreviewCallbacks(),
     undo: UndoCallbacks = UndoCallbacks(),
     pendingInvite: PendingInviteCallbacks = PendingInviteCallbacks(),
@@ -127,7 +129,7 @@ fun HomeScreen(
             PendingInviteCard(state.myName, waiting, { pendingInvite.onReshare(waiting) }, { pendingInvite.onRevoke(waiting) })
         }
         if (nextUp == null) {
-            if (waiting == null) InviteCard(state.myName, onInvite)
+            if (waiting == null && !state.connected) InviteCard(state.myName, onInvite)
             EmptyTasks(Modifier.padding(top = dimens.space48))
         } else {
             Text(
@@ -136,8 +138,8 @@ fun HomeScreen(
                 color = colors.textTertiary,
                 modifier = Modifier.semantics { heading() },
             )
-            NextUpCard(nextUp, onFinishNextUp)
-            if (waiting == null) CompactInviteCard(onInvite)
+            NextUpCard(nextUp, nextUpActions)
+            if (waiting == null && !state.connected) CompactInviteCard(onInvite)
         }
     }
     state.preview?.let { PreviewSheet(it, preview) }

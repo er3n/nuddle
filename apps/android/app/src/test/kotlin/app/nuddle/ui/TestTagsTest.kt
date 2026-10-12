@@ -11,6 +11,7 @@ import app.nuddle.domain.Ago
 import app.nuddle.domain.SetupStep
 import app.nuddle.domain.Snooze
 import app.nuddle.domain.TimeLeft
+import app.nuddle.testing.Cast
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.screens.code.CodeScreen
 import app.nuddle.ui.screens.code.CodeUiState
@@ -20,13 +21,16 @@ import app.nuddle.ui.screens.consent.ConsentUiState
 import app.nuddle.ui.screens.consent.MatchedScreen
 import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.DeadlineText
+import app.nuddle.ui.screens.home.FromUi
 import app.nuddle.ui.screens.home.HomeScreen
 import app.nuddle.ui.screens.home.HomeUiState
+import app.nuddle.ui.screens.home.NextUpCallbacks
 import app.nuddle.ui.screens.home.NextUpUi
 import app.nuddle.ui.screens.home.PendingInviteCallbacks
 import app.nuddle.ui.screens.home.PendingInviteUi
 import app.nuddle.ui.screens.home.PreviewCallbacks
 import app.nuddle.ui.screens.home.PreviewUi
+import app.nuddle.ui.screens.home.WrittenText
 import app.nuddle.ui.screens.inbox.InboxInviteUi
 import app.nuddle.ui.screens.inbox.InboxScreen
 import app.nuddle.ui.screens.inbox.InboxUiState
@@ -204,11 +208,44 @@ class TestTagsTest {
                 onComposeSend = { clicked += "send" },
                 onVoiceStart = {},
                 onVoiceEnd = {},
-                onFinishNextUp = { clicked += "doneEarly" },
+                nextUpActions = NextUpCallbacks(onDone = { clicked += "doneEarly" }),
             )
         }
         assertShown(TestTags.HOME_NEXT_UP)
         assertTaps(TestTags.HOME_DONE_EARLY to "doneEarly", TestTags.HOME_INVITE to "invite")
+    }
+
+    @Test
+    fun `home with a task from Selin`() {
+        val from = FromUi("Selin", WrittenText.Today("14:32"), Cast.SELIN_PHONE)
+        content {
+            HomeScreen(
+                state =
+                    HomeUiState(
+                        myName = "Eren",
+                        nextUp = NextUpUi("task-1", "Gelirken ekmek al", null, DeadlineText.Today("19:00"), photo = false, from = from),
+                    ),
+                onBell = {},
+                onProfile = {},
+                onInvite = {},
+                onComposeTextChange = {},
+                onComposeSend = {},
+                onVoiceStart = {},
+                onVoiceEnd = {},
+                nextUpActions =
+                    NextUpCallbacks(
+                        onDone = { clicked += "doneEarly" },
+                        onCall = { clicked += "call $it" },
+                        onMessage = { clicked += "message $it" },
+                    ),
+            )
+        }
+        assertShown(TestTags.HOME_NEXT_UP)
+        assertTaps(
+            TestTags.HOME_DONE_EARLY to "doneEarly",
+            TestTags.HOME_CALL to "call ${Cast.SELIN_PHONE}",
+            TestTags.HOME_MESSAGE to "message ${Cast.SELIN_PHONE}",
+        )
     }
 
     @Test

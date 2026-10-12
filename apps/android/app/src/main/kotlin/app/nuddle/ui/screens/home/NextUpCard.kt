@@ -33,6 +33,7 @@ import app.nuddle.ui.components.DoneNote
 import app.nuddle.ui.components.DurtButton
 import app.nuddle.ui.components.DurtButtonKind
 import app.nuddle.ui.components.DurtButtonSize
+import app.nuddle.ui.components.GroupDivider
 import app.nuddle.ui.components.PillStatus
 import app.nuddle.ui.components.StatusPill
 import app.nuddle.ui.components.UndoToast
@@ -48,16 +49,19 @@ internal fun DeadlineText.text(): String =
         is DeadlineText.OnDate -> stringResource(R.string.deadline_on_date, day, stringArrayResource(R.array.month_names)[month - 1], time)
     }
 
-/** 2f: title, detail and who it is for, the deadline and how it ends, and "Şimdiden bitti". */
+/**
+ * 2f: title, detail and who it is for, the deadline and how it ends, and "Şimdiden bitti". 4c, a task from someone
+ * else: who wrote it and when on top, and Call and Message under a line.
+ */
 @Composable
 internal fun NextUpCard(
     task: NextUpUi,
-    onDone: () -> Unit,
+    callbacks: NextUpCallbacks,
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
     val shape = RoundedCornerShape(dimens.radiusXl)
-    val toSelf = stringResource(R.string.home_to_self)
+    val from = task.from
     Column(
         modifier =
             Modifier
@@ -68,33 +72,57 @@ internal fun NextUpCard(
                 .testTag(TestTags.HOME_NEXT_UP),
         verticalArrangement = Arrangement.spacedBy(dimens.space12),
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(dimens.space12)) {
-            Column(Modifier.weight(1f)) {
-                Text(task.title, style = DurtTheme.type.brand, color = colors.ink)
-                Text(
-                    text = task.detail?.let { stringResource(R.string.separator_dot, it, toSelf) } ?: toSelf,
-                    style = DurtTheme.type.bodySmall,
-                    color = colors.textSecondary,
-                )
+        if (from == null) {
+            val toSelf = stringResource(R.string.home_to_self)
+            Row(horizontalArrangement = Arrangement.spacedBy(dimens.space12)) {
+                Column(Modifier.weight(1f)) {
+                    Text(task.title, style = DurtTheme.type.brand, color = colors.ink)
+                    Text(
+                        text = task.detail?.let { stringResource(R.string.separator_dot, it, toSelf) } ?: toSelf,
+                        style = DurtTheme.type.bodySmall,
+                        color = colors.textSecondary,
+                    )
+                }
+                StatusPill(PillStatus.Scheduled)
             }
-            StatusPill(PillStatus.Scheduled)
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                FromLine(from, Modifier.weight(1f))
+                StatusPill(PillStatus.Scheduled)
+            }
+            Column {
+                Text(task.title, style = DurtTheme.type.brand, color = colors.ink)
+                task.detail?.let { Text(it, style = DurtTheme.type.bodySmall, color = colors.textSecondary) }
+            }
         }
         // Both tiles as tall as the taller one when a value wraps at large font scales.
         Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(dimens.space10)) {
             InfoTile(stringResource(R.string.home_deadline_label), task.deadline.text(), Modifier.weight(1f))
             InfoTile(
                 label = stringResource(R.string.home_finish_label),
-                value = stringResource(if (task.photo) R.string.home_finish_photo else R.string.home_finish_done),
+                value =
+                    when {
+                        !task.photo -> stringResource(R.string.home_finish_done)
+                        from == null -> stringResource(R.string.home_finish_photo)
+                        else -> stringResource(R.string.home_finish_photo_from, from.name)
+                    },
                 modifier = Modifier.weight(1f),
             )
         }
-        DurtButton(
-            text = stringResource(R.string.home_done_early),
-            onClick = onDone,
-            kind = DurtButtonKind.Success,
-            size = DurtButtonSize.Small,
-            modifier = Modifier.testTag(TestTags.HOME_DONE_EARLY),
-        )
+        // TODO(NUD-15): "Bitti, çek" (4c, 4d) for a photo task from someone else; the sender approves the photo.
+        if (from == null || !task.photo) {
+            DurtButton(
+                text = stringResource(R.string.home_done_early),
+                onClick = callbacks.onDone,
+                kind = DurtButtonKind.Success,
+                size = DurtButtonSize.Small,
+                modifier = Modifier.testTag(TestTags.HOME_DONE_EARLY),
+            )
+        }
+        from?.phone?.let { phone ->
+            GroupDivider()
+            ReachRow(phone, callbacks)
+        }
     }
 }
 

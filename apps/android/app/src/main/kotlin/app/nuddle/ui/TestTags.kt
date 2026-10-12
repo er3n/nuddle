@@ -34,6 +34,8 @@ object TestTags {
     const val HOME_INVITE = "home.invite"
     const val HOME_NEXT_UP = "home.nextUp"
     const val HOME_DONE_EARLY = "home.doneEarly"
+    const val HOME_CALL = "home.call"
+    const val HOME_MESSAGE = "home.message"
     const val HOME_UNDO = "home.undo"
     const val HOME_DONE_NOTE = "home.doneNote"
     const val HOME_PENDING_INVITE = "home.pendingInvite"

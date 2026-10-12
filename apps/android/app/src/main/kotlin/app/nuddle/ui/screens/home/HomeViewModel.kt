@@ -3,12 +3,14 @@ package app.nuddle.ui.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.nuddle.api.model.FinishMode
+import app.nuddle.api.model.SyncConnection
 import app.nuddle.api.model.WriteTaskResult
 import app.nuddle.data.DoneNote
 import app.nuddle.data.DoneNotes
 import app.nuddle.data.SetupGate
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.WriteOutcome
+import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.InviteDao
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.session.SessionStore
@@ -40,8 +42,9 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 
 private const val STOP_TIMEOUT_MS = 5_000L
+private val ACTIVE = SyncConnection.Status.ACTIVE.value
 
-/** Home (1a, 2a, 2f): the person's name, the task due first, and writing a task to self. */
+/** Home (1a, 2a, 2f, 4c): the person's name, the task due first (to self or from someone), and writing a task. */
 @HiltViewModel
 class HomeViewModel
     @Inject
@@ -49,6 +52,7 @@ class HomeViewModel
         private val sessions: SessionStore,
         private val taskDao: TaskDao,
         private val inviteDao: InviteDao,
+        private val connectionDao: ConnectionDao,
         private val tasks: TaskRepository,
         private val ids: IdGenerator,
         private val setupGate: SetupGate,
@@ -92,23 +96,29 @@ class HomeViewModel
         /** Kept while the same text is retried, so a write the server got but did not answer is not created twice. */
         private var pendingKey: String? = null
 
-        private val nextUp =
-            combine(sessions.session.map { it?.personId }.filterNotNull(), taskDao.observeAll()) { me, all ->
-                nextUp(all, me, clock.now(), timeZone)
+        /** The card due first, and whether I have anyone to write to (the invite card goes then). */
+        private val tasksPart =
+            combine(
+                sessions.session.map { it?.personId }.filterNotNull(),
+                taskDao.observeAll(),
+                connectionDao.observeAll().map { all -> all.filter { it.status == ACTIVE }.associateBy { it.personId } },
+            ) { me, all, connections ->
+                nextUp(all, me, connections, clock.now(), timeZone) to connections.isNotEmpty()
             }
 
         val state: StateFlow<HomeUiState?> =
             combine(
-                combine(sessions.displayName.filterNotNull(), compose, nextUp, ::Triple),
+                combine(sessions.displayName.filterNotNull(), compose, tasksPart, ::Triple),
                 preview,
                 undo,
                 doneNote,
                 inviteDao.observeAll().map { pendingInvite(it, clock.now(), timeZone) },
-            ) { (name, compose, nextUp), preview, undo, doneNote, pendingInvite ->
+            ) { (name, compose, tasksPart), preview, undo, doneNote, pendingInvite ->
                 HomeUiState(
                     myName = name,
                     compose = compose,
-                    nextUp = nextUp,
+                    nextUp = tasksPart.first,
+                    connected = tasksPart.second,
                     preview = preview?.ui,
                     undo = undo,
                     doneNote = doneNote,
