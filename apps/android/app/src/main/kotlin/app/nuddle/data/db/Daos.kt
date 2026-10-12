@@ -116,3 +116,15 @@ interface OutboxDao {
     @Query("UPDATE outbox SET attempts = attempts + 1 WHERE idempotencyKey = :key")
     suspend fun countAttempt(key: String)
 }
+
+@Dao
+interface TaskEventDao {
+    @Upsert
+    suspend fun upsert(events: List<TaskEventEntity>)
+
+    @Query("SELECT * FROM task_events WHERE taskId = :taskId ORDER BY at")
+    suspend fun forTask(taskId: String): List<TaskEventEntity>
+
+    @Query("SELECT * FROM task_events ORDER BY at")
+    fun observeAll(): Flow<List<TaskEventEntity>>
+}

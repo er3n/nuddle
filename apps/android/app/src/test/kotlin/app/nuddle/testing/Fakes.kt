@@ -287,6 +287,30 @@ class FakeTaskRepository : TaskRepository {
     val createdFor = mutableListOf<String?>()
     val createdFinishModes = mutableListOf<FinishMode>()
 
+    val didItLater = mutableListOf<String>()
+    val senderHandled = mutableListOf<String>()
+
+    /** Task and new deadline of every "Yeni zaman ver" or "Süreyi uzat". */
+    val newDeadlines = mutableListOf<Pair<String, Instant>>()
+    var newDeadlineOutcome: WriteOutcome = WriteOutcome.Created(Cast.TASK_ID)
+
+    override suspend fun didItLater(taskId: String) {
+        didItLater += taskId
+    }
+
+    override suspend fun senderHandles(taskId: String) {
+        senderHandled += taskId
+    }
+
+    override suspend fun newDeadline(
+        taskId: String,
+        deadline: Instant,
+        idempotencyKey: String,
+    ): WriteOutcome {
+        newDeadlines += taskId to deadline
+        return newDeadlineOutcome
+    }
+
     /** What [done] answers: the poke number that caught the person. */
     var caughtAt: Int? = null
 

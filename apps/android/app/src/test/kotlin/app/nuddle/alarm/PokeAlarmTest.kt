@@ -265,6 +265,22 @@ class PokeAlarmTest {
         }
 
     @Test
+    fun `cant today from the full screen sends the note from the sheet (7f)`() =
+        runTest {
+            givenPlan()
+            actions.cantToday(key(1), "  Vaktim olmadı ")
+            assertEquals("DROPPED", db.tasks().get(Cast.TASK_ID)!!.status)
+            assertTrue(
+                db
+                    .outbox()
+                    .pending()
+                    .single()
+                    .body
+                    .contains(""""note":"Vaktim olmadı""""),
+            )
+        }
+
+    @Test
     fun `snooze rings the same step again 15 minutes later`() =
         runTest {
             givenPlan()

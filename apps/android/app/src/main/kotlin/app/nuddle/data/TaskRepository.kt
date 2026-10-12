@@ -2,16 +2,22 @@ package app.nuddle.data
 
 import app.nuddle.api.CommandsApi
 import app.nuddle.api.model.CreateTaskCommand
+import app.nuddle.api.model.DidItLaterCommand
 import app.nuddle.api.model.EditCommand
 import app.nuddle.api.model.FinishMode
+import app.nuddle.api.model.NewDeadlineCommand
+import app.nuddle.api.model.SenderHandlesCommand
+import app.nuddle.api.model.TaskStatus
 import app.nuddle.api.model.WriteTaskCommand
 import app.nuddle.api.model.WriteTaskResult
 import app.nuddle.data.api.ApiResult
 import app.nuddle.data.api.apiCall
 import app.nuddle.data.db.PokeStepDao
 import app.nuddle.data.db.TaskDao
+import app.nuddle.data.outbox.Outbox
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.sync.SyncRepository
+import app.nuddle.domain.IdGenerator
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import kotlin.time.Instant
@@ -113,6 +119,19 @@ interface TaskRepository {
         taskId: String,
         note: String? = null,
     )
+
+    /** "Sonradan yaptım" on a missed task (7e): done, late (open-questions#9). Local first, then the outbox. */
+    suspend fun didItLater(taskId: String)
+
+    /** "Ben hallederim" on a dropped task (5d): the sender takes it over (open-questions#8). Local first. */
+    suspend fun senderHandles(taskId: String)
+
+    /** "Yeni zaman ver" or "Süreyi uzat" (5d): the task opens again with a new deadline and a new plan. */
+    suspend fun newDeadline(
+        taskId: String,
+        deadline: Instant,
+        idempotencyKey: String,
+    ): WriteOutcome
 }
 
 class ApiTaskRepository
@@ -124,6 +143,8 @@ class ApiTaskRepository
         private val sessions: SessionStore,
         private val tasks: TaskDao,
         private val pokeSteps: PokeStepDao,
+        private val outbox: Outbox,
+        private val ids: IdGenerator,
         private val json: Json,
     ) : TaskRepository {
         override suspend fun write(
@@ -229,4 +250,34 @@ class ApiTaskRepository
             taskId: String,
             note: String?,
         ) = closer.cancel(taskId, note)
+
+        // A missed or dropped task has no alarms left, so closing it is only its status.
+        override suspend fun didItLater(taskId: String) {
+            tasks.setStatus(taskId, TaskStatus.DONE.value)
+            val id = ids.next()
+            outbox.enqueue("did_it_later", id, DidItLaterCommand(idempotencyKey = id, taskId = taskId), DidItLaterCommand.serializer())
+        }
+
+        override suspend fun senderHandles(taskId: String) {
+            tasks.setStatus(taskId, TaskStatus.CANCELLED.value)
+            val id = ids.next()
+            outbox.enqueue(
+                "sender_handles",
+                id,
+                SenderHandlesCommand(idempotencyKey = id, taskId = taskId),
+                SenderHandlesCommand.serializer(),
+            )
+        }
+
+        override suspend fun newDeadline(
+            taskId: String,
+            deadline: Instant,
+            idempotencyKey: String,
+        ): WriteOutcome {
+            val command = NewDeadlineCommand(idempotencyKey = idempotencyKey, taskId = taskId, deadline = deadline.toString())
+            val result = apiCall(json) { commandsApi.newDeadline(command) }
+            if (result !is ApiResult.Success) return WriteOutcome.Failed
+            sync.sync()
+            return WriteOutcome.Created(taskId)
+        }
     }

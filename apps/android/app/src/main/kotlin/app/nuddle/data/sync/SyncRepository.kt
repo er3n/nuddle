@@ -2,6 +2,7 @@ package app.nuddle.data.sync
 
 import app.nuddle.api.SyncApi
 import app.nuddle.api.model.SyncConnection
+import app.nuddle.api.model.SyncEvent
 import app.nuddle.api.model.SyncPlan
 import app.nuddle.api.model.SyncReceivedInvite
 import app.nuddle.api.model.SyncSentInvite
@@ -16,6 +17,8 @@ import app.nuddle.data.db.InviteEntity
 import app.nuddle.data.db.PokeStepEntity
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEntity
+import app.nuddle.data.db.TaskEventDao
+import app.nuddle.data.db.TaskEventEntity
 import app.nuddle.data.session.SessionStore
 import app.nuddle.domain.QuietHours
 import kotlinx.serialization.json.Json
@@ -57,8 +60,8 @@ interface TaskAnnouncer {
 }
 
 /**
- * `GET /api/v1/sync?cursor=&deviceId=` (ADR 0006, 0014): stores `me`, connections, tasks, invites and received
- * plans, moves the cursor, then re-arms alarms. The server is the source of truth; FCM only says when to call this.
+ * `GET /api/v1/sync?cursor=&deviceId=` (ADR 0006, 0014): stores `me`, connections, tasks, their events, invites and
+ * received plans, moves the cursor, then re-arms alarms. The server is the source of truth; FCM only says when to call this.
  * A task from someone else that arrives in a later sync is announced once; a full sync (sign-in, reinstall) brings
  * old ones too, so it announces nothing.
  */
@@ -70,6 +73,7 @@ class SyncRepository
         private val tasks: TaskDao,
         private val invites: InviteDao,
         private val connections: ConnectionDao,
+        private val events: TaskEventDao,
         private val alarms: AlarmRearmer,
         private val announcer: TaskAnnouncer,
         private val json: Json,
@@ -90,6 +94,7 @@ class SyncRepository
             // Compared with what this phone had before the sync; a full sync (cursor null) is old news.
             val news = if (cursor == null) emptyList() else news(response.tasks, session.personId)
             tasks.upsert(response.tasks.map(SyncTask::toEntity))
+            events.upsert(response.events.map(SyncEvent::toEntity))
             invites.upsert(response.sentInvites.map(SyncSentInvite::toEntity) + response.receivedInvites.map(SyncReceivedInvite::toEntity))
             response.plans.forEach { plan -> alarms.applyPlan(plan.taskId, plan.version, plan.toEntities()) }
             sessions.saveSyncCursor(response.cursor)
@@ -149,6 +154,17 @@ internal fun SyncTask.toEntity() =
         rawText = rawText,
         photoSentAt = photoSentAt?.let { Instant.parse(it).toEpochMilliseconds() },
         reRequestNote = reRequestNote,
+        statusChangedAt = Instant.parse(statusChangedAt).toEpochMilliseconds(),
+    )
+
+internal fun SyncEvent.toEntity() =
+    TaskEventEntity(
+        id = id,
+        taskId = taskId,
+        actorId = actorId,
+        type = type.value,
+        payload = payload.toString(),
+        at = Instant.parse(at).toEpochMilliseconds(),
     )
 
 internal fun SyncConnection.toEntity() =
