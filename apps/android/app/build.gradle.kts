@@ -35,6 +35,7 @@ android {
             buildConfigField("String", "API_BASE_URL", "\"http://localhost:3000/\"")
             buildConfigField("boolean", "EXPOSE_TEST_TAGS", "false")
             buildConfigField("boolean", "INJECTED_PHOTO", "false")
+            buildConfigField("boolean", "INJECTED_SPEECH", "false")
         }
         create("e2e") {
             dimension = "env"
@@ -44,6 +45,8 @@ android {
             buildConfigField("boolean", "EXPOSE_TEST_TAGS", "true")
             // The camera takes the photo the orchestrator put on the phone (docs/testing.md, Android `e2e` flavor).
             buildConfigField("boolean", "INJECTED_PHOTO", "true")
+            // Voice input "hears" the text the orchestrator put on the phone (docs/testing.md, Android `e2e` flavor).
+            buildConfigField("boolean", "INJECTED_SPEECH", "true")
         }
         create("prod") {
             dimension = "env"
@@ -51,6 +54,7 @@ android {
             buildConfigField("String", "API_BASE_URL", "\"https://nuddle.app/\"")
             buildConfigField("boolean", "EXPOSE_TEST_TAGS", "false")
             buildConfigField("boolean", "INJECTED_PHOTO", "false")
+            buildConfigField("boolean", "INJECTED_SPEECH", "false")
         }
     }
 

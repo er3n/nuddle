@@ -222,7 +222,7 @@ class HomeViewModel
                 when (val current = compose.value) {
                     is ComposeState.Typing -> current.text
                     is ComposeState.Failed -> current.text
-                    ComposeState.Idle, ComposeState.Sending -> return
+                    ComposeState.Idle, ComposeState.Sending, is ComposeState.Listening -> return
                 }.trim()
             if (text.isEmpty()) return
             val key = pendingKey ?: ids.next().also { pendingKey = it }

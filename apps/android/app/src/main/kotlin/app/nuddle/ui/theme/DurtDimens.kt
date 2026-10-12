@@ -65,6 +65,9 @@ data class DurtDimens(
     val unreadDot: Dp = 8.dp,
     val statusDot: Dp = 8.dp,
     val composeMic: Dp = 52.dp,
+    // 4h: the mic while recording, and how far left the finger slides to cancel (open-questions#6).
+    val voiceMic: Dp = 112.dp,
+    val voiceCancelSlide: Dp = 80.dp,
     val composeMaxLines: Int = 4,
     val codeBoxHeight: Dp = 64.dp,
     val codeBoxGap: Dp = 8.dp,
@@ -115,4 +118,7 @@ object DurtMotion {
     const val DONE_NOTE_MS = 4_000L
     const val PRESSED_DARKEN = 0.08f
     const val HINT_BUBBLE_MS = 2_000L
+    const val VOICE_PULSE_MS = 1_600
+    const val VOICE_PULSE_SCALE = 1.7f
+    const val VOICE_PULSE_ALPHA = 0.55f
 }

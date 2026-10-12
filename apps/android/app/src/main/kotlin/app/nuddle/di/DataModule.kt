@@ -33,6 +33,9 @@ import app.nuddle.data.session.DataStoreConsentPrompts
 import app.nuddle.data.sync.SyncRepository
 import app.nuddle.data.sync.Syncer
 import app.nuddle.data.sync.TaskAnnouncer
+import app.nuddle.data.voice.AndroidSpeechInput
+import app.nuddle.data.voice.InjectedSpeechInput
+import app.nuddle.data.voice.SpeechInput
 import app.nuddle.ui.screens.photo.CameraSource
 import app.nuddle.ui.screens.photo.CameraXSource
 import app.nuddle.ui.screens.photo.InjectedPhotoSource
@@ -86,6 +89,17 @@ object CameraModule {
         camera: Provider<CameraXSource>,
         injected: Provider<InjectedPhotoSource>,
     ): CameraSource = if (BuildConfig.INJECTED_PHOTO) injected.get() else camera.get()
+}
+
+/** Speech recognition on the phone, or in the `e2e` flavor the text the orchestrator put on the phone (4h). */
+@Module
+@InstallIn(SingletonComponent::class)
+object SpeechModule {
+    @Provides
+    fun speechInput(
+        android: Provider<AndroidSpeechInput>,
+        injected: Provider<InjectedSpeechInput>,
+    ): SpeechInput = if (BuildConfig.INJECTED_SPEECH) injected.get() else android.get()
 }
 
 /** What the screens write through: tasks and invites. */

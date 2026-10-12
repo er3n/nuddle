@@ -66,6 +66,14 @@ export class Device {
     );
   }
 
+  /** What the e2e flavor's speech input "hears" (InjectedSpeechInput, 4h): into the app's own files. */
+  async injectSpeech(text: string): Promise<void> {
+    const quoted = text.replace(/'/g, "");
+    await this.shell(
+      `run-as ${APP_ID} sh -c 'mkdir -p files && echo "${quoted}" > files/e2e-speech.txt'`,
+    );
+  }
+
   startLogcat(file: string): void {
     void run(adbPath(), ["-s", this.serial, "logcat", "-c"], { allowFailure: true });
     this.logcat = spawnLogged(adbPath(), ["-s", this.serial, "logcat", "-v", "threadtime"], file);

@@ -68,6 +68,7 @@ Start the backend scenario suite with: task to self, task to other with done, ph
 - Base URL points at the host (`adb reverse tcp:3000 tcp:3000`).
 - `testTagsAsResourceId = true` (only in this flavor); every interactive element has a `testTag` from `ui/TestTags.kt`, and flows find elements only by tag.
 - CameraX replaced by injecting an image file from the test: the orchestrator copies `e2e/fixtures/photo.jpg` into the app's `files/e2e-photo.jpg` (`run-as`), and the camera of this flavor (`InjectedPhotoSource`, `BuildConfig.INJECTED_PHOTO`) returns it as the shot.
+- Speech recognition replaced the same way: the orchestrator writes the text to `files/e2e-speech.txt`, and the speech input of this flavor (`InjectedSpeechInput`, `BuildConfig.INJECTED_SPEECH`) "hears" it until the finger is lifted.
 - `adb reverse` also forwards `:54321` (local Supabase), where the signed photo upload and view URLs point.
 
 ### Orchestrator
@@ -101,6 +102,7 @@ FCM needs Google Play system images and the dev Firebase app. Flows wait with ti
 8. Eren opens profile, then Selin, and removes the connection: the task from smoke 7 is cancelled with no notification, Eren's alarms for it go, and both sides see the connection as removed.
 9. Eren writes a task to himself and his app is force stopped before its pokes: the alarms are gone; on the next launch the bell shows "Son dürtmen çalmadı" and "Düzelt" opens the brand steps (2h).
 10. Eren loses his connection: home shows the offline banner (6a) and a text he writes waits as "Sırada"; when the connection is back it goes out by itself and the task is on home.
+11. Selin holds the mic and speaks a task (4h): lifting the finger writes the transcript and the task is created.
 
 The full set runs nightly or on demand. Because the repo is public, standard GitHub-hosted Linux runners are free and have KVM, so the smoke set can also run in CI (two emulators on one runner, or one job per device role). Locally remains the default while flows are young.
 
