@@ -39,7 +39,7 @@ class HomeInvitesViewModel
         val unread: StateFlow<Int> =
             received.map { it.size }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), 0)
 
-        /** The invite whose consent screen should open now; each one at most once (TODO(open-questions#33)). */
+        /** The invite whose consent screen should open now; each one at most once (open-questions#33). */
         val openConsent: Flow<String> =
             received
                 .mapNotNull { open -> open.lastOrNull { !prompts.shown(it.id) }?.id }
