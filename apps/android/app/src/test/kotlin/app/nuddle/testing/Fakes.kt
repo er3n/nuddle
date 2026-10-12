@@ -10,6 +10,8 @@ import app.nuddle.data.SessionStarter
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.VerifyOutcome
 import app.nuddle.data.WriteOutcome
+import app.nuddle.data.db.ConnectionDao
+import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.InviteDao
 import app.nuddle.data.db.InviteEntity
 import app.nuddle.data.db.TaskDao
@@ -361,4 +363,16 @@ class RecordingAnnouncer : TaskAnnouncer {
     override fun withdraw(taskId: String) {
         withdrawn += taskId
     }
+}
+
+class InMemoryConnectionDao : ConnectionDao {
+    private val connections = MutableStateFlow<Map<String, ConnectionEntity>>(emptyMap())
+
+    override suspend fun upsert(connections: List<ConnectionEntity>) {
+        this.connections.value += connections.associateBy { it.personId }
+    }
+
+    override suspend fun get(personId: String): ConnectionEntity? = connections.value[personId]
+
+    override fun observeAll(): Flow<List<ConnectionEntity>> = connections.map { it.values.toList() }
 }

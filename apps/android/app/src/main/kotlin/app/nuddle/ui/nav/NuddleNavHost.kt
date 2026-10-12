@@ -23,6 +23,7 @@ import app.nuddle.ui.screens.consent.ConsentViewModel
 import app.nuddle.ui.screens.home.HomeInvitesViewModel
 import app.nuddle.ui.screens.home.HomeScreen
 import app.nuddle.ui.screens.home.HomeViewModel
+import app.nuddle.ui.screens.home.NextUpCallbacks
 import app.nuddle.ui.screens.home.PendingInviteCallbacks
 import app.nuddle.ui.screens.home.PreviewCallbacks
 import app.nuddle.ui.screens.home.UndoCallbacks
@@ -155,7 +156,12 @@ fun NuddleNavHost(
                     onComposeSend = viewModel::onComposeSend,
                     onVoiceStart = {},
                     onVoiceEnd = {},
-                    onFinishNextUp = viewModel::onFinishNextUp,
+                    nextUpActions =
+                        NextUpCallbacks(
+                            onDone = viewModel::onFinishNextUp,
+                            onCall = { activity?.dial(it) },
+                            onMessage = { activity?.message(it) },
+                        ),
                     preview =
                         PreviewCallbacks(
                             onChoice = viewModel::onPreviewChoice,

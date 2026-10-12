@@ -17,6 +17,7 @@ import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.FakePermissions
 import app.nuddle.testing.FakeTaskRepository
+import app.nuddle.testing.InMemoryConnectionDao
 import app.nuddle.testing.InMemoryInviteDao
 import app.nuddle.testing.InMemorySessionStore
 import app.nuddle.testing.InMemorySetupStore
@@ -24,6 +25,7 @@ import app.nuddle.testing.InMemoryTaskDao
 import app.nuddle.testing.MainDispatcherRule
 import app.nuddle.testing.aSession
 import app.nuddle.testing.aTask
+import app.nuddle.testing.selinConnection
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.DeadlineText
@@ -39,8 +41,10 @@ import kotlinx.datetime.TimeZone
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.time.Instant
 
 /** Home (docs/ux/screens.md 2a, 2f): writing a task to self and the "Sıradaki" card. */
@@ -56,8 +60,20 @@ class HomeViewModelTest {
     private val setup = InMemorySetupStore()
     private val doneNotes = DoneNotes()
     private val inviteDao = InMemoryInviteDao()
+    private val connectionDao = InMemoryConnectionDao()
     private val vm by lazy {
-        HomeViewModel(sessions, taskDao, inviteDao, tasks, IdGenerator(clock), SetupGate(setup, permissions), doneNotes, clock, istanbul)
+        HomeViewModel(
+            sessions,
+            taskDao,
+            inviteDao,
+            connectionDao,
+            tasks,
+            IdGenerator(clock),
+            SetupGate(setup, permissions),
+            doneNotes,
+            clock,
+            istanbul,
+        )
     }
 
     private suspend fun signedIn() = sessions.saveMe("Eren", QuietHours.default(istanbul))
@@ -123,6 +139,25 @@ class HomeViewModelTest {
             vm.onComposeTextChange("   ")
             vm.onComposeSend()
             assertEquals(emptyList(), tasks.written)
+        }
+
+    @Test
+    fun `a task from Selin is next up once her connection is known`() =
+        runTest(main.dispatcher) {
+            signedIn()
+            taskDao.upsert(listOf(aTask().copy(finishMode = "done")))
+            vm.state.test {
+                val before = awaitItemWhere { it != null }
+                assertNull(before?.nextUp)
+                assertFalse(before?.connected ?: true)
+                connectionDao.upsert(listOf(selinConnection()))
+                val after = awaitItemWhere { it?.nextUp != null }
+                assertEquals("Selin", after?.nextUp?.from?.name)
+                assertTrue(after?.connected ?: false, "no invite card once someone is connected")
+                vm.onFinishNextUp()
+                cancelAndIgnoreRemainingEvents()
+            }
+            assertEquals(listOf(Cast.TASK_ID), tasks.done)
         }
 
     @Test
