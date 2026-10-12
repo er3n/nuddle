@@ -4,5 +4,7 @@
     <base-config cleartextTrafficPermitted="false" />
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="false">localhost</domain>
+        <!-- Local Supabase through `adb reverse tcp:54321 tcp:54321`: the signed photo URLs use 127.0.0.1. -->
+        <domain includeSubdomains="false">127.0.0.1</domain>
     </domain-config>
 </network-security-config>

@@ -59,3 +59,19 @@ object NotificationChannels {
         manager.createNotificationChannels(channels)
     }
 }
+
+/**
+ * Notification ids per task, one place so a poke can take a task's earlier note away. The poke and the note about the
+ * task (4b, or the photo that came) have different ids, so neither replaces the other.
+ */
+object NotificationIds {
+    fun poke(taskId: String): Int = taskId.hashCode()
+
+    fun note(taskId: String): Int = "arrived:$taskId".hashCode()
+
+    /**
+     * The group of a task's poke. Without a group of its own, Android folds two notifications of the app into one
+     * automatic group whose children are silent, and a full screen poke then never opens (found by E2E smoke 3).
+     */
+    fun pokeGroup(taskId: String): String = "poke:$taskId"
+}

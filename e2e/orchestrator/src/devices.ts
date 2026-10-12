@@ -43,7 +43,24 @@ export class Device {
     // -g grants runtime permissions (POST_NOTIFICATIONS); setup screens 2c to 2e arrive in slice 1.
     await this.adb(["install", "-r", "-g", apk], 180_000);
     await this.shell(`appops set ${APP_ID} USE_FULL_SCREEN_INTENT allow`);
+    await this.reversePorts();
+  }
+
+  /**
+   * The API on :3000, and local Supabase on :54321, where the signed photo upload and view URLs point. Per adb
+   * transport: a reconnected emulator loses them.
+   */
+  private async reversePorts(): Promise<void> {
     await this.adb(["reverse", "tcp:3000", "tcp:3000"]);
+    await this.adb(["reverse", "tcp:54321", "tcp:54321"]);
+  }
+
+  /** The photo the e2e flavor's camera takes (InjectedPhotoSource, NUD-29): into the app's own files. */
+  async injectPhoto(jpeg: string): Promise<void> {
+    await this.adb(["push", jpeg, "/data/local/tmp/e2e-photo.jpg"]);
+    await this.shell(
+      `run-as ${APP_ID} sh -c 'mkdir -p files && cp /data/local/tmp/e2e-photo.jpg files/e2e-photo.jpg'`,
+    );
   }
 
   startLogcat(file: string): void {
@@ -94,8 +111,7 @@ export class Device {
     timeoutMs = 300_000,
   ): Promise<void> {
     mkdirSync(outDir, { recursive: true });
-    // The reverse port is per adb transport; a reconnected emulator loses it.
-    await this.adb(["reverse", "tcp:3000", "tcp:3000"]);
+    await this.reversePorts();
     const envArgs = Object.entries(env).flatMap(([k, v]) => ["-e", `${k}=${v}`]);
     await run(
       "maestro",

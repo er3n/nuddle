@@ -1,0 +1,23 @@
+# The photo came: the task sits on top of "Senin yazdıkların" as "Onayını bekliyor". Selin opens it (4f), the
+# photo loads, Onayla; the row leaves her home.
+appId: app.nuddle.debug
+---
+- launchApp
+# The row is one element for TalkBack ("Para çek, 1.000 TL · fotoğraf geldi, Onayını bekliyor"), so match a part.
+- extendedWaitUntil:
+    visible: ".*Onayını bekliyor.*"
+    timeout: 60000
+- tapOn:
+    id: home.sent
+- extendedWaitUntil:
+    visible:
+      id: approve.screen
+    timeout: 15000
+- tapOn:
+    id: approve.ok
+- extendedWaitUntil:
+    visible:
+      id: home.screen
+    timeout: 15000
+- assertNotVisible:
+    id: home.sent

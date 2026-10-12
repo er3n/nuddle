@@ -2,6 +2,7 @@ package app.nuddle.di
 
 import android.content.Context
 import androidx.room.Room
+import app.nuddle.BuildConfig
 import app.nuddle.alarm.AndroidTaskAnnouncer
 import app.nuddle.alarm.PokeActions
 import app.nuddle.data.ApiInviteRepository
@@ -28,12 +29,14 @@ import app.nuddle.data.sync.Syncer
 import app.nuddle.data.sync.TaskAnnouncer
 import app.nuddle.ui.screens.photo.CameraSource
 import app.nuddle.ui.screens.photo.CameraXSource
+import app.nuddle.ui.screens.photo.InjectedPhotoSource
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Provider
 import javax.inject.Singleton
 
 /** Room and its DAOs (docs/architecture.md, local store). */
@@ -62,6 +65,17 @@ object DatabaseModule {
     fun connections(db: NuddleDatabase): ConnectionDao = db.connections()
 }
 
+/** The in-app camera, or in the `e2e` flavor the photo the orchestrator put on the phone (NUD-29). */
+@Module
+@InstallIn(SingletonComponent::class)
+object CameraModule {
+    @Provides
+    fun cameraSource(
+        camera: Provider<CameraXSource>,
+        injected: Provider<InjectedPhotoSource>,
+    ): CameraSource = if (BuildConfig.INJECTED_PHOTO) injected.get() else camera.get()
+}
+
 /** What the screens write through: tasks and invites. */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -86,9 +100,6 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun photoUploads(impl: WorkManagerScheduling): PhotoUploads
-
-    @Binds
-    abstract fun cameraSource(impl: CameraXSource): CameraSource
 
     @Binds
     abstract fun photoLoader(impl: ApiPhotoLoader): PhotoLoader

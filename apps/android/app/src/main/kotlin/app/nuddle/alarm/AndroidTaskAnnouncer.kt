@@ -134,6 +134,5 @@ class AndroidTaskAnnouncer
             NotificationManagerCompat.from(context).cancel(notificationId(taskId))
         }
 
-        /** Not the poke's id: the first poke must not replace this note, nor this note a ringing poke. */
-        private fun notificationId(taskId: String) = "arrived:$taskId".hashCode()
+        private fun notificationId(taskId: String) = NotificationIds.note(taskId)
     }

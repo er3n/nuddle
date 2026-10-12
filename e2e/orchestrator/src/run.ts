@@ -23,6 +23,7 @@ import { run, waitFor } from "./proc";
 import { invite } from "./smoke/invite";
 import { smokeExtractions, taskToSelf } from "./smoke/task-to-self";
 import { taskToOther, taskToOtherExtractions } from "./smoke/task-to-other";
+import { photoTask, photoTaskExtractions } from "./smoke/photo-task";
 
 const TIMEOUT_MS = 30 * 60_000;
 const APK = join(
@@ -115,7 +116,11 @@ async function main(): Promise<void> {
     writeFileSync(
       extractions,
       JSON.stringify(
-        { ...smokeExtractions(new Date()), ...taskToOtherExtractions(new Date()) },
+        {
+          ...smokeExtractions(new Date()),
+          ...taskToOtherExtractions(new Date()),
+          ...photoTaskExtractions(new Date()),
+        },
         null,
         2,
       ),
@@ -148,6 +153,7 @@ async function main(): Promise<void> {
   await taskToSelf(ctx, databaseUrl);
   await invite(ctx, databaseUrl);
   await taskToOther(ctx, databaseUrl);
+  await photoTask(ctx);
 }
 
 main().then(
