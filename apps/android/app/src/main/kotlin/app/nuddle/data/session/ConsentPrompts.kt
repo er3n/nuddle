@@ -9,7 +9,7 @@ import javax.inject.Inject
 
 /**
  * Invites whose consent screen (0f) already opened by itself. It opens once per invite; after "Şimdi değil" the
- * invite waits in the bell (docs/ux/screens.md 0f, TODO(open-questions#33)).
+ * invite waits in the bell (docs/ux/screens.md 0f, open-questions#33).
  */
 interface ConsentPrompts {
     suspend fun shown(inviteId: String): Boolean

@@ -28,7 +28,7 @@ data class Invitee(
 
 /**
  * 1e (nothing chosen yet) and 1f (a contact and a relationship). The number can also be typed by hand
- * ([typing], TODO(open-questions#32)). The relationship is mandatory and nothing is preselected.
+ * ([typing], open-questions#32). The relationship is mandatory and nothing is preselected.
  */
 @Immutable
 data class InviteUiState(
