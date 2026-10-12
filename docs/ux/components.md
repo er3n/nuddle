@@ -106,7 +106,7 @@ sealed interface ComposeState { data object Idle; data class Typing(val text: St
 
 - `Avatar(name, color, size)`: first letter, Space Grotesk 700, about 40% of the size. No photos in the MVP. The user's own avatar is always `ink`.
 - `CodeInput(length = 6, value, error, onComplete)`: 6 boxes, active box 2 dp `ink`; on error all boxes get `poke` border and `highlightSoft` fill. SMS Retriever autofill, submits on the 6th digit.
-- `PermissionStep(index, title, state: Done | Active | Next, badge?)`: Done shows a green tick and "Tamam"; Active has a 2 dp `ink` border, expands with description and "Ayarları aç"; Next is dashed and gray.
+- `PermissionStep(index, title, state: Done | Active | Next, badge?, description?, hint?, action?)`: Done shows a green tick and "Tamam"; Active has a 2 dp `ink` border, expands with description, the gray hint box ("**Açılan sayfada** ...") and "Ayarları aç" (or `action`, e.g. "İzin ver" for the system dialog); Next is dashed and gray.
 
 ## Screen-specific parts
 

@@ -4,14 +4,18 @@ import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.WriteTaskResult
+import app.nuddle.data.SetupGate
 import app.nuddle.data.TaskDraft
 import app.nuddle.data.WriteOutcome
+import app.nuddle.domain.GrantedPermissions
 import app.nuddle.domain.IdGenerator
 import app.nuddle.domain.QuietHours
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
+import app.nuddle.testing.FakePermissions
 import app.nuddle.testing.FakeTaskRepository
 import app.nuddle.testing.InMemorySessionStore
+import app.nuddle.testing.InMemorySetupStore
 import app.nuddle.testing.InMemoryTaskDao
 import app.nuddle.testing.MainDispatcherRule
 import app.nuddle.testing.aSession
@@ -44,7 +48,11 @@ class HomeViewModelTest {
     private val sessions = InMemorySessionStore(aSession())
     private val tasks = FakeTaskRepository()
     private val taskDao = InMemoryTaskDao()
-    private val vm by lazy { HomeViewModel(sessions, taskDao, tasks, IdGenerator(clock), clock, istanbul) }
+    private val permissions = FakePermissions()
+    private val setup = InMemorySetupStore()
+    private val vm by lazy {
+        HomeViewModel(sessions, taskDao, tasks, IdGenerator(clock), SetupGate(setup, permissions), clock, istanbul)
+    }
 
     private suspend fun signedIn() = sessions.saveMe("Eren", QuietHours.default(istanbul))
 
@@ -239,6 +247,54 @@ class HomeViewModelTest {
             vm.onUndoTimeout()
             assertNull(vm.state.value?.undo)
             assertEquals(emptyList(), tasks.cancelled)
+        }
+
+    @Test
+    fun `setup opens once the undo window is over and a permission is missing`() =
+        runTest(main.dispatcher) {
+            permissions.granted = GrantedPermissions(notifications = false, exactAlarm = true, fullScreen = true)
+            vm.openSetup.test {
+                sentDirectly()
+                expectNoEvents()
+                vm.onUndoTimeout()
+                awaitItem()
+            }
+        }
+
+    @Test
+    fun `setup does not open when everything is granted, when it ran before, or after Geri al`() =
+        runTest(main.dispatcher) {
+            vm.openSetup.test {
+                sentDirectly()
+                vm.onUndoTimeout()
+
+                permissions.granted = GrantedPermissions(notifications = true, exactAlarm = false, fullScreen = true)
+                setup.done = true
+                sentDirectly()
+                vm.onUndoTimeout()
+
+                setup.done = false
+                sentDirectly()
+                vm.onUndo()
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `setup opens after Kur in the preview`() =
+        runTest(main.dispatcher) {
+            permissions.granted = GrantedPermissions(notifications = true, exactAlarm = true, fullScreen = false)
+            vm.openSetup.test {
+                previewOpen()
+                vm.onPreviewChoice(
+                    vm.state.value!!
+                        .preview!!
+                        .choices
+                        .single(),
+                )
+                vm.onPreviewConfirm()
+                awaitItem()
+            }
         }
 
     @Test

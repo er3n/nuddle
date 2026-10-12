@@ -106,27 +106,7 @@ fun PokeScreen(
                     .background(colors.pokeDeep, RoundedCornerShape(dimens.radiusPill))
                     .padding(horizontal = dimens.space14, vertical = dimens.space6),
         )
-        Box(
-            Modifier.size(dimens.pokeRingOuter).border(dimens.borderFocused, colors.pokeRing, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Box(
-                Modifier.size(dimens.pokeRingInner).border(dimens.borderFocused, colors.pokeRing, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Box(
-                    Modifier.size(dimens.pokeBell).background(colors.surface, CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        DurtIcons.Bell,
-                        contentDescription = null,
-                        tint = colors.poke,
-                        modifier = Modifier.size(dimens.iconHero),
-                    )
-                }
-            }
-        }
+        PokeRings()
         Text(
             text = state.title,
             style = DurtTheme.type.displayPoke,
@@ -152,6 +132,34 @@ fun PokeScreen(
                         .background(colors.pokeDeep, RoundedCornerShape(dimens.radiusXl))
                         .padding(dimens.space20),
             )
+        }
+    }
+}
+
+/** The bell in two static rings (3b, and the demo poke 2d). Poke rings stay still (platform.md, Accessibility). */
+@Composable
+internal fun PokeRings(modifier: Modifier = Modifier) {
+    val colors = DurtTheme.colors
+    val dimens = DurtTheme.dimens
+    Box(
+        modifier.size(dimens.pokeRingOuter).border(dimens.borderFocused, colors.pokeRing, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier.size(dimens.pokeRingInner).border(dimens.borderFocused, colors.pokeRing, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                Modifier.size(dimens.pokeBell).background(colors.surface, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    DurtIcons.Bell,
+                    contentDescription = null,
+                    tint = colors.poke,
+                    modifier = Modifier.size(dimens.iconHero),
+                )
+            }
         }
     }
 }

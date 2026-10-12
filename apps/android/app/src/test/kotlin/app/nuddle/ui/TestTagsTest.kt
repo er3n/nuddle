@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import app.nuddle.domain.SetupStep
 import app.nuddle.domain.TimeLeft
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.screens.code.CodeScreen
@@ -21,8 +22,13 @@ import app.nuddle.ui.screens.name.NameScreen
 import app.nuddle.ui.screens.name.NameUiState
 import app.nuddle.ui.screens.phone.PhoneScreen
 import app.nuddle.ui.screens.phone.PhoneUiState
+import app.nuddle.ui.screens.poke.PokeDemoScreen
 import app.nuddle.ui.screens.poke.PokeScreen
 import app.nuddle.ui.screens.poke.PokeUiState
+import app.nuddle.ui.screens.setup.PermissionStepUi
+import app.nuddle.ui.screens.setup.PermissionsScreen
+import app.nuddle.ui.screens.setup.SetupDemoScreen
+import app.nuddle.ui.screens.setup.SetupUiState
 import app.nuddle.ui.screens.welcome.WelcomeScreen
 import app.nuddle.ui.screens.welcome.WelcomeUiState
 import app.nuddle.ui.theme.DurtTheme
@@ -217,6 +223,43 @@ class TestTagsTest {
         }
         assertShown(TestTags.PREVIEW, TestTags.PREVIEW_PICK_TIME)
         assertTaps(TestTags.PREVIEW_MORNING to "choice", TestTags.SHEET_PRIMARY to "confirm", TestTags.SHEET_DISMISS to "dismiss")
+    }
+
+    @Test
+    fun `setup, try first`() {
+        content { SetupDemoScreen(SetupUiState.Intro(), onTry = { clicked += "try" }, onSkipDemo = { clicked += "skip" }) }
+        assertShown(TestTags.SETUP)
+        assertTaps(TestTags.SETUP_TRY to "try", TestTags.SETUP_SKIP_DEMO to "skip")
+    }
+
+    @Test
+    fun `setup, demo poke`() {
+        content { PokeDemoScreen(settingsLeft = 2, onContinue = { clicked += "continue" }) }
+        assertShown(TestTags.SETUP_DEMO)
+        assertTaps(TestTags.SETUP_DEMO_OK to "continue")
+    }
+
+    @Test
+    fun `setup, steps`() {
+        content {
+            PermissionsScreen(
+                SetupUiState.Steps(
+                    settingsCount = 2,
+                    notificationsGranted = true,
+                    steps =
+                        listOf(
+                            PermissionStepUi(SetupStep.NOTIFICATIONS, granted = true, skipped = false),
+                            PermissionStepUi(SetupStep.EXACT_ALARM, granted = false, skipped = false),
+                            PermissionStepUi(SetupStep.FULL_SCREEN, granted = false, skipped = false),
+                        ),
+                    active = SetupStep.EXACT_ALARM,
+                ),
+                onOpenActive = { clicked += "open" },
+                onSkipActive = { clicked += "skip" },
+            )
+        }
+        assertShown(TestTags.SETUP_STEPS)
+        assertTaps(TestTags.SETUP_OPEN_ACTIVE to "open", TestTags.SETUP_SKIP_STEP to "skip")
     }
 
     private fun homeWith(compose: ComposeState) {

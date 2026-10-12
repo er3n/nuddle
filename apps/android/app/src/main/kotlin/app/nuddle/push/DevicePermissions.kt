@@ -9,6 +9,8 @@ import app.nuddle.alarm.FullScreenPermission
 import app.nuddle.alarm.NotificationChannels
 import app.nuddle.api.model.PermissionSummary
 import app.nuddle.api.model.PermissionSummaryChannels
+import app.nuddle.domain.GrantedPermissions
+import app.nuddle.domain.PermissionReader
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
@@ -20,19 +22,28 @@ class DevicePermissions
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
-    ) : FullScreenPermission {
+    ) : FullScreenPermission,
+        PermissionReader {
         override fun granted(): Boolean =
             Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
                 context.getSystemService(NotificationManager::class.java).canUseFullScreenIntent()
 
+        private fun exactAlarm(): Boolean =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+                context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
+
+        override fun read(): GrantedPermissions =
+            GrantedPermissions(
+                notifications = NotificationManagerCompat.from(context).areNotificationsEnabled(),
+                exactAlarm = exactAlarm(),
+                fullScreen = granted(),
+            )
+
         fun summary(): PermissionSummary {
             val notifications = NotificationManagerCompat.from(context)
-            val exactAlarm =
-                Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
-                    context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
             return PermissionSummary(
                 notifications = notifications.areNotificationsEnabled(),
-                exactAlarm = exactAlarm,
+                exactAlarm = exactAlarm(),
                 fullScreen = granted(),
                 channels =
                     PermissionSummaryChannels(
