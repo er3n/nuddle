@@ -13,6 +13,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import app.nuddle.MainActivity
+import app.nuddle.api.model.FinishMode
 import app.nuddle.data.db.TaskDao
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.PokeRules
@@ -83,6 +85,7 @@ class PokeActivity : ComponentActivity() {
     @Composable
     private fun PokeRoute(key: AlarmKey) {
         var state by remember { mutableStateOf<PokeUiState?>(null) }
+        var photo by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
         LaunchedEffect(key) {
             val task = tasks.get(key.taskId)
@@ -91,6 +94,7 @@ class PokeActivity : ComponentActivity() {
                 finish()
                 return@LaunchedEffect
             }
+            photo = task.finishMode == FinishMode.PHOTO.value
             val time = step.plannedAt.toLocalDateTime(timeZone).time
             val deadline = Instant.fromEpochMilliseconds(task.deadline)
             state =
@@ -114,7 +118,15 @@ class PokeActivity : ComponentActivity() {
         }
         PokeScreen(
             state = current,
-            onDone = { answer(actions::done) },
+            onDone = {
+                if (photo) {
+                    // A photo task ends with the photo (4d); the pokes go on until it is sent.
+                    startActivity(MainActivity.takePhoto(this, key.taskId))
+                    finish()
+                } else {
+                    answer(actions::done)
+                }
+            },
             onSnooze = { answer(actions::snooze) },
             onCantToday = { answer(actions::cantToday) },
         )

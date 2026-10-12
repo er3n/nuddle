@@ -18,6 +18,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.time.Instant
 
 /** The poke notification (screen 3a): the step's 1-based `seq` as "N. dürtme", and Ertele from the snooze count. */
@@ -36,9 +37,10 @@ class PokeNotificationsTest {
     private fun show(
         seq: Int,
         snoozesUsed: Int = 0,
+        finishMode: String = "photo",
     ): Notification {
         val step = PokeStep(Cast.TASK_ID, 1, seq, Instant.parse("2026-10-12T08:00:00+03:00"), PokeLevel.SOUND)
-        notifications.show(aTask().copy(snoozesUsed = snoozesUsed), step, PokeLevel.SOUND)
+        notifications.show(aTask().copy(snoozesUsed = snoozesUsed, finishMode = finishMode), step, PokeLevel.SOUND)
         return shadowOf(app.getSystemService<NotificationManager>()).allNotifications.single()
     }
 
@@ -67,5 +69,17 @@ class PokeNotificationsTest {
     @Test
     fun `no Ertele once both snoozes are used`() {
         assertEquals(listOf("Bitti", "Bugün olmaz"), show(seq = 3, snoozesUsed = 2).actionTitles())
+    }
+
+    @Test
+    fun `Bitti on a photo task opens the camera, on a Bitti task it closes the task`() {
+        val photo = show(seq = 1).actions.first().actionIntent
+        assertTrue(photo.isActivity)
+        assertEquals("nuddle://photo/${Cast.TASK_ID}", shadowOf(photo).savedIntent.dataString)
+
+        app.getSystemService<NotificationManager>()!!.cancelAll()
+        val done = show(seq = 1, finishMode = "done").actions.first().actionIntent
+        assertTrue(done.isBroadcast)
+        assertEquals(PokeIntents.ACTION_DONE, shadowOf(done).savedIntent.action)
     }
 }
