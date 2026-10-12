@@ -15,7 +15,7 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
 
 // Parts of the day as the extraction prompt reads them (apps/web/src/infra/llm): akşam 19:00, sabah 09:00.
-// TODO(open-questions#28): the times behind "Bugün akşam" and "Yarın sabah".
+// The times behind "Bugün akşam" and "Yarın sabah": open-questions#28.
 private val EVENING = LocalTime(19, 0)
 private val MORNING = LocalTime(9, 0)
 

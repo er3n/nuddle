@@ -27,6 +27,9 @@ interface TaskDao {
         id: String,
         status: String,
     )
+
+    @Query("UPDATE tasks SET snoozesUsed = snoozesUsed + 1 WHERE id = :id")
+    suspend fun countSnooze(id: String)
 }
 
 @Dao

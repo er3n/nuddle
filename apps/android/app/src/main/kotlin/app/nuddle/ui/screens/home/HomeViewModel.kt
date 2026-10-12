@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.WriteTaskResult
+import app.nuddle.data.DoneNote
+import app.nuddle.data.DoneNotes
+import app.nuddle.data.SetupGate
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.WriteOutcome
 import app.nuddle.data.db.TaskDao
@@ -13,13 +16,18 @@ import app.nuddle.domain.QuietHours
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.theme.DurtMotion
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -41,13 +49,35 @@ class HomeViewModel
         private val taskDao: TaskDao,
         private val tasks: TaskRepository,
         private val ids: IdGenerator,
+        private val setupGate: SetupGate,
+        private val doneNotes: DoneNotes,
         private val clock: Clock,
         private val timeZone: TimeZone,
     ) : ViewModel() {
         private val compose = MutableStateFlow<ComposeState>(ComposeState.Idle)
         private val preview = MutableStateFlow<OpenPreview?>(null)
         private val undo = MutableStateFlow<UndoUi?>(null)
-        private val doneNote = MutableStateFlow<DoneNoteUi?>(null)
+        private val setup = Channel<Unit>(Channel.CONFLATED)
+
+        /**
+         * Opens setup (2c to 2e) once the first task to self stands: the undo window is over, or Kur in the preview
+         * set it (docs/product.md, Permissions and setup).
+         */
+        val openSetup: Flow<Unit> = setup.receiveAsFlow()
+
+        /** The waiting done note, shown for 4 s while home is collected (domain.md, Done note). */
+        private val doneNote: Flow<DoneNoteUi?> =
+            channelFlow {
+                doneNotes.pending.collectLatest { note ->
+                    if (note == null) {
+                        send(null)
+                    } else {
+                        send(DoneNoteUi(note.title, note.caughtAt))
+                        delay(DurtMotion.DONE_NOTE_MS)
+                        doneNotes.shown(note)
+                    }
+                }
+            }
 
         /** The preview on screen plus what is needed to create the task from it, or to edit [editing]. */
         private data class OpenPreview(
@@ -181,6 +211,7 @@ class HomeViewModel
                     outcome is WriteOutcome.Created -> {
                         preview.value = null
                         compose.value = ComposeState.Idle
+                        if (setupGate.needed()) setup.send(Unit)
                     }
 
                     // The task exists: Tekrar dene on the bar would write a second one, so Kur stays for a retry.
@@ -205,6 +236,7 @@ class HomeViewModel
         /** Timeout confirms: the task already exists, so the toast just goes. */
         fun onUndoTimeout() {
             undo.value = null
+            viewModelScope.launch { if (setupGate.needed()) setup.send(Unit) }
         }
 
         /** Düzenle: the preview again, now changing the deadline of the task that went out. */
@@ -227,10 +259,7 @@ class HomeViewModel
         fun onFinishNextUp() {
             val task = state.value?.nextUp ?: return
             viewModelScope.launch {
-                val note = DoneNoteUi(task.title, tasks.done(task.taskId))
-                doneNote.value = note
-                delay(DurtMotion.DONE_NOTE_MS)
-                doneNote.compareAndSet(note, null)
+                doneNotes.post(DoneNote(task.taskId, task.title, tasks.done(task.taskId)))
             }
         }
     }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -22,6 +23,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import app.nuddle.R
 import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewComponent
@@ -34,7 +36,7 @@ private const val DASH = 8f
 
 /**
  * One setup step (docs/ux/components.md, 9, screen 2e). Done: green tick and "Tamam". Active: 2 dp `ink` border,
- * description and "Ayarları aç". Next: dashed and gray.
+ * description, an optional hint box ("Açılan sayfada ...") and "Ayarları aç" (or [action]). Next: dashed and gray.
  */
 @Composable
 fun PermissionStep(
@@ -42,8 +44,11 @@ fun PermissionStep(
     title: String,
     state: PermissionStepState,
     modifier: Modifier = Modifier,
+    actionModifier: Modifier = Modifier,
     badge: String? = null,
     description: String? = null,
+    hint: AnnotatedString? = null,
+    action: String? = null,
     onOpenSettings: () -> Unit = {},
 ) {
     val colors = DurtTheme.colors
@@ -83,34 +88,7 @@ fun PermissionStep(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(dimens.space12),
         ) {
-            val circle = Modifier.size(dimens.avatarInline)
-            when (state) {
-                PermissionStepState.Done -> {
-                    Box(circle.background(colors.successSoft, CircleShape), contentAlignment = Alignment.Center) {
-                        Icon(
-                            DurtIcons.Check,
-                            contentDescription = null,
-                            tint = colors.onSuccessSoft,
-                            modifier = Modifier.size(dimens.iconSmall),
-                        )
-                    }
-                }
-
-                PermissionStepState.Active -> {
-                    Box(circle.background(colors.ink, CircleShape), contentAlignment = Alignment.Center) {
-                        Text(index.toString(), style = DurtTheme.type.micro, color = colors.surface)
-                    }
-                }
-
-                PermissionStepState.Next -> {
-                    Box(
-                        circle.border(dimens.borderStrong, colors.borderStrong, CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(index.toString(), style = DurtTheme.type.micro, color = colors.textTertiary)
-                    }
-                }
-            }
+            StepMarker(index, state)
             Text(
                 title,
                 style = DurtTheme.type.bodyStrong,
@@ -136,15 +114,80 @@ fun PermissionStep(
             }
         }
         if (state == PermissionStepState.Active) {
-            if (description != null) Text(description, style = DurtTheme.type.bodySmall, color = colors.textBody)
-            DurtButton(
-                text = stringResource(R.string.action_open_settings),
-                onClick = onOpenSettings,
-                kind = DurtButtonKind.Accent,
-                size = DurtButtonSize.Medium,
-            )
+            ActiveDetails(description, hint, action, onOpenSettings, modifier = actionModifier)
         }
     }
+}
+
+/** The number in a circle, or a green tick once done. */
+@Composable
+private fun StepMarker(
+    index: Int,
+    state: PermissionStepState,
+) {
+    val colors = DurtTheme.colors
+    val dimens = DurtTheme.dimens
+    val circle = Modifier.size(dimens.avatarInline)
+    when (state) {
+        PermissionStepState.Done -> {
+            Box(circle.background(colors.successSoft, CircleShape), contentAlignment = Alignment.Center) {
+                Icon(
+                    DurtIcons.Check,
+                    contentDescription = null,
+                    tint = colors.onSuccessSoft,
+                    modifier = Modifier.size(dimens.iconSmall),
+                )
+            }
+        }
+
+        PermissionStepState.Active -> {
+            Box(circle.background(colors.ink, CircleShape), contentAlignment = Alignment.Center) {
+                Text(index.toString(), style = DurtTheme.type.micro, color = colors.surface)
+            }
+        }
+
+        PermissionStepState.Next -> {
+            Box(
+                circle.border(dimens.borderStrong, colors.borderStrong, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(index.toString(), style = DurtTheme.type.micro, color = colors.textTertiary)
+            }
+        }
+    }
+}
+
+/** Description, the gray hint box and the button of the active step. */
+@Composable
+private fun ColumnScope.ActiveDetails(
+    description: String?,
+    hint: AnnotatedString?,
+    action: String?,
+    onOpenSettings: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = DurtTheme.colors
+    val dimens = DurtTheme.dimens
+    if (description != null) Text(description, style = DurtTheme.type.bodySmall, color = colors.textBody)
+    if (hint != null) {
+        Text(
+            hint,
+            style = DurtTheme.type.caption,
+            color = colors.textBody,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(colors.background, RoundedCornerShape(dimens.radiusS))
+                    .padding(horizontal = dimens.space12, vertical = dimens.space10),
+        )
+    }
+    DurtButton(
+        text = action ?: stringResource(R.string.action_open_settings),
+        onClick = onOpenSettings,
+        kind = DurtButtonKind.Accent,
+        size = DurtButtonSize.Medium,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -173,6 +216,7 @@ private fun PermissionStepPreview() {
                 PermissionStepState.Active,
                 badge = "Gerekli",
                 description = "Dürtmelerin tam saatinde çalması için.",
+                hint = AnnotatedString("Açılan sayfada izni aç, sonra geri dön."),
             )
             PermissionStep(3, "Tam ekran dürtme", PermissionStepState.Next, badge = "Sırada")
         }

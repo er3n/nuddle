@@ -29,7 +29,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
@@ -53,6 +52,7 @@ import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.screens.ScreenLayout
 import app.nuddle.ui.theme.DurtTheme
+import app.nuddle.ui.uppercaseForUi
 
 /**
  * 1a: home with nobody connected and no tasks; 2f: the task due first as the "Sıradaki" card. Lists and the other
@@ -117,7 +117,7 @@ fun HomeScreen(
             EmptyTasks(Modifier.padding(top = dimens.space48))
         } else {
             Text(
-                text = stringResource(R.string.home_next_up).uppercase(LocalConfiguration.current.locales[0]),
+                text = stringResource(R.string.home_next_up).uppercaseForUi(),
                 style = DurtTheme.type.overline,
                 color = colors.textTertiary,
                 modifier = Modifier.semantics { heading() },

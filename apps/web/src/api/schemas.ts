@@ -253,6 +253,11 @@ const SyncTask = z
     statusChangedAt: Instant,
     /** False once the task leaves the recipient's list (a missed card after one day). */
     inRecipientList: z.boolean(),
+    /**
+     * Snoozes so far: the device picks the next snooze's length and "son hakkın" from it. Always sent; optional so an
+     * app reading an older server's sync treats it as 0 instead of failing the whole sync.
+     */
+    snoozesUsed: z.int().optional(),
   })
   .openapi("SyncTask");
 

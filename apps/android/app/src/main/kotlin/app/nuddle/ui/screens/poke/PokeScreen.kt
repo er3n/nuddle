@@ -21,6 +21,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import app.nuddle.R
+import app.nuddle.domain.Snooze
 import app.nuddle.domain.TimeLeft
 import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.DurtButton
@@ -41,8 +42,8 @@ data class PokeUiState(
     val timeLeft: TimeLeft,
     /** A sentence for this poke; none until the server sends poke copy (feature slice 1). */
     val message: String? = null,
-    val snoozeMinutes: Int = 15,
-    val lastSnooze: Boolean = false,
+    /** What Ertele gives now; null hides it (no snooze left, or it would pass the deadline). */
+    val snooze: Snooze? = Snooze(minutes = 15, last = false),
 )
 
 @Composable
@@ -77,17 +78,19 @@ fun PokeScreen(
                 leadingIcon = DurtIcons.Check,
                 modifier = Modifier.testTag(TestTags.POKE_DONE),
             )
-            DurtButton(
-                text =
-                    stringResource(
-                        if (state.lastSnooze) R.string.poke_snooze_last else R.string.poke_snooze,
-                        state.snoozeMinutes,
-                    ),
-                onClick = onSnooze,
-                kind = DurtButtonKind.OnPokeOutline,
-                size = DurtButtonSize.Medium,
-                modifier = Modifier.testTag(TestTags.POKE_SNOOZE),
-            )
+            if (state.snooze != null) {
+                DurtButton(
+                    text =
+                        stringResource(
+                            if (state.snooze.last) R.string.poke_snooze_last else R.string.poke_snooze,
+                            state.snooze.minutes,
+                        ),
+                    onClick = onSnooze,
+                    kind = DurtButtonKind.OnPokeOutline,
+                    size = DurtButtonSize.Medium,
+                    modifier = Modifier.testTag(TestTags.POKE_SNOOZE),
+                )
+            }
             TextLink(
                 text = stringResource(R.string.poke_cant_today),
                 onClick = onCantToday,
@@ -106,27 +109,7 @@ fun PokeScreen(
                     .background(colors.pokeDeep, RoundedCornerShape(dimens.radiusPill))
                     .padding(horizontal = dimens.space14, vertical = dimens.space6),
         )
-        Box(
-            Modifier.size(dimens.pokeRingOuter).border(dimens.borderFocused, colors.pokeRing, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Box(
-                Modifier.size(dimens.pokeRingInner).border(dimens.borderFocused, colors.pokeRing, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Box(
-                    Modifier.size(dimens.pokeBell).background(colors.surface, CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        DurtIcons.Bell,
-                        contentDescription = null,
-                        tint = colors.poke,
-                        modifier = Modifier.size(dimens.iconHero),
-                    )
-                }
-            }
-        }
+        PokeRings()
         Text(
             text = state.title,
             style = DurtTheme.type.displayPoke,
@@ -156,6 +139,34 @@ fun PokeScreen(
     }
 }
 
+/** The bell in two static rings (3b, and the demo poke 2d). Poke rings stay still (platform.md, Accessibility). */
+@Composable
+internal fun PokeRings(modifier: Modifier = Modifier) {
+    val colors = DurtTheme.colors
+    val dimens = DurtTheme.dimens
+    Box(
+        modifier.size(dimens.pokeRingOuter).border(dimens.borderFocused, colors.pokeRing, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier.size(dimens.pokeRingInner).border(dimens.borderFocused, colors.pokeRing, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                Modifier.size(dimens.pokeBell).background(colors.surface, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    DurtIcons.Bell,
+                    contentDescription = null,
+                    tint = colors.poke,
+                    modifier = Modifier.size(dimens.iconHero),
+                )
+            }
+        }
+    }
+}
+
 @PreviewScreens
 @Composable
 private fun PokeScreenPreview() {
@@ -169,8 +180,28 @@ private fun PokeScreenPreview() {
                     detail = "1.000 TL",
                     timeLeft = TimeLeft.Minutes(45),
                     message = "İki dürtmeyi geçtin. Bu sefer ciddiyim, 09:00'a az kaldı.",
-                    snoozeMinutes = 10,
-                    lastSnooze = true,
+                    snooze = Snooze(minutes = 10, last = true),
+                ),
+            onDone = {},
+            onSnooze = {},
+            onCantToday = {},
+        )
+    }
+}
+
+@PreviewScreens
+@Composable
+private fun PokeScreenNoSnoozePreview() {
+    DurtTheme {
+        PokeScreen(
+            state =
+                PokeUiState(
+                    pokeNumber = 4,
+                    time = "08:40",
+                    title = "Para çek",
+                    detail = "1.000 TL",
+                    timeLeft = TimeLeft.Minutes(20),
+                    snooze = null,
                 ),
             onDone = {},
             onSnooze = {},

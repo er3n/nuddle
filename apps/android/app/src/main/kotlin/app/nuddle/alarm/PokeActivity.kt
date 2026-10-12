@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import app.nuddle.data.db.TaskDao
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.PokeRules
+import app.nuddle.domain.SnoozeRules
 import app.nuddle.ui.TestTagsRoot
 import app.nuddle.ui.screens.LightSystemBarIcons
 import app.nuddle.ui.screens.poke.PokeScreen
@@ -91,13 +92,15 @@ class PokeActivity : ComponentActivity() {
                 return@LaunchedEffect
             }
             val time = step.plannedAt.toLocalDateTime(timeZone).time
+            val deadline = Instant.fromEpochMilliseconds(task.deadline)
             state =
                 PokeUiState(
                     pokeNumber = step.number,
                     time = time.format(HOUR_MINUTE),
                     title = task.title,
                     detail = task.detail,
-                    timeLeft = PokeRules.timeLeft(clock.now(), Instant.fromEpochMilliseconds(task.deadline)),
+                    timeLeft = PokeRules.timeLeft(clock.now(), deadline),
+                    snooze = SnoozeRules.next(task.snoozesUsed, clock.now(), deadline),
                 )
         }
         LightSystemBarIcons()

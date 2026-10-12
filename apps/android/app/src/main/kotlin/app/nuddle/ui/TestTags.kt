@@ -43,6 +43,15 @@ object TestTags {
     const val SHEET_PRIMARY = "sheet.primary"
     const val SHEET_DISMISS = "sheet.dismiss"
 
+    const val SETUP = "setup.screen"
+    const val SETUP_TRY = "setup.try"
+    const val SETUP_SKIP_DEMO = "setup.skipDemo"
+    const val SETUP_DEMO = "setup.demo"
+    const val SETUP_DEMO_OK = "setup.demoOk"
+    const val SETUP_STEPS = "setup.steps"
+    const val SETUP_OPEN_ACTIVE = "setup.openActive"
+    const val SETUP_SKIP_STEP = "setup.skipStep"
+
     const val COMPOSE_INPUT = "compose.input"
     const val COMPOSE_SEND = "compose.send"
     const val COMPOSE_MIC = "compose.mic"
