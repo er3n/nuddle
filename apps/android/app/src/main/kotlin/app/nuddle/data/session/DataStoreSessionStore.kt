@@ -31,9 +31,9 @@ class DataStoreSessionStore
             val personId = stringPreferencesKey("person_id")
             val registered = booleanPreferencesKey("registered")
             val displayName = stringPreferencesKey("display_name")
-            val quietStart = stringPreferencesKey("quiet_start")
-            val quietEnd = stringPreferencesKey("quiet_end")
-            val quietZone = stringPreferencesKey("quiet_zone")
+            val quietStart = quietStartKey
+            val quietEnd = quietEndKey
+            val quietZone = quietZoneKey
             val phone = stringPreferencesKey("phone")
             val useConnections = booleanPreferencesKey("use_connections_for_my_tasks")
             val notifyMeForOthers = booleanPreferencesKey("notify_me_for_others_tasks")
@@ -89,13 +89,6 @@ class DataStoreSessionStore
 
         override suspend fun quietHours(): QuietHours? = readQuietHours(store.data.first())
 
-        private fun readQuietHours(prefs: Preferences): QuietHours? {
-            val start = prefs[Keys.quietStart] ?: return null
-            val end = prefs[Keys.quietEnd] ?: return null
-            val zone = prefs[Keys.quietZone] ?: return null
-            return QuietHours.parse(start, end, zone)
-        }
-
         override suspend fun deviceId(): String? = store.data.first()[Keys.deviceId]
 
         override suspend fun saveDeviceId(deviceId: String) {
@@ -126,3 +119,14 @@ class DataStoreSessionStore
             )
         }
     }
+
+private val quietStartKey = stringPreferencesKey("quiet_start")
+private val quietEndKey = stringPreferencesKey("quiet_end")
+private val quietZoneKey = stringPreferencesKey("quiet_zone")
+
+private fun readQuietHours(prefs: Preferences): QuietHours? {
+    val start = prefs[quietStartKey] ?: return null
+    val end = prefs[quietEndKey] ?: return null
+    val zone = prefs[quietZoneKey] ?: return null
+    return QuietHours.parse(start, end, zone)
+}
