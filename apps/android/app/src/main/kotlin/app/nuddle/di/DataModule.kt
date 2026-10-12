@@ -3,12 +3,16 @@ package app.nuddle.di
 import android.content.Context
 import androidx.room.Room
 import app.nuddle.BuildConfig
+import app.nuddle.alarm.AndroidLocalWipe
 import app.nuddle.alarm.AndroidTaskAnnouncer
 import app.nuddle.alarm.PokeActions
+import app.nuddle.data.AccountRepository
+import app.nuddle.data.ApiAccountRepository
 import app.nuddle.data.ApiInviteRepository
 import app.nuddle.data.ApiTaskRepository
 import app.nuddle.data.Approvals
 import app.nuddle.data.InviteRepository
+import app.nuddle.data.LocalWipe
 import app.nuddle.data.OutboxApprovals
 import app.nuddle.data.TaskCloser
 import app.nuddle.data.TaskRepository
@@ -92,6 +96,12 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun inviteRepository(impl: ApiInviteRepository): InviteRepository
+
+    @Binds
+    abstract fun accountRepository(impl: ApiAccountRepository): AccountRepository
+
+    @Binds
+    abstract fun localWipe(impl: AndroidLocalWipe): LocalWipe
 
     @Binds
     abstract fun consentPrompts(impl: DataStoreConsentPrompts): ConsentPrompts

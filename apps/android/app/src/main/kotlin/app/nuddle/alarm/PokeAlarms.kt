@@ -59,5 +59,10 @@ class PokeAlarms
             steps.forTask(taskId).forEach { scheduler.cancel(it.toStep().key) }
         }
 
+        /** Signing out: no alarm of this person may ring on this phone any more. */
+        suspend fun stopAll() {
+            steps.all().forEach { scheduler.cancel(it.toStep().key) }
+        }
+
         suspend fun step(key: AlarmKey): PokeStep? = steps.get(key.taskId, key.planVersion, key.seq)?.toStep()
     }

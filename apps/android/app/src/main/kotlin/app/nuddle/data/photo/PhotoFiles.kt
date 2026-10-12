@@ -50,5 +50,10 @@ class PhotoFiles(
         metaOf(taskId).delete()
     }
 
+    /** Signing out: no photo of this person stays on the phone. */
+    fun deleteAll() {
+        dir.deleteRecursively()
+    }
+
     private fun metaOf(taskId: String): File = File(dir, "$taskId.meta")
 }

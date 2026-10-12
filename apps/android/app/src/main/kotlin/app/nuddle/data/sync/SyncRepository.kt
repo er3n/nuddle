@@ -24,8 +24,8 @@ import app.nuddle.data.db.TaskEventEntity
 import app.nuddle.data.level
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.sinceLastDeadline
+import app.nuddle.data.toProfile
 import app.nuddle.domain.PokeLevel
-import app.nuddle.domain.QuietHours
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import kotlin.time.Instant
@@ -105,10 +105,7 @@ class SyncRepository
             if (result !is ApiResult.Success) return false
             val response = result.value
             val me = response.me
-            sessions.saveMe(
-                me.displayName,
-                QuietHours.parse(me.quietHours.start, me.quietHours.end, me.quietHours.timeZone),
-            )
+            sessions.saveMe(me.toProfile())
             connections.upsert(response.connections.map(SyncConnection::toEntity))
             // Compared with what this phone had before the sync; a full sync (cursor null) is old news.
             val news = if (cursor == null) emptyList() else news(response.tasks, session.personId)
@@ -222,6 +219,8 @@ internal fun SyncConnection.toEntity() =
         status = status.value,
         reachability = reachability.value,
         phone = phone,
+        connectedAt = connectedAt?.let { Instant.parse(it).toEpochMilliseconds() },
+        notifyMe = notifyMe ?: true,
     )
 
 internal fun SyncSentInvite.toEntity() =

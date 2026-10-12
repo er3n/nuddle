@@ -104,6 +104,11 @@ class WorkManagerScheduling(
 
     private fun photoWork(taskId: String) = "photo-$taskId"
 
+    /** Signing out: nothing queued for this person runs any more. */
+    fun cancelAll() {
+        workManager.cancelAllWork()
+    }
+
     fun syncSoon() {
         val request =
             OneTimeWorkRequestBuilder<SyncWorker>()

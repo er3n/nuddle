@@ -43,6 +43,10 @@ data class ConnectionEntity(
     val reachability: String,
     /** For Call and Message; null once the connection is gone. */
     val phone: String?,
+    /** Epoch milliseconds since the connection is active: "3 aydır bağlısınız" (5b). Null from an older server. */
+    val connectedAt: Long? = null,
+    /** My "Selin'in işleri için bana haber verilebilir" switch (5b). */
+    @ColumnInfo(defaultValue = "1") val notifyMe: Boolean = true,
 )
 
 /**

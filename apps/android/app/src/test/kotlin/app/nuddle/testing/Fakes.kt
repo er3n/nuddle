@@ -22,6 +22,7 @@ import app.nuddle.data.outbox.OutboxDrainer
 import app.nuddle.data.photo.PhotoLoader
 import app.nuddle.data.photo.PhotoUploads
 import app.nuddle.data.session.ConsentPrompts
+import app.nuddle.data.session.Profile
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.session.SetupStore
 import app.nuddle.data.session.StoredSession
@@ -35,6 +36,7 @@ import app.nuddle.domain.PokeStep
 import app.nuddle.domain.QuietHours
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import java.io.ByteArrayOutputStream
 import kotlin.time.Clock
@@ -76,13 +78,20 @@ class InMemorySessionStore(
         name.value = displayName
     }
 
-    override suspend fun saveMe(
+    private val me = MutableStateFlow<Profile?>(null)
+    override val profile: StateFlow<Profile?> = me
+
+    override suspend fun saveMe(profile: Profile) {
+        me.value = profile
+        name.value = profile.displayName
+        quiet = profile.quietHours
+    }
+
+    /** `me` with the defaults a new person gets. */
+    suspend fun saveMe(
         displayName: String,
         quietHours: QuietHours,
-    ) {
-        name.value = displayName
-        quiet = quietHours
-    }
+    ) = saveMe(Profile(displayName, "+905321234567", quietHours, useConnectionsForMyTasks = true, notifyMeForOthersTasks = true))
 
     override suspend fun quietHours(): QuietHours? = quiet
 

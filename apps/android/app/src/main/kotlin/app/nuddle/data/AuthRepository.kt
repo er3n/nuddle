@@ -11,7 +11,6 @@ import app.nuddle.data.api.apiCall
 import app.nuddle.data.api.toStored
 import app.nuddle.data.session.SessionStore
 import app.nuddle.domain.IdGenerator
-import app.nuddle.domain.QuietHours
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -74,10 +73,7 @@ class ApiAuthRepository
             if (result !is ApiResult.Success) return false
             val me = result.value
             sessions.markRegistered(me.displayName)
-            sessions.saveMe(
-                me.displayName,
-                QuietHours.parse(me.quietHours.start, me.quietHours.end, me.quietHours.timeZone),
-            )
+            sessions.saveMe(me.toProfile())
             return true
         }
 

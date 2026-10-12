@@ -31,9 +31,12 @@ class DataStoreSessionStore
             val personId = stringPreferencesKey("person_id")
             val registered = booleanPreferencesKey("registered")
             val displayName = stringPreferencesKey("display_name")
-            val quietStart = stringPreferencesKey("quiet_start")
-            val quietEnd = stringPreferencesKey("quiet_end")
-            val quietZone = stringPreferencesKey("quiet_zone")
+            val quietStart = quietStartKey
+            val quietEnd = quietEndKey
+            val quietZone = quietZoneKey
+            val phone = stringPreferencesKey("phone")
+            val useConnections = booleanPreferencesKey("use_connections_for_my_tasks")
+            val notifyMeForOthers = booleanPreferencesKey("notify_me_for_others_tasks")
             val deviceId = stringPreferencesKey("device_id")
             val syncCursor = stringPreferencesKey("sync_cursor")
         }
@@ -61,25 +64,30 @@ class DataStoreSessionStore
             }
         }
 
-        override suspend fun saveMe(
-            displayName: String,
-            quietHours: QuietHours,
-        ) {
+        override val profile: Flow<Profile?> =
+            store.data.map { prefs ->
+                Profile(
+                    displayName = prefs[Keys.displayName] ?: return@map null,
+                    phone = prefs[Keys.phone] ?: return@map null,
+                    quietHours = readQuietHours(prefs) ?: return@map null,
+                    useConnectionsForMyTasks = prefs[Keys.useConnections] ?: true,
+                    notifyMeForOthersTasks = prefs[Keys.notifyMeForOthers] ?: true,
+                )
+            }
+
+        override suspend fun saveMe(profile: Profile) {
             store.edit {
-                it[Keys.displayName] = displayName
-                it[Keys.quietStart] = quietHours.start.toString()
-                it[Keys.quietEnd] = quietHours.end.toString()
-                it[Keys.quietZone] = quietHours.timeZone.id
+                it[Keys.displayName] = profile.displayName
+                it[Keys.phone] = profile.phone
+                it[Keys.quietStart] = profile.quietHours.start.toString()
+                it[Keys.quietEnd] = profile.quietHours.end.toString()
+                it[Keys.quietZone] = profile.quietHours.timeZone.id
+                it[Keys.useConnections] = profile.useConnectionsForMyTasks
+                it[Keys.notifyMeForOthers] = profile.notifyMeForOthersTasks
             }
         }
 
-        override suspend fun quietHours(): QuietHours? {
-            val prefs = store.data.first()
-            val start = prefs[Keys.quietStart] ?: return null
-            val end = prefs[Keys.quietEnd] ?: return null
-            val zone = prefs[Keys.quietZone] ?: return null
-            return QuietHours.parse(start, end, zone)
-        }
+        override suspend fun quietHours(): QuietHours? = readQuietHours(store.data.first())
 
         override suspend fun deviceId(): String? = store.data.first()[Keys.deviceId]
 
@@ -111,3 +119,14 @@ class DataStoreSessionStore
             )
         }
     }
+
+private val quietStartKey = stringPreferencesKey("quiet_start")
+private val quietEndKey = stringPreferencesKey("quiet_end")
+private val quietZoneKey = stringPreferencesKey("quiet_zone")
+
+private fun readQuietHours(prefs: Preferences): QuietHours? {
+    val start = prefs[quietStartKey] ?: return null
+    val end = prefs[quietEndKey] ?: return null
+    val zone = prefs[quietZoneKey] ?: return null
+    return QuietHours.parse(start, end, zone)
+}
