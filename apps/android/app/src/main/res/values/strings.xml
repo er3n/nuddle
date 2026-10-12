@@ -254,6 +254,15 @@
     <string name="photo_no_camera_title">Kamera kullanılamıyor</string>
     <string name="photo_no_camera_body">Kamera izni olmadan fotoğraf çekemem. Fotoğrafsız da bitirebilirsin.</string>
     <string name="photo_done_without">Fotoğrafsız bitti</string>
+    <!-- 4e, 4g. open-questions#35: the design says "Fotoğraf Selin\'de." and "08:24\'te gönderdin"; rephrased so the
+         name and the time take no suffix. "sıradaki 08:40" is left out: the plan is hidden (open-questions#3). -->
+    <string name="home_deadline_inline">son zaman %1$s</string>
+    <string name="photo_waiting">Fotoğrafı %1$s görüyor. Onaylayınca görev kapanır.</string>
+    <string name="photo_waiting_sent">Gönderildi · %1$s · Dürtme durdu</string>
+    <string name="photo_waiting_sending">Gönderiliyor · Dürtme durdu</string>
+    <string name="photo_auto_approve">%1$s bakmazsa 3 saat sonra kendiliğinden kapanır.</string>
+    <string name="rerequest_resumes">Dürtme kaldığı yerden devam ediyor</string>
+    <string name="rerequest_new_photo">Yeni fotoğraf çek</string>
     <!-- 4c: the next-up card of a photo task. -->
     <string name="home_done_photo">Bitti, çek</string>
 

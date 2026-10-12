@@ -1,5 +1,8 @@
 package app.nuddle.ui.screens.home
 
+import android.graphics.BitmapFactory
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.nuddle.api.model.FinishMode
@@ -14,12 +17,14 @@ import app.nuddle.data.WriteOutcome
 import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.InviteDao
 import app.nuddle.data.db.TaskDao
+import app.nuddle.data.photo.PhotoLoader
 import app.nuddle.data.session.SessionStore
 import app.nuddle.domain.IdGenerator
 import app.nuddle.domain.QuietHours
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.theme.DurtMotion
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -29,9 +34,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -59,6 +67,7 @@ class HomeViewModel
         private val ids: IdGenerator,
         private val setupGate: SetupGate,
         private val doneNotes: DoneNotes,
+        private val photos: PhotoLoader,
         private val clock: Clock,
         private val timeZone: TimeZone,
     ) : ViewModel() {
@@ -111,11 +120,24 @@ class HomeViewModel
             val nextUp: NextUpUi?,
             val sent: List<SentUi>,
             val connected: Boolean,
+            val photo: ImageBitmap? = null,
         )
+
+        /** The photo of a next-up task waiting for approval (4e), loaded once per task. */
+        @OptIn(ExperimentalCoroutinesApi::class) // Reason: mapLatest drops a load for a task that is no longer next up.
+        private val nextUpPhoto: Flow<ImageBitmap?> =
+            tasksPart
+                .map { part -> part.nextUp?.takeIf { it.status == NextUpStatus.AwaitingApproval }?.taskId }
+                .distinctUntilChanged()
+                .mapLatest { taskId ->
+                    taskId?.let { photos.load(it) }?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() }
+                }.onStart { emit(null) }
 
         val state: StateFlow<HomeUiState?> =
             combine(
-                combine(sessions.displayName.filterNotNull(), compose, tasksPart, ::Triple),
+                combine(sessions.displayName.filterNotNull(), compose, tasksPart, nextUpPhoto) { name, compose, part, photo ->
+                    Triple(name, compose, part.copy(photo = photo))
+                },
                 preview,
                 undo,
                 doneNote,
@@ -125,6 +147,7 @@ class HomeViewModel
                     myName = name,
                     compose = compose,
                     nextUp = tasksPart.nextUp,
+                    nextUpPhoto = tasksPart.photo,
                     sent = tasksPart.sent,
                     connected = tasksPart.connected,
                     preview = preview?.ui,

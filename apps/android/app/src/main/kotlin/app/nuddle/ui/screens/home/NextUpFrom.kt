@@ -78,11 +78,20 @@ internal fun FromLine(
 internal fun ReachRow(
     phone: String,
     callbacks: NextUpCallbacks,
+    note: String? = null,
 ) {
     val dimens = DurtTheme.dimens
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(dimens.space10)) {
-        // TODO(NUD-16): "Bugün yapamayacağım" (7f) goes on the left.
-        Spacer(Modifier.weight(1f))
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(dimens.space10),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // TODO(NUD-16): "Bugün yapamayacağım" (7f) goes on the left when there is no note.
+        if (note != null) {
+            Text(note, style = DurtTheme.type.caption, color = DurtTheme.colors.textSecondary, modifier = Modifier.weight(1f))
+        } else {
+            Spacer(Modifier.weight(1f))
+        }
         RoundIconButton(
             DurtIcons.Phone,
             stringResource(R.string.home_call),

@@ -120,6 +120,8 @@ internal fun SyncTask.toEntity() =
         snoozesUsed = snoozesUsed ?: 0,
         createdAt = createdAt?.let { Instant.parse(it).toEpochMilliseconds() } ?: 0,
         rawText = rawText,
+        photoSentAt = photoSentAt?.let { Instant.parse(it).toEpochMilliseconds() },
+        reRequestNote = reRequestNote,
     )
 
 internal fun SyncConnection.toEntity() =

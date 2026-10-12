@@ -27,6 +27,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
@@ -65,6 +66,8 @@ data class HomeUiState(
     val unread: Int = 0,
     val compose: ComposeState = ComposeState.Idle,
     val nextUp: NextUpUi? = null,
+    /** The photo of a next-up task waiting for approval (4e), once loaded. */
+    val nextUpPhoto: ImageBitmap? = null,
     val preview: PreviewUi? = null,
     val undo: UndoUi? = null,
     val doneNote: DoneNoteUi? = null,
@@ -142,7 +145,7 @@ fun HomeScreen(
                     color = colors.textTertiary,
                     modifier = Modifier.semantics { heading() },
                 )
-                NextUpCard(nextUp, nextUpActions)
+                NextUpCard(nextUp, nextUpActions, state.nextUpPhoto)
             }
             if (state.sent.isNotEmpty()) SentSection(state.sent, fresh = state.undo?.taskId, onOpen = onOpenTask)
             if (waiting == null && !state.connected) CompactInviteCard(onInvite)
