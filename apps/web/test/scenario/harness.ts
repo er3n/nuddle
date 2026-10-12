@@ -79,6 +79,8 @@ export class SimPhone {
   private cursor = "0";
   /** Snoozes used per task, as the last sync said. */
   private readonly snoozes = new Map<TaskId, number>();
+  /** Task events the phone has synced, oldest first: what the app builds cards, the bell and 7a from. */
+  readonly events: { taskId: TaskId; type: string; payload: Record<string, unknown> }[] = [];
 
   constructor(
     private readonly world: World,
@@ -129,6 +131,8 @@ export class SimPhone {
     this.cursor = data.cursor;
     this.device = { ...this.device, lastSeenAt: this.world.clock.now() };
     for (const task of data.tasks) this.snoozes.set(task.id, task.snoozesUsed ?? 0);
+    for (const e of data.events)
+      this.events.push({ taskId: e.taskId, type: e.type, payload: e.payload });
     for (const plan of data.plans) {
       const local = this.alarms.get(plan.taskId);
       // Devices ignore steps from older plan versions.
