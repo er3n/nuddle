@@ -115,6 +115,9 @@ object TestTags {
     const val POKE_DONE = "poke.done"
     const val POKE_SNOOZE = "poke.snooze"
     const val POKE_CANT_TODAY = "poke.cantToday"
+    const val DROP_NOTE = "drop.note"
+
+    fun dropReason(name: String) = "drop.reason.$name"
 }
 
 /** Root of an activity's content: exposes the test tags as resource ids in the `e2e` flavor only. */

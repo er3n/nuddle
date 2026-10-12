@@ -41,6 +41,7 @@ import app.nuddle.ui.components.Avatar
 import app.nuddle.ui.components.BackBar
 import app.nuddle.ui.components.DurtButton
 import app.nuddle.ui.components.DurtButtonKind
+import app.nuddle.ui.components.NoteField
 import app.nuddle.ui.components.PillStatus
 import app.nuddle.ui.components.StatusPill
 import app.nuddle.ui.components.TextLink
@@ -100,7 +101,12 @@ fun ApproveScreen(
             style = DurtTheme.type.bodySmallStrong,
             color = colors.ink,
         )
-        NoteField(state.note, callbacks.onNoteChange)
+        NoteField(
+            note = state.note,
+            onChange = callbacks.onNoteChange,
+            placeholder = stringResource(R.string.approve_note_placeholder),
+            modifier = Modifier.testTag(TestTags.APPROVE_NOTE),
+        )
     }
 }
 
@@ -144,37 +150,6 @@ private fun Photo(
             }
         }
     }
-}
-
-@Composable
-private fun NoteField(
-    note: String,
-    onChange: (String) -> Unit,
-) {
-    val colors = DurtTheme.colors
-    val dimens = DurtTheme.dimens
-    val shape = RoundedCornerShape(dimens.radiusM)
-    val placeholder = stringResource(R.string.approve_note_placeholder)
-    BasicTextField(
-        value = note,
-        onValueChange = onChange,
-        singleLine = true,
-        textStyle = DurtTheme.type.body.copy(color = colors.ink),
-        cursorBrush = SolidColor(colors.ink),
-        modifier = Modifier.fillMaxWidth().testTag(TestTags.APPROVE_NOTE).semantics { contentDescription = placeholder },
-        decorationBox = { inner ->
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .background(colors.surface, shape)
-                    .border(dimens.borderStrong, colors.borderStrong, shape)
-                    .padding(horizontal = dimens.space16, vertical = dimens.space16),
-            ) {
-                if (note.isEmpty()) Text(placeholder, style = DurtTheme.type.body, color = colors.textMuted)
-                inner()
-            }
-        },
-    )
 }
 
 @Composable
