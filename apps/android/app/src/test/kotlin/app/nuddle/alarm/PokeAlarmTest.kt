@@ -182,6 +182,21 @@ class PokeAlarmTest {
         }
 
     @Test
+    fun `done carries when it was tapped, so a Bitti tapped offline before the deadline still counts (6a)`() =
+        runTest {
+            givenPlan()
+            actions.done(key(1))
+
+            val body =
+                db
+                    .outbox()
+                    .pending()
+                    .single()
+                    .body
+            assertTrue(""""doneAt":"${clock.now()}"""" in body, body)
+        }
+
+    @Test
     fun `done stops every alarm of the task at once and queues the command`() =
         runTest {
             givenPlan()

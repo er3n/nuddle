@@ -84,4 +84,12 @@ class HomeInvitesViewModelTest {
             assertEquals(1, syncs)
             assertEquals(null, vm.inviteForLink("c-mine-sent"), "my own invite's link is not an invite to me")
         }
+
+    @Test
+    fun `an invite link whose invite is used or revoked finds nothing, so 6d opens`() =
+        runTest(main.dispatcher) {
+            inviteDao.upsert(listOf(invite("used", status = "accepted"), invite("gone", status = "revoked")))
+            assertEquals(null, vm.inviteForLink("c-used"))
+            assertEquals(null, vm.inviteForLink("c-gone"))
+        }
 }

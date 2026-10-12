@@ -21,6 +21,7 @@ import app.nuddle.data.db.InviteDao
 import app.nuddle.data.db.NuddleDatabase
 import app.nuddle.data.db.OutboxDao
 import app.nuddle.data.db.PokeStepDao
+import app.nuddle.data.db.QueuedWriteDao
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEventDao
 import app.nuddle.data.outbox.WorkManagerScheduling
@@ -62,6 +63,9 @@ object DatabaseModule {
 
     @Provides
     fun outbox(db: NuddleDatabase): OutboxDao = db.outbox()
+
+    @Provides
+    fun queuedWrites(db: NuddleDatabase): QueuedWriteDao = db.queuedWrites()
 
     @Provides
     fun invites(db: NuddleDatabase): InviteDao = db.invites()

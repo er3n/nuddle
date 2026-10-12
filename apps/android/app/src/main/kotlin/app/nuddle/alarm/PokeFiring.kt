@@ -127,8 +127,15 @@ class PokeActions
         ) {
             close(taskId, TaskStatus.DONE)
             val id = ids.next()
-            // A photo task without a usable camera falls back to plain Bitti (docs/domain.md, Task states).
-            val command = DoneCommand(idempotencyKey = id, taskId = taskId, cameraUnavailable = cameraUnavailable.takeIf { it })
+            // A photo task without a usable camera falls back to plain Bitti (docs/domain.md, Task states). doneAt lets a
+            // Bitti tapped offline before the deadline count when it reaches the server after it (6a).
+            val command =
+                DoneCommand(
+                    idempotencyKey = id,
+                    taskId = taskId,
+                    cameraUnavailable = cameraUnavailable.takeIf { it },
+                    doneAt = clock.now().toString(),
+                )
             outbox.enqueue("done", id, command, DoneCommand.serializer())
         }
 

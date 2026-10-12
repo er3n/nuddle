@@ -16,7 +16,11 @@ import app.nuddle.data.TaskRepository
 import app.nuddle.data.WriteOutcome
 import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.InviteDao
+import app.nuddle.data.db.QueuedWriteDao
+import app.nuddle.data.db.QueuedWriteEntity
 import app.nuddle.data.db.TaskDao
+import app.nuddle.data.network.Connectivity
+import app.nuddle.data.network.ErrorReporter
 import app.nuddle.data.photo.PhotoLoader
 import app.nuddle.data.photo.PhotoUploads
 import app.nuddle.data.session.SessionStore
@@ -72,10 +76,16 @@ class HomeViewModel
         private val doneNotes: DoneNotes,
         private val photos: PhotoLoader,
         private val uploads: PhotoUploads,
+        private val connectivity: Connectivity,
+        private val queuedWrites: QueuedWriteDao,
+        private val errors: ErrorReporter,
         private val clock: Clock,
         private val timeZone: TimeZone,
     ) : ViewModel() {
         private val compose = MutableStateFlow<ComposeState>(ComposeState.Idle)
+
+        /** The code 6f shows while it is open. */
+        private val unrecoverable = MutableStateFlow<String?>(null)
 
         /** The preview sheet's choices; the route binds its callbacks to this. */
         internal val previewSheet = PreviewHolder(clock, timeZone)
@@ -159,8 +169,14 @@ class HomeViewModel
                 preview,
                 undo,
                 doneNote,
-                inviteDao.observeAll().map { pendingInvite(it, clock.now(), timeZone) },
-            ) { (name, compose, tasksPart), preview, undo, doneNote, pendingInvite ->
+                combine(
+                    inviteDao.observeAll().map { pendingInvite(it, clock.now(), timeZone) },
+                    connectivity.online,
+                    queuedWrites.observeAll().map { all -> all.map { QueuedUi(it.idempotencyKey, it.text) } },
+                    unrecoverable,
+                    ::Extras,
+                ),
+            ) { (name, compose, tasksPart), preview, undo, doneNote, extras ->
                 HomeUiState(
                     myName = name,
                     compose = compose,
@@ -171,9 +187,30 @@ class HomeViewModel
                     preview = preview?.ui,
                     undo = undo,
                     doneNote = doneNote,
-                    pendingInvite = pendingInvite,
+                    pendingInvite = extras.pendingInvite,
+                    offline = !extras.online,
+                    queued = extras.queued,
+                    unrecoverable = extras.unrecoverable,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
+
+        private data class Extras(
+            val pendingInvite: PendingInviteUi?,
+            val online: Boolean,
+            val queued: List<QueuedUi>,
+            val unrecoverable: String?,
+        )
+
+        init {
+            // Texts written offline go out oldest first once the phone is online, the bar is empty and no preview is
+            // open: one that needs an answer takes the bar and the preview (open-questions#39).
+            viewModelScope.launch {
+                combine(connectivity.online, queuedWrites.observeAll(), compose, preview) { online, queued, bar, open ->
+                    queued.firstOrNull()?.takeIf { online && bar == ComposeState.Idle && open == null }
+                }.distinctUntilChanged()
+                    .collect { next -> next?.let { sendQueued(it) } }
+            }
+        }
 
         fun onComposeTextChange(text: String) {
             pendingKey = null
@@ -212,8 +249,23 @@ class HomeViewModel
                         openPreview(text, outcome)
                     }
 
+                    // 6a without a network: only the server can understand the text, so it waits on the phone with its
+                    // key. With one, the text stays for Tekrar dene (6b).
                     WriteOutcome.Failed -> {
+                        if (connectivity.online.value) {
+                            compose.value = ComposeState.Failed(text)
+                        } else {
+                            pendingKey = null
+                            compose.value = ComposeState.Idle
+                            queuedWrites.add(QueuedWriteEntity(key, text, clock.now().toEpochMilliseconds()))
+                        }
+                    }
+
+                    // 6f over the text, which stays in the bar for when the person goes back home.
+                    is WriteOutcome.Broken -> {
                         compose.value = ComposeState.Failed(text)
+                        unrecoverable.value = outcome.code
+                        errors.report(outcome.code)
                     }
                 }
             }
@@ -281,8 +333,36 @@ class HomeViewModel
                     else -> {
                         preview.value = null
                         compose.value = ComposeState.Failed(open.ui.rawText)
+                        if (outcome is WriteOutcome.Broken) {
+                            unrecoverable.value = outcome.code
+                            errors.report(outcome.code)
+                        }
                     }
                 }
+            }
+        }
+
+        /** 6f: Tekrar dene sends the text in the bar again with its key; Ana ekrana dön leaves it there (6b). */
+        fun onUnrecoverableClose(retry: Boolean) {
+            unrecoverable.value = null
+            if (retry) onComposeSend()
+        }
+
+        /** A text written offline, sent with the key it got then. Not understood or failed: it stays queued. */
+        private suspend fun sendQueued(entry: QueuedWriteEntity) {
+            when (val outcome = tasks.write(entry.text, entry.idempotencyKey)) {
+                is WriteOutcome.Created -> {
+                    queuedWrites.remove(entry.idempotencyKey)
+                }
+
+                is WriteOutcome.Ask -> {
+                    queuedWrites.remove(entry.idempotencyKey)
+                    compose.value = ComposeState.Typing(entry.text)
+                    openPreview(entry.text, outcome)
+                }
+
+                // Not understood or the server failed: it waits for the next connection.
+                WriteOutcome.Failed, is WriteOutcome.Broken -> {}
             }
         }
 

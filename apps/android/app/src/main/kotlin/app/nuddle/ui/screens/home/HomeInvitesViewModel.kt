@@ -2,6 +2,7 @@ package app.nuddle.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.nuddle.api.model.SyncReceivedInvite
 import app.nuddle.data.InviteRepository
 import app.nuddle.data.db.InviteDao
 import app.nuddle.data.session.ConsentPrompts
@@ -62,19 +63,20 @@ class HomeInvitesViewModel
                 .onEach { prompts.markShown(it) }
 
         /**
-         * An invite link was opened (`nuddle.app/i/{code}`): the invite to me with that code, after a sync since the
-         * link may come before the invite reached this phone. Null when it is not mine or not there, and the bell
-         * opens instead.
+         * An invite link was opened (`nuddle.app/i/{code}`): the open invite to me with that code, after a sync since
+         * the link may come before the invite reached this phone. Null when it is used, revoked, not mine or not there,
+         * and 6d opens instead (open-questions#39).
          */
         suspend fun inviteForLink(code: String): String? {
             syncer.sync()
-            return withTimeoutOrNull(LINK_WAIT_MS) {
-                all
-                    .map { invites -> invites.firstOrNull { !it.sent && it.code == code } }
-                    .filterNotNull()
-                    .first()
-                    .id
-            }
+            val invite =
+                withTimeoutOrNull(LINK_WAIT_MS) {
+                    all
+                        .map { invites -> invites.firstOrNull { !it.sent && it.code == code } }
+                        .filterNotNull()
+                        .first()
+                }
+            return invite?.takeIf { it.status == SyncReceivedInvite.Status.OPEN.value }?.id
         }
 
         fun onRevoke(invite: PendingInviteUi) {

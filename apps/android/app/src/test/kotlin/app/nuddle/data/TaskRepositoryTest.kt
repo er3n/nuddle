@@ -233,6 +233,16 @@ class TaskRepositoryTest {
         }
 
     @Test
+    fun `a server error with its code is 6f, the LLM failing is 6b`() =
+        runTest {
+            server.enqueue(drtError(500, "DRT-5001", "internal"))
+            assertEquals(WriteOutcome.Broken("DRT-5001"), repository.write("asdf", "key-3"))
+
+            server.enqueue(drtError(502, "DRT-5002", "upstream_failed"))
+            assertEquals(WriteOutcome.Failed, repository.write("asdf", "key-3"))
+        }
+
+    @Test
     fun `an error answer or no answer is a failed write`() =
         runTest {
             server.enqueue(drtError(400, "DRT-1001", "validation_failed"))

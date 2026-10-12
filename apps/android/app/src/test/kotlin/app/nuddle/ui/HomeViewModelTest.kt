@@ -16,16 +16,19 @@ import app.nuddle.domain.IdGenerator
 import app.nuddle.domain.QuietHours
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
+import app.nuddle.testing.FakeConnectivity
 import app.nuddle.testing.FakePermissions
 import app.nuddle.testing.FakePhotoLoader
 import app.nuddle.testing.FakePhotoUploads
 import app.nuddle.testing.FakeTaskRepository
 import app.nuddle.testing.InMemoryConnectionDao
 import app.nuddle.testing.InMemoryInviteDao
+import app.nuddle.testing.InMemoryQueuedWriteDao
 import app.nuddle.testing.InMemorySessionStore
 import app.nuddle.testing.InMemorySetupStore
 import app.nuddle.testing.InMemoryTaskDao
 import app.nuddle.testing.MainDispatcherRule
+import app.nuddle.testing.RecordingErrorReporter
 import app.nuddle.testing.aSession
 import app.nuddle.testing.aTask
 import app.nuddle.testing.selinConnection
@@ -76,6 +79,9 @@ class HomeViewModelTest {
     private val connectionDao = InMemoryConnectionDao()
     private val photos = FakePhotoLoader()
     private val uploads = FakePhotoUploads()
+    private val connectivity = FakeConnectivity()
+    private val queued = InMemoryQueuedWriteDao()
+    private val errors = RecordingErrorReporter()
     private val vm by lazy {
         HomeViewModel(
             sessions,
@@ -88,6 +94,9 @@ class HomeViewModelTest {
             doneNotes,
             photos,
             uploads,
+            connectivity,
+            queued,
+            errors,
             clock,
             istanbul,
         )
