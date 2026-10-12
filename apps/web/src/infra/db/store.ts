@@ -585,7 +585,7 @@ export interface SyncRows {
   connections: { edge: Edge; person: Person; devices: Device[] }[];
   sentInvites: Invite[];
   receivedInvites: (Invite & { inviterName: string })[];
-  tasks: Task[];
+  tasks: (Task & { snoozesUsed: number })[];
   events: (TaskEvent & { id: string })[];
   plans: PokePlan[];
 }
@@ -634,6 +634,18 @@ export async function syncRows(tx: Tx, me: Person, cursor: number): Promise<Sync
     .where(and(mine, gt(taskEvents.changeSeq, cursor)))
     .orderBy(asc(taskEvents.id));
 
+  // The device needs it for the next snooze's length and "son hakkın" (task-machine nextSnooze).
+  const taskIds = taskRows.map((t) => t.id);
+  const snoozeRows =
+    taskIds.length === 0
+      ? []
+      : await tx
+          .select({ taskId: taskEvents.taskId, used: sql<number>`count(*)::int` })
+          .from(taskEvents)
+          .where(and(inArray(taskEvents.taskId, taskIds), eq(taskEvents.type, "snoozed")))
+          .groupBy(taskEvents.taskId);
+  const snoozesUsed = new Map(snoozeRows.map((r) => [r.taskId, r.used]));
+
   const received_ = taskRows.map(toTask).filter((t) => t.recipientId === me.id);
   const plans: PokePlan[] = [];
   for (const t of received_) plans.push(await currentPlan(tx, t));
@@ -655,7 +667,7 @@ export async function syncRows(tx: Tx, me: Person, cursor: number): Promise<Sync
       ...toInvite(r.invites),
       inviterName: r.people.displayName,
     })),
-    tasks: taskRows.map(toTask),
+    tasks: taskRows.map((t) => ({ ...toTask(t), snoozesUsed: snoozesUsed.get(t.id) ?? 0 })),
     events: eventRows.map((r) => ({ ...toEvent(r.e), id: String(r.e.id) })),
     plans,
   };

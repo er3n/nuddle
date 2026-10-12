@@ -1,5 +1,6 @@
 package app.nuddle.data.db
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -18,6 +19,8 @@ data class TaskEntity(
     val status: String,
     val planVersion: Int,
     val inRecipientList: Boolean,
+    /** From sync, and bumped locally on Ertele so the next one is right offline too (NUD-36). */
+    @ColumnInfo(defaultValue = "0") val snoozesUsed: Int = 0,
 )
 
 /** One step of a received plan (SyncPlan). `firedAt` is set when the alarm rang, so it is not set again. */

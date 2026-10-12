@@ -612,6 +612,7 @@ export interface components {
              */
             statusChangedAt: string;
             inRecipientList: boolean;
+            snoozesUsed?: number;
         };
         /** @enum {string} */
         FinishMode: "done" | "photo";

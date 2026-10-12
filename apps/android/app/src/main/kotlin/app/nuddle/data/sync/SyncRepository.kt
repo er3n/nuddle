@@ -70,6 +70,7 @@ internal fun SyncTask.toEntity() =
         status = status.value,
         planVersion = planVersion,
         inRecipientList = inRecipientList,
+        snoozesUsed = snoozesUsed ?: 0,
     )
 
 internal fun SyncPlan.toEntities() =

@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import app.nuddle.domain.SetupStep
+import app.nuddle.domain.Snooze
 import app.nuddle.domain.TimeLeft
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.screens.code.CodeScreen
@@ -161,8 +162,7 @@ class TestTagsTest {
                     title = "Para çek",
                     detail = null,
                     timeLeft = TimeLeft.Minutes(45),
-                    snoozeMinutes = 10,
-                    lastSnooze = false,
+                    snooze = Snooze(minutes = 10, last = false),
                 ),
                 onDone = { clicked += "done" },
                 onSnooze = { clicked += "snooze" },
