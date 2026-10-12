@@ -20,6 +20,7 @@ import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.outbox.OutboxDrainer
 import app.nuddle.data.photo.PhotoLoader
+import app.nuddle.data.photo.PhotoUploads
 import app.nuddle.data.session.ConsentPrompts
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.session.SetupStore
@@ -451,4 +452,16 @@ class RecordingApprovals : Approvals {
     ) {
         reRequested += taskId to note
     }
+}
+
+/** Records upload starts; [failing] is what the upload status reports for every task. */
+class FakePhotoUploads : PhotoUploads {
+    val started = mutableListOf<String>()
+    val failing = MutableStateFlow(false)
+
+    override fun uploadSoon(taskId: String) {
+        started += taskId
+    }
+
+    override fun failing(taskId: String): Flow<Boolean> = failing
 }

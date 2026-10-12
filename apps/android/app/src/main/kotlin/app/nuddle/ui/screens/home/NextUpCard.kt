@@ -92,7 +92,7 @@ internal fun NextUpCard(
             }
 
             NextUpStatus.AwaitingApproval -> {
-                PhotoWaiting(task, photo)
+                PhotoWaiting(task, photo, callbacks.onOpenUnsentPhoto)
             }
 
             NextUpStatus.ReRequested -> {

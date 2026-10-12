@@ -87,6 +87,8 @@ data class NextUpUi(
     val photoSentAt: String? = null,
     /** The sender's note with Tekrar iste (4g). */
     val note: String? = null,
+    /** The photo is still on this phone and its upload failed (6e). */
+    val uploadFailed: Boolean = false,
 )
 
 private val NEXT_UP_STATUSES =

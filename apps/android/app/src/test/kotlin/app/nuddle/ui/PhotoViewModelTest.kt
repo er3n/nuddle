@@ -11,6 +11,7 @@ import app.nuddle.data.photo.PhotoSender
 import app.nuddle.domain.IdGenerator
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
+import app.nuddle.testing.FakePhotoUploads
 import app.nuddle.testing.FakeTaskRepository
 import app.nuddle.testing.InMemoryConnectionDao
 import app.nuddle.testing.InMemoryTaskDao
@@ -46,7 +47,7 @@ class PhotoViewModelTest {
     private val connectionDao = InMemoryConnectionDao()
     private val tasks = FakeTaskRepository()
     private val photoTaken = mutableListOf<String>()
-    private val scheduled = mutableListOf<String>()
+    private val uploads = FakePhotoUploads()
 
     private val shot: ByteArray =
         ByteArrayOutputStream().use {
@@ -87,7 +88,7 @@ class PhotoViewModelTest {
             taskDao,
             connectionDao,
             camera,
-            PhotoSender(PhotoFiles(temp.newFolder("photos")), closer, { taskId, _ -> scheduled += taskId }, IdGenerator(FakeClock())),
+            PhotoSender(PhotoFiles(temp.newFolder("photos")), closer, uploads, IdGenerator(FakeClock()), FakeClock()),
             tasks,
         )
     }
@@ -118,7 +119,7 @@ class PhotoViewModelTest {
                 awaitItem()
             }
             assertEquals(listOf(Cast.TASK_ID), photoTaken)
-            assertEquals(listOf(Cast.TASK_ID), scheduled)
+            assertEquals(listOf(Cast.TASK_ID), uploads.started)
         }
 
     @Test

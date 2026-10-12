@@ -38,6 +38,8 @@ data class NextUpCallbacks(
     val onDone: () -> Unit = {},
     /** "Bitti, çek" on a photo task: the camera (4d) for that task. */
     val onTakePhoto: (taskId: String) -> Unit = {},
+    /** The photo whose upload failed: the kept photo and Şimdi tekrar dene (6e). */
+    val onOpenUnsentPhoto: (taskId: String) -> Unit = {},
     /** The phone number of the person who wrote the task. */
     val onCall: (String) -> Unit = {},
     val onMessage: (String) -> Unit = {},
