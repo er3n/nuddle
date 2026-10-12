@@ -96,15 +96,25 @@ class HomeViewModel
         /** Kept while the same text is retried, so a write the server got but did not answer is not created twice. */
         private var pendingKey: String? = null
 
-        /** The card due first, and whether I have anyone to write to (the invite card goes then). */
+        /** The card due first, my tasks to others, and whether I have anyone to write to (no invite card then). */
         private val tasksPart =
             combine(
                 sessions.session.map { it?.personId }.filterNotNull(),
                 taskDao.observeAll(),
                 connectionDao.observeAll().map { all -> all.filter { it.status == ACTIVE }.associateBy { it.personId } },
             ) { me, all, connections ->
-                nextUp(all, me, connections, clock.now(), timeZone) to connections.isNotEmpty()
+                TasksPart(
+                    nextUp = nextUp(all, me, connections, clock.now(), timeZone),
+                    sent = sentTasks(all, me, connections, clock.now(), timeZone),
+                    connected = connections.isNotEmpty(),
+                )
             }
+
+        private data class TasksPart(
+            val nextUp: NextUpUi?,
+            val sent: List<SentUi>,
+            val connected: Boolean,
+        )
 
         val state: StateFlow<HomeUiState?> =
             combine(
@@ -117,8 +127,9 @@ class HomeViewModel
                 HomeUiState(
                     myName = name,
                     compose = compose,
-                    nextUp = tasksPart.first,
-                    connected = tasksPart.second,
+                    nextUp = tasksPart.nextUp,
+                    sent = tasksPart.sent,
+                    connected = tasksPart.connected,
                     preview = preview?.ui,
                     undo = undo,
                     doneNote = doneNote,
@@ -148,7 +159,12 @@ class HomeViewModel
                         compose.value = ComposeState.Idle
                         // 5 s to take it back or change it (domain.md, Undo toast). Synced right after the write;
                         // without the task on the device there is nothing to describe, and it stays as created.
-                        undo.value = taskDao.get(outcome.taskId)?.let { undoFor(it, text, clock.now(), timeZone) }
+                        undo.value =
+                            taskDao.get(outcome.taskId)?.let { task ->
+                                // Null for a task to self: "Kuruldu" instead of "Gönderildi" (4i).
+                                val to = if (task.recipientId == task.senderId) null else connectionDao.get(task.recipientId)?.displayName
+                                undoFor(task, text, to, clock.now(), timeZone)
+                            }
                     }
 
                     // The text stays under the preview, so Vazgeç goes back to it.
@@ -247,9 +263,11 @@ class HomeViewModel
             viewModelScope.launch { tasks.cancel(shown.taskId) }
         }
 
-        /** Timeout confirms: the task already exists, so the toast just goes. */
+        /** Timeout confirms: the task already exists, so the toast just goes. Setup follows a task to self only. */
         fun onUndoTimeout() {
+            val shown = undo.value
             undo.value = null
+            if (shown?.to != null) return
             viewModelScope.launch { if (setupGate.needed()) setup.send(Unit) }
         }
 
@@ -261,7 +279,7 @@ class HomeViewModel
                 val quiet = sessions.quietHours() ?: QuietHours.default(timeZone)
                 preview.value =
                     OpenPreview(
-                        ui = previewFor(shown.rawText, shown.title, shown.detail, quiet, clock.now()),
+                        ui = previewFor(shown.rawText, shown.title, shown.detail, quiet, clock.now()).copy(to = shown.to),
                         finishMode = if (shown.photo) FinishMode.PHOTO else FinishMode.DONE,
                         key = ids.next(),
                         editing = shown.taskId,
