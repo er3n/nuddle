@@ -16,6 +16,8 @@ import app.nuddle.data.db.OutboxDao
 import app.nuddle.data.db.PokeStepDao
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.outbox.WorkManagerScheduling
+import app.nuddle.data.photo.ApiPhotoLoader
+import app.nuddle.data.photo.PhotoLoader
 import app.nuddle.data.photo.PhotoUploadScheduler
 import app.nuddle.data.session.ConsentPrompts
 import app.nuddle.data.session.DataStoreConsentPrompts
@@ -85,4 +87,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun cameraSource(impl: CameraXSource): CameraSource
+
+    @Binds
+    abstract fun photoLoader(impl: ApiPhotoLoader): PhotoLoader
 }

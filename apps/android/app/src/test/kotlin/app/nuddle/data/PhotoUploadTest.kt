@@ -2,6 +2,7 @@ package app.nuddle.data
 
 import app.nuddle.api.CommandsApi
 import app.nuddle.api.PhotosApi
+import app.nuddle.data.photo.ApiPhotoLoader
 import app.nuddle.data.photo.PhotoFiles
 import app.nuddle.data.photo.PhotoSender
 import app.nuddle.data.photo.PhotoUploader
@@ -125,5 +126,33 @@ class PhotoUploadTest {
             assertEquals(jpeg.toList(), files.of(Cast.TASK_ID).readBytes().toList())
             assertEquals(listOf(Cast.TASK_ID), closed)
             assertEquals(listOf(Cast.TASK_ID), scheduled)
+        }
+
+    private fun loader() = ApiPhotoLoader(server.retrofit().create(PhotosApi::class.java), OkHttpClient(), files, testJson)
+
+    @Test
+    fun `a photo still on the phone is shown from there, without a call`() =
+        runTest {
+            files.save(Cast.TASK_ID, jpeg)
+            assertEquals(jpeg.toList(), loader().load(Cast.TASK_ID)?.toList())
+            assertEquals(0, server.requestCount)
+        }
+
+    @Test
+    fun `an uploaded photo comes through its short-lived view URL, and none when there is nothing to show`() =
+        runTest {
+            server.enqueue(json(200, """{"url":"${server.url("/storage/view")}","sentAt":"2026-10-12T08:24:00+03:00"}"""))
+            server.enqueue(
+                MockResponse
+                    .Builder()
+                    .code(200)
+                    .body(okio.Buffer().write(jpeg))
+                    .build(),
+            )
+            assertEquals(jpeg.toList(), loader().load(Cast.TASK_ID)?.toList())
+            assertEquals("/api/v1/photos/view-url", server.takeRequest().url.encodedPath)
+
+            server.enqueue(drtError(409, "DRT-4001", "wrong_status"))
+            assertEquals(null, loader().load(Cast.TASK_ID))
         }
 }

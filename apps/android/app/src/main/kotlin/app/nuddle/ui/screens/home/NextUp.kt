@@ -70,7 +70,10 @@ data class FromUi(
     val phone: String?,
 )
 
-/** 2f and 4c: the "Sıradaki" card for the task that is due first. [from] is null for a task to self. */
+/** Where the next-up task stands for me: to do (2f, 4c), its photo with the sender (4e), or asked again (4g). */
+enum class NextUpStatus { Scheduled, AwaitingApproval, ReRequested }
+
+/** 2f, 4c, 4e, 4g: the "Sıradaki" card for the task that is due first. [from] is null for a task to self. */
 @Immutable
 data class NextUpUi(
     val taskId: String,
@@ -79,12 +82,24 @@ data class NextUpUi(
     val deadline: DeadlineText,
     val photo: Boolean,
     val from: FromUi? = null,
+    val status: NextUpStatus = NextUpStatus.Scheduled,
+    /** "08:24": when the photo went out (4e); null while it is still on its way. */
+    val photoSentAt: String? = null,
+    /** The sender's note with Tekrar iste (4g). */
+    val note: String? = null,
 )
 
+private val NEXT_UP_STATUSES =
+    mapOf(
+        TaskStatus.SCHEDULED.value to NextUpStatus.Scheduled,
+        TaskStatus.REJECTED.value to NextUpStatus.ReRequested,
+        TaskStatus.AWAITING_APPROVAL.value to NextUpStatus.AwaitingApproval,
+    )
+
 /**
- * The open task to me that is due first, to self or from a connection, or null. A task from someone sync has no
- * connection for is left out: there is no name to show. The other statuses (awaiting approval, missed) come with
- * slices 4 and 5.
+ * The task to me that is up next, to self or from a connection, or null: what I still have to do (scheduled, asked
+ * again) due first, then a photo waiting for the sender. A task from someone sync has no connection for is left out:
+ * there is no name to show. Dropped and missed come with slice 5.
  */
 fun nextUp(
     tasks: List<TaskEntity>,
@@ -94,9 +109,9 @@ fun nextUp(
     timeZone: TimeZone,
 ): NextUpUi? =
     tasks
-        .filter { it.recipientId == me && it.inRecipientList && it.status == TaskStatus.SCHEDULED.value }
+        .filter { it.recipientId == me && it.inRecipientList && it.status in NEXT_UP_STATUSES }
         .filter { it.senderId == me || it.senderId in connections }
-        .minByOrNull { it.deadline }
+        .minWithOrNull(compareBy({ it.status == TaskStatus.AWAITING_APPROVAL.value }, { it.deadline }))
         ?.let { task ->
             NextUpUi(
                 taskId = task.id,
@@ -108,6 +123,16 @@ fun nextUp(
                     connections[task.senderId]?.takeIf { task.senderId != me }?.let {
                         FromUi(it.displayName, writtenText(Instant.fromEpochMilliseconds(task.createdAt), now, timeZone), it.phone)
                     },
+                status = NEXT_UP_STATUSES.getValue(task.status),
+                photoSentAt =
+                    task.photoSentAt?.let {
+                        Instant
+                            .fromEpochMilliseconds(it)
+                            .toLocalDateTime(timeZone)
+                            .time
+                            .format(HOUR_MINUTE)
+                    },
+                note = task.reRequestNote,
             )
         }
 

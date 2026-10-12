@@ -5,6 +5,7 @@ import app.nuddle.testing.aTask
 import app.nuddle.testing.selinConnection
 import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.FromUi
+import app.nuddle.ui.screens.home.NextUpStatus
 import app.nuddle.ui.screens.home.WrittenText
 import app.nuddle.ui.screens.home.deadlineText
 import app.nuddle.ui.screens.home.nextUp
@@ -73,6 +74,22 @@ class NextUpTest {
     fun `a task Selin wrote to herself is not on my card`() {
         val hers = aTask().copy(recipientId = Cast.SELIN_ID)
         assertNull(nextUp(listOf(hers), Cast.EREN_ID, mapOf(Cast.SELIN_ID to selinConnection()), now, istanbul))
+    }
+
+    @Test
+    fun `a photo waiting for Selin and a re-request are on the card, but what I still have to do comes first`() {
+        val selin = mapOf(Cast.SELIN_ID to selinConnection())
+        val waiting =
+            aTask(id = "waiting", status = "AWAITING_APPROVAL", deadline = Instant.parse("2026-10-12T08:00:00+03:00"))
+                .copy(photoSentAt = Instant.parse("2026-10-11T19:24:00+03:00").toEpochMilliseconds())
+        val asked = aTask(id = "asked", status = "REJECTED").copy(reRequestNote = "1.500 lazımdı")
+
+        val alone = nextUp(listOf(waiting), Cast.EREN_ID, selin, now, istanbul)
+        assertEquals(NextUpStatus.AwaitingApproval to "19:24", alone?.status to alone?.photoSentAt)
+
+        val both = nextUp(listOf(waiting, asked), Cast.EREN_ID, selin, now, istanbul)
+        assertEquals("asked", both?.taskId)
+        assertEquals(NextUpStatus.ReRequested to "1.500 lazımdı", both?.status to both?.note)
     }
 
     @Test

@@ -17,6 +17,7 @@ import app.nuddle.domain.QuietHours
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.FakePermissions
+import app.nuddle.testing.FakePhotoLoader
 import app.nuddle.testing.FakeTaskRepository
 import app.nuddle.testing.InMemoryConnectionDao
 import app.nuddle.testing.InMemoryInviteDao
@@ -32,6 +33,7 @@ import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.DoneNoteUi
 import app.nuddle.ui.screens.home.HomeViewModel
+import app.nuddle.ui.screens.home.NextUpStatus
 import app.nuddle.ui.screens.home.RecipientChoice
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -41,6 +43,9 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import org.junit.Rule
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -49,7 +54,12 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
-/** Home (docs/ux/screens.md 2a, 2f): writing a task to self and the "Sıradaki" card. */
+/**
+ * Home (docs/ux/screens.md 2a, 2f, 4e): writing a task and the "Sıradaki" card. Robolectric for the photo of a task
+ * awaiting approval (BitmapFactory).
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36])
 class HomeViewModelTest {
     @get:Rule val main = MainDispatcherRule()
 
@@ -63,6 +73,7 @@ class HomeViewModelTest {
     private val doneNotes = DoneNotes()
     private val inviteDao = InMemoryInviteDao()
     private val connectionDao = InMemoryConnectionDao()
+    private val photos = FakePhotoLoader()
     private val vm by lazy {
         HomeViewModel(
             sessions,
@@ -73,6 +84,7 @@ class HomeViewModelTest {
             IdGenerator(clock),
             SetupGate(setup, permissions),
             doneNotes,
+            photos,
             clock,
             istanbul,
         )
@@ -160,6 +172,20 @@ class HomeViewModelTest {
                 cancelAndIgnoreRemainingEvents()
             }
             assertEquals(listOf(Cast.TASK_ID), tasks.done)
+        }
+
+    @Test
+    fun `a photo waiting for Selin shows on the card, loaded once`() =
+        runTest(main.dispatcher) {
+            signedIn()
+            connectionDao.upsert(listOf(selinConnection()))
+            taskDao.upsert(listOf(aTask(status = "AWAITING_APPROVAL")))
+            vm.state.test {
+                val state = awaitItemWhere { it?.nextUpPhoto != null }
+                assertEquals(NextUpStatus.AwaitingApproval, state?.nextUp?.status)
+                cancelAndIgnoreRemainingEvents()
+            }
+            assertEquals(listOf(Cast.TASK_ID), photos.loaded)
         }
 
     @Test

@@ -1,5 +1,6 @@
 package app.nuddle.testing
 
+import android.graphics.Bitmap
 import app.nuddle.alarm.FullScreenPermission
 import app.nuddle.alarm.PokeNotifications
 import app.nuddle.api.model.EdgeType
@@ -17,6 +18,7 @@ import app.nuddle.data.db.InviteEntity
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.outbox.OutboxDrainer
+import app.nuddle.data.photo.PhotoLoader
 import app.nuddle.data.session.ConsentPrompts
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.session.SetupStore
@@ -32,6 +34,7 @@ import app.nuddle.domain.QuietHours
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import java.io.ByteArrayOutputStream
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Instant
@@ -409,4 +412,17 @@ class InMemoryConnectionDao : ConnectionDao {
     override suspend fun get(personId: String): ConnectionEntity? = connections.value[personId]
 
     override fun observeAll(): Flow<List<ConnectionEntity>> = connections.map { it.values.toList() }
+}
+
+/** A JPEG for every task asked for; records which ones. */
+class FakePhotoLoader : PhotoLoader {
+    val loaded = mutableListOf<String>()
+
+    override suspend fun load(taskId: String): ByteArray {
+        loaded += taskId
+        return ByteArrayOutputStream().use {
+            Bitmap.createBitmap(4, 3, Bitmap.Config.ARGB_8888).compress(Bitmap.CompressFormat.JPEG, 90, it)
+            it.toByteArray()
+        }
+    }
 }

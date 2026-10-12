@@ -25,6 +25,10 @@ data class TaskEntity(
     @ColumnInfo(defaultValue = "0") val createdAt: Long = 0,
     /** What the sender typed: "Yazdığın: ..." (7c). Only the sender gets it. */
     val rawText: String? = null,
+    /** Epoch milliseconds of the last photo sent (4e, 4f); null before one. */
+    val photoSentAt: Long? = null,
+    /** The note of the last Tekrar iste while the task is REJECTED (4g). */
+    val reRequestNote: String? = null,
 )
 
 /** A connection from sync (SyncConnection): what [displayName] is to me, how far pokes reach them, their phone. */

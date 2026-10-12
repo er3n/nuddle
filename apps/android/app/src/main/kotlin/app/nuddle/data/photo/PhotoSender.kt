@@ -2,6 +2,8 @@ package app.nuddle.data.photo
 
 import app.nuddle.data.TaskCloser
 import app.nuddle.domain.IdGenerator
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /** Starts the upload of a kept photo once there is a network (implemented with WorkManager). */
@@ -29,7 +31,7 @@ class PhotoSender
             taskId: String,
             jpeg: ByteArray,
         ) {
-            files.save(taskId, jpeg)
+            withContext(Dispatchers.IO) { files.save(taskId, jpeg) }
             closer.photoTaken(taskId)
             scheduler.uploadSoon(taskId, ids.next())
         }

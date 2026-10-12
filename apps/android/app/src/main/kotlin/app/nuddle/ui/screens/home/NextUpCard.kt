@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -21,6 +22,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
@@ -50,14 +52,24 @@ internal fun DeadlineText.text(): String =
         is DeadlineText.OnDate -> stringResource(R.string.deadline_on_date, day, stringArrayResource(R.array.month_names)[month - 1], time)
     }
 
+private val NextUpStatus.pill: PillStatus
+    get() =
+        when (this) {
+            NextUpStatus.Scheduled -> PillStatus.Scheduled
+            NextUpStatus.AwaitingApproval -> PillStatus.AwaitingApproval
+            NextUpStatus.ReRequested -> PillStatus.Rejected
+        }
+
 /**
- * 2f: title, detail and who it is for, the deadline and how it ends, and "Şimdiden bitti". 4c, a task from someone
- * else: who wrote it and when on top, and Call and Message under a line.
+ * 2f: title, detail and who it is for, the deadline and how it ends, and "Şimdiden bitti" or "Bitti, çek". 4c, a
+ * task from someone else: who wrote it and when on top, and Call and Message under a line. 4e: the photo waits for
+ * the sender. 4g: the sender asked for another photo.
  */
 @Composable
 internal fun NextUpCard(
     task: NextUpUi,
     callbacks: NextUpCallbacks,
+    photo: ImageBitmap? = null,
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
@@ -73,66 +85,117 @@ internal fun NextUpCard(
                 .testTag(TestTags.HOME_NEXT_UP),
         verticalArrangement = Arrangement.spacedBy(dimens.space12),
     ) {
-        if (from == null) {
-            val toSelf = stringResource(R.string.home_to_self)
-            Row(horizontalArrangement = Arrangement.spacedBy(dimens.space12)) {
-                Column(Modifier.weight(1f)) {
-                    Text(task.title, style = DurtTheme.type.brand, color = colors.ink)
-                    Text(
-                        text = task.detail?.let { stringResource(R.string.separator_dot, it, toSelf) } ?: toSelf,
-                        style = DurtTheme.type.bodySmall,
-                        color = colors.textSecondary,
-                    )
-                }
-                StatusPill(PillStatus.Scheduled)
+        Heading(task)
+        when (task.status) {
+            NextUpStatus.Scheduled -> {
+                ToDo(task, callbacks)
             }
-        } else {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                FromLine(from, Modifier.weight(1f))
-                StatusPill(PillStatus.Scheduled)
+
+            NextUpStatus.AwaitingApproval -> {
+                PhotoWaiting(task, photo)
             }
-            Column {
-                Text(task.title, style = DurtTheme.type.brand, color = colors.ink)
-                task.detail?.let { Text(it, style = DurtTheme.type.bodySmall, color = colors.textSecondary) }
+
+            NextUpStatus.ReRequested -> {
+                ReRequested(task)
+                TakePhotoButton(task, callbacks, R.string.rerequest_new_photo)
             }
-        }
-        // Both tiles as tall as the taller one when a value wraps at large font scales.
-        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(dimens.space10)) {
-            InfoTile(stringResource(R.string.home_deadline_label), task.deadline.text(), Modifier.weight(1f))
-            InfoTile(
-                label = stringResource(R.string.home_finish_label),
-                value =
-                    when {
-                        !task.photo -> stringResource(R.string.home_finish_done)
-                        from == null -> stringResource(R.string.home_finish_photo)
-                        else -> stringResource(R.string.home_finish_photo_from, from.name)
-                    },
-                modifier = Modifier.weight(1f),
-            )
-        }
-        if (task.photo) {
-            DurtButton(
-                text = stringResource(R.string.home_done_photo),
-                onClick = { callbacks.onTakePhoto(task.taskId) },
-                kind = DurtButtonKind.Success,
-                size = DurtButtonSize.Small,
-                leadingIcon = DurtIcons.Camera,
-                modifier = Modifier.testTag(TestTags.HOME_TAKE_PHOTO),
-            )
-        } else {
-            DurtButton(
-                text = stringResource(R.string.home_done_early),
-                onClick = callbacks.onDone,
-                kind = DurtButtonKind.Success,
-                size = DurtButtonSize.Small,
-                modifier = Modifier.testTag(TestTags.HOME_DONE_EARLY),
-            )
         }
         from?.phone?.let { phone ->
             GroupDivider()
-            ReachRow(phone, callbacks)
+            val note = if (task.status == NextUpStatus.AwaitingApproval) stringResource(R.string.photo_auto_approve, from.name) else null
+            ReachRow(phone, callbacks, note)
         }
     }
+}
+
+/** Who it is from (or "Kendine"), the status, the title and the line under it. */
+@Composable
+private fun ColumnScope.Heading(task: NextUpUi) {
+    val colors = DurtTheme.colors
+    val dimens = DurtTheme.dimens
+    val from = task.from
+    if (from == null) {
+        val toSelf = stringResource(R.string.home_to_self)
+        Row(horizontalArrangement = Arrangement.spacedBy(dimens.space12)) {
+            Column(Modifier.weight(1f)) {
+                Text(task.title, style = DurtTheme.type.brand, color = colors.ink)
+                Text(
+                    text = task.detail?.let { stringResource(R.string.separator_dot, it, toSelf) } ?: toSelf,
+                    style = DurtTheme.type.bodySmall,
+                    color = colors.textSecondary,
+                )
+            }
+            StatusPill(task.status.pill)
+        }
+    } else {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            FromLine(from, Modifier.weight(1f))
+            StatusPill(task.status.pill)
+        }
+        Column {
+            Text(task.title, style = DurtTheme.type.brand, color = colors.ink)
+            // Once the photo is involved the tiles go and the deadline joins the line (4e, 4g).
+            val deadline = stringResource(R.string.home_deadline_inline, task.deadline.inlineText())
+            val line =
+                when {
+                    task.status == NextUpStatus.Scheduled -> task.detail
+                    task.detail == null -> deadline
+                    else -> stringResource(R.string.separator_dot, task.detail, deadline)
+                }
+            line?.let { Text(it, style = DurtTheme.type.bodySmall, color = colors.textSecondary) }
+        }
+    }
+}
+
+/** The deadline and how it ends, then the way to finish it. */
+@Composable
+private fun ColumnScope.ToDo(
+    task: NextUpUi,
+    callbacks: NextUpCallbacks,
+) {
+    val dimens = DurtTheme.dimens
+    val from = task.from
+    // Both tiles as tall as the taller one when a value wraps at large font scales.
+    Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(dimens.space10)) {
+        InfoTile(stringResource(R.string.home_deadline_label), task.deadline.text(), Modifier.weight(1f))
+        InfoTile(
+            label = stringResource(R.string.home_finish_label),
+            value =
+                when {
+                    !task.photo -> stringResource(R.string.home_finish_done)
+                    from == null -> stringResource(R.string.home_finish_photo)
+                    else -> stringResource(R.string.home_finish_photo_from, from.name)
+                },
+            modifier = Modifier.weight(1f),
+        )
+    }
+    if (task.photo) {
+        TakePhotoButton(task, callbacks, R.string.home_done_photo)
+    } else {
+        DurtButton(
+            text = stringResource(R.string.home_done_early),
+            onClick = callbacks.onDone,
+            kind = DurtButtonKind.Success,
+            size = DurtButtonSize.Small,
+            modifier = Modifier.testTag(TestTags.HOME_DONE_EARLY),
+        )
+    }
+}
+
+@Composable
+private fun TakePhotoButton(
+    task: NextUpUi,
+    callbacks: NextUpCallbacks,
+    text: Int,
+) {
+    DurtButton(
+        text = stringResource(text),
+        onClick = { callbacks.onTakePhoto(task.taskId) },
+        kind = DurtButtonKind.Success,
+        size = DurtButtonSize.Small,
+        leadingIcon = DurtIcons.Camera,
+        modifier = Modifier.testTag(TestTags.HOME_TAKE_PHOTO),
+    )
 }
 
 @Composable

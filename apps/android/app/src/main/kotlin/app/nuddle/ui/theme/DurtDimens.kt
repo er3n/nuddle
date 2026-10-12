@@ -76,6 +76,8 @@ data class DurtDimens(
     val pokeRingInner: Dp = 112.dp,
     val pokeBell: Dp = 68.dp,
     val avatarBadge: Dp = 36.dp,
+    // 4e: the photo that went out, on the next-up card (canvas 64 px).
+    val photoThumb: Dp = 64.dp,
     val illustrationTilt: Float = 2f,
     // 2c: the phone that shows what a poke looks like, and the progress bar of 2e.
     val setupPhoneWidth: Dp = 210.dp,
