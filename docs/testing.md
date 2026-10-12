@@ -22,6 +22,7 @@ Why: one person reviews agent-written code. Tests are the spec and the reviewer'
 | LLM eval | script over a golden set | real model | Extraction quality for Turkish free text |
 | Android domain | JUnit + kotlinx-coroutines-test | JVM | Plan execution, outbox, quiet hours re-check, sync reducer |
 | Android data | Room in-memory on Robolectric, MockWebServer | JVM | DAOs, generated client wiring |
+| Web pages | Vitest + `react-dom/server` (unit project, `*.test.tsx`) | Node | Landing and invite page render per locale, dictionaries match (en has every tr entry), locale negotiation |
 | UI behavior | Compose UI test on Robolectric | JVM | State renders, callbacks fire, undo toast timing with `mainClock` |
 | UI screenshots | Roborazzi | JVM | Visual output per state; agent's visual check |
 | Accessibility | ATF checks via Robolectric | JVM | Touch targets, content descriptions, contrast |
