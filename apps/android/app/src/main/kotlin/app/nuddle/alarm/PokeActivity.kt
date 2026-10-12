@@ -15,12 +15,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import app.nuddle.MainActivity
 import app.nuddle.api.model.FinishMode
+import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.TaskDao
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.PokeRules
 import app.nuddle.domain.SnoozeRules
 import app.nuddle.ui.TestTagsRoot
 import app.nuddle.ui.screens.LightSystemBarIcons
+import app.nuddle.ui.screens.poke.DropCallbacks
+import app.nuddle.ui.screens.poke.DropSheet
+import app.nuddle.ui.screens.poke.DropUi
 import app.nuddle.ui.screens.poke.PokeScreen
 import app.nuddle.ui.screens.poke.PokeUiState
 import app.nuddle.ui.theme.DurtTheme
@@ -49,6 +53,8 @@ private val HOUR_MINUTE =
 @AndroidEntryPoint
 class PokeActivity : ComponentActivity() {
     @Inject lateinit var tasks: TaskDao
+
+    @Inject lateinit var connections: ConnectionDao
 
     @Inject lateinit var alarms: PokeAlarms
 
@@ -86,6 +92,9 @@ class PokeActivity : ComponentActivity() {
     private fun PokeRoute(key: AlarmKey) {
         var state by remember { mutableStateOf<PokeUiState?>(null) }
         var photo by remember { mutableStateOf(false) }
+        // Who a drop note would go to; null for a task to self, which closes without the sheet (7f).
+        var senderName by remember { mutableStateOf<String?>(null) }
+        var drop by remember { mutableStateOf<DropUi?>(null) }
         val scope = rememberCoroutineScope()
         LaunchedEffect(key) {
             val task = tasks.get(key.taskId)
@@ -95,6 +104,7 @@ class PokeActivity : ComponentActivity() {
                 return@LaunchedEffect
             }
             photo = task.finishMode == FinishMode.PHOTO.value
+            if (task.senderId != task.recipientId) senderName = connections.get(task.senderId)?.displayName
             val time = step.plannedAt.toLocalDateTime(timeZone).time
             val deadline = Instant.fromEpochMilliseconds(task.deadline)
             state =
@@ -128,7 +138,22 @@ class PokeActivity : ComponentActivity() {
                 }
             },
             onSnooze = { answer(actions::snooze) },
-            onCantToday = { answer(actions::cantToday) },
+            onCantToday = {
+                val name = senderName
+                if (name == null) answer { actions.cantToday(it) } else drop = DropUi(name)
+            },
         )
+        drop?.let { sheet ->
+            DropSheet(
+                state = sheet,
+                callbacks =
+                    DropCallbacks(
+                        onReason = { reason -> drop = sheet.copy(reason = reason.takeIf { it != sheet.reason }) },
+                        onNoteChange = { note -> drop = sheet.copy(note = note) },
+                        onDrop = { note -> answer { actions.cantToday(it, note) } },
+                        onDismiss = { drop = null },
+                    ),
+            )
+        }
     }
 }

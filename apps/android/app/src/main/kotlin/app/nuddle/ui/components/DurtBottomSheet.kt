@@ -37,7 +37,8 @@ data class SheetAction(
 
 /**
  * Fixed order: handle, `h2` title, description, content, 56 dp primary action, 44 dp "Vazgeç"
- * (docs/ux/components.md, 8). Swipe down and a scrim tap mean Vazgeç. Destructive primaries use `Danger`.
+ * (docs/ux/components.md, 8). Swipe down and a scrim tap mean Vazgeç. Destructive primaries use `Danger`. A
+ * [secondary] action takes the place of Vazgeç ("Notsuz kapat", 7f); swipe and scrim still dismiss.
  */
 @OptIn(ExperimentalMaterial3Api::class) // Reason: ModalBottomSheet is still experimental in Material 3.
 @Composable
@@ -47,6 +48,7 @@ fun DurtBottomSheet(
     onDismiss: () -> Unit,
     primary: SheetAction,
     modifier: Modifier = Modifier,
+    secondary: SheetAction? = null,
     content: @Composable ColumnScope.() -> Unit = {},
 ) {
     val dimens = DurtTheme.dimens
@@ -61,7 +63,7 @@ fun DurtBottomSheet(
         dragHandle = null,
     ) {
         // The sheet is its own window: the activity's TestTagsRoot does not reach it (found by E2E smoke 4).
-        TestTagsRoot { DurtBottomSheetContent(title, description, onDismiss, primary, content = content) }
+        TestTagsRoot { DurtBottomSheetContent(title, description, onDismiss, primary, secondary = secondary, content = content) }
     }
 }
 
@@ -73,6 +75,7 @@ fun DurtBottomSheetContent(
     onDismiss: () -> Unit,
     primary: SheetAction,
     modifier: Modifier = Modifier,
+    secondary: SheetAction? = null,
     content: @Composable ColumnScope.() -> Unit = {},
 ) {
     val colors = DurtTheme.colors
@@ -105,8 +108,8 @@ fun DurtBottomSheetContent(
             modifier = Modifier.testTag(TestTags.SHEET_PRIMARY),
         )
         DurtButton(
-            text = stringResource(R.string.action_dismiss),
-            onClick = onDismiss,
+            text = secondary?.text ?: stringResource(R.string.action_dismiss),
+            onClick = secondary?.onClick ?: onDismiss,
             kind = DurtButtonKind.Ghost,
             size = DurtButtonSize.Small,
             modifier = Modifier.testTag(TestTags.SHEET_DISMISS),
