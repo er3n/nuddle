@@ -40,6 +40,7 @@ If a screen and `product.md` disagree on behavior, `product.md` wins. Copy writt
 | `MISSED` | Kaçırıldı | `danger` filled | TaskActionCard: Sonradan yaptım / Selin'i ara (7e), gone after 1 day | TaskActionCard: Süreyi uzat / İptal et (5d) |
 | `CANCELLED` | İptal edildi | `neutralPill` | Info row (7e) | Leaves the list |
 | `QUEUED` (local) | Sırada | `warningPill` | Written offline, not yet on the server (6a) | same |
+| (local) just sent | Yeni | `neutralPill` | - | Highlighted TaskRow while the undo toast is on screen (4i) |
 
 ## Error states
 

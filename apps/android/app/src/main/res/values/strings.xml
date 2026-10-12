@@ -94,6 +94,11 @@
     <string name="preview_confirm">Kur</string>
     <!-- Undo toast for a task to self: open-questions#29. -->
     <string name="undo_self_title">Kuruldu</string>
+    <!-- 4i. open-questions#34: the design says "Eren\'e gitti"; rephrased so the name takes no suffix, the name opens the sub line. -->
+    <string name="undo_sent_title">Gönderildi</string>
+    <!-- 4i. open-questions#34: the design says "Eren\'e yazdıkların"; the 5c section name. -->
+    <string name="home_sent">Senin yazdıkların</string>
+    <string name="sent_photo">fotoğrafla</string>
     <string name="undo_finish_photo">bitince fotoğraf</string>
     <string name="deadline_today_inline">bugün %1$s</string>
     <string name="deadline_tomorrow_inline">yarın %1$s</string>
@@ -296,6 +301,8 @@
     <string name="status_missed">Kaçırıldı</string>
     <string name="status_cancelled">İptal edildi</string>
     <string name="status_queued">Sırada</string>
+    <!-- 4i: the task that just went out, while its undo toast is on screen. -->
+    <string name="status_new">Yeni</string>
 
     <!-- Shared actions -->
     <string name="action_undo">Geri al</string>

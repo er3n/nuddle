@@ -68,6 +68,8 @@ data class HomeUiState(
     val preview: PreviewUi? = null,
     val undo: UndoUi? = null,
     val doneNote: DoneNoteUi? = null,
+    /** 4i: my open tasks to other people. */
+    val sent: List<SentUi> = emptyList(),
     /** Someone to write to: no invite card then (open-questions#34). */
     val connected: Boolean = false,
     /** 1g: shown instead of the invite card while my invite waits. */
@@ -101,6 +103,7 @@ fun HomeScreen(
     onVoiceEnd: (cancelled: Boolean) -> Unit,
     modifier: Modifier = Modifier,
     nextUpActions: NextUpCallbacks = NextUpCallbacks(),
+    onOpenTask: (taskId: String) -> Unit = {},
     preview: PreviewCallbacks = PreviewCallbacks(),
     undo: UndoCallbacks = UndoCallbacks(),
     pendingInvite: PendingInviteCallbacks = PendingInviteCallbacks(),
@@ -111,7 +114,7 @@ fun HomeScreen(
         background = colors.background,
         modifier = modifier.testTag(TestTags.HOME),
         bottom = {
-            state.undo?.let { SelfUndoToast(it, undo, Modifier.padding(bottom = dimens.space10)) }
+            state.undo?.let { TaskUndoToast(it, undo, Modifier.padding(bottom = dimens.space10)) }
             state.doneNote?.let { TaskDoneNote(it, Modifier.padding(bottom = dimens.space10)) }
             ComposeBar(state.compose, onComposeTextChange, onComposeSend, onVoiceStart, onVoiceEnd)
         },
@@ -128,17 +131,20 @@ fun HomeScreen(
         if (waiting != null) {
             PendingInviteCard(state.myName, waiting, { pendingInvite.onReshare(waiting) }, { pendingInvite.onRevoke(waiting) })
         }
-        if (nextUp == null) {
+        if (nextUp == null && state.sent.isEmpty()) {
             if (waiting == null && !state.connected) InviteCard(state.myName, onInvite)
             EmptyTasks(Modifier.padding(top = dimens.space48))
         } else {
-            Text(
-                text = stringResource(R.string.home_next_up).uppercaseForUi(),
-                style = DurtTheme.type.overline,
-                color = colors.textTertiary,
-                modifier = Modifier.semantics { heading() },
-            )
-            NextUpCard(nextUp, nextUpActions)
+            if (nextUp != null) {
+                Text(
+                    text = stringResource(R.string.home_next_up).uppercaseForUi(),
+                    style = DurtTheme.type.overline,
+                    color = colors.textTertiary,
+                    modifier = Modifier.semantics { heading() },
+                )
+                NextUpCard(nextUp, nextUpActions)
+            }
+            if (state.sent.isNotEmpty()) SentSection(state.sent, fresh = state.undo?.taskId, onOpen = onOpenTask)
             if (waiting == null && !state.connected) CompactInviteCard(onInvite)
         }
     }

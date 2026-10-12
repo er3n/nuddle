@@ -30,6 +30,7 @@ import app.nuddle.ui.screens.home.PendingInviteCallbacks
 import app.nuddle.ui.screens.home.PendingInviteUi
 import app.nuddle.ui.screens.home.PreviewCallbacks
 import app.nuddle.ui.screens.home.PreviewUi
+import app.nuddle.ui.screens.home.SentUi
 import app.nuddle.ui.screens.home.WrittenText
 import app.nuddle.ui.screens.inbox.InboxInviteUi
 import app.nuddle.ui.screens.inbox.InboxScreen
@@ -213,6 +214,25 @@ class TestTagsTest {
         }
         assertShown(TestTags.HOME_NEXT_UP)
         assertTaps(TestTags.HOME_DONE_EARLY to "doneEarly", TestTags.HOME_INVITE to "invite")
+    }
+
+    @Test
+    fun `home with a task I sent`() {
+        val sent = SentUi("task-1", "Para çek", null, DeadlineText.Tomorrow("09:00"), photo = false, toId = Cast.SELIN_ID, toName = "Selin")
+        content {
+            HomeScreen(
+                state = HomeUiState(myName = "Eren", connected = true, sent = listOf(sent)),
+                onBell = {},
+                onProfile = {},
+                onInvite = {},
+                onComposeTextChange = {},
+                onComposeSend = {},
+                onVoiceStart = {},
+                onVoiceEnd = {},
+                onOpenTask = { clicked += "open $it" },
+            )
+        }
+        assertTaps(TestTags.HOME_SENT to "open task-1")
     }
 
     @Test

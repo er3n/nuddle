@@ -48,6 +48,8 @@ data class PreviewUi(
     val quietStart: String,
     val quietEnd: String,
     val sending: Boolean = false,
+    /** Who it is for; null for a task to self ("Kendine"). */
+    val to: String? = null,
 )
 
 /** 2a: the task that just went out without a question, for the undo toast. */
@@ -59,6 +61,8 @@ data class UndoUi(
     val detail: String?,
     val deadline: DeadlineText,
     val photo: Boolean,
+    /** The recipient's name (4i, "Gönderildi"); null for a task to self (2a, "Kuruldu"). */
+    val to: String? = null,
 )
 
 /** 5c: shown for 4 s after a task is done; [caughtAt] is the poke number that caught the person, if one rang. */
@@ -115,6 +119,7 @@ fun previewFor(
 fun undoFor(
     task: TaskEntity,
     rawText: String,
+    to: String?,
     now: Instant,
     timeZone: TimeZone,
 ): UndoUi =
@@ -125,4 +130,5 @@ fun undoFor(
         detail = task.detail,
         deadline = deadlineText(Instant.fromEpochMilliseconds(task.deadline), now, timeZone),
         photo = task.finishMode == FinishMode.PHOTO.value,
+        to = to,
     )

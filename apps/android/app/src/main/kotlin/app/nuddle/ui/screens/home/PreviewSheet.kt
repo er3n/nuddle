@@ -94,7 +94,7 @@ private fun ColumnScope.PreviewBody(
                 .border(dimens.borderCard, colors.border, RoundedCornerShape(dimens.radiusM))
                 .padding(horizontal = dimens.space16),
     ) {
-        LineRow(label = stringResource(R.string.preview_to), value = stringResource(R.string.home_to_self))
+        LineRow(label = stringResource(R.string.preview_to), value = preview.to ?: stringResource(R.string.home_to_self))
         preview.detail?.let {
             GroupDivider()
             LineRow(label = stringResource(R.string.preview_detail), value = it)

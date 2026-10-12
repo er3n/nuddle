@@ -188,23 +188,27 @@ private fun Modifier.dashedBorder(
 
 /** The deadline inside a sentence: "yarın 09:00". */
 @Composable
-private fun DeadlineText.inlineText(): String =
+internal fun DeadlineText.inlineText(): String =
     when (this) {
         is DeadlineText.Today -> stringResource(R.string.deadline_today_inline, time)
         is DeadlineText.Tomorrow -> stringResource(R.string.deadline_tomorrow_inline, time)
         is DeadlineText.OnDate -> stringResource(R.string.deadline_on_date, day, stringArrayResource(R.array.month_names)[month - 1], time)
     }
 
-/** 2a: "Kuruldu · Para çek · yarın 09:00" with Geri al and Düzenle (UndoToast, components.md 6). */
+/**
+ * 2a: "Kuruldu · Para çek · yarın 09:00"; 4i: "Gönderildi · Eren · Para çek · yarın 09:00" (open-questions#34). With
+ * Geri al and Düzenle (UndoToast, components.md 6).
+ */
 @Composable
-internal fun SelfUndoToast(
+internal fun TaskUndoToast(
     task: UndoUi,
     callbacks: UndoCallbacks,
     modifier: Modifier = Modifier,
 ) {
-    val parts = listOfNotNull(task.title, task.deadline.inlineText(), if (task.photo) stringResource(R.string.undo_finish_photo) else null)
+    val parts =
+        listOfNotNull(task.to, task.title, task.deadline.inlineText(), if (task.photo) stringResource(R.string.undo_finish_photo) else null)
     UndoToast(
-        title = stringResource(R.string.undo_self_title),
+        title = stringResource(if (task.to == null) R.string.undo_self_title else R.string.undo_sent_title),
         subtitle = parts.reduce { line, part -> stringResource(R.string.separator_dot, line, part) },
         onUndo = callbacks.onUndo,
         onEdit = callbacks.onEdit,

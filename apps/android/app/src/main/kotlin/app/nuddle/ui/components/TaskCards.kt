@@ -28,7 +28,7 @@ import app.nuddle.ui.preview.PreviewSurface
 import app.nuddle.ui.theme.DurtTheme
 
 /** Pill states from docs/ux/screens.md (Status to UI). Approval reads differently for the sender and the recipient. */
-enum class PillStatus { Scheduled, AwaitingMyApproval, AwaitingApproval, Rejected, Done, Dropped, Missed, Cancelled, Queued }
+enum class PillStatus { Scheduled, AwaitingMyApproval, AwaitingApproval, Rejected, Done, Dropped, Missed, Cancelled, Queued, New }
 
 @Immutable
 data class TaskUi(
@@ -57,6 +57,7 @@ private fun PillStatus.label(): String =
             PillStatus.Missed -> R.string.status_missed
             PillStatus.Cancelled -> R.string.status_cancelled
             PillStatus.Queued -> R.string.status_queued
+            PillStatus.New -> R.string.status_new
         },
     )
 
@@ -70,7 +71,7 @@ fun StatusPill(
     val dimens = DurtTheme.dimens
     val (background, content) =
         when (status) {
-            PillStatus.Scheduled, PillStatus.Dropped, PillStatus.Cancelled -> colors.neutralPill to colors.onNeutralPill
+            PillStatus.Scheduled, PillStatus.Dropped, PillStatus.Cancelled, PillStatus.New -> colors.neutralPill to colors.onNeutralPill
             PillStatus.AwaitingMyApproval, PillStatus.AwaitingApproval -> colors.infoPill to colors.onInfoPill
             PillStatus.Rejected, PillStatus.Queued -> colors.warningPill to colors.onWarningPill
             PillStatus.Done -> colors.successSoft to colors.onSuccessSoft
@@ -89,12 +90,16 @@ fun StatusPill(
     )
 }
 
-/** One task in a list: avatar, title, sub line, pill. TalkBack reads it as one element (platform.md). */
+/**
+ * One task in a list: avatar, title, sub line, pill. TalkBack reads it as one element (platform.md). [highlighted]
+ * draws a 2 dp `accent` border: the task that just went out (4i).
+ */
 @Composable
 fun TaskRow(
     task: TaskUi,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    highlighted: Boolean = false,
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
@@ -107,8 +112,13 @@ fun TaskRow(
                 .fillMaxWidth()
                 .clip(shape)
                 .background(colors.surface)
-                .border(dimens.borderCard, colors.border, shape)
-                .clickable(onClick = onClick)
+                .then(
+                    if (highlighted) {
+                        Modifier.border(dimens.borderFocused, colors.accent, shape)
+                    } else {
+                        Modifier.border(dimens.borderCard, colors.border, shape)
+                    },
+                ).clickable(onClick = onClick)
                 .clearAndSetSemantics { contentDescription = description }
                 .padding(horizontal = dimens.space14, vertical = dimens.space12),
         verticalAlignment = Alignment.CenterVertically,

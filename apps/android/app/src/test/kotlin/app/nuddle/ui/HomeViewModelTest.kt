@@ -291,6 +291,52 @@ class HomeViewModelTest {
         }
 
     @Test
+    fun `a task that went out to Selin says Gönderildi with her name, sits in my sent list, and opens no setup`() =
+        runTest(main.dispatcher) {
+            permissions.granted = GrantedPermissions(notifications = false, exactAlarm = true, fullScreen = true)
+            connectionDao.upsert(listOf(selinConnection()))
+            vm.openSetup.test {
+                ready()
+                taskDao.upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SELIN_ID)))
+                vm.onComposeTextChange("selin yarın 9dan önce 1000 tl çeksin")
+                vm.onComposeSend()
+                assertEquals(
+                    "Selin",
+                    vm.state.value
+                        ?.undo
+                        ?.to,
+                )
+                assertEquals(
+                    listOf("Selin"),
+                    vm.state.value
+                        ?.sent
+                        ?.map { it.toName },
+                )
+                assertNull(vm.state.value?.nextUp, "Selin's task is not my next up")
+
+                vm.onUndoTimeout()
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `Düzenle on a task to Selin keeps her in the preview`() =
+        runTest(main.dispatcher) {
+            connectionDao.upsert(listOf(selinConnection()))
+            ready()
+            taskDao.upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SELIN_ID)))
+            vm.onComposeTextChange("selin yarın 9dan önce 1000 tl çeksin")
+            vm.onComposeSend()
+            vm.onUndoEdit()
+            assertEquals(
+                "Selin",
+                vm.state.value
+                    ?.preview
+                    ?.to,
+            )
+        }
+
+    @Test
     fun `setup opens once the undo window is over and a permission is missing`() =
         runTest(main.dispatcher) {
             permissions.granted = GrantedPermissions(notifications = false, exactAlarm = true, fullScreen = true)
