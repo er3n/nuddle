@@ -169,10 +169,12 @@ fun NuddleNavHost(
                     onOpenTask = { nav.navigate(Routes.task(it)) { launchSingleTop = true } },
                     preview =
                         PreviewCallbacks(
-                            onChoice = viewModel::onPreviewChoice,
-                            onTimePicked = viewModel::onPreviewTimePicked,
+                            onChoice = viewModel.previewSheet::onChoice,
+                            onRecipient = viewModel.previewSheet::onRecipient,
+                            onPhoto = viewModel.previewSheet::onPhoto,
+                            onTimePicked = viewModel.previewSheet::onTimePicked,
                             onConfirm = viewModel::onPreviewConfirm,
-                            onDismiss = viewModel::onPreviewDismiss,
+                            onDismiss = viewModel.previewSheet::onDismiss,
                         ),
                     undo =
                         UndoCallbacks(

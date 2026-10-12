@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import app.nuddle.R
+import app.nuddle.api.model.Reachability
 import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.ChoiceChip
 import app.nuddle.ui.components.DurtBottomSheet
@@ -38,6 +40,7 @@ import app.nuddle.ui.components.DurtButton
 import app.nuddle.ui.components.DurtButtonKind
 import app.nuddle.ui.components.DurtButtonSize
 import app.nuddle.ui.components.GroupDivider
+import app.nuddle.ui.components.InlineAlert
 import app.nuddle.ui.components.LineRow
 import app.nuddle.ui.components.SheetAction
 import app.nuddle.ui.icons.DurtIcons
@@ -49,12 +52,17 @@ import kotlin.time.Instant
 @Immutable
 data class PreviewCallbacks(
     val onChoice: (DeadlineChoice) -> Unit = {},
+    val onRecipient: (RecipientChoice) -> Unit = {},
+    val onPhoto: (Boolean) -> Unit = {},
     val onTimePicked: (LocalTime) -> Unit = {},
     val onConfirm: () -> Unit = {},
     val onDismiss: () -> Unit = {},
 )
 
-/** 2b: a bottom sheet with what was understood and the one question, here the deadline. */
+/**
+ * 2b and 4a: a bottom sheet with what was understood and the question: the deadline, or "Kime?". For someone else it
+ * also offers how the task ends and says how far pokes reach them.
+ */
 @Composable
 internal fun PreviewSheet(
     preview: PreviewUi,
@@ -72,9 +80,9 @@ internal fun PreviewSheet(
 @Composable
 private fun PreviewUi.confirmAction(callbacks: PreviewCallbacks) =
     SheetAction(
-        text = stringResource(R.string.preview_confirm),
+        text = stringResource(if (toOther) R.string.preview_send else R.string.preview_confirm),
         onClick = callbacks.onConfirm,
-        enabled = selected != null,
+        enabled = ready,
         loading = sending,
     )
 
@@ -85,7 +93,6 @@ private fun ColumnScope.PreviewBody(
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
-    var pickingTime by remember { mutableStateOf(false) }
     Column(
         modifier =
             Modifier
@@ -94,12 +101,43 @@ private fun ColumnScope.PreviewBody(
                 .border(dimens.borderCard, colors.border, RoundedCornerShape(dimens.radiusM))
                 .padding(horizontal = dimens.space16),
     ) {
-        LineRow(label = stringResource(R.string.preview_to), value = preview.to ?: stringResource(R.string.home_to_self))
+        if (preview.recipients.isEmpty()) {
+            LineRow(label = stringResource(R.string.preview_to), value = preview.to ?: stringResource(R.string.home_to_self))
+        }
+        preview.knownDeadline?.let {
+            if (preview.recipients.isEmpty()) GroupDivider()
+            LineRow(label = stringResource(R.string.home_deadline_label), value = it.text())
+        }
         preview.detail?.let {
-            GroupDivider()
+            if (preview.recipients.isEmpty() || preview.knownDeadline != null) GroupDivider()
             LineRow(label = stringResource(R.string.preview_detail), value = it)
         }
     }
+    if (preview.recipients.isNotEmpty()) RecipientQuestion(preview, callbacks)
+    if (preview.knownDeadline == null) DeadlineQuestion(preview, callbacks)
+    if (preview.toOther) {
+        FinishChoice(preview, callbacks)
+        preview.reach?.let { ReachNote(preview.to.orEmpty(), it) }
+    } else {
+        Row(horizontalArrangement = Arrangement.spacedBy(dimens.space8)) {
+            Icon(DurtIcons.Bell, contentDescription = null, tint = colors.poke, modifier = Modifier.size(dimens.icon))
+            Text(
+                text = stringResource(R.string.preview_quiet_hint, preview.quietStart, preview.quietEnd),
+                style = DurtTheme.type.body,
+                color = colors.textSecondary,
+            )
+        }
+    }
+}
+
+/** The highlighted box around the one question (2b). */
+@Composable
+private fun QuestionBox(
+    question: String,
+    content: @Composable () -> Unit,
+) {
+    val colors = DurtTheme.colors
+    val dimens = DurtTheme.dimens
     Column(
         modifier =
             Modifier
@@ -109,7 +147,47 @@ private fun ColumnScope.PreviewBody(
                 .padding(dimens.space16),
         verticalArrangement = Arrangement.spacedBy(dimens.space12),
     ) {
-        Text(stringResource(R.string.preview_question_deadline), style = DurtTheme.type.bodyStrong, color = colors.ink)
+        Text(question, style = DurtTheme.type.bodyStrong, color = colors.ink)
+        content()
+    }
+}
+
+/** "Kime?": Kendine and each connection (4a). */
+@OptIn(ExperimentalLayoutApi::class) // Reason: FlowRow is the layout for wrapping chips; no stable alternative.
+@Composable
+private fun RecipientQuestion(
+    preview: PreviewUi,
+    callbacks: PreviewCallbacks,
+) {
+    val dimens = DurtTheme.dimens
+    QuestionBox(stringResource(R.string.preview_question_recipient)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(dimens.space8), verticalArrangement = Arrangement.spacedBy(dimens.space8)) {
+            preview.recipients.forEach { choice ->
+                val (text, tag) =
+                    when (choice) {
+                        RecipientChoice.Self -> stringResource(R.string.home_to_self) to TestTags.previewRecipient(null)
+                        is RecipientChoice.Person -> choice.name to TestTags.previewRecipient(choice.personId)
+                    }
+                ChoiceChip(
+                    text,
+                    selected = preview.recipient == choice,
+                    onClick = { callbacks.onRecipient(choice) },
+                    modifier = Modifier.testTag(tag),
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class) // Reason: FlowRow is the layout for wrapping chips; no stable alternative.
+@Composable
+private fun DeadlineQuestion(
+    preview: PreviewUi,
+    callbacks: PreviewCallbacks,
+) {
+    val dimens = DurtTheme.dimens
+    var pickingTime by remember { mutableStateOf(false) }
+    QuestionBox(stringResource(R.string.preview_question_deadline)) {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(dimens.space8),
             verticalArrangement = Arrangement.spacedBy(dimens.space8),
@@ -137,14 +215,6 @@ private fun ColumnScope.PreviewBody(
             )
         }
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(dimens.space8)) {
-        Icon(DurtIcons.Bell, contentDescription = null, tint = colors.poke, modifier = Modifier.size(dimens.icon))
-        Text(
-            text = stringResource(R.string.preview_quiet_hint, preview.quietStart, preview.quietEnd),
-            style = DurtTheme.type.body,
-            color = colors.textSecondary,
-        )
-    }
     if (pickingTime) {
         TimePickerDialog(
             onPick = {
@@ -154,6 +224,64 @@ private fun ColumnScope.PreviewBody(
             onDismiss = { pickingTime = false },
         )
     }
+}
+
+/** "Nasıl bitsin?" with "Para işlerinde fotoğraf öneririm" when the extraction chose a photo (4a). */
+@Composable
+private fun ColumnScope.FinishChoice(
+    preview: PreviewUi,
+    callbacks: PreviewCallbacks,
+) {
+    val colors = DurtTheme.colors
+    val dimens = DurtTheme.dimens
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            stringResource(R.string.preview_finish_question),
+            style = DurtTheme.type.body,
+            color = colors.textSecondary,
+            modifier = Modifier.weight(1f),
+        )
+        if (preview.photoSuggested) {
+            Text(stringResource(R.string.preview_photo_suggested), style = DurtTheme.type.captionStrong, color = colors.warning)
+        }
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(dimens.space8)) {
+        ChoiceChip(
+            stringResource(R.string.task_finish_done),
+            selected = !preview.photo,
+            onClick = { callbacks.onPhoto(false) },
+            modifier = Modifier.weight(1f).testTag(TestTags.PREVIEW_FINISH_DONE),
+        )
+        ChoiceChip(
+            stringResource(R.string.task_finish_photo),
+            selected = preview.photo,
+            onClick = { callbacks.onPhoto(true) },
+            modifier = Modifier.weight(1f).testTag(TestTags.PREVIEW_FINISH_PHOTO),
+        )
+    }
+}
+
+/**
+ * "Şu an Eren için en güçlü dürtme: sesli bildirim." and, below full screen, that I will ask them for more (4a,
+ * open-questions#34). Nothing is said when full screen already reaches them.
+ */
+@Composable
+private fun ReachNote(
+    name: String,
+    reach: Reachability,
+) {
+    val level =
+        when (reach) {
+            Reachability.FULL_SCREEN -> return
+            Reachability.SOUND -> stringResource(R.string.reach_sound)
+            Reachability.SILENT -> stringResource(R.string.reach_silent)
+            Reachability.NONE -> null
+        }
+    InlineAlert(
+        title = level?.let { stringResource(R.string.preview_reach, name, it) } ?: stringResource(R.string.preview_reach_none, name),
+        body = stringResource(R.string.preview_reach_ask),
+        icon = DurtIcons.Bell,
+    )
 }
 
 /** "Saat seç": the system time picker in a dialog (24 hour clock). */
@@ -202,6 +330,38 @@ private fun PreviewSheetPreview() {
             selected = null,
             quietStart = "23:00",
             quietEnd = "07:00",
+        )
+    DurtTheme {
+        // The sheet itself is a ModalBottomSheet window; screenshots show its content over the scrim.
+        Box(Modifier.fillMaxSize().background(DurtTheme.colors.scrim), contentAlignment = Alignment.BottomCenter) {
+            DurtBottomSheetContent(
+                title = preview.title,
+                description = stringResource(R.string.preview_you_wrote, preview.rawText),
+                onDismiss = {},
+                primary = preview.confirmAction(PreviewCallbacks()),
+            ) { PreviewBody(preview, PreviewCallbacks()) }
+        }
+    }
+}
+
+@PreviewScreens
+@Composable
+private fun OtherPreviewSheetPreview() {
+    val preview =
+        PreviewUi(
+            rawText = "eren yarın 9dan önce temizlikçi için 1000 çeksin",
+            title = "Temizlikçi için para çek",
+            detail = "1.000 TL",
+            choices = emptyList(),
+            selected = null,
+            quietStart = "23:00",
+            quietEnd = "07:00",
+            to = "Eren",
+            recipient = RecipientChoice.Person("eren", "Eren"),
+            knownDeadline = DeadlineText.Tomorrow("09:00"),
+            photo = true,
+            photoSuggested = true,
+            reach = Reachability.SOUND,
         )
     DurtTheme {
         // The sheet itself is a ModalBottomSheet window; screenshots show its content over the scrim.

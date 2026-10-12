@@ -3,6 +3,7 @@ package app.nuddle.ui
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import app.nuddle.api.model.FinishMode
+import app.nuddle.api.model.Reachability
 import app.nuddle.api.model.WriteTaskResult
 import app.nuddle.data.DoneNote
 import app.nuddle.data.DoneNotes
@@ -31,6 +32,7 @@ import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.DoneNoteUi
 import app.nuddle.ui.screens.home.HomeViewModel
+import app.nuddle.ui.screens.home.RecipientChoice
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -125,7 +127,7 @@ class HomeViewModelTest {
     fun `when the server asks something the preview cannot ask yet, the text stays`() =
         runTest(main.dispatcher) {
             ready()
-            tasks.outcome = WriteOutcome.Ask(WriteTaskResult.Question.RECIPIENT, TaskDraft("Para çek", null, FinishMode.DONE))
+            tasks.outcome = WriteOutcome.Ask(WriteTaskResult.Question.TITLE, TaskDraft("Para çek", null, FinishMode.DONE))
             vm.onComposeTextChange("1000 tl çek")
             vm.onComposeSend()
             assertEquals(ComposeState.Typing("1000 tl çek"), vm.state.value?.compose)
@@ -175,6 +177,75 @@ class HomeViewModelTest {
             assertEquals(listOf(Cast.TASK_ID), tasks.done)
         }
 
+    private suspend fun TestScope.asked(ask: WriteOutcome.Ask) {
+        connectionDao.upsert(listOf(selinConnection().copy(reachability = "SOUND")))
+        ready()
+        tasks.outcome = ask
+        vm.onComposeTextChange("selin yarın 9dan önce 1000 çeksin")
+        vm.onComposeSend()
+    }
+
+    @Test
+    fun `4a, the deadline asked for Selin shows her name, how far pokes reach her, photo preselected for money, Gönder`() =
+        runTest(main.dispatcher) {
+            permissions.granted = GrantedPermissions(notifications = false, exactAlarm = true, fullScreen = true)
+            vm.openSetup.test {
+                asked(
+                    WriteOutcome.Ask(
+                        WriteTaskResult.Question.DEADLINE,
+                        TaskDraft("Temizlikçi için para çek", "1.000 TL", FinishMode.PHOTO, recipient = "selin"),
+                    ),
+                )
+                val preview = vm.state.value?.preview!!
+                assertEquals("Selin", preview.to)
+                assertEquals(Reachability.SOUND, preview.reach)
+                assertTrue(preview.photo && preview.photoSuggested && preview.toOther)
+
+                vm.previewSheet.onPhoto(false)
+                vm.previewSheet.onChoice(preview.choices.single())
+                vm.onPreviewConfirm()
+                assertEquals(listOf<String?>(Cast.SELIN_ID), tasks.createdFor)
+                assertEquals(listOf(FinishMode.DONE), tasks.createdFinishModes)
+                assertNull(vm.state.value?.preview)
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `4a, Kime asked offers Kendine or a connection, the deadline from the text is kept`() =
+        runTest(main.dispatcher) {
+            val nineTomorrow = Instant.parse("2026-10-12T09:00:00+03:00")
+            asked(
+                WriteOutcome.Ask(
+                    WriteTaskResult.Question.RECIPIENT,
+                    TaskDraft("Temizlikçi için para çek", null, FinishMode.PHOTO, recipient = null, deadline = nineTomorrow),
+                ),
+            )
+            val preview = vm.state.value?.preview!!
+            assertEquals(listOf(RecipientChoice.Self, RecipientChoice.Person(Cast.SELIN_ID, "Selin")), preview.recipients)
+            assertEquals(DeadlineText.Tomorrow("09:00"), preview.knownDeadline)
+            assertFalse(preview.ready, "nobody chosen yet")
+
+            vm.previewSheet.onRecipient(RecipientChoice.Person(Cast.SELIN_ID, "Selin"))
+            assertEquals(
+                Reachability.SOUND,
+                vm.state.value
+                    ?.preview
+                    ?.reach,
+            )
+            vm.onPreviewConfirm()
+            assertEquals(listOf<String?>(Cast.SELIN_ID), tasks.createdFor)
+            assertEquals(nineTomorrow, tasks.created.single().second)
+        }
+
+    @Test
+    fun `a name no connection matches leaves the text in the bar`() =
+        runTest(main.dispatcher) {
+            asked(WriteOutcome.Ask(WriteTaskResult.Question.DEADLINE, TaskDraft("Para çek", null, FinishMode.DONE, recipient = "Defne")))
+            assertNull(vm.state.value?.preview)
+            assertEquals(ComposeState.Typing("selin yarın 9dan önce 1000 çeksin"), vm.state.value?.compose)
+        }
+
     private val askDeadline =
         WriteOutcome.Ask(WriteTaskResult.Question.DEADLINE, TaskDraft("Para çek", "1.000 TL", FinishMode.DONE))
 
@@ -211,7 +282,7 @@ class HomeViewModelTest {
                     .preview!!
                     .choices
                     .single()
-            vm.onPreviewChoice(morning)
+            vm.previewSheet.onChoice(morning)
             vm.onPreviewConfirm()
             assertEquals("Para çek" to Instant.parse("2026-10-12T09:00:00+03:00"), tasks.created.single().let { it.first to it.second })
             assertNull(vm.state.value?.preview)
@@ -227,15 +298,15 @@ class HomeViewModelTest {
                     .preview!!
                     .choices
                     .single()
-            vm.onPreviewChoice(morning)
-            vm.onPreviewChoice(morning)
+            vm.previewSheet.onChoice(morning)
+            vm.previewSheet.onChoice(morning)
             assertNull(
                 vm.state.value
                     ?.preview
                     ?.selected,
             )
 
-            vm.onPreviewTimePicked(LocalTime(18, 30))
+            vm.previewSheet.onTimePicked(LocalTime(18, 30))
             assertEquals(
                 DeadlineChoice.Picked(Instant.parse("2026-10-12T18:30:00+03:00"), "18:30"),
                 vm.state.value
@@ -248,7 +319,7 @@ class HomeViewModelTest {
     fun `Vazgeç closes the preview and keeps the text`() =
         runTest(main.dispatcher) {
             previewOpen()
-            vm.onPreviewDismiss()
+            vm.previewSheet.onDismiss()
             assertNull(vm.state.value?.preview)
             assertEquals(ComposeState.Typing("1000 tl çek"), vm.state.value?.compose)
         }
@@ -258,7 +329,7 @@ class HomeViewModelTest {
         runTest(main.dispatcher) {
             previewOpen()
             tasks.createOutcome = WriteOutcome.Failed
-            vm.onPreviewChoice(
+            vm.previewSheet.onChoice(
                 vm.state.value!!
                     .preview!!
                     .choices
@@ -373,7 +444,7 @@ class HomeViewModelTest {
             permissions.granted = GrantedPermissions(notifications = true, exactAlarm = true, fullScreen = false)
             vm.openSetup.test {
                 previewOpen()
-                vm.onPreviewChoice(
+                vm.previewSheet.onChoice(
                     vm.state.value!!
                         .preview!!
                         .choices
@@ -412,7 +483,7 @@ class HomeViewModelTest {
             assertEquals("1000 tl çek yarın 9da", preview?.rawText)
             assertNull(vm.state.value?.undo)
 
-            vm.onPreviewChoice(preview!!.choices.single())
+            vm.previewSheet.onChoice(preview!!.choices.single())
             vm.onPreviewConfirm()
             assertEquals(Cast.TASK_ID to Instant.parse("2026-10-12T09:00:00+03:00"), tasks.edited.single().let { it.first to it.second })
             assertEquals(emptyList(), tasks.created)
@@ -425,7 +496,7 @@ class HomeViewModelTest {
             sentDirectly()
             vm.onUndoEdit()
             tasks.editOutcome = WriteOutcome.Failed
-            vm.onPreviewChoice(
+            vm.previewSheet.onChoice(
                 vm.state.value!!
                     .preview!!
                     .choices

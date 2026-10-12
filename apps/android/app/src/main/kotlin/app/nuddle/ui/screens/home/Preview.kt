@@ -2,6 +2,10 @@ package app.nuddle.ui.screens.home
 
 import androidx.compose.runtime.Immutable
 import app.nuddle.api.model.FinishMode
+import app.nuddle.api.model.Reachability
+import app.nuddle.api.model.WriteTaskResult
+import app.nuddle.data.WriteOutcome
+import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.domain.QuietHours
 import kotlinx.datetime.DatePeriod
@@ -12,6 +16,7 @@ import kotlinx.datetime.format
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import java.util.Locale
 import kotlin.time.Instant
 
 // Parts of the day as the extraction prompt reads them (apps/web/src/infra/llm): akşam 19:00, sabah 09:00.
@@ -48,9 +53,34 @@ data class PreviewUi(
     val quietStart: String,
     val quietEnd: String,
     val sending: Boolean = false,
-    /** Who it is for; null for a task to self ("Kendine"). */
+    /** Who it is for; null for a task to self ("Kendine") or while "Kime?" is unanswered. */
     val to: String? = null,
-)
+    /** 4a: the answers to "Kime?" when the server asked it; empty otherwise. */
+    val recipients: List<RecipientChoice> = emptyList(),
+    /** The chosen recipient; set from the text when only the deadline was asked. */
+    val recipient: RecipientChoice? = RecipientChoice.Self,
+    /** The deadline the text already gave, when the question was "Kime?"; then "Ne zamana kadar?" is not asked. */
+    val knownDeadline: DeadlineText? = null,
+    /** 4a, a task to someone else: "Fotoğrafla, sen onayla" is chosen; [photoSuggested] when the text was about money. */
+    val photo: Boolean = false,
+    val photoSuggested: Boolean = false,
+    /** 4a: how far pokes reach the recipient now; null for a task to self. */
+    val reach: Reachability? = null,
+) {
+    val toOther: Boolean get() = recipient is RecipientChoice.Person
+
+    val ready: Boolean get() = recipient != null && (knownDeadline != null || selected != null)
+}
+
+/** One answer to "Kime?" (4a). */
+sealed interface RecipientChoice {
+    data object Self : RecipientChoice
+
+    data class Person(
+        val personId: String,
+        val name: String,
+    ) : RecipientChoice
+}
 
 /** 2a: the task that just went out without a question, for the undo toast. */
 @Immutable
@@ -132,3 +162,63 @@ fun undoFor(
         photo = task.finishMode == FinishMode.PHOTO.value,
         to = to,
     )
+
+private val TURKISH = Locale.forLanguageTag("tr")
+
+private fun String.folded() = trim().lowercase(TURKISH)
+
+/** The extraction's recipient: "self" (or none) is Kendine, a name must match exactly one connection. */
+internal fun recipientNamed(
+    name: String?,
+    connections: List<ConnectionEntity>,
+): RecipientChoice? {
+    if (name == null || name.folded() == "self") return RecipientChoice.Self
+    val match = connections.singleOrNull { it.displayName.folded() == name.folded() } ?: return null
+    return RecipientChoice.Person(match.personId, match.displayName)
+}
+
+/**
+ * The preview for what the server asked (2b, 4a), with the deadline the text already gave when only "Kime?" was
+ * asked; null when there is nothing to ask on a sheet (no title, a question without a design, or a name no
+ * connection matches).
+ */
+fun previewFor(
+    rawText: String,
+    ask: WriteOutcome.Ask,
+    connections: List<ConnectionEntity>,
+    quiet: QuietHours,
+    now: Instant,
+): Pair<PreviewUi, Instant?>? {
+    val draft = ask.draft ?: return null
+    val title = draft.title ?: return null
+    val photo = draft.finishMode == FinishMode.PHOTO
+    val base = previewFor(rawText, title, draft.detail, quiet, now).copy(photo = photo, photoSuggested = photo)
+    return when (ask.question) {
+        WriteTaskResult.Question.DEADLINE -> {
+            when (val recipient = recipientNamed(draft.recipient, connections) ?: return null) {
+                RecipientChoice.Self -> {
+                    base to null
+                }
+
+                is RecipientChoice.Person -> {
+                    val reach = connections.first { it.personId == recipient.personId }.reachability
+                    base.copy(recipient = recipient, to = recipient.name, reach = Reachability.decode(reach) ?: Reachability.NONE) to null
+                }
+            }
+        }
+
+        WriteTaskResult.Question.RECIPIENT -> {
+            val known = draft.deadline?.takeIf { it > now }
+            val people = connections.map { RecipientChoice.Person(it.personId, it.displayName) }
+            base.copy(
+                recipients = listOf(RecipientChoice.Self) + people,
+                recipient = null,
+                knownDeadline = known?.let { deadlineText(it, now, quiet.timeZone) },
+            ) to known
+        }
+
+        else -> {
+            null
+        }
+    }
+}
