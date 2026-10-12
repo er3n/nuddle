@@ -13,6 +13,7 @@ const errors = {
   idempotency_key_reused: { code: "DRT-1005", status: 422 },
   invalid_otp: { code: "DRT-1006", status: 401 },
   forbidden: { code: "DRT-1007", status: 403 },
+  otp_locked: { code: "DRT-1008", status: 429 },
 
   wrong_status: { code: "DRT-4001", status: 409 },
   not_sender: { code: "DRT-4002", status: 403 },
@@ -38,17 +39,25 @@ type RequestError =
   | "not_found"
   | "idempotency_key_reused"
   | "invalid_otp"
-  | "forbidden";
+  | "forbidden"
+  | "otp_locked";
 
 export type ErrorName =
   RequestError | DomainError | ConnectionError | "internal" | "upstream_failed";
 
 export const errorNames = Object.keys(errors) as [ErrorName, ...ErrorName[]];
 
+/** What the app needs to say more than the code: attempts left (6c), when a wait ends. */
+export interface ErrorDetails {
+  remainingAttempts?: number;
+  retryAt?: string;
+}
+
 export class ApiError extends Error {
   constructor(
     override readonly name: ErrorName,
     message?: string,
+    readonly details?: ErrorDetails,
   ) {
     super(message ?? name);
   }
@@ -66,6 +75,17 @@ export function errorBody(
   name: ErrorName,
   message: string,
   requestId: string,
-): { error: { code: string; name: ErrorName; message: string; requestId: string } } {
-  return { error: { code: errors[name].code, name, message, requestId } };
+  details?: ErrorDetails,
+): {
+  error: {
+    code: string;
+    name: ErrorName;
+    message: string;
+    requestId: string;
+    details?: ErrorDetails;
+  };
+} {
+  return {
+    error: { code: errors[name].code, name, message, requestId, ...(details ? { details } : {}) },
+  };
 }

@@ -585,9 +585,15 @@ export interface components {
                 /** @example DRT-4001 */
                 code: string;
                 /** @enum {string} */
-                name: "validation_failed" | "unauthorized" | "not_registered" | "not_found" | "idempotency_key_reused" | "invalid_otp" | "forbidden" | "wrong_status" | "not_sender" | "not_recipient" | "wrong_finish_mode" | "deadline_not_in_future" | "not_connected" | "recipient_unavailable" | "snooze_not_allowed" | "invite_not_open" | "wrong_invitee" | "self_invite" | "not_inviter" | "internal" | "upstream_failed";
+                name: "validation_failed" | "unauthorized" | "not_registered" | "not_found" | "idempotency_key_reused" | "invalid_otp" | "forbidden" | "otp_locked" | "wrong_status" | "not_sender" | "not_recipient" | "wrong_finish_mode" | "deadline_not_in_future" | "not_connected" | "recipient_unavailable" | "snooze_not_allowed" | "invite_not_open" | "wrong_invitee" | "self_invite" | "not_inviter" | "internal" | "upstream_failed";
                 message: string;
                 requestId: string;
+                details?: {
+                    /** @description invalid_otp: codes left before the wait (screen 6c) */
+                    remainingAttempts?: number;
+                    /** @description otp_locked: ISO 8601, when a code can be asked for and checked again */
+                    retryAt?: string;
+                };
             };
         };
         SendOtpRequest: {
@@ -1240,6 +1246,15 @@ export interface operations {
                 };
             };
             /** @description Error with a DRT code */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
             502: {
                 headers: {
                     [name: string]: unknown;
@@ -1283,6 +1298,15 @@ export interface operations {
             };
             /** @description Error with a DRT code */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

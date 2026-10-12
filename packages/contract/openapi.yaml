@@ -67,6 +67,7 @@ components:
                 - idempotency_key_reused
                 - invalid_otp
                 - forbidden
+                - otp_locked
                 - wrong_status
                 - not_sender
                 - not_recipient
@@ -85,6 +86,16 @@ components:
               type: string
             requestId:
               type: string
+            details:
+              type: object
+              properties:
+                remainingAttempts:
+                  type: integer
+                  minimum: 0
+                  description: "invalid_otp: codes left before the wait (screen 6c)"
+                retryAt:
+                  type: string
+                  description: "otp_locked: ISO 8601, when a code can be asked for and checked again"
           required:
             - code
             - name
@@ -1249,6 +1260,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "429":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "502":
           description: Error with a DRT code
           content:
@@ -1282,6 +1299,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
           description: Error with a DRT code
           content:
             application/json:

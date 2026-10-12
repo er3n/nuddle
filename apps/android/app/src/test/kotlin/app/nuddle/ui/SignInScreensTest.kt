@@ -104,6 +104,21 @@ class SignInScreensTest {
     }
 
     @Test
+    fun `6c counts the codes left, then says when a new one can be asked for`() {
+        var state by mutableStateOf(CodeUiState("+90 532 000 00 02", code = "000000", wrongCode = true, remainingAttempts = 2))
+        content { CodeScreen(state, {}, {}, {}, {}, {}) }
+        compose.onNodeWithText("Kod yanlış. 2 deneme hakkın kaldı.").assertExists()
+        compose
+            .onNodeWithText("Hakların biterse 15 dakika sonra yeni kod isteyebilirsin. Bu, numaranı kötüye kullanılmaktan korur.")
+            .assertExists()
+
+        state = state.copy(code = "", remainingAttempts = 0, lockedUntil = "21:15")
+        compose.onNodeWithText("Çok fazla yanlış deneme.").assertExists()
+        compose.onNodeWithText("Yeni kodu saat 21:15 olunca isteyebilirsin.").assertExists()
+        compose.onNodeWithText("Yeni kod gönder").assertIsNotEnabled()
+    }
+
+    @Test
     fun `name continue needs a name`() {
         content { NameScreen(NameUiState(name = ""), {}, {}) }
         compose.onNodeWithText("Devam").assertIsNotEnabled()

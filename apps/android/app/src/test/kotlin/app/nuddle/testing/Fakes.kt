@@ -9,6 +9,7 @@ import app.nuddle.data.AccountRepository
 import app.nuddle.data.Approvals
 import app.nuddle.data.AuthRepository
 import app.nuddle.data.InviteRepository
+import app.nuddle.data.SendOtpOutcome
 import app.nuddle.data.SessionStarter
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.VerifyOutcome
@@ -126,13 +127,13 @@ class FakeAuthRepository : AuthRepository {
     val sentTo = mutableListOf<String>()
     val verified = mutableListOf<Pair<String, String>>()
     val registeredNames = mutableListOf<String>()
-    var sendOk = true
+    var sendOutcome: SendOtpOutcome = SendOtpOutcome.Sent
     var verifyOutcome: VerifyOutcome = VerifyOutcome.SignedIn(registered = true)
     var registerOk = true
 
-    override suspend fun sendOtp(e164: String): Boolean {
+    override suspend fun sendOtp(e164: String): SendOtpOutcome {
         sentTo += e164
-        return sendOk
+        return sendOutcome
     }
 
     override suspend fun verify(

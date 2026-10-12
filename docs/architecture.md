@@ -108,8 +108,9 @@ The app shows the code on the unrecoverable error screen (6f) and sends it to Cr
 | DRT-1003 | `not_registered` | 403 | Signed in, but `register` was not sent yet (or the account is deleted) |
 | DRT-1004 | `not_found` | 404 | No such route, or a task, invite the caller cannot see |
 | DRT-1005 | `idempotency_key_reused` | 422 | The key was used for a different command |
-| DRT-1006 | `invalid_otp` | 401 | Wrong or expired code, or an unknown refresh token |
+| DRT-1006 | `invalid_otp` | 401 | Wrong or expired code (`details.remainingAttempts`), or an unknown refresh token |
 | DRT-1007 | `forbidden` | 403 | Reserved |
+| DRT-1008 | `otp_locked` | 429 | Too many wrong codes for the phone: no code is checked or sent until `details.retryAt` (screen 6c) |
 | DRT-4001 | `wrong_status` | 409 | The task's status does not allow the command |
 | DRT-4002 | `not_sender` | 403 | Only the sender can do this |
 | DRT-4003 | `not_recipient` | 403 | Only the recipient can do this |

@@ -10,6 +10,16 @@ export const ErrorSchema = z
       name: z.enum(errorNames),
       message: z.string(),
       requestId: z.string(),
+      details: z
+        .object({
+          remainingAttempts: z.number().int().min(0).optional().openapi({
+            description: "invalid_otp: codes left before the wait (screen 6c)",
+          }),
+          retryAt: z.string().optional().openapi({
+            description: "otp_locked: ISO 8601, when a code can be asked for and checked again",
+          }),
+        })
+        .optional(),
     }),
   })
   .openapi("Error");

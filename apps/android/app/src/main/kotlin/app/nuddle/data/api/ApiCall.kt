@@ -5,6 +5,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import retrofit2.Response
 import java.io.IOException
+import kotlin.time.Instant
 
 /** A failed call: either the server answered with an error (`DRT-xxxx`, docs/architecture.md) or nothing came back. */
 sealed interface ApiFailure {
@@ -12,6 +13,10 @@ sealed interface ApiFailure {
         val status: Int,
         val code: String?,
         val name: String?,
+        /** `invalid_otp`: codes left before the wait (6c). */
+        val remainingAttempts: Int? = null,
+        /** `otp_locked`: when the wait ends. */
+        val retryAt: Instant? = null,
     ) : ApiFailure
 
     data object Network : ApiFailure
@@ -51,5 +56,13 @@ suspend fun <T : Any> apiCall(
                 null
             }
         }
-    return ApiResult.Failure(ApiFailure.Http(response.code(), error?.code, error?.name?.value))
+    return ApiResult.Failure(
+        ApiFailure.Http(
+            status = response.code(),
+            code = error?.code,
+            name = error?.name?.value,
+            remainingAttempts = error?.details?.remainingAttempts,
+            retryAt = error?.details?.retryAt?.let { runCatching { Instant.parse(it) }.getOrNull() },
+        ),
+    )
 }

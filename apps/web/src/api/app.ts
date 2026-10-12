@@ -30,7 +30,8 @@ function baseApp(): App {
 
   app.onError((err, c) => {
     const id = c.get("requestId");
-    if (err instanceof ApiError) return c.json(errorBody(err.name, err.message, id), err.status);
+    if (err instanceof ApiError)
+      return c.json(errorBody(err.name, err.message, id, err.details), err.status);
     console.error(`request ${id} failed`, err);
     return c.json(errorBody("internal", "internal error", id), 500);
   });

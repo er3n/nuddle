@@ -7,6 +7,7 @@
 import { and, asc, eq, gt, inArray, isNull, lte, ne, notInArray, or, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import type { Invite, InviteStatus } from "../../domain/connections";
+import { noAttempts, type OtpAttempts } from "../../domain/otp-attempts";
 import type { Device, PermissionSummary } from "../../domain/reachability";
 import type { ClaimedAction } from "../../domain/tick";
 import type { Outcome } from "../../domain/task-machine";
@@ -16,6 +17,7 @@ import {
   edges,
   idempotencyKeys,
   invites,
+  otpAttempts,
   people,
   pokeSteps,
   scheduledActions,
@@ -778,4 +780,26 @@ export async function syncRows(tx: Tx, me: Person, cursor: number): Promise<Sync
     events: eventRows.map((r) => ({ ...toEvent(r.e), id: String(r.e.id) })),
     plans,
   };
+}
+
+export async function findOtpAttempts(ex: Executor, phone: string): Promise<OtpAttempts> {
+  const [row] = await ex.select().from(otpAttempts).where(eq(otpAttempts.phone, phone));
+  return row ? { failures: row.failures, lockedUntil: row.lockedUntil } : noAttempts;
+}
+
+export async function saveOtpAttempts(
+  ex: Executor,
+  phone: string,
+  state: OtpAttempts,
+  now: Date,
+): Promise<void> {
+  const values = { failures: state.failures, lockedUntil: state.lockedUntil, updatedAt: now };
+  await ex
+    .insert(otpAttempts)
+    .values({ phone, ...values })
+    .onConflictDoUpdate({ target: otpAttempts.phone, set: values });
+}
+
+export async function clearOtpAttempts(ex: Executor, phone: string): Promise<void> {
+  await ex.delete(otpAttempts).where(eq(otpAttempts.phone, phone));
 }
