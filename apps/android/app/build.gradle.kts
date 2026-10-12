@@ -34,6 +34,7 @@ android {
             // The emulator reaches `mise run dev` through `adb reverse tcp:3000 tcp:3000`.
             buildConfigField("String", "API_BASE_URL", "\"http://localhost:3000/\"")
             buildConfigField("boolean", "EXPOSE_TEST_TAGS", "false")
+            buildConfigField("boolean", "INJECTED_PHOTO", "false")
         }
         create("e2e") {
             dimension = "env"
@@ -41,12 +42,15 @@ android {
             buildConfigField("String", "API_BASE_URL", "\"http://localhost:3000/\"")
             // Maestro finds elements by test tag exposed as resource id (docs/testing.md, Android `e2e` flavor).
             buildConfigField("boolean", "EXPOSE_TEST_TAGS", "true")
+            // The camera takes the photo the orchestrator put on the phone (docs/testing.md, Android `e2e` flavor).
+            buildConfigField("boolean", "INJECTED_PHOTO", "true")
         }
         create("prod") {
             dimension = "env"
             // The production API, also the invite link host (open-questions#13).
             buildConfigField("String", "API_BASE_URL", "\"https://nuddle.app/\"")
             buildConfigField("boolean", "EXPOSE_TEST_TAGS", "false")
+            buildConfigField("boolean", "INJECTED_PHOTO", "false")
         }
     }
 

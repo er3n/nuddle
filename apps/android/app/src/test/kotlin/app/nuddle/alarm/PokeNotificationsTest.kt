@@ -11,6 +11,7 @@ import app.nuddle.domain.PokeStep
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.aTask
+import kotlinx.datetime.TimeZone
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -81,5 +82,15 @@ class PokeNotificationsTest {
         val done = show(seq = 1, finishMode = "done").actions.first().actionIntent
         assertTrue(done.isBroadcast)
         assertEquals(PokeIntents.ACTION_DONE, shadowOf(done).savedIntent.action)
+    }
+
+    @Test
+    fun `a poke is in a group of its own and takes the task's earlier note away`() {
+        AndroidTaskAnnouncer(app, FakeClock(), TimeZone.of("Europe/Istanbul")).announce(aTask(), "Selin")
+        val poke = show(seq = 1)
+
+        // In the app's automatic group a poke would be silent and its full screen would never open (E2E smoke 3).
+        assertEquals("poke:${Cast.TASK_ID}", poke.group)
+        assertEquals(listOf(poke.channelId), shadowOf(app.getSystemService<NotificationManager>()).allNotifications.map { it.channelId })
     }
 }

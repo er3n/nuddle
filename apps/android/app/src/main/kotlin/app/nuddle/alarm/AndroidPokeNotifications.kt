@@ -68,6 +68,8 @@ class AndroidPokeNotifications
                     .setCategory(if (fullScreen) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_REMINDER)
                     .setPriority(if (silent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_HIGH)
                     .setContentIntent(open)
+                    .setGroup(NotificationIds.pokeGroup(task.id))
+                    .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_ALL)
                     .addPokeActions(
                         step,
                         SnoozeRules.next(task.snoozesUsed, clock.now(), Instant.fromEpochMilliseconds(task.deadline)),
@@ -80,6 +82,8 @@ class AndroidPokeNotifications
                 // the earlier step's notification with the same id (found by E2E smoke 1), so that one goes first.
                 manager.cancel(notificationId(task.id))
             }
+            // The poke takes over from the note that the task arrived ("Zamanı gelince seni dürterim", 4b).
+            manager.cancel(NotificationIds.note(task.id))
             manager.notify(notificationId(task.id), builder.build())
         }
 
@@ -135,5 +139,5 @@ class AndroidPokeNotifications
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
-        private fun notificationId(taskId: String) = taskId.hashCode()
+        private fun notificationId(taskId: String) = NotificationIds.poke(taskId)
     }

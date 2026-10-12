@@ -67,7 +67,8 @@ Start the backend scenario suite with: task to self, task to other with done, ph
 ### Android `e2e` flavor
 - Base URL points at the host (`adb reverse tcp:3000 tcp:3000`).
 - `testTagsAsResourceId = true` (only in this flavor); every interactive element has a `testTag` from `ui/TestTags.kt`, and flows find elements only by tag.
-- CameraX replaced by injecting an image file from the test. Arrives with photo tasks (slice 4); the app has no camera before that.
+- CameraX replaced by injecting an image file from the test: the orchestrator copies `e2e/fixtures/photo.jpg` into the app's `files/e2e-photo.jpg` (`run-as`), and the camera of this flavor (`InjectedPhotoSource`, `BuildConfig.INJECTED_PHOTO`) returns it as the shot.
+- `adb reverse` also forwards `:54321` (local Supabase), where the signed photo upload and view URLs point.
 
 ### Orchestrator
 TypeScript runner in `e2e/orchestrator` that drives two emulators (`emulator-5554` as Selin, `emulator-5556` as Eren), runs Maestro flows on each in sequence, and calls test endpoints in between. Every run writes `e2e-runs/<timestamp>/` with per-step screenshots of both devices, logcat for both, and server logs. Agents debug from that folder.
@@ -92,7 +93,7 @@ FCM needs Google Play system images and the dev Firebase app. Flows wait with ti
 ### Smoke set (runs before a PR is merged)
 1. Sign up with a test number, write a task to self, full screen poke rings, Done.
 2. Selin invites Eren, Eren consents and completes setup, both see each other.
-3. Selin writes a photo task to Eren, Eren gets poked, sends a photo, Selin approves.
+3. Selin writes a photo task to Eren, Eren gets poked, Bitti on the full screen poke opens the camera, he sends a photo and his pokes stop, Selin approves.
 4. Selin writes a task to Eren, it is his next-up card and his phone sets its alarms; Selin cancels it from the task detail with a reason, Eren's pending alarms are gone.
 5. Doze: a `SOUND` step still rings on time.
 6. Reboot: pending alarms are re-set.
