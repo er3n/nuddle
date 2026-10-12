@@ -7,6 +7,8 @@ import app.nuddle.api.model.DoneCommand
 import app.nuddle.api.model.ReportFiredCommand
 import app.nuddle.api.model.SnoozeCommand
 import app.nuddle.api.model.TaskStatus
+import app.nuddle.data.DoneNote
+import app.nuddle.data.DoneNotes
 import app.nuddle.data.TaskCloser
 import app.nuddle.data.db.PokeStepDao
 import app.nuddle.data.db.TaskDao
@@ -102,8 +104,15 @@ class PokeActions
         private val outbox: Outbox,
         private val ids: IdGenerator,
         private val clock: Clock,
+        private val doneNotes: DoneNotes,
     ) : TaskCloser {
-        suspend fun done(key: AlarmKey) = done(key.taskId)
+        /** Bitti on the poke: the done note on home says which poke this was (domain.md, Done note). */
+        suspend fun done(key: AlarmKey) {
+            val title = tasks.get(key.taskId)?.title
+            val caughtAt = alarms.step(key)?.number
+            done(key.taskId)
+            if (title != null) doneNotes.post(DoneNote(key.taskId, title, caughtAt))
+        }
 
         /** Also "Şimdiden bitti" on home (2f), before any alarm rang. */
         override suspend fun done(taskId: String) {

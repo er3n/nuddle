@@ -4,6 +4,8 @@ import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.WriteTaskResult
+import app.nuddle.data.DoneNote
+import app.nuddle.data.DoneNotes
 import app.nuddle.data.SetupGate
 import app.nuddle.data.TaskDraft
 import app.nuddle.data.WriteOutcome
@@ -50,8 +52,9 @@ class HomeViewModelTest {
     private val taskDao = InMemoryTaskDao()
     private val permissions = FakePermissions()
     private val setup = InMemorySetupStore()
+    private val doneNotes = DoneNotes()
     private val vm by lazy {
-        HomeViewModel(sessions, taskDao, tasks, IdGenerator(clock), SetupGate(setup, permissions), clock, istanbul)
+        HomeViewModel(sessions, taskDao, tasks, IdGenerator(clock), SetupGate(setup, permissions), doneNotes, clock, istanbul)
     }
 
     private suspend fun signedIn() = sessions.saveMe("Eren", QuietHours.default(istanbul))
@@ -373,6 +376,19 @@ class HomeViewModelTest {
             )
             advanceTimeBy(2)
             assertNull(vm.state.value?.doneNote)
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class) // Reason: advanceTimeBy is how virtual time moves (ADR 0009).
+    @Test
+    fun `Bitti on the poke shows its done note on home for 4 seconds`() =
+        runTest(main.dispatcher) {
+            doneNotes.post(DoneNote(Cast.TASK_ID, "Para çek", caughtAt = 3))
+            ready()
+            assertEquals(DoneNoteUi("Para çek", 3), vm.state.value?.doneNote)
+
+            advanceTimeBy(4_001)
+            assertNull(vm.state.value?.doneNote)
+            assertNull(doneNotes.pending.value, "shown once")
         }
 
     private suspend fun <T> ReceiveTurbine<T>.awaitItemWhere(predicate: (T) -> Boolean): T {
