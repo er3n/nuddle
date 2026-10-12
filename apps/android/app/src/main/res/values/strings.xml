@@ -186,6 +186,14 @@
     <string name="matched_body">Artık birbirinize görev yazabilirsiniz. %1$s, Bizimkiler listende.</string>
     <string name="matched_start">Başla</string>
 
+    <!-- 4b A task from someone else arrived. open-questions#34: the design says "yarın 09:00'dan önce"; rephrased so the
+         time takes no suffix (open-questions#21), and a task finished by "Bitti" has no second sentence. -->
+    <string name="task_arrived_title">%1$s sana bir görev yazdı</string>
+    <string name="task_arrived_body">%1$s · son zaman %2$s.</string>
+    <string name="task_arrived_body_photo">%1$s · son zaman %2$s. Bitince fotoğrafını istiyor.</string>
+    <string name="task_arrived_calm">Bir şey yapman gerekmiyor. Zamanı gelince seni dürterim.</string>
+    <string name="task_arrived_open">Gör</string>
+
     <!-- 1c Bell -->
     <string name="inbox_title">Bildirimler</string>
     <string name="inbox_new">Yeni</string>
@@ -307,6 +315,7 @@
         <item quantity="other">%1$d saat</item>
     </plurals>
     <string name="separator_dot">%1$s · %2$s</string>
+    <string name="paragraphs">%1$s\n\n%2$s</string>
 
     <!-- Notification channels (docs/ux/platform.md) -->
     <string name="channel_poke_silent">Sessiz dürtmeler</string>

@@ -2,12 +2,14 @@ package app.nuddle.di
 
 import android.content.Context
 import androidx.room.Room
+import app.nuddle.alarm.AndroidTaskAnnouncer
 import app.nuddle.alarm.PokeActions
 import app.nuddle.data.ApiInviteRepository
 import app.nuddle.data.ApiTaskRepository
 import app.nuddle.data.InviteRepository
 import app.nuddle.data.TaskCloser
 import app.nuddle.data.TaskRepository
+import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.InviteDao
 import app.nuddle.data.db.NuddleDatabase
 import app.nuddle.data.db.OutboxDao
@@ -17,6 +19,7 @@ import app.nuddle.data.session.ConsentPrompts
 import app.nuddle.data.session.DataStoreConsentPrompts
 import app.nuddle.data.sync.SyncRepository
 import app.nuddle.data.sync.Syncer
+import app.nuddle.data.sync.TaskAnnouncer
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -46,6 +49,9 @@ object DatabaseModule {
 
     @Provides
     fun invites(db: NuddleDatabase): InviteDao = db.invites()
+
+    @Provides
+    fun connections(db: NuddleDatabase): ConnectionDao = db.connections()
 }
 
 /** What the screens write through: tasks and invites. */
@@ -66,4 +72,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun syncer(impl: SyncRepository): Syncer
+
+    @Binds
+    abstract fun taskAnnouncer(impl: AndroidTaskAnnouncer): TaskAnnouncer
 }

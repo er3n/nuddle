@@ -12,6 +12,7 @@ import app.nuddle.data.sync.SyncRepository
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.InMemorySessionStore
+import app.nuddle.testing.RecordingAnnouncer
 import app.nuddle.testing.RecordingDrainer
 import app.nuddle.testing.aSession
 import app.nuddle.testing.drtError
@@ -65,6 +66,26 @@ class SyncAndOutboxTest {
         server.close()
     }
 
+    private val announcer = RecordingAnnouncer()
+
+    private fun syncRepository() =
+        SyncRepository(
+            api = server.retrofit().create(SyncApi::class.java),
+            sessions = sessions,
+            tasks = db.tasks(),
+            invites = db.invites(),
+            connections = db.connections(),
+            alarms = alarms,
+            announcer = announcer,
+            json = testJson,
+        )
+
+    private val selinConnection =
+        """
+        "connections":[{"personId":"${Cast.SELIN_ID}","displayName":"Selin","relationship":"spouse","status":"active",
+                        "reachability":"FULL_SCREEN","phone":"${Cast.SELIN_PHONE}"}]
+        """.trimIndent()
+
     private val syncBody =
         """
         {"cursor":"42",
@@ -87,15 +108,7 @@ class SyncAndOutboxTest {
             sessions.cursor = "40"
             sessions.device = "d-1"
             server.enqueue(json(200, syncBody))
-            val repo =
-                SyncRepository(
-                    api = server.retrofit().create(SyncApi::class.java),
-                    sessions = sessions,
-                    tasks = db.tasks(),
-                    invites = db.invites(),
-                    alarms = alarms,
-                    json = testJson,
-                )
+            val repo = syncRepository()
 
             assertTrue(repo.sync())
 
@@ -134,7 +147,7 @@ class SyncAndOutboxTest {
                     ),
                 ),
             )
-            val repo = SyncRepository(server.retrofit().create(SyncApi::class.java), sessions, db.tasks(), db.invites(), alarms, testJson)
+            val repo = syncRepository()
 
             assertTrue(repo.sync())
 
@@ -143,6 +156,62 @@ class SyncAndOutboxTest {
             assertEquals("+905320000002", invites.first().phone)
             assertEquals("Defne", invites.last().name)
             assertEquals(Instant.parse("2026-10-12T14:32:00+03:00").toEpochMilliseconds(), invites.first().createdAt)
+        }
+
+    @Test
+    fun `sync stores connections and when a task was written`() =
+        runTest {
+            server.enqueue(
+                json(
+                    200,
+                    syncBody
+                        .replace("\"connections\":[]", selinConnection)
+                        .replace("\"inRecipientList\":true,", "\"inRecipientList\":true,\"createdAt\":\"2026-10-11T14:32:00+03:00\","),
+                ),
+            )
+
+            assertTrue(syncRepository().sync())
+
+            val selin = db.connections().get(Cast.SELIN_ID)!!
+            assertEquals("Selin" to Cast.SELIN_PHONE, selin.displayName to selin.phone)
+            assertEquals(Instant.parse("2026-10-11T14:32:00+03:00").toEpochMilliseconds(), db.tasks().get(Cast.TASK_ID)!!.createdAt)
+        }
+
+    @Test
+    fun `a task from someone else that arrives later is announced once, with the sender's name`() =
+        runTest {
+            sessions.cursor = "40"
+            val body = syncBody.replace("\"connections\":[]", selinConnection)
+            server.enqueue(json(200, body))
+            server.enqueue(json(200, body))
+
+            assertTrue(syncRepository().sync())
+            assertTrue(syncRepository().sync())
+
+            assertEquals(listOf(Cast.TASK_ID to "Selin"), announcer.announced)
+        }
+
+    @Test
+    fun `a full sync announces nothing, the tasks in it are old news`() =
+        runTest {
+            sessions.cursor = null
+            server.enqueue(json(200, syncBody.replace("\"connections\":[]", selinConnection)))
+
+            assertTrue(syncRepository().sync())
+
+            assertTrue(announcer.announced.isEmpty())
+        }
+
+    @Test
+    fun `a task taken back before I looked withdraws its announcement`() =
+        runTest {
+            sessions.cursor = "40"
+            server.enqueue(json(200, syncBody.replace("\"status\":\"SCHEDULED\"", "\"status\":\"CANCELLED\"")))
+
+            assertTrue(syncRepository().sync())
+
+            assertTrue(announcer.announced.isEmpty())
+            assertEquals(listOf(Cast.TASK_ID), announcer.withdrawn)
         }
 
     @Test
