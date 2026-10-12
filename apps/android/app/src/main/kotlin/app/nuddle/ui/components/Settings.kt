@@ -31,6 +31,7 @@ import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewComponent
 import app.nuddle.ui.preview.PreviewSurface
 import app.nuddle.ui.theme.DurtTheme
+import app.nuddle.ui.uppercaseForUi
 
 /** `overline` title over a white box; rows are separated by 1 dp `surfaceMuted` dividers (components.md, 5). */
 @Composable
@@ -41,7 +42,7 @@ fun SettingsGroup(
 ) {
     val dimens = DurtTheme.dimens
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(dimens.space6)) {
-        Text(title.uppercase(), style = DurtTheme.type.overline, color = DurtTheme.colors.textTertiary)
+        Text(title.uppercaseForUi(), style = DurtTheme.type.overline, color = DurtTheme.colors.textTertiary)
         Column(
             modifier =
                 Modifier
