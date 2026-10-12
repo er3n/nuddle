@@ -78,7 +78,10 @@ class TaskRepositoryTest {
                             closed += "done $taskId"
                         }
 
-                        override suspend fun cancel(taskId: String) {
+                        override suspend fun cancel(
+                            taskId: String,
+                            note: String?,
+                        ) {
                             closed += "cancel $taskId"
                         }
                     },

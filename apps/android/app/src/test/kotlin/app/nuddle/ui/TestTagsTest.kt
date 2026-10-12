@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import app.nuddle.api.model.EdgeType
+import app.nuddle.api.model.Reachability
 import app.nuddle.domain.Ago
 import app.nuddle.domain.SetupStep
 import app.nuddle.domain.Snooze
@@ -50,6 +51,9 @@ import app.nuddle.ui.screens.setup.PermissionStepUi
 import app.nuddle.ui.screens.setup.PermissionsScreen
 import app.nuddle.ui.screens.setup.SetupDemoScreen
 import app.nuddle.ui.screens.setup.SetupUiState
+import app.nuddle.ui.screens.task.TaskDetailCallbacks
+import app.nuddle.ui.screens.task.TaskDetailScreen
+import app.nuddle.ui.screens.task.TaskDetailUiState
 import app.nuddle.ui.screens.welcome.WelcomeScreen
 import app.nuddle.ui.screens.welcome.WelcomeUiState
 import app.nuddle.ui.theme.DurtTheme
@@ -233,6 +237,29 @@ class TestTagsTest {
             )
         }
         assertTaps(TestTags.HOME_SENT to "open task-1")
+    }
+
+    @Test
+    fun `task detail with the cancel sheet`() {
+        val state =
+            TaskDetailUiState(
+                myName = "Eren",
+                title = "Para çek",
+                rawText = null,
+                toName = "Selin",
+                reachability = Reachability.SOUND,
+                deadline = DeadlineText.Tomorrow("09:00"),
+                detail = null,
+                photo = false,
+            )
+        content {
+            TaskDetailScreen(
+                state = state,
+                callbacks = TaskDetailCallbacks(onBack = { clicked += "back" }, onCancel = { clicked += "cancel" }),
+            )
+        }
+        assertShown(TestTags.TASK_DETAIL)
+        assertTaps(TestTags.TASK_CANCEL to "cancel")
     }
 
     @Test

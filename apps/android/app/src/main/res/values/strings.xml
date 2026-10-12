@@ -205,6 +205,27 @@
     <string name="task_arrived_calm">Bir şey yapman gerekmiyor. Zamanı gelince seni dürterim.</string>
     <string name="task_arrived_open">Gör</string>
 
+    <!-- 7c Task detail (sender). open-questions#34: the design says "Eren\'e şu an en fazla tam ekranla ulaşabilirim.";
+         rephrased so the name takes no suffix. "Dürtmeler başladı" is left out: the plan is hidden from the sender. -->
+    <string name="task_detail_title">Görev</string>
+    <string name="task_reach">Şu an %1$s için en güçlü dürtme: %2$s. Bitince sana yazarım.</string>
+    <string name="task_reach_none">Şu an %1$s telefonunda dürtülemiyor. Bitince sana yazarım.</string>
+    <string name="reach_full_screen">tam ekran</string>
+    <string name="reach_sound">sesli bildirim</string>
+    <string name="reach_silent">sessiz bildirim</string>
+    <string name="task_finish_label">Nasıl bitsin</string>
+    <string name="task_finish_photo">Fotoğrafla, sen onayla</string>
+    <string name="task_finish_done">\"Bitti\" yeter</string>
+    <string name="task_cancel">Görevi iptal et</string>
+
+    <!-- 7d Cancel. open-questions#34: the design says "Eren\'e kısa bir not giderim"; rephrased so the name takes no suffix. -->
+    <string name="cancel_title">Görev iptal edilsin mi?</string>
+    <string name="cancel_body">Dürtmeler hemen durur. %1$s kısa bir not görür: \"%2$s bu görevi iptal etti.\"</string>
+    <string name="cancel_reason_handled">Ben hallettim</string>
+    <string name="cancel_reason_not_needed">Gerek kalmadı</string>
+    <string name="cancel_reason_hint">Sebep opsiyonel, seçersen nota eklenir.</string>
+    <string name="cancel_confirm">İptal et</string>
+
     <!-- 1c Bell -->
     <string name="inbox_title">Bildirimler</string>
     <string name="inbox_new">Yeni</string>
