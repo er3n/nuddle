@@ -34,6 +34,10 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.Nuddle">
+        <!-- Crash and 6f error reports (NUD-39); off in the e2e flavor. -->
+        <meta-data
+            android:name="firebase_crashlytics_collection_enabled"
+            android:value="${crashlyticsEnabled}" />
 
         <activity
             android:name=".MainActivity"

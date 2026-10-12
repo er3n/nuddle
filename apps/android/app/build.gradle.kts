@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.room)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.roborazzi)
     alias(libs.plugins.detekt)
 }
@@ -36,6 +37,7 @@ android {
             buildConfigField("boolean", "EXPOSE_TEST_TAGS", "false")
             buildConfigField("boolean", "INJECTED_PHOTO", "false")
             buildConfigField("boolean", "INJECTED_SPEECH", "false")
+            manifestPlaceholders["crashlyticsEnabled"] = "true"
         }
         create("e2e") {
             dimension = "env"
@@ -47,6 +49,8 @@ android {
             buildConfigField("boolean", "INJECTED_PHOTO", "true")
             // Voice input "hears" the text the orchestrator put on the phone (docs/testing.md, Android `e2e` flavor).
             buildConfigField("boolean", "INJECTED_SPEECH", "true")
+            // Smoke runs are not crashes worth a report (NUD-39).
+            manifestPlaceholders["crashlyticsEnabled"] = "false"
         }
         create("prod") {
             dimension = "env"
@@ -55,6 +59,7 @@ android {
             buildConfigField("boolean", "EXPOSE_TEST_TAGS", "false")
             buildConfigField("boolean", "INJECTED_PHOTO", "false")
             buildConfigField("boolean", "INJECTED_SPEECH", "false")
+            manifestPlaceholders["crashlyticsEnabled"] = "true"
         }
     }
 
@@ -172,6 +177,7 @@ dependencies {
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
+    implementation(libs.firebase.crashlytics)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test)
