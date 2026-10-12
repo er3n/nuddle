@@ -227,6 +227,33 @@ class PokeAlarmTest {
         }
 
     @Test
+    fun `the second snooze is 10 minutes and a third one does nothing`() =
+        runTest {
+            givenPlan()
+            actions.snooze(key(1))
+            clock.advance(16.minutes)
+            actions.snooze(key(1))
+            assertEquals(clock.now + 10.minutes, scheduler.scheduled.getValue(key(1)).plannedAt)
+            assertEquals(2, db.tasks().get(Cast.TASK_ID)!!.snoozesUsed)
+
+            clock.advance(11.minutes)
+            val before = scheduler.scheduled.getValue(key(1))
+            actions.snooze(key(1))
+            assertEquals(before, scheduler.scheduled.getValue(key(1)))
+            assertEquals(2, db.outbox().pending().count { it.command == "snooze" })
+        }
+
+    @Test
+    fun `no snooze that would run past the deadline`() =
+        runTest {
+            givenPlan()
+            clock.advance(50.minutes)
+            actions.snooze(key(2))
+            assertTrue(db.outbox().pending().isEmpty())
+            assertEquals(0, db.tasks().get(Cast.TASK_ID)!!.snoozesUsed)
+        }
+
+    @Test
     fun `snooze is queued for the server`() =
         runTest {
             givenPlan()

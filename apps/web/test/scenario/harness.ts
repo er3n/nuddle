@@ -77,6 +77,8 @@ export class SimPhone {
   /** `taskId|version|seq` of alarms already handled (rung or skipped). */
   private readonly handled = new Set<string>();
   private cursor = "0";
+  /** Snoozes used per task, as the last sync said. */
+  private readonly snoozes = new Map<TaskId, number>();
 
   constructor(
     private readonly world: World,
@@ -86,6 +88,11 @@ export class SimPhone {
 
   get personId(): PersonId {
     return this.device.personId;
+  }
+
+  /** What the phone knows about the snoozes of a task (NUD-36). */
+  snoozesUsed(taskId: TaskId): number | undefined {
+    return this.snoozes.get(taskId);
   }
 
   /** Alarms set on the phone that have not gone off yet. */
@@ -121,6 +128,7 @@ export class SimPhone {
     );
     this.cursor = data.cursor;
     this.device = { ...this.device, lastSeenAt: this.world.clock.now() };
+    for (const task of data.tasks) this.snoozes.set(task.id, task.snoozesUsed ?? 0);
     for (const plan of data.plans) {
       const local = this.alarms.get(plan.taskId);
       // Devices ignore steps from older plan versions.

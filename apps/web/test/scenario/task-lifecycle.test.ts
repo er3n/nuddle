@@ -52,7 +52,10 @@ describe("scenarios: task lifecycle", () => {
 
     await world.advanceTo(at("2026-10-12T08:01:00"));
     expect(rings(eren.phone.ringsFor(taskId))).toEqual(["SILENT@08:00"]);
+    expect(eren.phone.snoozesUsed(taskId)).toBe(0);
     expect(await eren.command(taskId, { type: "snooze" })).toEqual({ ok: true });
+    // The plan_changed push makes the phone sync: it knows the next snooze is the last one (NUD-36).
+    expect(eren.phone.snoozesUsed(taskId)).toBe(1);
 
     // Nothing rings while snoozed; the rest of the plan starts when the snooze ends.
     await world.advanceTo(at("2026-10-12T08:15:00"));
@@ -67,6 +70,7 @@ describe("scenarios: task lifecycle", () => {
         .filter((e) => e.type === "snoozed")
         .map((e) => e.payload.minutes),
     ).toEqual([15, 10]);
+    expect(eren.phone.snoozesUsed(taskId)).toBe(2);
 
     await world.advanceTo(at("2026-10-12T08:28:00"));
     expect(await eren.command(taskId, { type: "snooze" })).toEqual({

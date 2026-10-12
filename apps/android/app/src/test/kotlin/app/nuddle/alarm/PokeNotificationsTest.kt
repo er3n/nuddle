@@ -20,7 +20,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Instant
 
-/** The poke notification (screen 3a) shows the step's 1-based `seq` as "N. dürtme". */
+/** The poke notification (screen 3a): the step's 1-based `seq` as "N. dürtme", and Ertele from the snooze count. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class PokeNotificationsTest {
@@ -33,11 +33,16 @@ class PokeNotificationsTest {
         NotificationChannels.create(app)
     }
 
-    private fun show(seq: Int): Notification {
+    private fun show(
+        seq: Int,
+        snoozesUsed: Int = 0,
+    ): Notification {
         val step = PokeStep(Cast.TASK_ID, 1, seq, Instant.parse("2026-10-12T08:00:00+03:00"), PokeLevel.SOUND)
-        notifications.show(aTask(), step, PokeLevel.SOUND)
+        notifications.show(aTask().copy(snoozesUsed = snoozesUsed), step, PokeLevel.SOUND)
         return shadowOf(app.getSystemService<NotificationManager>()).allNotifications.single()
     }
+
+    private fun Notification.actionTitles() = actions.map { it.title.toString() }
 
     @Test
     fun `the first step says 1 dürtme`() {
@@ -47,5 +52,20 @@ class PokeNotificationsTest {
     @Test
     fun `the third step says 3 dürtme`() {
         assertEquals("3. dürtme", show(seq = 3).extras.getString(Notification.EXTRA_SUB_TEXT))
+    }
+
+    @Test
+    fun `Ertele says how long, and son hakkın on the last one`() {
+        assertEquals(listOf("Bitti", "15 dk ertele", "Bugün olmaz"), show(seq = 1).actionTitles())
+    }
+
+    @Test
+    fun `the second snooze is the last`() {
+        assertEquals(listOf("Bitti", "10 dk ertele · son hakkın", "Bugün olmaz"), show(seq = 2, snoozesUsed = 1).actionTitles())
+    }
+
+    @Test
+    fun `no Ertele once both snoozes are used`() {
+        assertEquals(listOf("Bitti", "Bugün olmaz"), show(seq = 3, snoozesUsed = 2).actionTitles())
     }
 }

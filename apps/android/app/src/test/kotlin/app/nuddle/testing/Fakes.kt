@@ -266,4 +266,8 @@ class InMemoryTaskDao : TaskDao {
     ) {
         tasks.value[id]?.let { tasks.value += id to it.copy(status = status) }
     }
+
+    override suspend fun countSnooze(id: String) {
+        tasks.value[id]?.let { tasks.value += id to it.copy(snoozesUsed = it.snoozesUsed + 1) }
+    }
 }
