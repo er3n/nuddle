@@ -434,6 +434,23 @@ class RecordingAnnouncer : TaskAnnouncer {
     override fun withdraw(taskId: String) {
         withdrawn += taskId
     }
+
+    /** Task, recipient name, pokes and full screen of every 7a. */
+    val unreached = mutableListOf<Pair<String, Triple<String, Int, Boolean>>>()
+    val reachWithdrawn = mutableListOf<String>()
+
+    override fun cantReach(
+        task: TaskEntity,
+        recipient: ConnectionEntity,
+        pokes: Int,
+        fullScreen: Boolean,
+    ) {
+        unreached += task.id to Triple(recipient.displayName, pokes, fullScreen)
+    }
+
+    override fun withdrawCantReach(taskId: String) {
+        reachWithdrawn += taskId
+    }
 }
 
 class InMemoryConnectionDao : ConnectionDao {

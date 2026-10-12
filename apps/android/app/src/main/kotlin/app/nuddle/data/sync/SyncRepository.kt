@@ -7,7 +7,9 @@ import app.nuddle.api.model.SyncPlan
 import app.nuddle.api.model.SyncReceivedInvite
 import app.nuddle.api.model.SyncSentInvite
 import app.nuddle.api.model.SyncTask
+import app.nuddle.api.model.TaskEventType
 import app.nuddle.api.model.TaskStatus
+import app.nuddle.data.EventTypes
 import app.nuddle.data.api.ApiResult
 import app.nuddle.data.api.apiCall
 import app.nuddle.data.db.ConnectionDao
@@ -19,7 +21,10 @@ import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.db.TaskEventDao
 import app.nuddle.data.db.TaskEventEntity
+import app.nuddle.data.level
 import app.nuddle.data.session.SessionStore
+import app.nuddle.data.sinceLastDeadline
+import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.QuietHours
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -57,6 +62,20 @@ interface TaskAnnouncer {
 
     /** The moment passed (Geri al within the undo window, the photo answered): the note goes too. */
     fun withdraw(taskId: String)
+
+    /**
+     * The human channel fired for my task to [recipient] (7a): [pokes] rang this round, [fullScreen] when one of them
+     * was the full screen poke. Poking goes on.
+     */
+    fun cantReach(
+        task: TaskEntity,
+        recipient: ConnectionEntity,
+        pokes: Int,
+        fullScreen: Boolean,
+    )
+
+    /** My task to someone else is no longer open: "cevap vermiyor" goes. */
+    fun withdrawCantReach(taskId: String)
 }
 
 /**
@@ -93,6 +112,15 @@ class SyncRepository
             connections.upsert(response.connections.map(SyncConnection::toEntity))
             // Compared with what this phone had before the sync; a full sync (cursor null) is old news.
             val news = if (cursor == null) emptyList() else news(response.tasks, session.personId)
+            val unreached =
+                if (cursor == null) {
+                    emptySet()
+                } else {
+                    response.events
+                        .filter { it.type == TaskEventType.HUMAN_NOTIFIED }
+                        .map { it.taskId }
+                        .toSet()
+                }
             tasks.upsert(response.tasks.map(SyncTask::toEntity))
             events.upsert(response.events.map(SyncEvent::toEntity))
             invites.upsert(response.sentInvites.map(SyncSentInvite::toEntity) + response.receivedInvites.map(SyncReceivedInvite::toEntity))
@@ -100,7 +128,26 @@ class SyncRepository
             sessions.saveSyncCursor(response.cursor)
             alarms.rearm()
             tell(news, response.tasks, session.personId)
+            tellUnreached(unreached, response.tasks, session.personId)
             return true
+        }
+
+        /** 7a for my open tasks whose human channel just fired; it goes once the task is no longer open. */
+        private suspend fun tellUnreached(
+            unreached: Set<String>,
+            synced: List<SyncTask>,
+            me: String,
+        ) {
+            unreached.forEach { taskId ->
+                val task = tasks.get(taskId)?.takeIf { it.senderId == me && it.recipientId != me && it.status in OPEN_STATUSES }
+                val recipient = task?.let { connections.get(it.recipientId) } ?: return@forEach
+                val round = events.forTask(taskId).sinceLastDeadline()
+                val fired = round.filter { it.type == EventTypes.POKE_FIRED }
+                announcer.cantReach(task, recipient, fired.size, fired.any { it.level == PokeLevel.FULL_SCREEN.name })
+            }
+            synced
+                .filter { it.senderId == me && it.recipientId != me && it.status.value !in OPEN_STATUSES }
+                .forEach { announcer.withdrawCantReach(it.id) }
         }
 
         /** Tasks to me that are new here, and my tasks to others whose photo just came (4f). */

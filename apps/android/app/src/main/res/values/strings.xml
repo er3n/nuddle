@@ -304,6 +304,19 @@
     <string name="approve_ok">Onayla</string>
     <string name="approve_auto">Bakmazsan 3 saat sonra kendiliğinden onaylanır.</string>
     <!-- No design copy: the sender is told a photo came (opens 4f). -->
+    <!-- 7a on the reach_out channel (open-questions#36) -->
+    <string name="reach_title">%1$s cevap vermiyor</string>
+    <plurals name="reach_body">
+        <item quantity="one">%2$s · son zaman %3$s. %1$d kez dürttüm, cevap yok.</item>
+        <item quantity="other">%2$s · son zaman %3$s. %1$d kez dürttüm, cevap yok.</item>
+    </plurals>
+    <plurals name="reach_body_full_screen">
+        <item quantity="one">%2$s · son zaman %3$s. %1$d kez dürttüm, tam ekran dahil, cevap yok.</item>
+        <item quantity="other">%2$s · son zaman %3$s. %1$d kez dürttüm, tam ekran dahil, cevap yok.</item>
+    </plurals>
+    <string name="reach_body_no_pokes">%1$s · son zaman %2$s. Cevap yok.</string>
+    <string name="reach_call_hint">Bir arasan iyi olur. Ben dürtmeye devam ediyorum.</string>
+    <string name="reach_message">Mesaj</string>
     <string name="photo_arrived_title">%1$s fotoğraf gönderdi</string>
     <string name="photo_arrived_body">%1$s · onayını bekliyor.</string>
     <string name="sent_photo_arrived">fotoğraf geldi</string>

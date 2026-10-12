@@ -10,9 +10,11 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import app.nuddle.MainActivity
 import app.nuddle.R
 import app.nuddle.api.model.FinishMode
+import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.sync.TaskAnnouncer
 import app.nuddle.ui.screens.home.DeadlineText
@@ -44,10 +46,15 @@ internal fun Context.deadlineInline(deadline: DeadlineText): String =
         }
     }
 
+/** Request codes of 7a's Ara and Mesaj, next to its own. */
+private const val CALL = 1
+private const val MESSAGE = 2
+
 /**
  * 4b: "Selin sana bir görev yazdı" on the `tasks` channel. It only says a task is there and that nothing is needed
  * yet; the pokes come with the plan. Gör opens home, where the task is the next-up card (4c). For the sender, "Eren
- * fotoğraf gönderdi" with Gör opening the approval (4f).
+ * fotoğraf gönderdi" with Gör opening the approval (4f), and "Eren cevap vermiyor" on `reach_out` when the human channel
+ * fires (7a).
  */
 class AndroidTaskAnnouncer
     @Inject
@@ -115,6 +122,69 @@ class AndroidTaskAnnouncer
                     .addAction(0, context.getString(R.string.task_arrived_open), open)
                     .build()
             post(notificationId(task.id), notification)
+        }
+
+        override fun cantReach(
+            task: TaskEntity,
+            recipient: ConnectionEntity,
+            pokes: Int,
+            fullScreen: Boolean,
+        ) {
+            val id = NotificationIds.reach(task.id)
+            val deadline = context.deadlineInline(deadlineText(Instant.fromEpochMilliseconds(task.deadline), clock.now(), timeZone))
+            val body =
+                when {
+                    pokes == 0 -> context.getString(R.string.reach_body_no_pokes, task.title, deadline)
+                    fullScreen -> context.resources.getQuantityString(R.plurals.reach_body_full_screen, pokes, pokes, task.title, deadline)
+                    else -> context.resources.getQuantityString(R.plurals.reach_body, pokes, pokes, task.title, deadline)
+                }
+            val open =
+                PendingIntent.getActivity(
+                    context,
+                    id,
+                    MainActivity.task(context, task.id),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+            val builder =
+                NotificationCompat
+                    .Builder(context, NotificationChannels.REACH_OUT)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setColor(ContextCompat.getColor(context, R.color.poke))
+                    .setContentTitle(context.getString(R.string.reach_title, recipient.displayName))
+                    .setContentText(body)
+                    .setStyle(
+                        NotificationCompat.BigTextStyle().bigText(
+                            context.getString(R.string.paragraphs, body, context.getString(R.string.reach_call_hint)),
+                        ),
+                    ).setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setGroup(NotificationIds.reachGroup(task.id))
+                    .setContentIntent(open)
+                    .setAutoCancel(true)
+            // The app never calls by itself: Ara opens the dialer with the number (docs/product.md, Human channel).
+            recipient.phone?.let { phone ->
+                builder.addAction(
+                    0,
+                    context.getString(R.string.home_call),
+                    activity(id + CALL, Intent(Intent.ACTION_DIAL, "tel:$phone".toUri())),
+                )
+                builder.addAction(
+                    0,
+                    context.getString(R.string.reach_message),
+                    activity(id + MESSAGE, Intent(Intent.ACTION_SENDTO, "smsto:$phone".toUri())),
+                )
+            }
+            builder.addAction(0, context.getString(R.string.task_arrived_open), open)
+            post(id, builder.build())
+        }
+
+        private fun activity(
+            requestCode: Int,
+            intent: Intent,
+        ): PendingIntent = PendingIntent.getActivity(context, requestCode, intent, PendingIntent.FLAG_IMMUTABLE)
+
+        override fun withdrawCantReach(taskId: String) {
+            NotificationManagerCompat.from(context).cancel(NotificationIds.reach(taskId))
         }
 
         /** Posts unless notifications are not allowed; the check sits next to the call for Android Lint. */

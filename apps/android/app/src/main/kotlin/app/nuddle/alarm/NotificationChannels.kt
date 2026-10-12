@@ -69,9 +69,15 @@ object NotificationIds {
 
     fun note(taskId: String): Int = "arrived:$taskId".hashCode()
 
+    /** 7a, apart from the photo note so each goes away on its own. */
+    fun reach(taskId: String): Int = "reach:$taskId".hashCode()
+
     /**
      * The group of a task's poke. Without a group of its own, Android folds two notifications of the app into one
      * automatic group whose children are silent, and a full screen poke then never opens (found by E2E smoke 3).
      */
     fun pokeGroup(taskId: String): String = "poke:$taskId"
+
+    /** 7a in a group of its own too, so it is not folded in silently next to a poke on the same phone. */
+    fun reachGroup(taskId: String): String = "reach:$taskId"
 }

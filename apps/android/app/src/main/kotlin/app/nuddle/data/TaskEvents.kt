@@ -41,3 +41,9 @@ object EventTypes {
     const val POKE_FIRED = "poke_fired"
     const val HUMAN_NOTIFIED = "human_notified"
 }
+
+/** Events since the task last got a deadline (created, or a new time): the pokes of this round. Oldest first. */
+fun List<TaskEventEntity>.sinceLastDeadline(): List<TaskEventEntity> {
+    val start = indexOfLast { it.type == EventTypes.EDITED || it.type == EventTypes.CREATED }
+    return if (start < 0) this else drop(start)
+}
