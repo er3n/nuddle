@@ -12,8 +12,8 @@ appId: app.nuddle.debug
 - inputText: ${TEXT}
 - tapOn:
     id: compose.send
+# The row reads "<text>, bağlantı gelince gidecek, Sırada" as one description (TaskRow), so it is found by its tag.
 - extendedWaitUntil:
     visible:
       id: home.queued
     timeout: 30000
-- assertVisible: "Sırada"
