@@ -7,11 +7,13 @@ import app.nuddle.data.db.InviteDao
 import app.nuddle.data.session.ConsentPrompts
 import app.nuddle.data.sync.Syncer
 import app.nuddle.domain.IdGenerator
+import app.nuddle.ui.screens.inbox.BellWarningSource
 import app.nuddle.ui.screens.inbox.openReceived
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -27,7 +29,7 @@ private const val STOP_TIMEOUT_MS = 5_000L
 private const val LINK_WAIT_MS = 5_000L
 
 /**
- * Invites as home sees them: the bell badge (open invites to me), the consent screen (0f) that opens by itself once
+ * Invites as home sees them: the bell badge (open invites to me, and the warnings of 2g), the consent screen (0f) that opens by itself once
  * per invite right after sign-in, and "İptal et" on my pending invite (1g).
  */
 @HiltViewModel
@@ -39,12 +41,18 @@ class HomeInvitesViewModel
         private val invites: InviteRepository,
         private val ids: IdGenerator,
         private val syncer: Syncer,
+        private val warnings: BellWarningSource,
     ) : ViewModel() {
         private val all = inviteDao.observeAll()
         private val received = all.map(::openReceived)
 
+        /** Open invites to me and the bell's warnings (2g). */
         val unread: StateFlow<Int> =
-            received.map { it.size }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), 0)
+            combine(received, warnings.warnings) { open, warned -> open.size + warned.size }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), 0)
+
+        /** Back on home, maybe from system settings: the permissions may have changed. */
+        fun onResume() = warnings.refresh()
 
         /** The invite whose consent screen should open now; each one at most once (open-questions#33). */
         val openConsent: Flow<String> =

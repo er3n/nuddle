@@ -60,6 +60,13 @@ object TestTags {
 
     fun bellEntry(taskId: String) = "inbox.entry.$taskId"
 
+    fun bellPermission(step: String) = "inbox.permission.$step"
+
+    /** "Düzelt" on the warning card tagged [warning]. */
+    fun bellFix(warning: String) = "$warning.fix"
+
+    fun brandStep(id: String) = "missedRing.step.$id"
+
     const val PREVIEW_FINISH_DONE = "preview.finishDone"
     const val PREVIEW_FINISH_PHOTO = "preview.finishPhoto"
 
@@ -98,6 +105,9 @@ object TestTags {
     const val MATCHED_START = "matched.start"
     const val INBOX = "inbox.screen"
     const val INBOX_OPEN_INVITE = "inbox.openInvite"
+    const val BELL_MISSED_RING = "inbox.missedRing"
+    const val MISSED_RING_SCREEN = "missedRing.screen"
+    const val MISSED_RING_OPEN = "missedRing.open"
 
     const val SETUP = "setup.screen"
     const val SETUP_TRY = "setup.try"

@@ -23,6 +23,8 @@ import app.nuddle.data.outbox.OutboxDrainer
 import app.nuddle.data.photo.PhotoLoader
 import app.nuddle.data.photo.PhotoUploads
 import app.nuddle.data.session.ConsentPrompts
+import app.nuddle.data.session.MissedRingState
+import app.nuddle.data.session.MissedRingStore
 import app.nuddle.data.session.Profile
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.session.SetupStore
@@ -35,11 +37,14 @@ import app.nuddle.domain.PermissionReader
 import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeStep
 import app.nuddle.domain.QuietHours
+import app.nuddle.ui.screens.inbox.BellWarning
+import app.nuddle.ui.screens.inbox.BellWarningSource
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.datetime.LocalTime
 import java.io.ByteArrayOutputStream
 import kotlin.time.Clock
@@ -558,4 +563,41 @@ class FakeAccountRepository : AccountRepository {
     override suspend fun logOut(idempotencyKey: String) = answer("logOut $idempotencyKey")
 
     override suspend fun deleteAccount(idempotencyKey: String) = answer("delete $idempotencyKey")
+}
+
+class InMemoryMissedRingStore : MissedRingStore {
+    private val current = MutableStateFlow(MissedRingState())
+    var handled: Instant? = null
+
+    override val state: Flow<MissedRingState> = current
+
+    val value: MissedRingState get() = current.value
+
+    override suspend fun lost(plannedAt: Instant) = current.update { s -> s.copy(lostAt = listOfNotNull(s.lostAt, plannedAt).maxOrNull()) }
+
+    override suspend fun rang(at: Instant) = current.update { it.copy(rangAt = at) }
+
+    override suspend fun fixed(at: Instant) = current.update { it.copy(fixedAt = at) }
+
+    override suspend fun opened(
+        stepId: String,
+        at: Instant,
+    ) = current.update { it.copy(opened = it.opened + (stepId to at)) }
+
+    override suspend fun handledStop(): Instant? = handled
+
+    override suspend fun markStopHandled(at: Instant) {
+        handled = at
+    }
+}
+
+class FakeBellWarnings : BellWarningSource {
+    val current = MutableStateFlow<List<BellWarning>>(emptyList())
+    var refreshes = 0
+
+    override val warnings: Flow<List<BellWarning>> = current
+
+    override fun refresh() {
+        refreshes++
+    }
 }

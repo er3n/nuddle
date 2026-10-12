@@ -61,6 +61,9 @@ interface PokeStepDao {
     @Query("SELECT * FROM poke_steps")
     suspend fun all(): List<PokeStepEntity>
 
+    @Query("SELECT * FROM poke_steps")
+    fun observeAll(): Flow<List<PokeStepEntity>>
+
     @Query("SELECT * FROM poke_steps WHERE taskId = :taskId")
     suspend fun forTask(taskId: String): List<PokeStepEntity>
 

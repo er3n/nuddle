@@ -4,11 +4,13 @@ import android.app.AlarmManager
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import android.os.PowerManager
 import androidx.core.app.NotificationManagerCompat
 import app.nuddle.alarm.FullScreenPermission
 import app.nuddle.alarm.NotificationChannels
 import app.nuddle.api.model.PermissionSummary
 import app.nuddle.api.model.PermissionSummaryChannels
+import app.nuddle.data.BatteryOptimization
 import app.nuddle.domain.GrantedPermissions
 import app.nuddle.domain.PermissionReader
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -23,7 +25,11 @@ class DevicePermissions
     constructor(
         @param:ApplicationContext private val context: Context,
     ) : FullScreenPermission,
-        PermissionReader {
+        PermissionReader,
+        BatteryOptimization {
+        override fun ignored(): Boolean =
+            context.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(context.packageName)
+
         override fun granted(): Boolean =
             Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
                 context.getSystemService(NotificationManager::class.java).canUseFullScreenIntent()

@@ -6,6 +6,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
+import kotlin.time.Instant
 
 // Reading the payload of a synced task event (docs/domain.md, Task events). Unknown or missing fields read as absent.
 
@@ -27,6 +28,10 @@ val TaskEventEntity.late: Boolean get() = field("late")?.booleanOrNull == true
 /** `done` on a photo task without a usable camera. */
 val TaskEventEntity.cameraUnavailable: Boolean get() = field("cameraUnavailable")?.booleanOrNull == true
 
+/** When the poke of a `poke_lost` event should have rung. */
+val TaskEventEntity.plannedAt: Instant?
+    get() = field("plannedAt")?.contentOrNull?.let { runCatching { Instant.parse(it) }.getOrNull() }
+
 /** The level of a `poke_fired` event. */
 val TaskEventEntity.level: String? get() = field("level")?.contentOrNull
 
@@ -39,6 +44,7 @@ object EventTypes {
     const val DROPPED = "dropped"
     const val CANCELLED = "cancelled"
     const val POKE_FIRED = "poke_fired"
+    const val POKE_LOST = "poke_lost"
     const val HUMAN_NOTIFIED = "human_notified"
 }
 
