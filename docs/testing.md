@@ -93,7 +93,7 @@ FCM needs Google Play system images and the dev Firebase app. Flows wait with ti
 1. Sign up with a test number, write a task to self, full screen poke rings, Done.
 2. Selin invites Eren, Eren consents and completes setup, both see each other.
 3. Selin writes a photo task to Eren, Eren gets poked, sends a photo, Selin approves.
-4. Selin cancels, Eren's pending alarms are gone.
+4. Selin writes a task to Eren, it is his next-up card and his phone sets its alarms; Selin cancels it from the task detail with a reason, Eren's pending alarms are gone.
 5. Doze: a `SOUND` step still rings on time.
 6. Reboot: pending alarms are re-set.
 

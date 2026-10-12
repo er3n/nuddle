@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import app.nuddle.R
 import app.nuddle.ui.TestTags
+import app.nuddle.ui.TestTagsRoot
 import app.nuddle.ui.preview.PreviewComponent
 import app.nuddle.ui.preview.PreviewSurface
 import app.nuddle.ui.theme.DurtTheme
@@ -59,7 +60,8 @@ fun DurtBottomSheet(
         scrimColor = DurtTheme.colors.scrim,
         dragHandle = null,
     ) {
-        DurtBottomSheetContent(title, description, onDismiss, primary, content = content)
+        // The sheet is its own window: the activity's TestTagsRoot does not reach it (found by E2E smoke 4).
+        TestTagsRoot { DurtBottomSheetContent(title, description, onDismiss, primary, content = content) }
     }
 }
 

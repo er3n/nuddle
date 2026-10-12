@@ -1,5 +1,5 @@
 # After Eren says İzin ver, the invite_accepted hint makes Selin's app sync and the pending invite (1g)
-# leaves home.
+# leaves home. Selin is connected now, so home shows no invite card either (open-questions#34).
 appId: app.nuddle.debug
 ---
 - launchApp
@@ -8,4 +8,6 @@ appId: app.nuddle.debug
       id: home.pendingInvite
     timeout: 60000
 - assertVisible:
+    id: home.screen
+- assertNotVisible:
     id: home.invite

@@ -22,8 +22,9 @@ import { allDevices } from "./devices";
 import { run, waitFor } from "./proc";
 import { invite } from "./smoke/invite";
 import { smokeExtractions, taskToSelf } from "./smoke/task-to-self";
+import { taskToOther, taskToOtherExtractions } from "./smoke/task-to-other";
 
-const TIMEOUT_MS = 20 * 60_000;
+const TIMEOUT_MS = 30 * 60_000;
 const APK = join(
   repoRoot,
   "apps",
@@ -111,7 +112,14 @@ async function main(): Promise<void> {
 
   await ctx.step("backend", async () => {
     const extractions = ctx.path("extractions.json");
-    writeFileSync(extractions, JSON.stringify(smokeExtractions(new Date()), null, 2));
+    writeFileSync(
+      extractions,
+      JSON.stringify(
+        { ...smokeExtractions(new Date()), ...taskToOtherExtractions(new Date()) },
+        null,
+        2,
+      ),
+    );
     backend = await startBackend(supabase, databaseUrl, ctx.path("server.log"), extractions);
     // The first request compiles the route; a 404 here means the server is not in E2E mode.
     await waitFor(
@@ -139,6 +147,7 @@ async function main(): Promise<void> {
 
   await taskToSelf(ctx, databaseUrl);
   await invite(ctx, databaseUrl);
+  await taskToOther(ctx, databaseUrl);
 }
 
 main().then(
