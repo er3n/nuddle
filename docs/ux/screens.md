@@ -220,7 +220,7 @@ Sections: Sana yazılanlar, Senin yazdıkların, Kendine. DoneNote at the bottom
 
 ### 6c Wrong code · `ErrOtp.png`
 **Copy:** Kod tutmadı | +90 532 123 45 67 numarasına gelen 6 haneli kodu tekrar dene. | Kod yanlış. | Yeni kod gönder
-The API does not count attempts yet, so the remaining attempts and the lockout note are not shown (NUD-9; server side attempt counting is NUD-27). Copy for when it exists: Kod yanlış. 2 deneme hakkın kaldı. | Hakların biterse 15 dakika sonra yeni kod isteyebilirsin. Bu, numaranı kötüye kullanılmaktan korur.
+After a wrong code: Kod yanlış. 2 deneme hakkın kaldı. | Hakların biterse 15 dakika sonra yeni kod isteyebilirsin. Bu, numaranı kötüye kullanılmaktan korur. Rules and the copy for the wait: open-questions #41.
 
 ### 6d Invalid invite · `ErrInvite.png`
 **Copy:** Bu davet artık geçerli değil | Davet ya kullanıldı ya da süresi doldu. Seni davet edenden yeni bir link isteyebilirsin. | Ana ekrana dön | Birini ben davet edeyim

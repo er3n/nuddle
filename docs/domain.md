@@ -75,7 +75,7 @@ All of these live in pure functions that receive `now` from an injected `Clock` 
 | Missed card | Removed from the recipient's list 1 day after `MISSED`. |
 | Undo toast | 5 seconds after send, 10 seconds when TalkBack is on. Timeout confirms the task. |
 | Done note | 4 seconds. |
-| OTP | 6 digits. Remaining attempts are shown, then a 15 minute wait. Resend countdown on the code screen. |
+| OTP | 6 digits. 3 wrong codes per phone, the remaining ones shown, then a 15 minute wait in which no code is checked or sent (open-questions #41). A sign-in clears the count; a new code does not. Resend countdown on the code screen. |
 | Social permission request | Same permission, same requester: at most once per week. |
 | Snooze | Limited count, the last one is labeled "son hakkın". Count and lengths are open (design shows 15 min in the notification and 10 min on full screen). |
 | Lost poke | Planned time + grace with no fired report while the device was seen online counts as lost **(proposed grace: 5 minutes)**. |

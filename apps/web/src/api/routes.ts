@@ -16,7 +16,7 @@ export interface AppEnv {
 
 const json = <T extends z.ZodType>(schema: T) => ({ "application/json": { schema } });
 
-const errors = (codes: readonly (400 | 401 | 403 | 404 | 409 | 422 | 502)[]) =>
+const errors = (codes: readonly (400 | 401 | 403 | 404 | 409 | 422 | 429 | 502)[]) =>
   Object.fromEntries(
     codes.map((code) => [
       code,
@@ -78,11 +78,16 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
       tags: ["auth"],
       security: [],
       request: { body: { required: true, content: json(s.SendOtpRequest) } },
-      responses: { 200: { description: "Code sent", content: json(s.Ok) }, ...errors([400, 502]) },
+      responses: {
+        200: { description: "Code sent", content: json(s.Ok) },
+        ...errors([400, 429, 502]),
+      },
     }),
     async (c) => {
+      const { phone } = c.req.valid("json");
+      await svc.refuseWhileOtpLocked(deps, phone);
       try {
-        await deps.auth.sendOtp(c.req.valid("json").phone);
+        await deps.auth.sendOtp(phone);
       } catch (error) {
         console.error("send otp failed", error);
         throw new ApiError("upstream_failed", "could not send the code");
@@ -115,13 +120,13 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
       request: { body: { required: true, content: json(s.VerifyOtpRequest) } },
       responses: {
         200: { description: "Signed in", content: json(s.Session) },
-        ...errors([400, 401, 502]),
+        ...errors([400, 401, 429, 502]),
       },
     }),
     async (c) => {
       const { phone, code } = c.req.valid("json");
-      // TODO(NUD-24): attempt limits and the 15 minute wait (ADR 0011, screen 6c).
-      return c.json(await sessionDto(await deps.auth.verifyOtp(phone, code)), 200);
+      const session = await svc.verifyOtp(deps, phone, code);
+      return c.json(await sessionDto(session), 200);
     },
   );
 

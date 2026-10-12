@@ -4,10 +4,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.nuddle.data.AuthRepository
+import app.nuddle.data.SendOtpOutcome
 import app.nuddle.data.SessionStarter
 import app.nuddle.data.VerifyOutcome
 import app.nuddle.domain.TurkishPhone
 import app.nuddle.ui.components.CODE_LENGTH
+import app.nuddle.ui.screens.hourMinute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -19,8 +21,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 /** Where sign-in continues: home for an existing person, the name screen (0e) for a new one (ADR 0014). */
 enum class SignedInDestination { Home, Name }
@@ -32,6 +36,7 @@ class CodeViewModel
         savedState: SavedStateHandle,
         private val auth: AuthRepository,
         private val starter: SessionStarter,
+        private val timeZone: TimeZone,
     ) : ViewModel() {
         private val phone: String = checkNotNull(savedState[ARG_PHONE])
         private val mutableState = MutableStateFlow(CodeUiState(phoneDisplay = TurkishPhone.display(phone)))
@@ -50,6 +55,20 @@ class CodeViewModel
             mutableState.update { it.copy(code = code, wrongCode = false, unreachable = false) }
         }
 
+        private fun locked(until: Instant) {
+            countdown?.cancel()
+            mutableState.update {
+                it.copy(
+                    code = "",
+                    verifying = false,
+                    wrongCode = true,
+                    remainingAttempts = 0,
+                    lockedUntil = until.hourMinute(timeZone),
+                    resendInSeconds = 0,
+                )
+            }
+        }
+
         fun onComplete(code: String) {
             if (code.length != CODE_LENGTH || mutableState.value.verifying) return
             mutableState.update { it.copy(code = code, verifying = true) }
@@ -60,8 +79,12 @@ class CodeViewModel
                         done.send(if (outcome.registered) SignedInDestination.Home else SignedInDestination.Name)
                     }
 
-                    VerifyOutcome.WrongCode -> {
-                        mutableState.update { it.copy(verifying = false, wrongCode = true) }
+                    is VerifyOutcome.WrongCode -> {
+                        mutableState.update { it.copy(verifying = false, wrongCode = true, remainingAttempts = outcome.remaining) }
+                    }
+
+                    is VerifyOutcome.Locked -> {
+                        locked(outcome.until)
                     }
 
                     VerifyOutcome.Unreachable -> {
@@ -72,10 +95,14 @@ class CodeViewModel
         }
 
         fun onResend() {
-            if (mutableState.value.resendInSeconds > 0) return
+            if (mutableState.value.resendInSeconds > 0 || mutableState.value.lockedUntil != null) return
             mutableState.update { it.copy(code = "", wrongCode = false, unreachable = false) }
             viewModelScope.launch {
-                if (auth.sendOtp(phone)) startCountdown() else mutableState.update { it.copy(unreachable = true) }
+                when (val outcome = auth.sendOtp(phone)) {
+                    SendOtpOutcome.Sent -> startCountdown()
+                    is SendOtpOutcome.Locked -> locked(outcome.until)
+                    SendOtpOutcome.Failed -> mutableState.update { it.copy(unreachable = true) }
+                }
             }
         }
 

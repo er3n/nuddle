@@ -46,6 +46,13 @@
     <string name="code_wrong_title">Kod tutmadı</string>
     <string name="code_wrong_body">%1$s numarasına gelen 6 haneli kodu tekrar dene.</string>
     <string name="code_wrong_error">Kod yanlış.</string>
+    <plurals name="code_wrong_remaining">
+        <item quantity="one">Kod yanlış. %1$d deneme hakkın kaldı.</item>
+        <item quantity="other">Kod yanlış. %1$d deneme hakkın kaldı.</item>
+    </plurals>
+    <string name="code_wrong_limit_note">Hakların biterse 15 dakika sonra yeni kod isteyebilirsin. Bu, numaranı kötüye kullanılmaktan korur.</string>
+    <string name="code_locked_title">Çok fazla yanlış deneme.</string>
+    <string name="code_locked_body">Yeni kodu saat %1$s olunca isteyebilirsin.</string>
     <!-- no design copy: accessibility label of the code boxes -->
     <string name="code_input_label">6 haneli kod</string>
 

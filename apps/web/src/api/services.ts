@@ -13,6 +13,7 @@ import {
   revokeInvite,
 } from "../domain/connections";
 import { resolveExtraction, type Extraction, type MissingField } from "../domain/extraction";
+import { afterWrongCode, lockedUntil } from "../domain/otp-attempts";
 import {
   deriveReachability,
   type PermissionSummary,
@@ -51,6 +52,7 @@ import type {
 import {
   activeConnections,
   claimDueActions,
+  clearOtpAttempts,
   currentPlan,
   deleteDevice,
   deleteDevicesOf,
@@ -59,6 +61,7 @@ import {
   eventsOf,
   findEdge,
   findIdempotentResult,
+  findOtpAttempts,
   findInviteByCode,
   findInviteById,
   findPerson,
@@ -74,6 +77,7 @@ import {
   persistOutcome,
   pokedTasks,
   saveIdempotentResult,
+  saveOtpAttempts,
   setInviteStatus,
   syncRows,
   touchDevice,
@@ -805,4 +809,37 @@ class PgTickPort implements TickPort {
 /** Run every due server timer once. */
 export function runTick(deps: AppDeps): Promise<number> {
   return tickDomain(deps.clock.now(), new PgTickPort(deps));
+}
+
+// ---- sign-in code attempts (screen 6c, ADR 0011) ---------------------------------------------
+
+const otpLocked = (until: Date) =>
+  new ApiError("otp_locked", "too many wrong codes", { retryAt: until.toISOString() });
+
+/** No code is sent or checked during the wait after the last wrong code. */
+export async function refuseWhileOtpLocked(deps: AppDeps, phone: string): Promise<void> {
+  const until = lockedUntil(await findOtpAttempts(deps.db, phone), deps.clock.now());
+  if (until) throw otpLocked(until);
+}
+
+/** The session for a right code; a wrong one counts, and the last one starts the wait. */
+export async function verifyOtp(
+  deps: AppDeps,
+  phone: string,
+  code: string,
+): Promise<NonNullable<Awaited<ReturnType<AppDeps["auth"]["verifyOtp"]>>>> {
+  await refuseWhileOtpLocked(deps, phone);
+  const session = await deps.auth.verifyOtp(phone, code);
+  if (session) {
+    await clearOtpAttempts(deps.db, phone);
+    return session;
+  }
+  const now = deps.clock.now();
+  const wrong = afterWrongCode(await findOtpAttempts(deps.db, phone), now);
+  await saveOtpAttempts(deps.db, phone, wrong.state, now);
+  const until = lockedUntil(wrong.state, now);
+  if (until) throw otpLocked(until);
+  throw new ApiError("invalid_otp", "wrong or expired code", {
+    remainingAttempts: wrong.remaining,
+  });
 }

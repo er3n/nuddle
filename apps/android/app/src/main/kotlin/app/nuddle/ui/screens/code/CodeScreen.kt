@@ -2,6 +2,7 @@ package app.nuddle.ui.screens.code
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -10,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -44,6 +46,10 @@ data class CodeUiState(
     val code: String = "",
     val verifying: Boolean = false,
     val wrongCode: Boolean = false,
+    /** Codes left before the wait, once the API said so (6c, open-questions#41). */
+    val remainingAttempts: Int? = null,
+    /** Too many wrong codes: when a new one can be asked for, "21:15". */
+    val lockedUntil: String? = null,
     val unreachable: Boolean = false,
     val resendInSeconds: Int = 0,
 )
@@ -78,7 +84,7 @@ fun CodeScreen(
                     text = stringResource(R.string.code_resend),
                     onClick = onResend,
                     kind = DurtButtonKind.Secondary,
-                    enabled = state.resendInSeconds == 0,
+                    enabled = state.resendInSeconds == 0 && state.lockedUntil == null,
                     modifier = Modifier.testTag(TestTags.CODE_RESEND),
                 )
             }
@@ -105,19 +111,14 @@ fun CodeScreen(
             error = state.wrongCode,
             onValueChange = onCodeChange,
             onComplete = onComplete,
-            enabled = !state.verifying,
+            enabled = !state.verifying && state.lockedUntil == null,
             focusRequester = focus,
             modifier = Modifier.testTag(TestTags.CODE_INPUT),
         )
         Column(verticalArrangement = Arrangement.spacedBy(dimens.space12)) {
             when {
                 state.wrongCode -> {
-                    Text(
-                        text = stringResource(R.string.code_wrong_error),
-                        style = DurtTheme.type.bodyStrong,
-                        color = colors.warning,
-                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                    )
+                    WrongCode(state)
                 }
 
                 state.resendInSeconds > 0 -> {
@@ -159,6 +160,32 @@ fun CodeScreen(
     }
 }
 
+/** "Kod yanlış." with the codes left and what happens when they run out, or the wait (6c, open-questions#41). */
+@Composable
+private fun ColumnScope.WrongCode(state: CodeUiState) {
+    val colors = DurtTheme.colors
+    val until = state.lockedUntil
+    val remaining = state.remainingAttempts
+    Text(
+        text =
+            when {
+                until != null -> stringResource(R.string.code_locked_title)
+                remaining != null -> pluralStringResource(R.plurals.code_wrong_remaining, remaining, remaining)
+                else -> stringResource(R.string.code_wrong_error)
+            },
+        style = DurtTheme.type.bodyStrong,
+        color = colors.warning,
+        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+    )
+    NoteCard {
+        Text(
+            text = if (until != null) stringResource(R.string.code_locked_body, until) else stringResource(R.string.code_wrong_limit_note),
+            style = DurtTheme.type.bodySmall,
+            color = colors.textBody,
+        )
+    }
+}
+
 @PreviewScreens
 @Composable
 private fun CodeScreenPreview() {
@@ -171,7 +198,15 @@ private fun CodeScreenPreview() {
 @Composable
 private fun CodeScreenWrongPreview() {
     DurtTheme {
-        CodeScreen(CodeUiState("+90 532 123 45 67", code = "481927", wrongCode = true), {}, {}, {}, {}, {})
+        CodeScreen(CodeUiState("+90 532 123 45 67", code = "481927", wrongCode = true, remainingAttempts = 2), {}, {}, {}, {}, {})
+    }
+}
+
+@PreviewScreens
+@Composable
+private fun CodeScreenLockedPreview() {
+    DurtTheme {
+        CodeScreen(CodeUiState("+90 532 123 45 67", wrongCode = true, remainingAttempts = 0, lockedUntil = "21:15"), {}, {}, {}, {}, {})
     }
 }
 

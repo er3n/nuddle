@@ -19,6 +19,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 class AuthRepositoryTest {
     private val server = MockWebServer()
@@ -54,7 +55,7 @@ class AuthRepositoryTest {
     fun `sending a code posts the E164 number`() =
         runTest {
             server.enqueue(json(200, """{"ok":true}"""))
-            assertTrue(repo.sendOtp(Cast.EREN_PHONE))
+            assertEquals(SendOtpOutcome.Sent, repo.sendOtp(Cast.EREN_PHONE))
             val request = server.takeRequest()
             assertEquals("/api/v1/auth/otp", request.url.encodedPath)
             assertEquals("""{"phone":"${Cast.EREN_PHONE}"}""", request.body?.utf8())
@@ -101,9 +102,30 @@ class AuthRepositoryTest {
     fun `a wrong code is told apart from an unreachable server`() =
         runTest {
             server.enqueue(drtError(401, "DRT-1006", "invalid_otp"))
-            assertEquals(VerifyOutcome.WrongCode, repo.verify(Cast.EREN_PHONE, "000000"))
+            assertEquals(VerifyOutcome.WrongCode(), repo.verify(Cast.EREN_PHONE, "000000"))
             server.enqueue(drtError(502, "DRT-5002", "upstream_failed"))
             assertEquals(VerifyOutcome.Unreachable, repo.verify(Cast.EREN_PHONE, "123456"))
             assertEquals(null, sessions.current())
+        }
+
+    @Test
+    fun `a wrong code says how many are left, the last one says when the wait ends (6c)`() =
+        runTest {
+            server.enqueue(
+                json(
+                    401,
+                    """{"error":{"code":"DRT-1006","name":"invalid_otp","message":"x","requestId":"r",""" +
+                        """"details":{"remainingAttempts":1}}}""",
+                ),
+            )
+            assertEquals(VerifyOutcome.WrongCode(remaining = 1), repo.verify(Cast.EREN_PHONE, "000000"))
+
+            val locked =
+                """{"error":{"code":"DRT-1008","name":"otp_locked","message":"x","requestId":"r",""" +
+                    """"details":{"retryAt":"2026-10-11T18:15:00.000Z"}}}"""
+            server.enqueue(json(429, locked))
+            assertEquals(VerifyOutcome.Locked(Instant.parse("2026-10-11T18:15:00Z")), repo.verify(Cast.EREN_PHONE, "000000"))
+            server.enqueue(json(429, locked))
+            assertEquals(SendOtpOutcome.Locked(Instant.parse("2026-10-11T18:15:00Z")), repo.sendOtp(Cast.EREN_PHONE))
         }
 }

@@ -2,6 +2,7 @@
 import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startTestServer, type TestServer } from "../support/server";
+import type { FakeClock } from "../fakes";
 import { signUp } from "./helpers";
 
 describe("http: auth and errors", () => {
@@ -87,5 +88,33 @@ describe("http: auth and errors", () => {
     expect(refreshed.data).toMatchObject({ personId: session.data.personId, registered: true });
     const bad = await api.POST("/api/v1/auth/refresh", { body: { refreshToken: "nope" } });
     expect(bad.error?.error.code).toBe("DRT-1006");
+  });
+
+  it("counts wrong codes (6c): two left, one left, then a 15 minute wait for codes and new ones", async () => {
+    const api = server.client();
+    const phone = "+905320000006";
+    const verify = (code: string) => api.POST("/api/v1/auth/verify", { body: { phone, code } });
+
+    expect((await verify("000000")).error?.error).toMatchObject({
+      code: "DRT-1006",
+      details: { remainingAttempts: 2 },
+    });
+    expect((await verify("000000")).error?.error.details).toEqual({ remainingAttempts: 1 });
+    const locked = await verify("000000");
+    expect(locked.response.status).toBe(429);
+    expect(locked.error?.error).toMatchObject({
+      code: "DRT-1008",
+      details: { retryAt: "2026-10-11T17:15:00.000Z" },
+    });
+
+    // Even the right code and a new code wait.
+    expect((await verify("123456")).error?.error.code).toBe("DRT-1008");
+    const resend = await api.POST("/api/v1/auth/otp", { body: { phone } });
+    expect(resend.error?.error.code).toBe("DRT-1008");
+
+    (server.deps.clock as FakeClock).advance(15 * 60_000);
+    expect((await verify("123456")).data).toMatchObject({ registered: false });
+    // A sign-in clears the count.
+    expect((await verify("000000")).error?.error.details).toEqual({ remainingAttempts: 2 });
   });
 });

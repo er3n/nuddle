@@ -278,3 +278,11 @@ export const idempotencyKeys = pgTable(
   },
   (t) => [primaryKey({ columns: [t.callerId, t.key] })],
 );
+
+// Wrong sign-in codes per phone and the 15 minute wait after the last one (screen 6c, ADR 0011).
+export const otpAttempts = pgTable("otp_attempts", {
+  phone: text("phone").primaryKey(),
+  failures: bigint("failures", { mode: "number" }).notNull().default(0),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  updatedAt: updatedAt(),
+});

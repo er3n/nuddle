@@ -14,6 +14,7 @@ import app.nuddle.domain.IdGenerator
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
+import kotlin.time.Instant
 
 sealed interface VerifyOutcome {
     /** `registered = false` means a new person: the name screen (0e) and `register` come next (ADR 0014). */
@@ -21,14 +22,37 @@ sealed interface VerifyOutcome {
         val registered: Boolean,
     ) : VerifyOutcome
 
-    data object WrongCode : VerifyOutcome
+    /** [remaining] codes left before the wait (6c, open-questions#41). */
+    data class WrongCode(
+        val remaining: Int? = null,
+    ) : VerifyOutcome
+
+    /** Too many wrong codes: nothing is checked or sent until [until]. */
+    data class Locked(
+        val until: Instant,
+    ) : VerifyOutcome
 
     data object Unreachable : VerifyOutcome
 }
 
+sealed interface SendOtpOutcome {
+    data object Sent : SendOtpOutcome
+
+    /** Too many wrong codes for this phone: a new one can be asked for at [until] (open-questions#41). */
+    data class Locked(
+        val until: Instant,
+    ) : SendOtpOutcome
+
+    data object Failed : SendOtpOutcome
+}
+
+private const val OTP_LOCKED = "otp_locked"
+
+private fun ApiFailure.lockedUntil(): Instant? = (this as? ApiFailure.Http)?.takeIf { it.name == OTP_LOCKED }?.retryAt
+
 /** Sign-in and sign-up are one flow, all through our API (ADR 0014). */
 interface AuthRepository {
-    suspend fun sendOtp(e164: String): Boolean
+    suspend fun sendOtp(e164: String): SendOtpOutcome
 
     suspend fun verify(
         e164: String,
@@ -48,7 +72,11 @@ class ApiAuthRepository
         private val timeZone: TimeZone,
         private val json: Json,
     ) : AuthRepository {
-        override suspend fun sendOtp(e164: String): Boolean = apiCall(json) { authApi.sendOtp(SendOtpRequest(e164)) } is ApiResult.Success
+        override suspend fun sendOtp(e164: String): SendOtpOutcome =
+            when (val result = apiCall(json) { authApi.sendOtp(SendOtpRequest(e164)) }) {
+                is ApiResult.Success -> SendOtpOutcome.Sent
+                is ApiResult.Failure -> result.failure.lockedUntil()?.let(SendOtpOutcome::Locked) ?: SendOtpOutcome.Failed
+            }
 
         override suspend fun verify(
             e164: String,
@@ -61,8 +89,13 @@ class ApiAuthRepository
                 }
 
                 is ApiResult.Failure -> {
-                    val wrongCode = (result.failure as? ApiFailure.Http)?.name == INVALID_OTP
-                    if (wrongCode) VerifyOutcome.WrongCode else VerifyOutcome.Unreachable
+                    val http = result.failure as? ApiFailure.Http
+                    val locked = result.failure.lockedUntil()
+                    when {
+                        locked != null -> VerifyOutcome.Locked(locked)
+                        http?.name == INVALID_OTP -> VerifyOutcome.WrongCode(http.remainingAttempts)
+                        else -> VerifyOutcome.Unreachable
+                    }
                 }
             }
 

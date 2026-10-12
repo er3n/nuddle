@@ -51,6 +51,8 @@ data class PhoneUiState(
     val national: String = "",
     val sending: Boolean = false,
     val failed: Boolean = false,
+    /** Too many wrong codes for this number (6c): when a new one can be asked for, "21:15". */
+    val lockedUntil: String? = null,
 ) {
     val canSend: Boolean get() = TurkishPhone.isValidMobile(national) && !sending
 }
@@ -119,6 +121,7 @@ fun PhoneScreen(
         if (state.failed) {
             InlineAlert(stringResource(R.string.error_connection_title), stringResource(R.string.error_connection_body))
         }
+        state.lockedUntil?.let { InlineAlert(stringResource(R.string.code_locked_title), stringResource(R.string.code_locked_body, it)) }
     }
 }
 
