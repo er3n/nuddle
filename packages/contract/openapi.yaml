@@ -242,6 +242,11 @@ components:
             - removed
         reachability:
           $ref: "#/components/schemas/Reachability"
+        phone:
+          type: string
+          pattern: ^\+[1-9]\d{7,14}$
+          example: "+905320000002"
+          description: E.164
       required:
         - personId
         - displayName
@@ -382,6 +387,11 @@ components:
           type: boolean
         snoozesUsed:
           type: integer
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-10-12T09:00:00+03:00
+          description: ISO 8601 with offset
       required:
         - id
         - senderId

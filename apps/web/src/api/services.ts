@@ -565,6 +565,8 @@ export async function sync(
       relationship: c.edge.type,
       status: c.edge.status,
       reachability: c.person.deletedAt === null ? deriveReachability(c.devices) : ("NONE" as const),
+      // Only while connected: a removed connection or a deleted account keeps no way to reach the person.
+      phone: c.edge.status === "active" && c.person.deletedAt === null ? c.person.phone : undefined,
     })),
     sentInvites: rows.sentInvites.map((i) => ({ ...i, status: inviteStatusForInviter(i) })),
     receivedInvites: rows.receivedInvites,

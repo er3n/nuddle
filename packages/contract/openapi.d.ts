@@ -571,6 +571,11 @@ export interface components {
             /** @enum {string} */
             status: "pending" | "active" | "removed";
             reachability: components["schemas"]["Reachability"];
+            /**
+             * @description E.164
+             * @example +905320000002
+             */
+            phone?: string;
         };
         /** @enum {string} */
         EdgeType: "spouse" | "parent" | "child" | "sibling" | "roommate" | "other";
@@ -642,6 +647,12 @@ export interface components {
             statusChangedAt: string;
             inRecipientList: boolean;
             snoozesUsed?: number;
+            /**
+             * Format: date-time
+             * @description ISO 8601 with offset
+             * @example 2026-10-12T09:00:00+03:00
+             */
+            createdAt?: string;
         };
         /** @enum {string} */
         FinishMode: "done" | "photo";
