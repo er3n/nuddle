@@ -264,6 +264,34 @@ class SyncAndOutboxTest {
         }
 
     @Test
+    fun `sync keeps since when we are connected, my switch for them and my whole profile (5a, 5b)`() =
+        runTest {
+            val connection =
+                selinConnection.replace(
+                    "\"phone\":\"${Cast.SELIN_PHONE}\"",
+                    "\"phone\":\"${Cast.SELIN_PHONE}\",\"connectedAt\":\"2026-07-11T14:32:00+03:00\",\"notifyMe\":false",
+                )
+            server.enqueue(
+                json(
+                    200,
+                    syncBody
+                        .replace(
+                            "\"connections\":[]",
+                            connection,
+                        ).replace("\"useConnectionsForMyTasks\":true", "\"useConnectionsForMyTasks\":false"),
+                ),
+            )
+
+            assertTrue(syncRepository().sync())
+
+            val selin = db.connections().get(Cast.SELIN_ID)!!
+            assertEquals(Instant.parse("2026-07-11T14:32:00+03:00").toEpochMilliseconds(), selin.connectedAt)
+            assertFalse(selin.notifyMe)
+            val me = sessions.profile.value!!
+            assertEquals(Cast.EREN_PHONE to false, me.phone to me.useConnectionsForMyTasks)
+        }
+
+    @Test
     fun `a task from someone else that arrives later is announced once, with the sender's name`() =
         runTest {
             sessions.cursor = "40"

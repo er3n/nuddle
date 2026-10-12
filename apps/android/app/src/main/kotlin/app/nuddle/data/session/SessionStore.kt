@@ -13,6 +13,17 @@ data class StoredSession(
     val registered: Boolean,
 )
 
+/** `me` from register or sync: what profile (5a) shows and quiet hours (re-checked before every poke). */
+data class Profile(
+    val displayName: String,
+    val phone: String,
+    val quietHours: QuietHours,
+    /** "Benim işlerimde tanıdıklarımı kullanabilirsin" */
+    val useConnectionsForMyTasks: Boolean,
+    /** "Başkalarının işleri için bana haber verilebilir" */
+    val notifyMeForOthersTasks: Boolean,
+)
+
 /** What the device keeps about the signed-in person between launches. */
 interface SessionStore {
     val session: Flow<StoredSession?>
@@ -24,11 +35,10 @@ interface SessionStore {
 
     suspend fun markRegistered(displayName: String)
 
-    /** `me` from register or sync: name and quiet hours (re-checked before every poke). */
-    suspend fun saveMe(
-        displayName: String,
-        quietHours: QuietHours,
-    )
+    /** Null until the first `me` arrives. */
+    val profile: Flow<Profile?>
+
+    suspend fun saveMe(profile: Profile)
 
     suspend fun quietHours(): QuietHours?
 
