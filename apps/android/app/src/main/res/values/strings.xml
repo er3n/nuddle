@@ -71,7 +71,7 @@
     <string name="home_deadline_label">Son zaman</string>
     <string name="home_finish_label">Bitince</string>
     <string name="home_finish_done">\"Bitti\" demen yeter</string>
-    <!-- TODO(open-questions#27): no design copy for a photo task to self. -->
+    <!-- Copy for a photo task to self: open-questions#27. -->
     <string name="home_finish_photo">Fotoğrafını çek</string>
     <string name="home_done_early">Şimdiden bitti</string>
     <string name="home_invite_compact_body">Birini davet et, birbirinize görev yazın</string>
@@ -84,7 +84,7 @@
     <string name="preview_pick_time">Saat seç</string>
     <string name="preview_quiet_hint">Zamanı gelince seni dürterim. Gece %1$s ile %2$s arası asla.</string>
     <string name="preview_confirm">Kur</string>
-    <!-- TODO(open-questions#29): the undo toast for a task to self has no design copy. -->
+    <!-- Undo toast for a task to self: open-questions#29. -->
     <string name="undo_self_title">Kuruldu</string>
     <string name="undo_finish_photo">bitince fotoğraf</string>
     <string name="deadline_today_inline">bugün %1$s</string>
@@ -93,7 +93,7 @@
     <string name="done_note_caught">Bu sefer seni %1$d. dürtmede yakaladım.</string>
     <string name="deadline_today">Bugün %1$s</string>
     <string name="deadline_tomorrow">Yarın %1$s</string>
-    <!-- Day, month name, time: "14 Ekim 09:00". TODO(open-questions#27). -->
+    <!-- Day, month name, time: "14 Ekim 09:00". open-questions#27. -->
     <string name="deadline_on_date">%1$d %2$s %3$s</string>
     <string-array name="month_names">
         <item>Ocak</item>
