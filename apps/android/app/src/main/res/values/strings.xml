@@ -337,6 +337,20 @@
     <string name="inbox_invite_title">%1$s seni davet etti</string>
     <string name="inbox_invite_body">Seni dürtmek için izin istiyor</string>
     <string name="inbox_invite_open">Daveti gör</string>
+    <!-- 7b: my tasks to others as text (open-questions#36) -->
+    <string name="inbox_today">Bugün</string>
+    <string name="inbox_yesterday">Dün</string>
+    <string name="inbox_on_date">%1$d %2$s</string>
+    <string name="bell_unreached_title">%1$s cevap vermiyor: %2$s</string>
+    <string name="bell_unreached_body">Son zaman %1$s · bir arasan iyi olur</string>
+    <string name="bell_done_title">%1$s bitirdi: \"%2$s\"</string>
+    <string name="bell_said_done">Bitti dedi</string>
+    <string name="bell_no_photo">Fotoğrafsız bitti dedi</string>
+    <string name="bell_late">Sonradan yaptığını söyledi</string>
+    <string name="bell_approved">Onayladın</string>
+    <string name="bell_auto_approved">Kendiliğinden onaylandı</string>
+    <string name="bell_dropped_title">%1$s bugün yapamayacak: \"%2$s\"</string>
+    <string name="bell_footer">Biten işler sadece burada yazı olarak durur, ayrıca bildirim göndermem. Fotoğraflı işler onayına düşer.</string>
     <string name="inbox_no_older">Daha eski bildirim yok</string>
     <string name="ago_now">şimdi</string>
     <plurals name="ago_minutes">

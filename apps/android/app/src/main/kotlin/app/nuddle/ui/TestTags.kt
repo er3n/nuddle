@@ -58,6 +58,8 @@ object TestTags {
 
     fun cancelReason(name: String) = "task.cancelReason.$name"
 
+    fun bellEntry(taskId: String) = "inbox.entry.$taskId"
+
     const val PREVIEW_FINISH_DONE = "preview.finishDone"
     const val PREVIEW_FINISH_PHOTO = "preview.finishPhoto"
 

@@ -9,6 +9,7 @@ import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEventDao
 import app.nuddle.data.session.SessionStore
 import app.nuddle.domain.IdGenerator
+import app.nuddle.ui.screens.inbox.openUnreached
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -45,15 +46,23 @@ class HomeIssuesViewModel
         private val clock: Clock,
         private val timeZone: TimeZone,
     ) : ViewModel() {
+        private val me = sessions.session.map { it?.personId }.filterNotNull()
+        private val events = eventDao.observeAll().map { all -> all.groupBy { it.taskId } }
+
         val issues: StateFlow<IssuesUi> =
             combine(
-                sessions.session.map { it?.personId }.filterNotNull(),
+                me,
                 taskDao.observeAll(),
-                eventDao.observeAll().map { all -> all.groupBy { it.taskId } },
+                events,
                 connectionDao.observeAll().map { all -> all.associateBy { it.personId } },
             ) { me, all, events, connections ->
                 issues(all, events, me, connections, clock.now(), timeZone)
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), IssuesUi())
+
+        /** "Cevap vermiyor" entries in the bell that still matter (7b): part of the bell's badge. */
+        val unreached: StateFlow<Int> =
+            combine(me, taskDao.observeAll(), events) { me, all, events -> openUnreached(all, events, me) }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), 0)
 
         private val sheet = MutableStateFlow<NewDeadlineUi?>(null)
 

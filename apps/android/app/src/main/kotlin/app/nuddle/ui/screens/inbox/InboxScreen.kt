@@ -49,10 +49,12 @@ data class InboxInviteUi(
     val ago: Ago,
 )
 
-/** 1c. Invites only for now; approvals, permission warnings and the rest come with their slices. */
+/** 1c and 7b. Approvals, permission warnings and the rest come with their slices. */
 @Immutable
 data class InboxUiState(
     val invites: List<InboxInviteUi> = emptyList(),
+    /** My tasks to others from the last week, as text (7b). */
+    val days: List<BellDay> = emptyList(),
 )
 
 @Composable
@@ -61,6 +63,7 @@ fun InboxScreen(
     onBack: () -> Unit,
     onOpenInvite: (InboxInviteUi) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenTask: (taskId: String) -> Unit = {},
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
@@ -75,6 +78,7 @@ fun InboxScreen(
             )
             state.invites.forEach { InviteCard(it, onOpen = { onOpenInvite(it) }) }
         }
+        BellList(state.days, onOpenTask)
         Text(
             stringResource(R.string.inbox_no_older),
             style = DurtTheme.type.body,
