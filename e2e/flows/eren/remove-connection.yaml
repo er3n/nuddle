@@ -1,0 +1,39 @@
+# Profile (5a) from the avatar, Selin's row, person detail (5b), "Bağlantıyı kaldır", then the confirmation sheet.
+# Back on profile, Selin is no longer in "Bizimkiler".
+appId: app.nuddle.debug
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: bar.profile
+    timeout: 30000
+- tapOn:
+    id: bar.profile
+- extendedWaitUntil:
+    visible:
+      id: profile.person.Selin
+    timeout: 15000
+- tapOn:
+    id: profile.person.Selin
+- extendedWaitUntil:
+    visible:
+      id: person.screen
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: person.remove
+- tapOn:
+    id: person.remove
+- extendedWaitUntil:
+    visible: "Bağlantı kaldırılsın mı?"
+    timeout: 15000
+- tapOn:
+    id: sheet.primary
+- extendedWaitUntil:
+    visible:
+      id: profile.screen
+    timeout: 30000
+- extendedWaitUntil:
+    notVisible:
+      id: profile.person.Selin
+    timeout: 30000

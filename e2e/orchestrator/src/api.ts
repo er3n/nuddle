@@ -6,6 +6,7 @@ import { API_URL } from "./backend";
 
 export type SyncTask = components["schemas"]["SyncTask"];
 export type Session = components["schemas"]["Session"];
+export type SyncConnection = components["schemas"]["SyncConnection"];
 
 /** Test OTP code of the local stack (supabase/config.toml, auth.sms.test_otp). */
 const TEST_OTP_CODE = "123456";
@@ -54,5 +55,9 @@ export class Phone {
 
   async tasks(): Promise<SyncTask[]> {
     return unwrap("sync", await this.client.GET("/api/v1/sync", {})).tasks;
+  }
+
+  async connections(): Promise<SyncConnection[]> {
+    return unwrap("sync", await this.client.GET("/api/v1/sync", {})).connections;
   }
 }
