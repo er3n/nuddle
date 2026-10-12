@@ -590,7 +590,7 @@ export interface SyncRows {
   connections: { edge: Edge; person: Person; devices: Device[] }[];
   sentInvites: (Invite & { createdAt: Date })[];
   receivedInvites: (Invite & { inviterName: string; createdAt: Date })[];
-  tasks: (Task & { snoozesUsed: number })[];
+  tasks: (Task & { snoozesUsed: number; createdAt: Date })[];
   events: (TaskEvent & { id: string })[];
   plans: PokePlan[];
 }
@@ -673,7 +673,11 @@ export async function syncRows(tx: Tx, me: Person, cursor: number): Promise<Sync
       inviterName: r.people.displayName,
       createdAt: r.invites.createdAt,
     })),
-    tasks: taskRows.map((t) => ({ ...toTask(t), snoozesUsed: snoozesUsed.get(t.id) ?? 0 })),
+    tasks: taskRows.map((t) => ({
+      ...toTask(t),
+      snoozesUsed: snoozesUsed.get(t.id) ?? 0,
+      createdAt: t.createdAt,
+    })),
     events: eventRows.map((r) => ({ ...toEvent(r.e), id: String(r.e.id) })),
     plans,
   };

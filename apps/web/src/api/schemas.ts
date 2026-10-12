@@ -259,6 +259,8 @@ const SyncTask = z
      * app reading an older server's sync treats it as 0 instead of failing the whole sync.
      */
     snoozesUsed: z.int().optional(),
+    /** When the sender wrote it: "Selin yazdı · 14:32" (4c). Optional for the same reason as snoozesUsed. */
+    createdAt: Instant.optional(),
   })
   .openapi("SyncTask");
 
@@ -297,6 +299,11 @@ export const SyncResponse = z
           relationship: EdgeType,
           status: z.enum(["pending", "active", "removed"]),
           reachability: Reachability,
+          /**
+           * For the Call and Message icons on cards (docs/product.md, Human channel). Both sides agreed to the
+           * connection. Optional so an app reading an older server's sync does not fail.
+           */
+          phone: Phone.optional(),
         })
         .openapi("SyncConnection"),
     ),

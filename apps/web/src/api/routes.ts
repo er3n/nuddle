@@ -183,6 +183,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
             statusChangedAt: iso(t.statusChangedAt),
             inRecipientList: t.inRecipientList,
             snoozesUsed: t.snoozesUsed,
+            createdAt: iso(t.createdAt),
           })),
           sentInvites: r.sentInvites.map((i) => ({
             id: i.id,

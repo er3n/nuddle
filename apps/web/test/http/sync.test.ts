@@ -48,6 +48,33 @@ describe("http: sync", () => {
     expect(forEren.plans.flatMap((p) => p.steps.map((s) => s.level))).not.toContain("HUMAN");
   });
 
+  it("tells when a task was written and how to reach a connection", async () => {
+    const taskId = await createTask(selin, eren);
+    const forEren = await syncOf(eren);
+    expect(forEren.tasks.find((t) => t.id === taskId)?.createdAt).toBe(
+      server.deps.clock.now().toISOString(),
+    );
+    expect(forEren.connections.find((c) => c.personId === selin.id)?.phone).toBe(selin.phone);
+  });
+
+  it("stops giving the phone of someone who deleted their account", async () => {
+    // Own people: the other tests count Selin's connections.
+    const ali = await signUp(server, "Ali");
+    const zeynep = await signUp(server, "Zeynep");
+    await connect(ali, zeynep);
+    const before = await syncOf(ali);
+    expect(before.connections.find((c) => c.personId === zeynep.id)?.phone).toBe(zeynep.phone);
+
+    await zeynep.api.POST("/api/v1/commands/delete_account", {
+      body: { idempotencyKey: uuidv7() },
+    });
+    const after = await syncOf(ali, before.cursor);
+    expect(after.connections.find((c) => c.personId === zeynep.id)).toMatchObject({
+      status: "removed",
+    });
+    expect(after.connections.find((c) => c.personId === zeynep.id)?.phone).toBeUndefined();
+  });
+
   it("returns only what changed after the cursor", async () => {
     const before = await syncOf(eren);
     expect((await syncOf(eren, before.cursor)).tasks).toEqual([]);
