@@ -33,6 +33,15 @@ interface TaskDao {
 }
 
 @Dao
+interface InviteDao {
+    @Upsert
+    suspend fun upsert(invites: List<InviteEntity>)
+
+    @Query("SELECT * FROM invites ORDER BY createdAt DESC")
+    fun observeAll(): Flow<List<InviteEntity>>
+}
+
+@Dao
 interface PokeStepDao {
     @Query("SELECT * FROM poke_steps")
     suspend fun all(): List<PokeStepEntity>

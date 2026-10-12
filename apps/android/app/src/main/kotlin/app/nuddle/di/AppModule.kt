@@ -6,24 +6,15 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
-import androidx.room.Room
 import androidx.work.WorkManager
 import app.nuddle.alarm.AlarmManagerScheduler
 import app.nuddle.alarm.AndroidPokeNotifications
 import app.nuddle.alarm.FullScreenPermission
-import app.nuddle.alarm.PokeActions
 import app.nuddle.alarm.PokeAlarms
 import app.nuddle.alarm.PokeNotifications
 import app.nuddle.data.ApiAuthRepository
-import app.nuddle.data.ApiTaskRepository
 import app.nuddle.data.AuthRepository
 import app.nuddle.data.SessionStarter
-import app.nuddle.data.TaskCloser
-import app.nuddle.data.TaskRepository
-import app.nuddle.data.db.NuddleDatabase
-import app.nuddle.data.db.OutboxDao
-import app.nuddle.data.db.PokeStepDao
-import app.nuddle.data.db.TaskDao
 import app.nuddle.data.outbox.OutboxDrainer
 import app.nuddle.data.outbox.WorkManagerScheduling
 import app.nuddle.data.session.DataStoreSessionStore
@@ -79,21 +70,6 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun database(
-        @ApplicationContext context: Context,
-    ): NuddleDatabase = Room.databaseBuilder(context, NuddleDatabase::class.java, "nuddle.db").build()
-
-    @Provides
-    fun tasks(db: NuddleDatabase): TaskDao = db.tasks()
-
-    @Provides
-    fun pokeSteps(db: NuddleDatabase): PokeStepDao = db.pokeSteps()
-
-    @Provides
-    fun outbox(db: NuddleDatabase): OutboxDao = db.outbox()
-
-    @Provides
-    @Singleton
     fun alarmScheduler(
         @ApplicationContext context: Context,
     ): AlarmScheduler = AlarmManagerScheduler(context, context.getSystemService(AlarmManager::class.java))
@@ -134,10 +110,4 @@ abstract class BindingsModule {
 
     @Binds
     abstract fun sessionStarter(impl: AppSessionStarter): SessionStarter
-
-    @Binds
-    abstract fun taskRepository(impl: ApiTaskRepository): TaskRepository
-
-    @Binds
-    abstract fun taskCloser(impl: PokeActions): TaskCloser
 }

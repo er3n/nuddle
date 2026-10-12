@@ -23,6 +23,25 @@ data class TaskEntity(
     @ColumnInfo(defaultValue = "0") val snoozesUsed: Int = 0,
 )
 
+/**
+ * An invite from sync (SyncSentInvite or SyncReceivedInvite). [sent] tells which: [name] is then the name I typed for
+ * them, otherwise the inviter's name. [phone] is only known for sent invites, [inviterId] only for received ones.
+ */
+@Entity(tableName = "invites")
+data class InviteEntity(
+    @PrimaryKey val id: String,
+    val code: String,
+    val sent: Boolean,
+    val name: String,
+    val phone: String?,
+    val inviterId: String?,
+    val prefilledName: String,
+    val relationship: String,
+    val status: String,
+    /** Epoch milliseconds. */
+    val createdAt: Long,
+)
+
 /** One step of a received plan (SyncPlan). `firedAt` is set when the alarm rang, so it is not set again. */
 @Entity(tableName = "poke_steps", primaryKeys = ["taskId", "planVersion", "seq"], indices = [Index("taskId")])
 data class PokeStepEntity(

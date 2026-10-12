@@ -38,6 +38,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import app.nuddle.R
+import app.nuddle.api.model.EdgeType
 import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.Avatar
 import app.nuddle.ui.components.ComposeBar
@@ -67,6 +68,14 @@ data class HomeUiState(
     val preview: PreviewUi? = null,
     val undo: UndoUi? = null,
     val doneNote: DoneNoteUi? = null,
+    /** 1g: shown instead of the invite card while my invite waits. */
+    val pendingInvite: PendingInviteUi? = null,
+)
+
+@Immutable
+data class PendingInviteCallbacks(
+    val onReshare: (PendingInviteUi) -> Unit = {},
+    val onRevoke: (PendingInviteUi) -> Unit = {},
 )
 
 @Immutable
@@ -92,6 +101,7 @@ fun HomeScreen(
     onFinishNextUp: () -> Unit = {},
     preview: PreviewCallbacks = PreviewCallbacks(),
     undo: UndoCallbacks = UndoCallbacks(),
+    pendingInvite: PendingInviteCallbacks = PendingInviteCallbacks(),
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
@@ -112,8 +122,12 @@ fun HomeScreen(
             modifier = Modifier.semantics { heading() },
         )
         val nextUp = state.nextUp
+        val waiting = state.pendingInvite
+        if (waiting != null) {
+            PendingInviteCard(state.myName, waiting, { pendingInvite.onReshare(waiting) }, { pendingInvite.onRevoke(waiting) })
+        }
         if (nextUp == null) {
-            InviteCard(state.myName, onInvite)
+            if (waiting == null) InviteCard(state.myName, onInvite)
             EmptyTasks(Modifier.padding(top = dimens.space48))
         } else {
             Text(
@@ -123,7 +137,7 @@ fun HomeScreen(
                 modifier = Modifier.semantics { heading() },
             )
             NextUpCard(nextUp, onFinishNextUp)
-            CompactInviteCard(onInvite)
+            if (waiting == null) CompactInviteCard(onInvite)
         }
     }
     state.preview?.let { PreviewSheet(it, preview) }
@@ -316,6 +330,34 @@ private fun HomeScreenDoneNotePreview() {
     DurtTheme {
         HomeScreen(
             state = HomeUiState(myName = "Eren", doneNote = DoneNoteUi("Para çek", caughtAt = 2)),
+            onBell = {},
+            onProfile = {},
+            onInvite = {},
+            onComposeTextChange = {},
+            onComposeSend = {},
+            onVoiceStart = {},
+            onVoiceEnd = {},
+        )
+    }
+}
+
+@PreviewScreens
+@Composable
+private fun HomeScreenInviteSentPreview() {
+    DurtTheme {
+        HomeScreen(
+            state =
+                HomeUiState(
+                    myName = "Eren",
+                    pendingInvite =
+                        PendingInviteUi(
+                            inviteId = "i1",
+                            code = "abc",
+                            name = "Selin",
+                            relationship = EdgeType.SPOUSE,
+                            sharedAt = DeadlineText.Today("14:32"),
+                        ),
+                ),
             onBell = {},
             onProfile = {},
             onInvite = {},

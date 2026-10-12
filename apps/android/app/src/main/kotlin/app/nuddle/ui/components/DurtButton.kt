@@ -39,7 +39,7 @@ import app.nuddle.ui.theme.DurtTheme
 import app.nuddle.ui.theme.DurtType
 import app.nuddle.ui.theme.pressed
 
-enum class DurtButtonKind { Primary, Accent, Secondary, Ghost, Danger, DangerOutline, Soft, Success, OnPoke, OnPokeOutline }
+enum class DurtButtonKind { Primary, Accent, Secondary, Ghost, Danger, DangerOutline, DangerGhost, Soft, Success, OnPoke, OnPokeOutline }
 
 enum class DurtButtonSize { Poke, Large, Medium, Small, Compact }
 
@@ -63,6 +63,9 @@ private fun DurtColors.forKind(kind: DurtButtonKind): ButtonColors =
         DurtButtonKind.Danger -> ButtonColors(danger, surface, null)
 
         DurtButtonKind.DangerOutline -> ButtonColors(Color.Transparent, danger, danger)
+
+        // "İptal et" next to "Tekrar paylaş" on the pending invite (1g).
+        DurtButtonKind.DangerGhost -> ButtonColors(Color.Transparent, danger, null)
 
         DurtButtonKind.Soft -> ButtonColors(surfaceMuted, ink, null)
 

@@ -2,10 +2,14 @@ package app.nuddle.data.sync
 
 import app.nuddle.api.SyncApi
 import app.nuddle.api.model.SyncPlan
+import app.nuddle.api.model.SyncReceivedInvite
+import app.nuddle.api.model.SyncSentInvite
 import app.nuddle.api.model.SyncTask
 import app.nuddle.api.model.TaskStatus
 import app.nuddle.data.api.ApiResult
 import app.nuddle.data.api.apiCall
+import app.nuddle.data.db.InviteDao
+import app.nuddle.data.db.InviteEntity
 import app.nuddle.data.db.PokeStepEntity
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEntity
@@ -37,6 +41,7 @@ class SyncRepository
         private val api: SyncApi,
         private val sessions: SessionStore,
         private val tasks: TaskDao,
+        private val invites: InviteDao,
         private val alarms: AlarmRearmer,
         private val json: Json,
     ) {
@@ -51,6 +56,7 @@ class SyncRepository
                 QuietHours.parse(me.quietHours.start, me.quietHours.end, me.quietHours.timeZone),
             )
             tasks.upsert(response.tasks.map(SyncTask::toEntity))
+            invites.upsert(response.sentInvites.map(SyncSentInvite::toEntity) + response.receivedInvites.map(SyncReceivedInvite::toEntity))
             response.plans.forEach { plan -> alarms.applyPlan(plan.taskId, plan.version, plan.toEntities()) }
             sessions.saveSyncCursor(response.cursor)
             alarms.rearm()
@@ -71,6 +77,34 @@ internal fun SyncTask.toEntity() =
         planVersion = planVersion,
         inRecipientList = inRecipientList,
         snoozesUsed = snoozesUsed ?: 0,
+    )
+
+internal fun SyncSentInvite.toEntity() =
+    InviteEntity(
+        id = id,
+        code = code,
+        sent = true,
+        name = prefilledName,
+        phone = inviteePhone,
+        inviterId = null,
+        prefilledName = prefilledName,
+        relationship = relationship.value,
+        status = status.value,
+        createdAt = Instant.parse(createdAt).toEpochMilliseconds(),
+    )
+
+internal fun SyncReceivedInvite.toEntity() =
+    InviteEntity(
+        id = id,
+        code = code,
+        sent = false,
+        name = inviterName,
+        phone = null,
+        inviterId = inviterId,
+        prefilledName = prefilledName,
+        relationship = relationship.value,
+        status = status.value,
+        createdAt = Instant.parse(createdAt).toEpochMilliseconds(),
     )
 
 internal fun SyncPlan.toEntities() =

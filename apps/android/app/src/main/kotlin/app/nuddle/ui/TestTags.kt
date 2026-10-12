@@ -36,12 +36,25 @@ object TestTags {
     const val HOME_DONE_EARLY = "home.doneEarly"
     const val HOME_UNDO = "home.undo"
     const val HOME_DONE_NOTE = "home.doneNote"
+    const val HOME_PENDING_INVITE = "home.pendingInvite"
+    const val HOME_INVITE_RESHARE = "home.inviteReshare"
+    const val HOME_INVITE_REVOKE = "home.inviteRevoke"
     const val PREVIEW = "preview.sheet"
     const val PREVIEW_EVENING = "preview.evening"
     const val PREVIEW_MORNING = "preview.morning"
     const val PREVIEW_PICK_TIME = "preview.pickTime"
     const val SHEET_PRIMARY = "sheet.primary"
     const val SHEET_DISMISS = "sheet.dismiss"
+
+    const val INVITE = "invite.screen"
+    const val INVITE_PICK_CONTACT = "invite.pickContact"
+    const val INVITE_TYPE_NUMBER = "invite.typeNumber"
+    const val INVITE_NAME = "invite.name"
+    const val INVITE_NUMBER = "invite.number"
+    const val INVITE_SEND = "invite.send"
+
+    /** Followed by the relationship value, e.g. "invite.relationship.spouse". */
+    const val INVITE_RELATIONSHIP = "invite.relationship."
 
     const val SETUP = "setup.screen"
     const val SETUP_TRY = "setup.try"

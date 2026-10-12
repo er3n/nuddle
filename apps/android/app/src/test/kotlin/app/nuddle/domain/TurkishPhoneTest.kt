@@ -28,4 +28,13 @@ class TurkishPhoneTest {
         assertEquals("532 12", TurkishPhone.group("53212"))
         assertEquals("+90 532 123 45 67", TurkishPhone.display("+905321234567"))
     }
+
+    @Test
+    fun `numbers as contacts store them`() {
+        for (raw in listOf("+90 532 123 45 67", "0090 532 123 4567", "0532 123 45 67", "532-123-4567", "(0532) 1234567")) {
+            assertEquals("+905321234567", TurkishPhone.fromContact(raw), raw)
+        }
+        assertEquals(null, TurkishPhone.fromContact("+44 20 7946 0958"))
+        assertEquals(null, TurkishPhone.fromContact("0212 123 45 67"))
+    }
 }

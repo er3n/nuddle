@@ -60,7 +60,7 @@ class TaskRepositoryTest {
         repository =
             ApiTaskRepository(
                 commandsApi = retrofit.create(CommandsApi::class.java),
-                sync = SyncRepository(retrofit.create(SyncApi::class.java), sessions, db.tasks(), alarms, testJson),
+                sync = SyncRepository(retrofit.create(SyncApi::class.java), sessions, db.tasks(), db.invites(), alarms, testJson),
                 closer =
                     object : TaskCloser {
                         override suspend fun done(taskId: String) {

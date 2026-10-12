@@ -1,6 +1,7 @@
 package app.nuddle.ui.nav
 
 import android.net.Uri
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -12,12 +13,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import app.nuddle.data.InviteLinks
 import app.nuddle.ui.screens.LightSystemBarIcons
 import app.nuddle.ui.screens.code.CodeScreen
 import app.nuddle.ui.screens.code.CodeViewModel
 import app.nuddle.ui.screens.code.SignedInDestination
 import app.nuddle.ui.screens.home.HomeScreen
 import app.nuddle.ui.screens.home.HomeViewModel
+import app.nuddle.ui.screens.home.PendingInviteCallbacks
+import app.nuddle.ui.screens.home.PendingInviteViewModel
 import app.nuddle.ui.screens.home.PreviewCallbacks
 import app.nuddle.ui.screens.home.UndoCallbacks
 import app.nuddle.ui.screens.name.NameScreen
@@ -35,6 +39,7 @@ object Routes {
     const val NAME = "onboarding/name"
     const val HOME = "home"
     const val SETUP = "setup"
+    const val INVITE = "invite"
 
     fun code(e164: String): String = "auth/code?${CodeViewModel.ARG_PHONE}=${Uri.encode(e164)}"
 }
@@ -96,15 +101,17 @@ fun NuddleNavHost(startRoute: String) {
         }
         composable(Routes.HOME) {
             val viewModel: HomeViewModel = hiltViewModel()
+            val invites: PendingInviteViewModel = hiltViewModel()
+            val activity = LocalActivity.current
             val state by viewModel.state.collectAsStateWithLifecycle()
             LaunchedEffect(viewModel) { viewModel.openSetup.collect { nav.navigate(Routes.SETUP) { launchSingleTop = true } } }
-            // Bell, profile, invite and voice are routes of the feature slices (docs/bootstrap-plan.md).
+            // Bell, profile and voice are routes of the feature slices (docs/bootstrap-plan.md).
             state?.let {
                 HomeScreen(
                     state = it,
                     onBell = {},
                     onProfile = {},
-                    onInvite = {},
+                    onInvite = { nav.navigate(Routes.INVITE) { launchSingleTop = true } },
                     onComposeTextChange = viewModel::onComposeTextChange,
                     onComposeSend = viewModel::onComposeSend,
                     onVoiceStart = {},
@@ -123,8 +130,16 @@ fun NuddleNavHost(startRoute: String) {
                             onEdit = viewModel::onUndoEdit,
                             onTimeout = viewModel::onUndoTimeout,
                         ),
+                    pendingInvite =
+                        PendingInviteCallbacks(
+                            onReshare = { activity?.shareInvite(InviteLinks.of(it.code)) },
+                            onRevoke = invites::onRevoke,
+                        ),
                 )
             }
+        }
+        composable(Routes.INVITE) {
+            InviteRoute(onBack = { nav.popBackStack() }, onShare = { nav.popBackStack(Routes.HOME, inclusive = false) })
         }
         composable(Routes.SETUP) {
             SetupRoute(onFinish = { nav.popBackStack(Routes.HOME, inclusive = false) })

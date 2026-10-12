@@ -48,6 +48,9 @@ object DurtIcons {
     }
     val Plus by lazy { stroke("Plus", "M12 5v14", "M5 12h14") }
     val Play by lazy { fill("Play", "M7 5v14l12-7z") }
+    val PersonPlus by lazy {
+        stroke("PersonPlus", "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", "M3 20a6 6 0 0 1 12 0", "M19 8v6", "M16 11h6")
+    }
 
     private fun fill(
         name: String,

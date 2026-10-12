@@ -9,6 +9,7 @@ import app.nuddle.data.DoneNotes
 import app.nuddle.data.SetupGate
 import app.nuddle.data.TaskDraft
 import app.nuddle.data.WriteOutcome
+import app.nuddle.data.db.InviteEntity
 import app.nuddle.domain.GrantedPermissions
 import app.nuddle.domain.IdGenerator
 import app.nuddle.domain.QuietHours
@@ -16,6 +17,7 @@ import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.FakePermissions
 import app.nuddle.testing.FakeTaskRepository
+import app.nuddle.testing.InMemoryInviteDao
 import app.nuddle.testing.InMemorySessionStore
 import app.nuddle.testing.InMemorySetupStore
 import app.nuddle.testing.InMemoryTaskDao
@@ -53,8 +55,9 @@ class HomeViewModelTest {
     private val permissions = FakePermissions()
     private val setup = InMemorySetupStore()
     private val doneNotes = DoneNotes()
+    private val inviteDao = InMemoryInviteDao()
     private val vm by lazy {
-        HomeViewModel(sessions, taskDao, tasks, IdGenerator(clock), SetupGate(setup, permissions), doneNotes, clock, istanbul)
+        HomeViewModel(sessions, taskDao, inviteDao, tasks, IdGenerator(clock), SetupGate(setup, permissions), doneNotes, clock, istanbul)
     }
 
     private suspend fun signedIn() = sessions.saveMe("Eren", QuietHours.default(istanbul))
@@ -377,6 +380,42 @@ class HomeViewModelTest {
             advanceTimeBy(2)
             assertNull(vm.state.value?.doneNote)
         }
+
+    @Test
+    fun `my open invite shows as pending until it is accepted`() =
+        runTest(main.dispatcher) {
+            ready()
+            inviteDao.upsert(listOf(anInvite(status = "open")))
+            assertEquals(
+                "Selin",
+                vm.state.value
+                    ?.pendingInvite
+                    ?.name,
+            )
+            assertEquals(
+                DeadlineText.Today("14:32"),
+                vm.state.value
+                    ?.pendingInvite
+                    ?.sharedAt,
+            )
+
+            inviteDao.upsert(listOf(anInvite(status = "accepted")))
+            assertNull(vm.state.value?.pendingInvite)
+        }
+
+    private fun anInvite(status: String) =
+        InviteEntity(
+            id = "i1",
+            code = "abc",
+            sent = true,
+            name = "Selin",
+            phone = Cast.SELIN_PHONE,
+            inviterId = null,
+            prefilledName = "Selin",
+            relationship = "spouse",
+            status = status,
+            createdAt = Instant.parse("2026-10-11T14:32:00+03:00").toEpochMilliseconds(),
+        )
 
     @OptIn(ExperimentalCoroutinesApi::class) // Reason: advanceTimeBy is how virtual time moves (ADR 0009).
     @Test

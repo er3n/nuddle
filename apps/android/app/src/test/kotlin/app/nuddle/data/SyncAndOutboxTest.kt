@@ -19,6 +19,7 @@ import app.nuddle.testing.inMemoryDatabase
 import app.nuddle.testing.json
 import app.nuddle.testing.retrofit
 import app.nuddle.testing.testJson
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockWebServer
 import org.junit.After
@@ -30,6 +31,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -90,6 +92,7 @@ class SyncAndOutboxTest {
                     api = server.retrofit().create(SyncApi::class.java),
                     sessions = sessions,
                     tasks = db.tasks(),
+                    invites = db.invites(),
                     alarms = alarms,
                     json = testJson,
                 )
@@ -110,6 +113,36 @@ class SyncAndOutboxTest {
                     .sorted(),
             )
             assertEquals(1, rearms)
+        }
+
+    @Test
+    fun `sync stores sent and received invites`() =
+        runTest {
+            server.enqueue(
+                json(
+                    200,
+                    syncBody.replace(
+                        "\"sentInvites\":[],\"receivedInvites\":[]",
+                        """
+                        "sentInvites":[{"id":"00000000-0000-7000-8000-0000000000a1","code":"abc","inviteePhone":"+905320000002",
+                                        "prefilledName":"Selin","relationship":"spouse","status":"open",
+                                        "createdAt":"2026-10-12T14:32:00+03:00"}],
+                        "receivedInvites":[{"id":"00000000-0000-7000-8000-0000000000a2","code":"xyz",
+                                            "inviterId":"${Cast.SELIN_ID}","inviterName":"Defne","prefilledName":"Eren",
+                                            "relationship":"sibling","status":"open","createdAt":"2026-10-12T12:00:00+03:00"}]
+                        """.trimIndent(),
+                    ),
+                ),
+            )
+            val repo = SyncRepository(server.retrofit().create(SyncApi::class.java), sessions, db.tasks(), db.invites(), alarms, testJson)
+
+            assertTrue(repo.sync())
+
+            val invites = db.invites().observeAll().first()
+            assertEquals(listOf("abc" to true, "xyz" to false), invites.map { it.code to it.sent })
+            assertEquals("+905320000002", invites.first().phone)
+            assertEquals("Defne", invites.last().name)
+            assertEquals(Instant.parse("2026-10-12T14:32:00+03:00").toEpochMilliseconds(), invites.first().createdAt)
         }
 
     @Test

@@ -2,12 +2,16 @@ package app.nuddle.testing
 
 import app.nuddle.alarm.FullScreenPermission
 import app.nuddle.alarm.PokeNotifications
+import app.nuddle.api.model.EdgeType
 import app.nuddle.api.model.FinishMode
 import app.nuddle.data.AuthRepository
+import app.nuddle.data.InviteRepository
 import app.nuddle.data.SessionStarter
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.VerifyOutcome
 import app.nuddle.data.WriteOutcome
+import app.nuddle.data.db.InviteDao
+import app.nuddle.data.db.InviteEntity
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.outbox.OutboxDrainer
@@ -269,5 +273,40 @@ class InMemoryTaskDao : TaskDao {
 
     override suspend fun countSnooze(id: String) {
         tasks.value[id]?.let { tasks.value += id to it.copy(snoozesUsed = it.snoozesUsed + 1) }
+    }
+}
+
+class InMemoryInviteDao : InviteDao {
+    private val invites = MutableStateFlow<Map<String, InviteEntity>>(emptyMap())
+
+    override suspend fun upsert(invites: List<InviteEntity>) {
+        this.invites.value += invites.associateBy { it.id }
+    }
+
+    override fun observeAll(): Flow<List<InviteEntity>> = invites.map { all -> all.values.sortedByDescending { it.createdAt } }
+}
+
+/** Records invites created and revoked; [code] null makes create fail. */
+class FakeInviteRepository : InviteRepository {
+    val created = mutableListOf<List<Any>>()
+    val revoked = mutableListOf<String>()
+    var code: String? = "abc"
+
+    override suspend fun create(
+        phone: String,
+        name: String,
+        relationship: EdgeType,
+        idempotencyKey: String,
+    ): String? {
+        created += listOf(phone, name, relationship, idempotencyKey)
+        return code
+    }
+
+    override suspend fun revoke(
+        inviteId: String,
+        idempotencyKey: String,
+    ): Boolean {
+        revoked += inviteId
+        return true
     }
 }

@@ -112,6 +112,47 @@
         <item>Aralık</item>
     </string-array>
 
+    <!-- 1e, 1f Invite. Names are never followed by a suffix (open-questions#21). -->
+    <string name="invite_title">Birini davet et</string>
+    <string name="invite_who">Kimi?</string>
+    <string name="invite_pick_contact">Rehberden seç</string>
+    <string name="invite_pick_contact_body">Sadece seçtiğin kişiyi görürüz</string>
+    <string name="invite_type_number">Numarayı elle yaz</string>
+    <string name="invite_change">Değiştir</string>
+    <string name="invite_single_contact_note">Rehberden tek bir kişi seçtin. Rehberinin geri kalanına erişmiyoruz.</string>
+    <string name="invite_relationship_question">Senin neyin?</string>
+    <string name="invite_relationship_question_named">%1$s senin neyin?</string>
+    <string name="invite_relationship_required">Zorunlu. Kime, ne zaman haber vereceğime buna göre karar veririm.</string>
+    <!-- TODO(open-questions#32): the design says "Selin'in eşin olduğunu bilmek"; rephrased so the name takes no suffix. -->
+    <string name="invite_relationship_why">Birbirinize görev yazabileceksiniz. Bu ilişkiyi bilmek, kime ne zaman haber vereceğime karar verirken işime yarar.</string>
+    <string name="invite_send">Daveti gönder</string>
+    <string name="invite_send_hint">Kişiyi ve ilişkiyi seçince aktif olur.</string>
+    <string name="relationship_spouse">Eşim</string>
+    <string name="relationship_parent">Annem / Babam</string>
+    <string name="relationship_child">Çocuğum</string>
+    <string name="relationship_sibling">Kardeşim</string>
+    <string name="relationship_roommate">Ev arkadaşım</string>
+    <string name="relationship_other">Diğer</string>
+    <!-- TODO(open-questions#32): typing a number by hand, a number that is not a Turkish mobile, the share text and a failed send have no design copy. -->
+    <string name="invite_name_label">Adı</string>
+    <string name="invite_number_invalid">Bu bir Türkiye cep numarası değil. Şimdilik sadece +90 5xx numaraları davet edebilirsin.</string>
+    <string name="invite_share_text">dürt\'e gel, birbirimize görev yazalım: %1$s</string>
+    <string name="invite_failed_title">Davet gitmedi</string>
+    <string name="invite_failed_body">Bağlantını kontrol edip tekrar dene.</string>
+
+    <!-- 1g Home, invite pending. TODO(open-questions#32): rephrased so names and times take no suffix (open-questions#21). -->
+    <string name="pending_invite_title">%1$s henüz katılmadı</string>
+    <string name="pending_invite_shared">Davet paylaşıldı · %1$s</string>
+    <string name="pending_invite_as">%1$s olarak</string>
+    <string name="pending_invite_body">%1$s katılınca haber veririm. Link kaybolsa bile numarasıyla kayıt olduğunda davet ona ulaşır.</string>
+    <string name="pending_invite_reshare">Tekrar paylaş</string>
+    <string name="pending_invite_revoke">İptal et</string>
+    <string name="relationship_as_spouse">Eşin</string>
+    <string name="relationship_as_parent">Annen / Baban</string>
+    <string name="relationship_as_child">Çocuğun</string>
+    <string name="relationship_as_sibling">Kardeşin</string>
+    <string name="relationship_as_roommate">Ev arkadaşın</string>
+
     <!-- 2c, 2d, 2e Setup. The invited variants (Selin's name) come with invites (slice 2). -->
     <string name="setup_eyebrow">Bir kerelik kurulum</string>
     <string name="setup_demo_title">Önce bir dene, dürtme nasıl hissettiriyor gör</string>
