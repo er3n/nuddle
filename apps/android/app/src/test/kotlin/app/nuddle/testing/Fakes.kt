@@ -15,6 +15,7 @@ import app.nuddle.data.db.InviteEntity
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.outbox.OutboxDrainer
+import app.nuddle.data.session.ConsentPrompts
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.session.SetupStore
 import app.nuddle.data.session.StoredSession
@@ -180,6 +181,16 @@ class InMemorySetupStore(
     }
 }
 
+class InMemoryConsentPrompts : ConsentPrompts {
+    val ids = mutableSetOf<String>()
+
+    override suspend fun shown(inviteId: String): Boolean = inviteId in ids
+
+    override suspend fun markShown(inviteId: String) {
+        ids += inviteId
+    }
+}
+
 /** Permissions the test can change between reads, like the user in system settings. */
 class FakePermissions(
     var granted: GrantedPermissions = GrantedPermissions(notifications = true, exactAlarm = true, fullScreen = true),
@@ -284,6 +295,8 @@ class InMemoryInviteDao : InviteDao {
     }
 
     override fun observeAll(): Flow<List<InviteEntity>> = invites.map { all -> all.values.sortedByDescending { it.createdAt } }
+
+    override fun observe(id: String): Flow<InviteEntity?> = invites.map { it[id] }
 }
 
 /** Records invites created and revoked; [code] null makes create fail. */
@@ -308,5 +321,26 @@ class FakeInviteRepository : InviteRepository {
     ): Boolean {
         revoked += inviteId
         return true
+    }
+
+    val accepted = mutableListOf<Pair<String, EdgeType>>()
+    val declined = mutableListOf<String>()
+    var answerOk = true
+
+    override suspend fun accept(
+        code: String,
+        relationship: EdgeType,
+        idempotencyKey: String,
+    ): Boolean {
+        if (answerOk) accepted += code to relationship
+        return answerOk
+    }
+
+    override suspend fun decline(
+        code: String,
+        idempotencyKey: String,
+    ): Boolean {
+        if (answerOk) declined += code
+        return answerOk
     }
 }

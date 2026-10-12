@@ -13,6 +13,8 @@ import app.nuddle.data.db.NuddleDatabase
 import app.nuddle.data.db.OutboxDao
 import app.nuddle.data.db.PokeStepDao
 import app.nuddle.data.db.TaskDao
+import app.nuddle.data.session.ConsentPrompts
+import app.nuddle.data.session.DataStoreConsentPrompts
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -56,4 +58,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun inviteRepository(impl: ApiInviteRepository): InviteRepository
+
+    @Binds
+    abstract fun consentPrompts(impl: DataStoreConsentPrompts): ConsentPrompts
 }

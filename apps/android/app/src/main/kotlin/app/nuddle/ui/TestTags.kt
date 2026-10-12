@@ -56,6 +56,16 @@ object TestTags {
     /** Followed by the relationship value, e.g. "invite.relationship.spouse". */
     const val INVITE_RELATIONSHIP = "invite.relationship."
 
+    const val CONSENT = "consent.screen"
+    const val CONSENT_ALLOW = "consent.allow"
+    const val CONSENT_LATER = "consent.later"
+    const val CONSENT_DECLINE = "consent.decline"
+    const val CONSENT_CHANGE = "consent.change"
+    const val MATCHED = "matched.screen"
+    const val MATCHED_START = "matched.start"
+    const val INBOX = "inbox.screen"
+    const val INBOX_OPEN_INVITE = "inbox.openInvite"
+
     const val SETUP = "setup.screen"
     const val SETUP_TRY = "setup.try"
     const val SETUP_SKIP_DEMO = "setup.skipDemo"

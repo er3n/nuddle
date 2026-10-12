@@ -18,12 +18,15 @@ import app.nuddle.ui.screens.LightSystemBarIcons
 import app.nuddle.ui.screens.code.CodeScreen
 import app.nuddle.ui.screens.code.CodeViewModel
 import app.nuddle.ui.screens.code.SignedInDestination
+import app.nuddle.ui.screens.consent.ConsentViewModel
+import app.nuddle.ui.screens.home.HomeInvitesViewModel
 import app.nuddle.ui.screens.home.HomeScreen
 import app.nuddle.ui.screens.home.HomeViewModel
 import app.nuddle.ui.screens.home.PendingInviteCallbacks
-import app.nuddle.ui.screens.home.PendingInviteViewModel
 import app.nuddle.ui.screens.home.PreviewCallbacks
 import app.nuddle.ui.screens.home.UndoCallbacks
+import app.nuddle.ui.screens.inbox.InboxScreen
+import app.nuddle.ui.screens.inbox.InboxViewModel
 import app.nuddle.ui.screens.name.NameScreen
 import app.nuddle.ui.screens.name.NameViewModel
 import app.nuddle.ui.screens.phone.PhoneScreen
@@ -40,6 +43,22 @@ object Routes {
     const val HOME = "home"
     const val SETUP = "setup"
     const val INVITE = "invite"
+    const val INBOX = "inbox"
+    const val CONSENT =
+        "consent/{${ConsentViewModel.ARG_INVITE}}?${ConsentViewModel.ARG_FROM_BELL}={${ConsentViewModel.ARG_FROM_BELL}}"
+    const val ARG_NAME = "name"
+    const val ARG_SETUP = "setup"
+    const val MATCHED = "matched/{$ARG_NAME}?$ARG_SETUP={$ARG_SETUP}"
+
+    fun consent(
+        inviteId: String,
+        fromBell: Boolean,
+    ): String = "consent/$inviteId?${ConsentViewModel.ARG_FROM_BELL}=$fromBell"
+
+    fun matched(
+        inviterName: String,
+        setup: Boolean,
+    ): String = "matched/${Uri.encode(inviterName)}?$ARG_SETUP=$setup"
 
     fun code(e164: String): String = "auth/code?${CodeViewModel.ARG_PHONE}=${Uri.encode(e164)}"
 }
@@ -101,15 +120,19 @@ fun NuddleNavHost(startRoute: String) {
         }
         composable(Routes.HOME) {
             val viewModel: HomeViewModel = hiltViewModel()
-            val invites: PendingInviteViewModel = hiltViewModel()
+            val invites: HomeInvitesViewModel = hiltViewModel()
             val activity = LocalActivity.current
             val state by viewModel.state.collectAsStateWithLifecycle()
             LaunchedEffect(viewModel) { viewModel.openSetup.collect { nav.navigate(Routes.SETUP) { launchSingleTop = true } } }
+            LaunchedEffect(invites) {
+                invites.openConsent.collect { nav.navigate(Routes.consent(it, fromBell = false)) { launchSingleTop = true } }
+            }
+            val unread by invites.unread.collectAsStateWithLifecycle()
             // Bell, profile and voice are routes of the feature slices (docs/bootstrap-plan.md).
             state?.let {
                 HomeScreen(
-                    state = it,
-                    onBell = {},
+                    state = it.copy(unread = unread),
+                    onBell = { nav.navigate(Routes.INBOX) { launchSingleTop = true } },
                     onProfile = {},
                     onInvite = { nav.navigate(Routes.INVITE) { launchSingleTop = true } },
                     onComposeTextChange = viewModel::onComposeTextChange,
@@ -140,6 +163,57 @@ fun NuddleNavHost(startRoute: String) {
         }
         composable(Routes.INVITE) {
             InviteRoute(onBack = { nav.popBackStack() }, onShare = { nav.popBackStack(Routes.HOME, inclusive = false) })
+        }
+        composable(Routes.INBOX) {
+            val viewModel: InboxViewModel = hiltViewModel()
+            val state by viewModel.state.collectAsStateWithLifecycle()
+            InboxScreen(
+                state = state,
+                onBack = { nav.popBackStack() },
+                onOpenInvite = { nav.navigate(Routes.consent(it.inviteId, fromBell = true)) },
+            )
+        }
+        composable(
+            Routes.CONSENT,
+            arguments =
+                listOf(
+                    navArgument(ConsentViewModel.ARG_INVITE) { type = NavType.StringType },
+                    navArgument(ConsentViewModel.ARG_FROM_BELL) {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    },
+                ),
+        ) {
+            ConsentRoute(
+                onAccept = { name, setup ->
+                    nav.navigate(Routes.matched(name, setup)) { popUpTo(Routes.HOME) }
+                },
+                onClose = { nav.popBackStack() },
+            )
+        }
+        composable(
+            Routes.MATCHED,
+            arguments =
+                listOf(
+                    navArgument(Routes.ARG_NAME) { type = NavType.StringType },
+                    navArgument(Routes.ARG_SETUP) {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    },
+                ),
+        ) { entry ->
+            val args = checkNotNull(entry.arguments)
+            val setup = args.getBoolean(Routes.ARG_SETUP)
+            MatchedRoute(
+                inviterName = args.getString(Routes.ARG_NAME).orEmpty(),
+                onStart = {
+                    if (setup) {
+                        nav.navigate(Routes.SETUP) { popUpTo(Routes.HOME) }
+                    } else {
+                        nav.popBackStack(Routes.HOME, inclusive = false)
+                    }
+                },
+            )
         }
         composable(Routes.SETUP) {
             SetupRoute(onFinish = { nav.popBackStack(Routes.HOME, inclusive = false) })
