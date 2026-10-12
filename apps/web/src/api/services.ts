@@ -394,6 +394,26 @@ export async function photoUploadUrl(
   return deps.photos.createUploadUrl(taskId);
 }
 
+/**
+ * The photo waiting for approval (4f), for the two people on the task: a short-lived signed URL to the
+ * last one sent. Only while the task awaits approval; a closed task's photos are gone.
+ */
+export async function photoViewUrl(
+  deps: AppDeps,
+  caller: Person,
+  taskId: TaskId,
+): Promise<{ url: string; sentAt: Date }> {
+  const task = await findTask(deps.db, taskId);
+  if (!task || (task.senderId !== caller.id && task.recipientId !== caller.id)) {
+    throw new ApiError("not_found");
+  }
+  if (task.status !== "AWAITING_APPROVAL") throw new ApiError("wrong_status");
+  const sent = (await eventsOf(deps.db, taskId)).filter((e) => e.type === "photo_sent").at(-1);
+  const path = sent?.payload.photoPath;
+  if (!sent || typeof path !== "string") throw new ApiError("not_found");
+  return { url: await deps.photos.createViewUrl(path), sentAt: sent.at };
+}
+
 // ---- invites and account ----------------------------------------------------------------------
 
 function inviteCode(): string {

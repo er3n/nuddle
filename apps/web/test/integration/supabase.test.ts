@@ -112,6 +112,11 @@ describe("local Supabase adapters", () => {
     });
     expect(((await listed.json()) as unknown[]).length).toBe(1);
 
+    // 4f: the sender looks at it through a short-lived signed URL.
+    const view = await fetch(await photos.createViewUrl(path));
+    expect(view.status).toBe(200);
+    expect(new Uint8Array(await view.arrayBuffer())).toEqual(jpeg);
+
     await photos.deleteForTask(taskId);
     const after = await fetch(`${url}/storage/v1/object/list/task-photos`, {
       method: "POST",

@@ -392,6 +392,15 @@ components:
           format: date-time
           example: 2026-10-12T09:00:00+03:00
           description: ISO 8601 with offset
+        photoSentAt:
+          type: string
+          nullable: true
+          format: date-time
+          example: 2026-10-12T09:00:00+03:00
+          description: ISO 8601 with offset
+        reRequestNote:
+          type: string
+          nullable: true
       required:
         - id
         - senderId
@@ -576,6 +585,27 @@ components:
         - path
         - url
     PhotoUploadUrlRequest:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+      required:
+        - taskId
+    PhotoViewUrlResult:
+      type: object
+      properties:
+        url:
+          type: string
+        sentAt:
+          type: string
+          format: date-time
+          example: 2026-10-12T09:00:00+03:00
+          description: ISO 8601 with offset
+      required:
+        - url
+        - sentAt
+    PhotoViewUrlRequest:
       type: object
       properties:
         taskId:
@@ -1279,6 +1309,57 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PhotoUploadUrlResult"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/photos/view-url:
+    post:
+      operationId: createPhotoViewUrl
+      summary: A short-lived signed URL to the photo waiting for approval (4f)
+      tags:
+        - photos
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhotoViewUrlRequest"
+      responses:
+        "200":
+          description: Where to load the photo from
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhotoViewUrlResult"
         "400":
           description: Error with a DRT code
           content:

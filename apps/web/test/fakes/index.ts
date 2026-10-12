@@ -65,6 +65,10 @@ export class FakePhotoStorage implements PhotoStorage {
     return Promise.resolve({ path, url: `https://storage.test/upload/${path}` });
   }
 
+  createViewUrl(path: string): Promise<string> {
+    return Promise.resolve(`https://storage.test/view/${path}`);
+  }
+
   deleteForTask(taskId: TaskId): Promise<void> {
     this.stored.delete(taskId);
     this.deleted.push(taskId);

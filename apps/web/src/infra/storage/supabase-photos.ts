@@ -6,6 +6,8 @@ import type { PhotoStorage } from "../../domain/ports";
 import type { TaskId } from "../../domain/types";
 
 const BUCKET = "task-photos";
+/** Long enough to open the approval screen, short enough not to become a sharing link. */
+const VIEW_URL_SECONDS = 10 * 60;
 
 export class SupabasePhotoStorage implements PhotoStorage {
   private readonly client: ReturnType<typeof createClient>;
@@ -21,6 +23,14 @@ export class SupabasePhotoStorage implements PhotoStorage {
     const { data, error } = await this.client.storage.from(BUCKET).createSignedUploadUrl(path);
     if (error) throw error;
     return { path: data.path, url: data.signedUrl };
+  }
+
+  async createViewUrl(path: string): Promise<string> {
+    const { data, error } = await this.client.storage
+      .from(BUCKET)
+      .createSignedUrl(path, VIEW_URL_SECONDS);
+    if (error) throw error;
+    return data.signedUrl;
   }
 
   async deleteForTask(taskId: TaskId): Promise<void> {
