@@ -10,6 +10,7 @@ import app.nuddle.api.model.SenderHandlesCommand
 import app.nuddle.api.model.TaskStatus
 import app.nuddle.api.model.WriteTaskCommand
 import app.nuddle.api.model.WriteTaskResult
+import app.nuddle.data.api.ApiFailure
 import app.nuddle.data.api.ApiResult
 import app.nuddle.data.api.apiCall
 import app.nuddle.data.db.PokeStepDao
@@ -36,6 +37,21 @@ sealed interface WriteOutcome {
 
     /** No answer or an error answer. The text stays in the bar for "Tekrar dene" (6b). */
     data object Failed : WriteOutcome
+
+    /** The server broke on our side (`internal` or another 5xx it named): 6f shows [code] (open-questions#39). */
+    data class Broken(
+        val code: String,
+    ) : WriteOutcome
+}
+
+private const val HTTP_SERVER_MIN = 500
+private const val UPSTREAM_FAILED = "DRT-5002"
+
+/** 6f for a server error with a code, except the LLM or SMS provider failing (6b); anything else is 6b. */
+internal fun ApiResult.Failure.toOutcome(): WriteOutcome {
+    val http = failure as? ApiFailure.Http ?: return WriteOutcome.Failed
+    val code = http.code?.takeIf { http.status >= HTTP_SERVER_MIN && it != UPSTREAM_FAILED }
+    return code?.let(WriteOutcome::Broken) ?: WriteOutcome.Failed
 }
 
 /**
@@ -151,11 +167,19 @@ class ApiTaskRepository
             text: String,
             idempotencyKey: String,
         ): WriteOutcome {
-            val result = apiCall(json) { commandsApi.writeTask(WriteTaskCommand(idempotencyKey = idempotencyKey, text = text)) }
-            if (result !is ApiResult.Success) return WriteOutcome.Failed
-            return when (result.value.kind) {
+            val written =
+                when (
+                    val result =
+                        apiCall(
+                            json,
+                        ) { commandsApi.writeTask(WriteTaskCommand(idempotencyKey = idempotencyKey, text = text)) }
+                ) {
+                    is ApiResult.Success -> result.value
+                    is ApiResult.Failure -> return result.toOutcome()
+                }
+            return when (written.kind) {
                 WriteTaskResult.Kind.CREATED -> {
-                    val taskId = result.value.taskId ?: return WriteOutcome.Failed
+                    val taskId = written.taskId ?: return WriteOutcome.Failed
                     // A failed sync is not a failed write: the task exists, and the next sync brings it.
                     sync.sync()
                     WriteOutcome.Created(taskId)
@@ -163,8 +187,8 @@ class ApiTaskRepository
 
                 WriteTaskResult.Kind.ASK -> {
                     WriteOutcome.Ask(
-                        result.value.question,
-                        result.value.draft?.let { draft ->
+                        written.question,
+                        written.draft?.let { draft ->
                             TaskDraft(
                                 title = draft.title,
                                 detail = draft.detail,
@@ -198,10 +222,13 @@ class ApiTaskRepository
                     finishMode = finishMode,
                     rawText = rawText,
                 )
-            val result = apiCall(json) { commandsApi.createTask(command) }
-            if (result !is ApiResult.Success) return WriteOutcome.Failed
+            val created =
+                when (val result = apiCall(json) { commandsApi.createTask(command) }) {
+                    is ApiResult.Success -> result.value
+                    is ApiResult.Failure -> return result.toOutcome()
+                }
             sync.sync()
-            return WriteOutcome.Created(result.value.taskId)
+            return WriteOutcome.Created(created.taskId)
         }
 
         override suspend fun editDeadline(

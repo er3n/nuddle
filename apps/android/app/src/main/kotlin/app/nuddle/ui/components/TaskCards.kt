@@ -101,7 +101,8 @@ fun StatusPill(
 @Composable
 fun TaskRow(
     task: TaskUi,
-    onClick: () -> Unit,
+    /** Null for a row with nothing to open (a text written offline, 6a). */
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     highlighted: Boolean = false,
 ) {
@@ -122,7 +123,7 @@ fun TaskRow(
                     } else {
                         Modifier.border(dimens.borderCard, colors.border, shape)
                     },
-                ).clickable(onClick = onClick)
+                ).then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
                 .clearAndSetSemantics { contentDescription = description }
                 .padding(horizontal = dimens.space14, vertical = dimens.space12),
         verticalAlignment = Alignment.CenterVertically,

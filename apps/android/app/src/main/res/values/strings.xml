@@ -448,6 +448,19 @@
     <string name="compose_placeholder">Yaz ya da basılı tutup konuş…</string>
     <string name="compose_hold_hint">Basılı tut</string>
     <string name="compose_retry">Tekrar dene</string>
+    <string name="compose_failed_title">Şu an anlayamadım</string>
+    <string name="compose_failed_body">Sunucuya ulaşırken bir sorun oldu. Yazdığın duruyor, tekrar dene.</string>
+    <string name="home_offline">İnternet yok. Dürtmeler yine zamanında çalar, değişiklikler bağlantı gelince gider.</string>
+    <string name="queued_waiting">bağlantı gelince gidecek</string>
+    <string name="invalid_invite_title">Bu davet artık geçerli değil</string>
+    <string name="invalid_invite_body">Davet ya kullanıldı ya da süresi doldu. Seni davet edenden yeni bir link isteyebilirsin.</string>
+    <string name="invalid_invite_home">Ana ekrana dön</string>
+    <string name="invalid_invite_invite">Birini ben davet edeyim</string>
+    <string name="generic_error_title">Bir şeyler ters gitti</string>
+    <string name="generic_error_body">Bizden kaynaklı bir sorun. Kurduğun dürtmeler telefonunda duruyor, zamanında çalacak.</string>
+    <string name="generic_error_retry">Tekrar dene</string>
+    <string name="generic_error_home">Ana ekrana dön</string>
+    <string name="generic_error_code">Hata kodu: %1$s</string>
     <!-- no design copy: accessibility label of the send arrow -->
     <string name="compose_send">Gönder</string>
 

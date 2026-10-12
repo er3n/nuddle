@@ -1,6 +1,7 @@
 package app.nuddle.ui.nav
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,6 +23,10 @@ import app.nuddle.ui.screens.code.CodeScreen
 import app.nuddle.ui.screens.code.CodeViewModel
 import app.nuddle.ui.screens.code.SignedInDestination
 import app.nuddle.ui.screens.consent.ConsentViewModel
+import app.nuddle.ui.screens.errors.GenericErrorCallbacks
+import app.nuddle.ui.screens.errors.GenericErrorScreen
+import app.nuddle.ui.screens.errors.InvalidInviteCallbacks
+import app.nuddle.ui.screens.errors.InvalidInviteScreen
 import app.nuddle.ui.screens.home.HomeInvitesViewModel
 import app.nuddle.ui.screens.home.HomeIssuesViewModel
 import app.nuddle.ui.screens.home.HomeScreen
@@ -55,6 +60,7 @@ object Routes {
     const val HOME = "home"
     const val SETUP = "setup"
     const val INVITE = "invite"
+    const val INVALID_INVITE = "invite-invalid"
     const val INBOX = "inbox"
     const val MISSED_RING = "missed-ring"
     const val PROFILE = "profile"
@@ -170,13 +176,13 @@ fun NuddleNavHost(
             LaunchedEffect(invites) {
                 invites.openConsent.collect { nav.navigate(Routes.consent(it, fromBell = false)) { launchSingleTop = true } }
             }
-            // An invite link: its consent screen, or the bell when the invite is not (yet) mine. Signed out, the
-            // link waits here until sign-in reaches home.
+            // An invite link: its consent screen, or 6d when the invite is not open for me. Signed out, the link
+            // waits here until sign-in reaches home.
             LaunchedEffect(inviteCode) {
                 val code = inviteCode ?: return@LaunchedEffect
                 takeInviteCode()
                 val inviteId = invites.inviteForLink(code)
-                nav.navigate(if (inviteId != null) Routes.consent(inviteId, fromBell = true) else Routes.INBOX) {
+                nav.navigate(if (inviteId != null) Routes.consent(inviteId, fromBell = true) else Routes.INVALID_INVITE) {
                     launchSingleTop = true
                 }
             }
@@ -194,7 +200,18 @@ fun NuddleNavHost(
             val unreached by issues.unreached.collectAsStateWithLifecycle()
             val unread = unreadInvites + unreached
             // Voice is a route of a later feature slice (docs/bootstrap-plan.md).
-            state?.let {
+            val code = state?.unrecoverable
+            if (code != null) {
+                BackHandler { viewModel.onUnrecoverableClose(retry = false) }
+                GenericErrorScreen(
+                    code,
+                    GenericErrorCallbacks(
+                        onRetry = { viewModel.onUnrecoverableClose(retry = true) },
+                        onHome = { viewModel.onUnrecoverableClose(retry = false) },
+                    ),
+                )
+            }
+            state?.takeIf { code == null }?.let {
                 HomeScreen(
                     state = it.copy(unread = unread, issues = issuesUi, newDeadline = newDeadline),
                     onBell = { nav.navigate(Routes.INBOX) { launchSingleTop = true } },
@@ -264,6 +281,16 @@ fun NuddleNavHost(
         }
         composable(Routes.UNSENT, arguments = listOf(navArgument(UnsentPhotoViewModel.ARG_TASK) { type = NavType.StringType })) {
             UnsentPhotoRoute(onBack = { nav.popBackStack() })
+        }
+        composable(Routes.INVALID_INVITE) {
+            InvalidInviteScreen(
+                InvalidInviteCallbacks(
+                    onHome = { nav.popBackStack() },
+                    onInvite = {
+                        nav.navigate(Routes.INVITE) { popUpTo(Routes.HOME) }
+                    },
+                ),
+            )
         }
         composable(Routes.INVITE) {
             InviteRoute(onBack = { nav.popBackStack() }, onShare = { nav.popBackStack(Routes.HOME, inclusive = false) })

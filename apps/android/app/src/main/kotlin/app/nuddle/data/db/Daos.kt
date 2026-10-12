@@ -121,6 +121,18 @@ interface OutboxDao {
 }
 
 @Dao
+interface QueuedWriteDao {
+    @Query("SELECT * FROM queued_writes ORDER BY createdAt, idempotencyKey")
+    fun observeAll(): Flow<List<QueuedWriteEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun add(entry: QueuedWriteEntity)
+
+    @Query("DELETE FROM queued_writes WHERE idempotencyKey = :key")
+    suspend fun remove(key: String)
+}
+
+@Dao
 interface TaskEventDao {
     @Upsert
     suspend fun upsert(events: List<TaskEventEntity>)

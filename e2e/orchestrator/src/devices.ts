@@ -23,6 +23,8 @@ export type Role = "selin" | "eren";
 
 export class Device {
   private logcat: ChildProcess | null = null;
+  /** Set by [offline]: the API is out of reach until [online]. */
+  private cutOff = false;
 
   constructor(
     readonly role: Role,
@@ -51,6 +53,7 @@ export class Device {
    * transport: a reconnected emulator loses them.
    */
   private async reversePorts(): Promise<void> {
+    if (this.cutOff) return;
     await this.adb(["reverse", "tcp:3000", "tcp:3000"]);
     await this.adb(["reverse", "tcp:54321", "tcp:54321"]);
   }
@@ -88,6 +91,22 @@ export class Device {
   /** Force stop, as a phone brand's battery manager does: the app's alarms go with it. */
   async forceStop(): Promise<void> {
     await this.shell(`am force-stop ${APP_ID}`);
+  }
+
+  /**
+   * No network (6a): airplane mode, and the adb reverse ports gone too, since the app reaches the API through them and
+   * they work without a network.
+   */
+  async offline(): Promise<void> {
+    this.cutOff = true;
+    await this.shell("cmd connectivity airplane-mode enable");
+    await this.adb(["reverse", "--remove-all"]);
+  }
+
+  async online(): Promise<void> {
+    this.cutOff = false;
+    await this.reversePorts();
+    await this.shell("cmd connectivity airplane-mode disable");
   }
 
   /** Screen off: the full screen intent opens the poke over the lock screen only when the screen is off. */

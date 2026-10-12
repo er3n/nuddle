@@ -93,6 +93,15 @@ data class OutboxEntity(
     val attempts: Int = 0,
 )
 
+/** A text written offline (6a): sent as `write_task` with its key once the connection is back. */
+@Entity(tableName = "queued_writes")
+data class QueuedWriteEntity(
+    @PrimaryKey val idempotencyKey: String,
+    val text: String,
+    /** Epoch milliseconds. */
+    val createdAt: Long,
+)
+
 /**
  * A task event as synced (SyncEvent): the drop note and the poke count on the 5d and 7e cards, the "cevap vermiyor"
  * notification (7a) and the bell (7b) are built from these. `payload` is the event's JSON object as text.

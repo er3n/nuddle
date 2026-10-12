@@ -23,7 +23,7 @@ import app.nuddle.ui.theme.DurtTheme
 /**
  * Every full screen in the sign-in flow: content at the top, actions pinned to the bottom, and the whole thing
  * scrolls when it does not fit (font scale 200%, small phones, keyboard open). Horizontal padding is 20 dp, 16 dp on
- * phones 360 dp wide or less (tokens.json, space).
+ * phones 360 dp wide or less (tokens.json, space). With [top], the content is centered between it and the actions.
  */
 @Composable
 fun ScreenLayout(
@@ -32,6 +32,8 @@ fun ScreenLayout(
     horizontalPadding: Dp? = null,
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     bottom: @Composable ColumnScope.() -> Unit = {},
+    /** Set for a screen whose content sits in the middle (6d, 6f): [top] stays at the top, the content is centered. */
+    top: (@Composable ColumnScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val dimens = DurtTheme.dimens
@@ -66,6 +68,7 @@ fun ScreenLayout(
                         ),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
+                if (top != null) Column(Modifier.fillMaxWidth(), content = top)
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(dimens.space16),

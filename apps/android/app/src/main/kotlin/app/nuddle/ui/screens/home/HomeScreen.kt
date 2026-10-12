@@ -48,7 +48,9 @@ import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.components.DurtButton
 import app.nuddle.ui.components.DurtButtonKind
 import app.nuddle.ui.components.DurtButtonSize
+import app.nuddle.ui.components.InlineAlert
 import app.nuddle.ui.components.PillStatus
+import app.nuddle.ui.components.StatusBanner
 import app.nuddle.ui.components.StatusPill
 import app.nuddle.ui.components.TopBar
 import app.nuddle.ui.icons.DurtIcons
@@ -82,6 +84,23 @@ data class HomeUiState(
     val issues: IssuesUi = IssuesUi(),
     /** The new deadline sheet of 5d, while open. */
     val newDeadline: NewDeadlineUi? = null,
+    /** No connection (6a): the banner under the top bar. */
+    val offline: Boolean = false,
+    /** Texts written offline, waiting for the connection (6a). */
+    val queued: List<QueuedUi> = emptyList(),
+    /** The code 6f shows instead of home while it is open. */
+    val unrecoverable: String? = null,
+)
+
+/** Anything to list: next up, an issue, a task I wrote, a text waiting for the connection. */
+private val HomeUiState.hasTasks: Boolean
+    get() = nextUp != null || sent.isNotEmpty() || queued.isNotEmpty() || !issues.isEmpty
+
+/** A text written offline (6a): only the server can tell whom it is for, so the row shows the text as written. */
+@Immutable
+data class QueuedUi(
+    val key: String,
+    val text: String,
 )
 
 @Immutable
@@ -124,26 +143,21 @@ fun HomeScreen(
     ScreenLayout(
         background = colors.background,
         modifier = modifier.testTag(TestTags.HOME),
-        bottom = {
-            state.undo?.let { TaskUndoToast(it, undo, Modifier.padding(bottom = dimens.space10)) }
-            state.doneNote?.let { TaskDoneNote(it, Modifier.padding(bottom = dimens.space10)) }
-            ComposeBar(state.compose, onComposeTextChange, onComposeSend, onVoiceStart, onVoiceEnd)
-        },
+        bottom = { HomeBottom(state, undo, onComposeTextChange, onComposeSend, onVoiceStart, onVoiceEnd) },
     ) {
         TopBar(myName = state.myName, unread = state.unread, onBell = onBell, onProfile = onProfile)
+        if (state.offline) StatusBanner(stringResource(R.string.home_offline), Modifier.testTag(TestTags.HOME_OFFLINE))
         Text(
             text = stringResource(R.string.home_greeting, state.myName),
             style = DurtTheme.type.h1,
             color = colors.ink,
             modifier = Modifier.semantics { heading() },
         )
-        val nextUp = state.nextUp
         val waiting = state.pendingInvite
         if (waiting != null) {
             PendingInviteCard(state.myName, waiting, { pendingInvite.onReshare(waiting) }, { pendingInvite.onRevoke(waiting) })
         }
-        val issues = state.issues
-        if (nextUp == null && state.sent.isEmpty() && issues.isEmpty) {
+        if (!state.hasTasks) {
             if (waiting == null && !state.connected) InviteCard(state.myName, onInvite)
             EmptyTasks(Modifier.padding(top = dimens.space48))
         } else {
@@ -175,8 +189,16 @@ private fun ColumnScope.Tasks(
         NextUpCard(nextUp, nextUpActions, state.nextUpPhoto)
     }
     if (issues.toMe) ToMeIssues(issues, issueActions)
-    if (state.sent.isNotEmpty() || issues.sent.isNotEmpty()) {
-        SentSection(state.sent, fresh = state.undo?.taskId, onOpen = onOpenTask, issues = issues.sent, issueActions = issueActions)
+    if (state.sent.isNotEmpty() || issues.sent.isNotEmpty() || state.queued.isNotEmpty()) {
+        SentSection(
+            state.sent,
+            fresh = state.undo?.taskId,
+            onOpen = onOpenTask,
+            issues = issues.sent,
+            issueActions = issueActions,
+            queued = state.queued,
+            myName = state.myName,
+        )
     }
 }
 

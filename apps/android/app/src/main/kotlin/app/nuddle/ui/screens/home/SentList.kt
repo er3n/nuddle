@@ -10,6 +10,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import app.nuddle.R
 import app.nuddle.ui.TestTags
+import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.components.PillStatus
 import app.nuddle.ui.components.TaskRow
 import app.nuddle.ui.components.TaskUi
@@ -26,6 +27,8 @@ internal fun ColumnScope.SentSection(
     onOpen: (taskId: String, awaitingApproval: Boolean) -> Unit,
     issues: List<SentIssueUi> = emptyList(),
     issueActions: IssueCallbacks = IssueCallbacks(),
+    queued: List<QueuedUi> = emptyList(),
+    myName: String = "",
 ) {
     val colors = DurtTheme.colors
     Text(
@@ -36,6 +39,21 @@ internal fun ColumnScope.SentSection(
     )
     // Dropped and missed wait for my answer, so they come first (5d).
     issues.forEach { SentIssueCard(it, issueActions) }
+    // Written offline: not on the server yet, so there is nothing to open (6a).
+    queued.forEach { write ->
+        TaskRow(
+            task =
+                TaskUi(
+                    title = write.text,
+                    subtitle = stringResource(R.string.queued_waiting),
+                    status = PillStatus.Queued,
+                    personName = myName,
+                    personColor = colors.avatarFor(myName),
+                ),
+            onClick = null,
+            modifier = Modifier.testTag(TestTags.HOME_QUEUED),
+        )
+    }
     sent.forEach { task ->
         val isFresh = task.taskId == fresh
         val parts =
@@ -62,6 +80,53 @@ internal fun ColumnScope.SentSection(
             onClick = { onOpen(task.taskId, task.awaitingApproval) },
             highlighted = isFresh,
             modifier = Modifier.testTag(TestTags.HOME_SENT),
+        )
+    }
+}
+
+/** ErrOffline.png */
+@PreviewScreens
+@Composable
+private fun HomeScreenOfflinePreview() {
+    DurtTheme {
+        HomeScreen(
+            state =
+                HomeUiState(
+                    myName = "Eren",
+                    connected = true,
+                    offline = true,
+                    queued = listOf(QueuedUi("key-1", "selin akşama kadar faturayı ödesin")),
+                ),
+            onBell = {},
+            onProfile = {},
+            onInvite = {},
+            onComposeTextChange = {},
+            onComposeSend = {},
+            onVoiceStart = {},
+            onVoiceEnd = {},
+        )
+    }
+}
+
+/** ErrSend.png */
+@PreviewScreens
+@Composable
+private fun HomeScreenSendFailedPreview() {
+    DurtTheme {
+        HomeScreen(
+            state =
+                HomeUiState(
+                    myName = "Eren",
+                    connected = true,
+                    compose = ComposeState.Failed("selin cuma akşama kadar kuru temizlemeyi alsın"),
+                ),
+            onBell = {},
+            onProfile = {},
+            onInvite = {},
+            onComposeTextChange = {},
+            onComposeSend = {},
+            onVoiceStart = {},
+            onVoiceEnd = {},
         )
     }
 }
