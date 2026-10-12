@@ -42,6 +42,7 @@ Client-only status: `QUEUED` (written offline, not yet on the server).
 | `REJECTED` | photo sent | `AWAITING_APPROVAL` | recipient |
 | `REJECTED` | can't today / deadline passed / cancel | `DROPPED` / `MISSED` / `CANCELLED` | as above |
 | `MISSED` | "Sonradan yaptım" | `DONE` with `late = true` **(proposed)** | recipient |
+| `MISSED` | photo sent that was taken before the deadline (`takenAt`), upload delayed (6e) | `AWAITING_APPROVAL` | recipient |
 | `MISSED` | "Süreyi uzat" (new deadline) | `SCHEDULED` | sender |
 | `MISSED` | cancel | `CANCELLED` | sender |
 | `DROPPED` | "Yeni zaman ver" (new deadline) | `SCHEDULED` | sender |
@@ -49,6 +50,7 @@ Client-only status: `QUEUED` (written offline, not yet on the server).
 
 Invariants:
 - A task awaiting approval can never become `MISSED`. The deadline applies to sending the photo, not to approval.
+- The deadline counts from the send attempt (docs/product.md, Errors): `photo_sent` and the upload URL carry `takenAt`, the moment Gönder was tapped on the device. A missed task takes a photo whose `takenAt` is at or before the deadline and not after the server's now; a later one is refused.
 - Every transition stops or regenerates the plan in the same transaction and appends a `task_events` row.
 - A task to self has the same sender and recipient. Photo mode for self tasks: approval is skipped and the photo closes the task **(proposed)**.
 - Tasks cannot be written to a pending (not yet joined) person.

@@ -117,6 +117,35 @@ describe("task state machine", () => {
     });
   });
 
+  it("a missed task takes a photo that was taken before the deadline and uploaded late (6e)", () => {
+    const task = aTask().withStatus("MISSED").withFinishMode("photo").build();
+    const before = addMs(task.deadline, -60_000);
+    const late = apply(task, { type: "photo_sent", photoPath: "p", takenAt: before }, "eren", {
+      ...ctx(),
+      now: addMs(task.deadline, HOUR),
+    });
+    expect(late.task.status).toBe("AWAITING_APPROVAL");
+
+    const c = { ...ctx(), now: addMs(task.deadline, HOUR) };
+    const after = addMs(task.deadline, 60_000);
+    expect(
+      applyCommand(task, { type: "photo_sent", photoPath: "p", takenAt: after }, "eren", c),
+    ).toEqual({
+      ok: false,
+      error: "wrong_status",
+    });
+    // A device clock ahead of the server cannot make a photo count.
+    const future = addMs(c.now, 60_000);
+    expect(
+      applyCommand(
+        { ...task, deadline: addMs(c.now, HOUR) },
+        { type: "photo_sent", photoPath: "p", takenAt: future },
+        "eren",
+        c,
+      ),
+    ).toEqual({ ok: false, error: "wrong_status" });
+  });
+
   it("requires a photo for a photo task unless the camera is unavailable", () => {
     const task = aTask().withFinishMode("photo").build();
     expect(applyCommand(task, { type: "done" }, "eren", ctx())).toEqual({

@@ -268,7 +268,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
     }),
     async (c) =>
       c.json(
-        await svc.photoUploadUrl(deps, await person(c.get("caller")), c.req.valid("json").taskId),
+        await svc.photoUploadUrl(deps, await person(c.get("caller")), c.req.valid("json")),
         200,
       ),
   );
@@ -370,6 +370,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
     (b) => ({
       type: "photo_sent",
       photoPath: b.photoPath,
+      takenAt: b.takenAt === undefined ? undefined : new Date(b.takenAt),
     }),
   );
   taskCommand(

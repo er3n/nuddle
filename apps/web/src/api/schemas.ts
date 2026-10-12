@@ -148,9 +148,11 @@ export const CreateTaskCommand = keyed({
 export const DoneCommand = taskKeyed({
   cameraUnavailable: z.boolean().optional(),
 }).openapi("DoneCommand");
-export const PhotoSentCommand = taskKeyed({ photoPath: z.string().min(1) }).openapi(
-  "PhotoSentCommand",
-);
+export const PhotoSentCommand = taskKeyed({
+  photoPath: z.string().min(1),
+  /** When Gönder was tapped: a photo taken before the deadline counts even if its upload came late (6e). */
+  takenAt: Instant.optional(),
+}).openapi("PhotoSentCommand");
 export const CantTodayCommand = taskKeyed({ note: Note }).openapi("CantTodayCommand");
 export const DidItLaterCommand = taskKeyed({}).openapi("DidItLaterCommand");
 export const SnoozeCommand = taskKeyed({}).openapi("SnoozeCommand");
@@ -213,7 +215,13 @@ export const RegisterDeviceResult = z
   .object({ deviceId: Id, reachability: Reachability })
   .openapi("RegisterDeviceResult");
 
-export const PhotoUploadUrlRequest = z.object({ taskId: Id }).openapi("PhotoUploadUrlRequest");
+export const PhotoUploadUrlRequest = z
+  .object({
+    taskId: Id,
+    /** As on photo_sent: lets a photo taken in time upload after the task was marked missed. */
+    takenAt: Instant.optional(),
+  })
+  .openapi("PhotoUploadUrlRequest");
 export const PhotoUploadUrlResult = z
   .object({
     /** Send this path back with `photo_sent`. */
