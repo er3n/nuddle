@@ -36,7 +36,7 @@ describe("brand fixes", () => {
       expect(() => BrandFix.parse(fix)).not.toThrow();
       for (const step of fix.steps) {
         expect(step.targets.at(-1)?.action).toMatch(/^android\.settings\./);
-        expect(JSON.stringify(step)).not.toContain("—");
+        expect(JSON.stringify(step)).not.toContain("\u2014");
       }
       expect(fix.reason ?? "").not.toContain("{name}");
     }

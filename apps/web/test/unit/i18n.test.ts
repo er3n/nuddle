@@ -23,7 +23,7 @@ describe("web dictionaries", () => {
   it.each(["en", "tr"] as const)("%s has no empty text and no em dash", (locale) => {
     for (const [path, text] of leaves(messages[locale])) {
       expect(text.trim(), path).not.toBe("");
-      expect(text, path).not.toContain("—");
+      expect(text, path).not.toContain("\u2014");
     }
   });
 
