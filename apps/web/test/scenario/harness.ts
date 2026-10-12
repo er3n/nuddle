@@ -243,10 +243,10 @@ export class Client {
     return this.world.phoneOf(this.id);
   }
 
-  /** Write free text in the one input box. */
-  async write(text: string): Promise<WriteResult> {
+  /** Write free text in the one input box. A text queued offline (6a) is sent again with its [idempotencyKey]. */
+  async write(text: string, idempotencyKey: string = uuidv7()): Promise<WriteResult> {
     const r = await this.api.POST("/api/v1/commands/write_task", {
-      body: { idempotencyKey: uuidv7(), text },
+      body: { idempotencyKey, text },
     });
     await this.world.refresh();
     if (r.error) return { kind: "rejected", error: r.error.error.name as DomainError };
@@ -274,7 +274,10 @@ export class Client {
       this.api.POST(path as "/api/v1/commands/done", { body: { ...k, ...body } });
     switch (cmd.type) {
       case "done":
-        return post("/api/v1/commands/done", { cameraUnavailable: cmd.cameraUnavailable });
+        return post("/api/v1/commands/done", {
+          cameraUnavailable: cmd.cameraUnavailable,
+          doneAt: cmd.doneAt?.toISOString(),
+        });
       case "photo_sent":
         return post("/api/v1/commands/photo_sent", {
           photoPath: cmd.photoPath,
@@ -549,6 +552,10 @@ export class World {
   }
 
   // ---- reads (from the latest snapshot) -------------------------------------------------------
+  /** Every task [senderId] wrote, in no particular order. */
+  tasksWrittenBy(senderId: PersonId): Task[] {
+    return [...this.snap.tasks.values()].filter((t) => t.senderId === senderId);
+  }
 
   person(id: PersonId): Person {
     const p = this.snap.people.get(id);

@@ -33,7 +33,7 @@ const SNOOZE_MS: readonly number[] = [15 * MINUTE, 10 * MINUTE];
 
 export type Command =
   // Recipient
-  | { type: "done"; cameraUnavailable?: boolean }
+  | { type: "done"; cameraUnavailable?: boolean; doneAt?: Date }
   | { type: "photo_sent"; photoPath: string; takenAt?: Date }
   | { type: "cant_today"; note: string | null }
   | { type: "did_it_later" }
@@ -136,6 +136,8 @@ function transitionsFrom(status: TaskStatus): Partial<Record<CommandType, TaskSt
         did_it_later: "DONE",
         // Only for a photo taken before the deadline whose upload came late (6e); checked below.
         photo_sent: "AWAITING_APPROVAL",
+        // Only for a Bitti tapped offline before the deadline that reached the server after it (6a); checked below.
+        done: "DONE",
         new_deadline: "SCHEDULED",
         cancel: "CANCELLED",
         account_deleted: "CANCELLED",
@@ -482,7 +484,7 @@ function checkActor(task: Task, cmd: Command, actorId: PersonId | null): DomainE
 }
 
 /** Apply a command to a task. `actorId` is null for server commands. */
-/** A photo taken (on the device clock) before the deadline and not in the future. */
+/** A photo taken or a Bitti tapped (on the device clock) before the deadline and not in the future. */
 export function takenInTime(task: Task, takenAt: Date | undefined, now: Date): boolean {
   return (
     takenAt !== undefined &&
@@ -514,6 +516,9 @@ export function applyCommand(
       // If the camera permission is denied, a photo task falls back to plain "Bitti".
       if (task.finishMode === "photo" && cmd.cameraUnavailable !== true) {
         return { ok: false, error: "wrong_finish_mode" };
+      }
+      if (task.status === "MISSED" && !takenInTime(task, cmd.doneAt, now)) {
+        return { ok: false, error: "wrong_status" };
       }
       break;
     case "photo_sent":

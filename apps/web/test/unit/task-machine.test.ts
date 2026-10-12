@@ -165,6 +165,18 @@ describe("task state machine", () => {
     ).toEqual({ ok: false, error: "wrong_status" });
   });
 
+  it("a missed task takes a Bitti tapped offline before the deadline (6a)", () => {
+    const task = aTask().withStatus("MISSED").withFinishMode("done").build();
+    const c = { ...ctx(), now: addMs(task.deadline, HOUR) };
+    const late = apply(task, { type: "done", doneAt: addMs(task.deadline, -60_000) }, "eren", c);
+    expect(late.task).toMatchObject({ status: "DONE", late: false });
+    expect(late.events.map((e) => e.type)).toEqual(["done"]);
+
+    expect(
+      applyCommand(task, { type: "done", doneAt: addMs(task.deadline, 60_000) }, "eren", c),
+    ).toEqual({ ok: false, error: "wrong_status" });
+  });
+
   it("requires a photo for a photo task unless the camera is unavailable", () => {
     const task = aTask().withFinishMode("photo").build();
     expect(applyCommand(task, { type: "done" }, "eren", ctx())).toEqual({

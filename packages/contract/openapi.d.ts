@@ -929,6 +929,12 @@ export interface components {
             /** Format: uuid */
             taskId: string;
             cameraUnavailable?: boolean;
+            /**
+             * Format: date-time
+             * @description ISO 8601 with offset
+             * @example 2026-10-12T09:00:00+03:00
+             */
+            doneAt?: string;
         };
         PhotoSentCommand: {
             /**
