@@ -25,6 +25,7 @@ import { smokeExtractions, taskToSelf } from "./smoke/task-to-self";
 import { taskToOther, taskToOtherExtractions } from "./smoke/task-to-other";
 import { photoTask, photoTaskExtractions } from "./smoke/photo-task";
 import { dropTask, dropTaskExtractions } from "./smoke/drop-task";
+import { removeConnection } from "./smoke/remove-connection";
 
 const TIMEOUT_MS = 30 * 60_000;
 const APK = join(
@@ -157,6 +158,7 @@ async function main(): Promise<void> {
   await taskToOther(ctx, databaseUrl);
   await photoTask(ctx);
   await dropTask(ctx);
+  await removeConnection(ctx);
 }
 
 main().then(

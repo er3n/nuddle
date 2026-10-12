@@ -136,12 +136,18 @@ object TestTags {
     const val QUIET_START = "quiet.start"
     const val QUIET_END = "quiet.end"
     const val RENAME_INPUT = "rename.input"
+    const val PERSON_SCREEN = "person.screen"
+    const val PERSON_RELATIONSHIP = "person.relationship"
+    const val PERSON_NOTIFY_ME = "person.notifyMe"
+    const val PERSON_REMOVE = "person.remove"
 
     fun dropReason(name: String) = "drop.reason.$name"
 
     fun profilePerson(name: String) = "profile.person.$name"
 
     fun profilePermission(step: String) = "profile.permission.$step"
+
+    fun personRelationship(type: String) = "person.relationship.$type"
 }
 
 /** Root of an activity's content: exposes the test tags as resource ids in the `e2e` flavor only. */
