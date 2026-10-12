@@ -1,6 +1,10 @@
 package app.nuddle.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -44,6 +48,10 @@ import app.nuddle.ui.screens.name.NameScreen
 import app.nuddle.ui.screens.name.NameUiState
 import app.nuddle.ui.screens.phone.PhoneScreen
 import app.nuddle.ui.screens.phone.PhoneUiState
+import app.nuddle.ui.screens.photo.PhotoCallbacks
+import app.nuddle.ui.screens.photo.PhotoScreen
+import app.nuddle.ui.screens.photo.PhotoStage
+import app.nuddle.ui.screens.photo.PhotoUiState
 import app.nuddle.ui.screens.poke.PokeDemoScreen
 import app.nuddle.ui.screens.poke.PokeScreen
 import app.nuddle.ui.screens.poke.PokeUiState
@@ -260,6 +268,57 @@ class TestTagsTest {
         }
         assertShown(TestTags.TASK_DETAIL)
         assertTaps(TestTags.TASK_CANCEL to "cancel")
+    }
+
+    @Test
+    fun `photo, checking the shot`() {
+        val state = PhotoUiState("Para çek", "Selin", null, stage = PhotoStage.Review(ImageBitmap(3, 4)))
+        content {
+            PhotoScreen(
+                state,
+                PhotoCallbacks(onClose = { clicked += "close" }, onSend = { clicked += "send" }, onRetake = { clicked += "retake" }),
+                viewfinder = {},
+            )
+        }
+        assertShown(TestTags.PHOTO)
+        assertTaps(TestTags.PHOTO_SEND to "send", TestTags.PHOTO_RETAKE to "retake", TestTags.PHOTO_CLOSE to "close")
+    }
+
+    @Test
+    fun `photo, camera and no camera`() {
+        var stage: PhotoStage by mutableStateOf(PhotoStage.Camera)
+        content {
+            PhotoScreen(
+                PhotoUiState("Para çek", null, null, stage = stage),
+                PhotoCallbacks(onShoot = { clicked += "shoot" }, onDoneWithoutPhoto = { clicked += "without" }),
+                viewfinder = {},
+            )
+        }
+        assertTaps(TestTags.PHOTO_SHOOT to "shoot")
+        stage = PhotoStage.NoCamera
+        assertTaps(TestTags.PHOTO_DONE_WITHOUT to "without")
+    }
+
+    @Test
+    fun `home with a photo task opens the camera`() {
+        content {
+            HomeScreen(
+                state =
+                    HomeUiState(
+                        myName = "Eren",
+                        nextUp = NextUpUi("task-1", "Para çek", "1.000 TL", DeadlineText.Tomorrow("09:00"), photo = true),
+                    ),
+                onBell = {},
+                onProfile = {},
+                onInvite = {},
+                onComposeTextChange = {},
+                onComposeSend = {},
+                onVoiceStart = {},
+                onVoiceEnd = {},
+                nextUpActions = NextUpCallbacks(onTakePhoto = { clicked += "photo $it" }),
+            )
+        }
+        assertTaps(TestTags.HOME_TAKE_PHOTO to "photo task-1")
     }
 
     @Test

@@ -74,8 +74,15 @@ class TaskRepositoryTest {
                     ),
                 closer =
                     object : TaskCloser {
-                        override suspend fun done(taskId: String) {
+                        override suspend fun done(
+                            taskId: String,
+                            cameraUnavailable: Boolean,
+                        ) {
                             closed += "done $taskId"
+                        }
+
+                        override suspend fun photoTaken(taskId: String) {
+                            closed += "photo $taskId"
                         }
 
                         override suspend fun cancel(

@@ -15,11 +15,15 @@ import app.nuddle.data.db.NuddleDatabase
 import app.nuddle.data.db.OutboxDao
 import app.nuddle.data.db.PokeStepDao
 import app.nuddle.data.db.TaskDao
+import app.nuddle.data.outbox.WorkManagerScheduling
+import app.nuddle.data.photo.PhotoUploadScheduler
 import app.nuddle.data.session.ConsentPrompts
 import app.nuddle.data.session.DataStoreConsentPrompts
 import app.nuddle.data.sync.SyncRepository
 import app.nuddle.data.sync.Syncer
 import app.nuddle.data.sync.TaskAnnouncer
+import app.nuddle.ui.screens.photo.CameraSource
+import app.nuddle.ui.screens.photo.CameraXSource
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -75,4 +79,10 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun taskAnnouncer(impl: AndroidTaskAnnouncer): TaskAnnouncer
+
+    @Binds
+    abstract fun photoUploadScheduler(impl: WorkManagerScheduling): PhotoUploadScheduler
+
+    @Binds
+    abstract fun cameraSource(impl: CameraXSource): CameraSource
 }

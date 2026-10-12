@@ -285,7 +285,14 @@ class FakeTaskRepository : TaskRepository {
     /** What [done] answers: the poke number that caught the person. */
     var caughtAt: Int? = null
 
-    override suspend fun done(taskId: String): Int? {
+    /** Tasks closed without a camera (photo fallback). */
+    val doneWithoutCamera = mutableListOf<String>()
+
+    override suspend fun done(
+        taskId: String,
+        cameraUnavailable: Boolean,
+    ): Int? {
+        if (cameraUnavailable) doneWithoutCamera += taskId
         done += taskId
         return caughtAt
     }

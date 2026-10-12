@@ -221,6 +221,39 @@ class PokeAlarmTest {
         }
 
     @Test
+    fun `a photo taken stops the pokes and waits for approval`() =
+        runTest {
+            givenPlan()
+            alarms.rearm()
+            actions.photoTaken(Cast.TASK_ID)
+            assertTrue(scheduler.scheduled.isEmpty())
+            assertEquals("AWAITING_APPROVAL", db.tasks().get(Cast.TASK_ID)!!.status)
+        }
+
+    @Test
+    fun `a photo on a task to self closes it (open-questions#7)`() =
+        runTest {
+            db.tasks().upsert(listOf(aTask().copy(senderId = Cast.EREN_ID)))
+            actions.photoTaken(Cast.TASK_ID)
+            assertEquals("DONE", db.tasks().get(Cast.TASK_ID)!!.status)
+        }
+
+    @Test
+    fun `Bitti without a camera says so to the server`() =
+        runTest {
+            givenPlan()
+            actions.done(Cast.TASK_ID, cameraUnavailable = true)
+            assertTrue(
+                """"cameraUnavailable":true""" in
+                    db
+                        .outbox()
+                        .pending()
+                        .single()
+                        .body,
+            )
+        }
+
+    @Test
     fun `cant today closes the task as dropped without a note`() =
         runTest {
             givenPlan()

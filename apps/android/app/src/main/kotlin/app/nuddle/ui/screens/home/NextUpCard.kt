@@ -37,6 +37,7 @@ import app.nuddle.ui.components.GroupDivider
 import app.nuddle.ui.components.PillStatus
 import app.nuddle.ui.components.StatusPill
 import app.nuddle.ui.components.UndoToast
+import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.theme.DurtTheme
 
 // Parts of home once there is a task (2f). Kept next to HomeScreen.kt, used only there.
@@ -109,8 +110,16 @@ internal fun NextUpCard(
                 modifier = Modifier.weight(1f),
             )
         }
-        // TODO(NUD-15): "Bitti, çek" (4c, 4d) for a photo task from someone else; the sender approves the photo.
-        if (from == null || !task.photo) {
+        if (task.photo) {
+            DurtButton(
+                text = stringResource(R.string.home_done_photo),
+                onClick = { callbacks.onTakePhoto(task.taskId) },
+                kind = DurtButtonKind.Success,
+                size = DurtButtonSize.Small,
+                leadingIcon = DurtIcons.Camera,
+                modifier = Modifier.testTag(TestTags.HOME_TAKE_PHOTO),
+            )
+        } else {
             DurtButton(
                 text = stringResource(R.string.home_done_early),
                 onClick = callbacks.onDone,

@@ -4,6 +4,7 @@ import app.nuddle.BuildConfig
 import app.nuddle.api.AuthApi
 import app.nuddle.api.CommandsApi
 import app.nuddle.api.DevicesApi
+import app.nuddle.api.PhotosApi
 import app.nuddle.api.SyncApi
 import app.nuddle.data.api.AuthInterceptor
 import app.nuddle.data.api.RawCommandApi
@@ -83,6 +84,16 @@ object NetworkModule {
     @Provides
     @Singleton
     fun commandsApi(retrofit: Retrofit): CommandsApi = retrofit.create(CommandsApi::class.java)
+
+    @Provides
+    @Singleton
+    fun photosApi(retrofit: Retrofit): PhotosApi = retrofit.create(PhotosApi::class.java)
+
+    /** For the signed Storage URLs the API hands out (photo upload): no token of ours goes to Storage. */
+    @Provides
+    @Singleton
+    @Named("storage")
+    fun storageClient(): OkHttpClient = baseClient().build()
 
     @Provides
     @Singleton
