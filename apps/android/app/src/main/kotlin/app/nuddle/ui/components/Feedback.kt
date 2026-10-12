@@ -42,6 +42,8 @@ import app.nuddle.ui.preview.PreviewComponent
 import app.nuddle.ui.preview.PreviewSurface
 import app.nuddle.ui.theme.DurtMotion
 import app.nuddle.ui.theme.DurtTheme
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 private fun ToastBox(
@@ -99,7 +101,10 @@ fun UndoToast(
     val currentTimeout = rememberUpdatedState(onTimeout)
     val focus = remember { FocusRequester() }
     LaunchedEffect(window) {
-        progress.animateTo(1f, tween(window.toInt(), easing = LinearEasing))
+        // The window is a timer, not the animation: with animations off (animator scale 0) the line
+        // fills at once, but the toast must still stay for the whole window.
+        launch { progress.animateTo(1f, tween(window.toInt(), easing = LinearEasing)) }
+        delay(window)
         currentTimeout.value()
     }
     ToastBox(modifier.focusRequester(focus).focusable()) {

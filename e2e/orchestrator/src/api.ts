@@ -1,7 +1,6 @@
 // The API as a phone would call it, typed from the committed contract (ADR 0008), plus the E2E test
 // endpoints (docs/testing.md, Backend E2E mode), which are not part of the contract.
 import createClient, { type Client } from "openapi-fetch";
-import { v7 as uuidv7 } from "uuid";
 import type { components, paths } from "../../../packages/contract/openapi";
 import { API_URL } from "./backend";
 
@@ -51,24 +50,6 @@ export class Phone {
       baseUrl: API_URL,
       headers: { authorization: `Bearer ${session.accessToken}` },
     });
-  }
-
-  async createTaskToSelf(title: string, deadline: Date): Promise<string> {
-    const result = unwrap(
-      "create_task",
-      await this.client.POST("/api/v1/commands/create_task", {
-        body: {
-          idempotencyKey: uuidv7(),
-          recipientId: this.session.personId,
-          title,
-          detail: null,
-          deadline: deadline.toISOString(),
-          finishMode: "done",
-          rawText: null,
-        },
-      }),
-    );
-    return result.taskId;
   }
 
   async tasks(): Promise<SyncTask[]> {

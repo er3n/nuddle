@@ -32,7 +32,7 @@ sealed interface DeadlineText {
         override val time: String,
     ) : DeadlineText
 
-    /** `month` is 1 to 12. TODO(open-questions#27): the wording for deadlines after tomorrow. */
+    /** `month` is 1 to 12. Wording for deadlines after tomorrow: open-questions#27. */
     data class OnDate(
         val day: Int,
         val month: Int,

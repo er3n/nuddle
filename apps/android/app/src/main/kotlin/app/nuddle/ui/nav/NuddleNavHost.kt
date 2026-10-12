@@ -34,6 +34,7 @@ object Routes {
     const val CODE = "auth/code?${CodeViewModel.ARG_PHONE}={${CodeViewModel.ARG_PHONE}}"
     const val NAME = "onboarding/name"
     const val HOME = "home"
+    const val SETUP = "setup"
 
     fun code(e164: String): String = "auth/code?${CodeViewModel.ARG_PHONE}=${Uri.encode(e164)}"
 }
@@ -96,6 +97,7 @@ fun NuddleNavHost(startRoute: String) {
         composable(Routes.HOME) {
             val viewModel: HomeViewModel = hiltViewModel()
             val state by viewModel.state.collectAsStateWithLifecycle()
+            LaunchedEffect(viewModel) { viewModel.openSetup.collect { nav.navigate(Routes.SETUP) { launchSingleTop = true } } }
             // Bell, profile, invite and voice are routes of the feature slices (docs/bootstrap-plan.md).
             state?.let {
                 HomeScreen(
@@ -123,6 +125,9 @@ fun NuddleNavHost(startRoute: String) {
                         ),
                 )
             }
+        }
+        composable(Routes.SETUP) {
+            SetupRoute(onFinish = { nav.popBackStack(Routes.HOME, inclusive = false) })
         }
     }
 }

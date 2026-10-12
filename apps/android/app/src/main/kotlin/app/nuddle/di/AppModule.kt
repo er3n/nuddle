@@ -27,10 +27,13 @@ import app.nuddle.data.db.TaskDao
 import app.nuddle.data.outbox.OutboxDrainer
 import app.nuddle.data.outbox.WorkManagerScheduling
 import app.nuddle.data.session.DataStoreSessionStore
+import app.nuddle.data.session.DataStoreSetupStore
 import app.nuddle.data.session.SessionStore
+import app.nuddle.data.session.SetupStore
 import app.nuddle.data.sync.AlarmRearmer
 import app.nuddle.domain.AlarmScheduler
 import app.nuddle.domain.IdGenerator
+import app.nuddle.domain.PermissionReader
 import app.nuddle.push.AppSessionStarter
 import app.nuddle.push.DevicePermissions
 import dagger.Binds
@@ -122,6 +125,12 @@ abstract class BindingsModule {
 
     @Binds
     abstract fun fullScreenPermission(impl: DevicePermissions): FullScreenPermission
+
+    @Binds
+    abstract fun permissionReader(impl: DevicePermissions): PermissionReader
+
+    @Binds
+    abstract fun setupStore(impl: DataStoreSetupStore): SetupStore
 
     @Binds
     abstract fun sessionStarter(impl: AppSessionStarter): SessionStarter

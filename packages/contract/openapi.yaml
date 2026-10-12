@@ -367,6 +367,8 @@ components:
           description: ISO 8601 with offset
         inRecipientList:
           type: boolean
+        snoozesUsed:
+          type: integer
       required:
         - id
         - senderId

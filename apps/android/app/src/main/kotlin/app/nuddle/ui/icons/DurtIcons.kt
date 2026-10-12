@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.unit.dp
 
 /**
- * Line icons used by the components (24x24, 2 dp stroke, drawn black and tinted by `Icon`).
+ * Line icons used by the components (24x24, 2 dp stroke, drawn black and tinted by `Icon`); Play is filled.
  * Kept here instead of material-icons-extended, which is large and no longer part of the Compose BOM defaults.
  */
 object DurtIcons {
@@ -47,6 +47,21 @@ object DurtIcons {
         )
     }
     val Plus by lazy { stroke("Plus", "M12 5v14", "M5 12h14") }
+    val Play by lazy { fill("Play", "M7 5v14l12-7z") }
+
+    private fun fill(
+        name: String,
+        path: String,
+    ): ImageVector =
+        ImageVector
+            .Builder(
+                name = name,
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            ).addPath(pathData = addPathNodes(path), fill = SolidColor(Color.Black))
+            .build()
 
     private fun stroke(
         name: String,
