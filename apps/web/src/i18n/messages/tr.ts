@@ -74,7 +74,7 @@ export const tr: Messages = {
     items: [
       {
         title: "Bir kere yaz",
-        body: '"Temizlikçi yarın 9\'da, para çekilsin." Kime, ne, ne zamana kadar: gerisini yapay zeka çıkarır. Form yok, tarih seçici yok, sabır testi yok.',
+        body: '"Eren yarın 9\'a kadar kirayı yatırsın." Kime, ne, ne zamana kadar: gerisini yapay zeka çıkarır. Form yok, tarih seçici yok, sabır testi yok.',
       },
       {
         title: "O dürtülür",

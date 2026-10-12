@@ -270,6 +270,7 @@ Visual reference for every component in `components.md`.
 ## Landing · `Landing.png`
 Web landing page for the domain (1440 wide, interactive in the canvas). Built in `apps/web` with Next. The canvas page is branded "dürt" / durtmobil.com; the global brand decision (Nuddle) means the landing needs an English Nuddle version and a Turkish dürt version: `/` is English (Nuddle), `/tr` is Turkish (dürt); `/` sends a Turkish browser to `/tr` unless English was picked with the language switch (open-questions #14). Built in NUD-21 with these differences from the canvas:
 - The footer shows nuddle.app, not durtmobil.com (open-questions #13).
+- Step 1's example is "Eren yarın 9'a kadar kirayı yatırsın." instead of "Temizlikçi yarın 9'da, para çekilsin.", which read badly.
 - Premium shows "Yakında" instead of a price and has no button until the price is decided (open-questions #10).
 - "Google Play'den indir" reads "Yakında Google Play'de" and links nowhere until the Play listing exists (`PLAY_STORE_URL` in `apps/web/src/landing/store.ts`).
 - The footer leaves out Gizlilik · Koşullar · İletişim until those pages exist (human checklist, before the beta).
