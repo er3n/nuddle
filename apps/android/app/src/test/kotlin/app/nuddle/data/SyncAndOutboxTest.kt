@@ -165,6 +165,55 @@ class SyncAndOutboxTest {
             )
         }
 
+    private fun myTaskToSelin(
+        status: String,
+        events: String,
+    ) = syncBody
+        .replace(
+            """"senderId":"${Cast.SELIN_ID}","recipientId":"${Cast.EREN_ID}"""",
+            """"senderId":"${Cast.EREN_ID}","recipientId":"${Cast.SELIN_ID}"""",
+        ).replace(""""status":"SCHEDULED"""", """"status":"$status"""")
+        .replace(""""connections":[]""", selinConnection)
+        .replace(""""events":[]""", """"events":[$events]""")
+
+    private fun event(
+        id: Int,
+        type: String,
+        payload: String = "{}",
+    ) = """{"id":"$id","taskId":"${Cast.TASK_ID}","actorId":null,"type":"$type","payload":$payload,"at":"2026-10-12T08:0$id:00+03:00"}"""
+
+    @Test
+    fun `the human channel firing on my open task tells me who does not answer, once (7a)`() =
+        runTest {
+            sessions.cursor = "40"
+            val events =
+                listOf(
+                    event(1, "created"),
+                    event(2, "poke_fired", """{"level":"SOUND"}"""),
+                    event(3, "poke_fired", """{"level":"FULL_SCREEN"}"""),
+                    event(4, "human_notified"),
+                ).joinToString(",")
+            server.enqueue(json(200, myTaskToSelin("SCHEDULED", events)))
+
+            assertTrue(syncRepository().sync())
+
+            assertEquals(listOf(Cast.TASK_ID to Triple("Selin", 2, true)), announcer.unreached)
+            assertTrue(announcer.reachWithdrawn.isEmpty())
+        }
+
+    @Test
+    fun `a full sync tells nothing, and a closed task takes 7a away`() =
+        runTest {
+            sessions.cursor = null
+            server.enqueue(json(200, myTaskToSelin("SCHEDULED", event(4, "human_notified"))))
+            assertTrue(syncRepository().sync())
+            assertTrue(announcer.unreached.isEmpty())
+
+            server.enqueue(json(200, myTaskToSelin("DONE", event(5, "done"))))
+            assertTrue(syncRepository().sync())
+            assertEquals(listOf(Cast.TASK_ID), announcer.reachWithdrawn)
+        }
+
     @Test
     fun `sync stores sent and received invites`() =
         runTest {

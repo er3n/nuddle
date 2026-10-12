@@ -79,6 +79,12 @@ class MainActivity : ComponentActivity() {
             taskId: String,
         ): Intent = open(context, Routes.approve(taskId))
 
+        /** Opens my task's detail (7c): Gör on "Eren cevap vermiyor" (7a). */
+        fun task(
+            context: Context,
+            taskId: String,
+        ): Intent = open(context, Routes.task(taskId))
+
         // The route is also the data URI, which keeps PendingIntents for different screens apart.
         private fun open(
             context: Context,

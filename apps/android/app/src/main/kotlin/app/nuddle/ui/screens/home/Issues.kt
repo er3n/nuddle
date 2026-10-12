@@ -9,6 +9,7 @@ import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.db.TaskEventEntity
 import app.nuddle.data.note
 import app.nuddle.data.reason
+import app.nuddle.data.sinceLastDeadline
 import kotlinx.datetime.TimeZone
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
@@ -112,7 +113,7 @@ fun issues(
                         else -> return@mapNotNull null
                     }
                 val to = connections[task.recipientId] ?: return@mapNotNull null
-                val current = currentRound(events[task.id].orEmpty())
+                val current = events[task.id].orEmpty().sinceLastDeadline()
                 SentIssueUi(
                     taskId = task.id,
                     title = task.title,
@@ -130,9 +131,3 @@ fun issues(
 }
 
 private const val SENDER_CANCELLED = "sender_cancelled"
-
-/** Events since the task last got a deadline: a new time starts the count of pokes again. */
-private fun currentRound(events: List<TaskEventEntity>): List<TaskEventEntity> {
-    val start = events.indexOfLast { it.type == EventTypes.EDITED || it.type == EventTypes.CREATED }
-    return if (start < 0) events else events.drop(start)
-}

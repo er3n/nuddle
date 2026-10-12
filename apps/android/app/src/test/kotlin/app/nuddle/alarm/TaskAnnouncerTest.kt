@@ -9,6 +9,7 @@ import androidx.test.core.app.ApplicationProvider
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.aTask
+import app.nuddle.testing.selinConnection
 import kotlinx.datetime.TimeZone
 import org.junit.Before
 import org.junit.runner.RunWith
@@ -73,5 +74,44 @@ class TaskAnnouncerTest {
         announcer.withdraw(Cast.TASK_ID)
 
         assertTrue(manager.allNotifications.isEmpty())
+    }
+
+    private val toSelin = aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SELIN_ID)
+
+    @Test
+    fun `7a says who does not answer, how hard I tried, and offers Ara, Mesaj and Gör`() {
+        announcer.cantReach(toSelin, selinConnection(), pokes = 4, fullScreen = true)
+
+        val notification = manager.allNotifications.single()
+        assertEquals(NotificationChannels.REACH_OUT, notification.channelId)
+        assertEquals("Selin cevap vermiyor", notification.extras.getString(Notification.EXTRA_TITLE))
+        assertEquals(
+            "Temizlikçi için para çek · son zaman bugün 09:00. 4 kez dürttüm, tam ekran dahil, cevap yok.",
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
+        )
+        assertTrue(
+            notification.extras
+                .getCharSequence(Notification.EXTRA_BIG_TEXT)
+                .toString()
+                .endsWith("Bir arasan iyi olur. Ben dürtmeye devam ediyorum."),
+        )
+        assertEquals(listOf("Ara", "Mesaj", "Gör"), notification.actions.map { it.title.toString() })
+        assertEquals(NotificationIds.reachGroup(Cast.TASK_ID), notification.group)
+    }
+
+    @Test
+    fun `7a without a number has only Gör, and goes away on its own`() {
+        announcer.photoArrived(toSelin, "Selin")
+        announcer.cantReach(toSelin, selinConnection(phone = null), pokes = 2, fullScreen = false)
+
+        val reach = manager.allNotifications.single { it.channelId == NotificationChannels.REACH_OUT }
+        assertEquals(
+            "Temizlikçi için para çek · son zaman bugün 09:00. 2 kez dürttüm, cevap yok.",
+            reach.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
+        )
+        assertEquals(listOf("Gör"), reach.actions.map { it.title.toString() })
+
+        announcer.withdrawCantReach(Cast.TASK_ID)
+        assertEquals(listOf(NotificationChannels.TASKS), manager.allNotifications.map { it.channelId })
     }
 }
