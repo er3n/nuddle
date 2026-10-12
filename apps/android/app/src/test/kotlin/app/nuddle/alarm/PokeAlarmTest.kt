@@ -1,5 +1,7 @@
 package app.nuddle.alarm
 
+import app.nuddle.data.DoneNote
+import app.nuddle.data.DoneNotes
 import app.nuddle.data.db.NuddleDatabase
 import app.nuddle.data.outbox.Outbox
 import app.nuddle.domain.AlarmKey
@@ -44,6 +46,7 @@ class PokeAlarmTest {
     private val fullScreen = FakeFullScreen()
     private val sessions = InMemorySessionStore(aSession())
     private val drainer = RecordingDrainer()
+    private val doneNotes = DoneNotes()
     private lateinit var alarms: PokeAlarms
     private lateinit var firing: PokeFiring
     private lateinit var actions: PokeActions
@@ -69,7 +72,7 @@ class PokeAlarmTest {
                 clock,
                 TimeZone.UTC,
             )
-        actions = PokeActions(db.tasks(), alarms, scheduler, notifications, outbox, ids, clock)
+        actions = PokeActions(db.tasks(), alarms, scheduler, notifications, outbox, ids, clock, doneNotes)
     }
 
     @After
@@ -181,6 +184,28 @@ class PokeAlarmTest {
         }
 
     @Test
+    fun `Bitti on the poke leaves the done note for home with that poke's number`() =
+        runTest {
+            givenPlan()
+            actions.done(key(2))
+            assertEquals(DoneNote(Cast.TASK_ID, "Temizlikçi için para çek", caughtAt = 2), doneNotes.pending.value)
+        }
+
+    @Test
+    fun `undo cancels the task at once, stops its alarms and queues the command`() =
+        runTest {
+            givenPlan()
+            alarms.rearm()
+            actions.cancel(Cast.TASK_ID)
+
+            assertTrue(scheduler.scheduled.isEmpty())
+            assertEquals("CANCELLED", db.tasks().get(Cast.TASK_ID)!!.status)
+            val queued = db.outbox().pending().single()
+            assertEquals("cancel", queued.command)
+            assertTrue(""""note":null""" in queued.body, queued.body)
+        }
+
+    @Test
     fun `cant today closes the task as dropped without a note`() =
         runTest {
             givenPlan()
@@ -199,5 +224,42 @@ class PokeAlarmTest {
             actions.snooze(key(1))
             assertEquals(clock.now + 15.minutes, scheduler.scheduled.getValue(key(1)).plannedAt)
             assertEquals(listOf(Cast.TASK_ID), notifications.cancelled)
+        }
+
+    @Test
+    fun `the second snooze is 10 minutes and a third one does nothing`() =
+        runTest {
+            givenPlan()
+            actions.snooze(key(1))
+            clock.advance(16.minutes)
+            actions.snooze(key(1))
+            assertEquals(clock.now + 10.minutes, scheduler.scheduled.getValue(key(1)).plannedAt)
+            assertEquals(2, db.tasks().get(Cast.TASK_ID)!!.snoozesUsed)
+
+            clock.advance(11.minutes)
+            val before = scheduler.scheduled.getValue(key(1))
+            actions.snooze(key(1))
+            assertEquals(before, scheduler.scheduled.getValue(key(1)))
+            assertEquals(2, db.outbox().pending().count { it.command == "snooze" })
+        }
+
+    @Test
+    fun `no snooze that would run past the deadline`() =
+        runTest {
+            givenPlan()
+            clock.advance(50.minutes)
+            actions.snooze(key(2))
+            assertTrue(db.outbox().pending().isEmpty())
+            assertEquals(0, db.tasks().get(Cast.TASK_ID)!!.snoozesUsed)
+        }
+
+    @Test
+    fun `snooze is queued for the server`() =
+        runTest {
+            givenPlan()
+            actions.snooze(key(1))
+            val queued = db.outbox().pending().single()
+            assertEquals("snooze", queued.command)
+            assertTrue(""""taskId":"${Cast.TASK_ID}"""" in queued.body, queued.body)
         }
 }

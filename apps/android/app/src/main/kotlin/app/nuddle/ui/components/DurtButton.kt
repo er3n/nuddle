@@ -39,7 +39,7 @@ import app.nuddle.ui.theme.DurtTheme
 import app.nuddle.ui.theme.DurtType
 import app.nuddle.ui.theme.pressed
 
-enum class DurtButtonKind { Primary, Accent, Secondary, Ghost, Danger, DangerOutline, Soft, OnPoke, OnPokeOutline }
+enum class DurtButtonKind { Primary, Accent, Secondary, Ghost, Danger, DangerOutline, Soft, Success, OnPoke, OnPokeOutline }
 
 enum class DurtButtonSize { Poke, Large, Medium, Small, Compact }
 
@@ -65,6 +65,9 @@ private fun DurtColors.forKind(kind: DurtButtonKind): ButtonColors =
         DurtButtonKind.DangerOutline -> ButtonColors(Color.Transparent, danger, danger)
 
         DurtButtonKind.Soft -> ButtonColors(surfaceMuted, ink, null)
+
+        // "Şimdiden bitti" on the next-up card (2f).
+        DurtButtonKind.Success -> ButtonColors(success, surface, null)
 
         DurtButtonKind.OnPoke -> ButtonColors(surface, pokeDeep, null)
 

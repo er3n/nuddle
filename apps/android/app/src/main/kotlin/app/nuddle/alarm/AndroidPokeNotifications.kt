@@ -15,6 +15,8 @@ import app.nuddle.data.db.TaskEntity
 import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeRules
 import app.nuddle.domain.PokeStep
+import app.nuddle.domain.Snooze
+import app.nuddle.domain.SnoozeRules
 import app.nuddle.domain.TimeLeft
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -65,7 +67,7 @@ class AndroidPokeNotifications
                     .setCategory(if (fullScreen) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_REMINDER)
                     .setPriority(if (silent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_HIGH)
                     .setContentIntent(open)
-                    .addPokeActions(step)
+                    .addPokeActions(step, SnoozeRules.next(task.snoozesUsed, clock.now(), Instant.fromEpochMilliseconds(task.deadline)))
             val manager = NotificationManagerCompat.from(context)
             if (fullScreen) {
                 builder.setFullScreenIntent(fullScreenIntent(step), true).setOngoing(true)
@@ -88,11 +90,21 @@ class AndroidPokeNotifications
             NotificationManagerCompat.from(context).cancel(notificationId(taskId))
         }
 
-        /** At most three actions (docs/ux/components.md, 7): Bitti, Ertele, Bugün olmaz. */
-        private fun NotificationCompat.Builder.addPokeActions(step: PokeStep): NotificationCompat.Builder =
+        /**
+         * At most three actions (docs/ux/components.md, 7): Bitti, Ertele, Bugün olmaz. Ertele shows the length of the
+         * snooze it gives and "son hakkın" on the last one; it is left out when none is left (NUD-36).
+         */
+        private fun NotificationCompat.Builder.addPokeActions(
+            step: PokeStep,
+            snooze: Snooze?,
+        ): NotificationCompat.Builder {
             addAction(0, context.getString(R.string.poke_done), action(PokeIntents.ACTION_DONE, step))
-                .addAction(0, context.getString(R.string.poke_snooze, SNOOZE_MINUTES), action(PokeIntents.ACTION_SNOOZE, step))
-                .addAction(0, context.getString(R.string.poke_cant_today_short), action(PokeIntents.ACTION_CANT_TODAY, step))
+            if (snooze != null) {
+                val label = if (snooze.last) R.string.poke_snooze_last else R.string.poke_snooze
+                addAction(0, context.getString(label, snooze.minutes), action(PokeIntents.ACTION_SNOOZE, step))
+            }
+            return addAction(0, context.getString(R.string.poke_cant_today_short), action(PokeIntents.ACTION_CANT_TODAY, step))
+        }
 
         private fun action(
             action: String,
@@ -106,9 +118,4 @@ class AndroidPokeNotifications
             )
 
         private fun notificationId(taskId: String) = taskId.hashCode()
-
-        private companion object {
-            // TODO(open-questions#1): the second snooze is 10 minutes and says "son hakkın".
-            const val SNOOZE_MINUTES = 15
-        }
     }

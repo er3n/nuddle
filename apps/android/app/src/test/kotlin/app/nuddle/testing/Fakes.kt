@@ -2,15 +2,22 @@ package app.nuddle.testing
 
 import app.nuddle.alarm.FullScreenPermission
 import app.nuddle.alarm.PokeNotifications
+import app.nuddle.api.model.FinishMode
 import app.nuddle.data.AuthRepository
 import app.nuddle.data.SessionStarter
+import app.nuddle.data.TaskRepository
 import app.nuddle.data.VerifyOutcome
+import app.nuddle.data.WriteOutcome
+import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.outbox.OutboxDrainer
 import app.nuddle.data.session.SessionStore
+import app.nuddle.data.session.SetupStore
 import app.nuddle.data.session.StoredSession
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.AlarmScheduler
+import app.nuddle.domain.GrantedPermissions
+import app.nuddle.domain.PermissionReader
 import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeStep
 import app.nuddle.domain.QuietHours
@@ -159,8 +166,108 @@ class RecordingDrainer : OutboxDrainer {
     }
 }
 
+class InMemorySetupStore(
+    var done: Boolean = false,
+) : SetupStore {
+    override suspend fun done(): Boolean = done
+
+    override suspend fun markDone() {
+        done = true
+    }
+}
+
+/** Permissions the test can change between reads, like the user in system settings. */
+class FakePermissions(
+    var granted: GrantedPermissions = GrantedPermissions(notifications = true, exactAlarm = true, fullScreen = true),
+) : PermissionReader {
+    override fun read(): GrantedPermissions = granted
+}
+
 class FakeFullScreen(
     var allowed: Boolean = true,
 ) : FullScreenPermission {
     override fun granted(): Boolean = allowed
+}
+
+class FakeTaskRepository : TaskRepository {
+    /** Text and idempotency key of every write. */
+    val written = mutableListOf<Pair<String, String>>()
+    val done = mutableListOf<String>()
+    var outcome: WriteOutcome = WriteOutcome.Created(Cast.TASK_ID)
+
+    override suspend fun write(
+        text: String,
+        idempotencyKey: String,
+    ): WriteOutcome {
+        written += text to idempotencyKey
+        return outcome
+    }
+
+    /** Title, deadline and key of every create from the preview. */
+    val created = mutableListOf<Triple<String, Instant, String>>()
+    var createOutcome: WriteOutcome = WriteOutcome.Created(Cast.TASK_ID)
+    val cancelled = mutableListOf<String>()
+
+    /** Task, deadline and key of every edit from Düzenle. */
+    val edited = mutableListOf<Triple<String, Instant, String>>()
+    var editOutcome: WriteOutcome = WriteOutcome.Created(Cast.TASK_ID)
+
+    override suspend fun editDeadline(
+        taskId: String,
+        deadline: Instant,
+        idempotencyKey: String,
+    ): WriteOutcome {
+        edited += Triple(taskId, deadline, idempotencyKey)
+        return editOutcome
+    }
+
+    override suspend fun cancel(taskId: String) {
+        cancelled += taskId
+    }
+
+    override suspend fun createForSelf(
+        title: String,
+        detail: String?,
+        deadline: Instant,
+        finishMode: FinishMode,
+        rawText: String,
+        idempotencyKey: String,
+    ): WriteOutcome {
+        created += Triple(title, deadline, idempotencyKey)
+        return createOutcome
+    }
+
+    /** What [done] answers: the poke number that caught the person. */
+    var caughtAt: Int? = null
+
+    override suspend fun done(taskId: String): Int? {
+        done += taskId
+        return caughtAt
+    }
+}
+
+/** Tasks in memory; [observeAll] emits at once, unlike Room's flow on its own executor. */
+class InMemoryTaskDao : TaskDao {
+    private val tasks = MutableStateFlow<Map<String, TaskEntity>>(emptyMap())
+
+    override suspend fun upsert(tasks: List<TaskEntity>) {
+        this.tasks.value += tasks.associateBy { it.id }
+    }
+
+    override suspend fun get(id: String): TaskEntity? = tasks.value[id]
+
+    override suspend fun all(): List<TaskEntity> = tasks.value.values.toList()
+
+    override fun observeAll(): Flow<List<TaskEntity>> = tasks.map { it.values.toList() }
+
+    override suspend fun setStatus(
+        id: String,
+        status: String,
+    ) {
+        tasks.value[id]?.let { tasks.value += id to it.copy(status = status) }
+    }
+
+    override suspend fun countSnooze(id: String) {
+        tasks.value[id]?.let { tasks.value += id to it.copy(snoozesUsed = it.snoozesUsed + 1) }
+    }
 }

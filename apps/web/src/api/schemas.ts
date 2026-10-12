@@ -153,6 +153,7 @@ export const PhotoSentCommand = taskKeyed({ photoPath: z.string().min(1) }).open
 );
 export const CantTodayCommand = taskKeyed({ note: Note }).openapi("CantTodayCommand");
 export const DidItLaterCommand = taskKeyed({}).openapi("DidItLaterCommand");
+export const SnoozeCommand = taskKeyed({}).openapi("SnoozeCommand");
 export const CancelCommand = taskKeyed({ note: Note }).openapi("CancelCommand");
 export const EditCommand = taskKeyed({
   deadline: Instant.optional(),
@@ -252,6 +253,11 @@ const SyncTask = z
     statusChangedAt: Instant,
     /** False once the task leaves the recipient's list (a missed card after one day). */
     inRecipientList: z.boolean(),
+    /**
+     * Snoozes so far: the device picks the next snooze's length and "son hakkın" from it. Always sent; optional so an
+     * app reading an older server's sync treats it as 0 instead of failing the whole sync.
+     */
+    snoozesUsed: z.int().optional(),
   })
   .openapi("SyncTask");
 

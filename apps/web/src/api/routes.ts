@@ -182,6 +182,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
             planVersion: t.planVersion,
             statusChangedAt: iso(t.statusChangedAt),
             inRecipientList: t.inRecipientList,
+            snoozesUsed: t.snoozesUsed,
           })),
           sentInvites: r.sentInvites.map((i) => ({
             id: i.id,
@@ -350,6 +351,15 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
     (b) => ({
       type: "cant_today",
       note: b.note,
+    }),
+  );
+  taskCommand(
+    "snooze",
+    "snooze",
+    "Recipient: Ertele. 15 then 10 minutes, at most twice, never past the deadline",
+    s.SnoozeCommand,
+    () => ({
+      type: "snooze",
     }),
   );
   taskCommand(

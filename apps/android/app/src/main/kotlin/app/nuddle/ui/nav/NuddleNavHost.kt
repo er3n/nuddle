@@ -18,6 +18,8 @@ import app.nuddle.ui.screens.code.CodeViewModel
 import app.nuddle.ui.screens.code.SignedInDestination
 import app.nuddle.ui.screens.home.HomeScreen
 import app.nuddle.ui.screens.home.HomeViewModel
+import app.nuddle.ui.screens.home.PreviewCallbacks
+import app.nuddle.ui.screens.home.UndoCallbacks
 import app.nuddle.ui.screens.name.NameScreen
 import app.nuddle.ui.screens.name.NameViewModel
 import app.nuddle.ui.screens.phone.PhoneScreen
@@ -32,6 +34,7 @@ object Routes {
     const val CODE = "auth/code?${CodeViewModel.ARG_PHONE}={${CodeViewModel.ARG_PHONE}}"
     const val NAME = "onboarding/name"
     const val HOME = "home"
+    const val SETUP = "setup"
 
     fun code(e164: String): String = "auth/code?${CodeViewModel.ARG_PHONE}=${Uri.encode(e164)}"
 }
@@ -94,7 +97,8 @@ fun NuddleNavHost(startRoute: String) {
         composable(Routes.HOME) {
             val viewModel: HomeViewModel = hiltViewModel()
             val state by viewModel.state.collectAsStateWithLifecycle()
-            // Bell, profile, invite and task writing are routes of the feature slices (docs/bootstrap-plan.md).
+            LaunchedEffect(viewModel) { viewModel.openSetup.collect { nav.navigate(Routes.SETUP) { launchSingleTop = true } } }
+            // Bell, profile, invite and voice are routes of the feature slices (docs/bootstrap-plan.md).
             state?.let {
                 HomeScreen(
                     state = it,
@@ -102,11 +106,28 @@ fun NuddleNavHost(startRoute: String) {
                     onProfile = {},
                     onInvite = {},
                     onComposeTextChange = viewModel::onComposeTextChange,
-                    onComposeSend = {},
+                    onComposeSend = viewModel::onComposeSend,
                     onVoiceStart = {},
                     onVoiceEnd = {},
+                    onFinishNextUp = viewModel::onFinishNextUp,
+                    preview =
+                        PreviewCallbacks(
+                            onChoice = viewModel::onPreviewChoice,
+                            onTimePicked = viewModel::onPreviewTimePicked,
+                            onConfirm = viewModel::onPreviewConfirm,
+                            onDismiss = viewModel::onPreviewDismiss,
+                        ),
+                    undo =
+                        UndoCallbacks(
+                            onUndo = viewModel::onUndo,
+                            onEdit = viewModel::onUndoEdit,
+                            onTimeout = viewModel::onUndoTimeout,
+                        ),
                 )
             }
+        }
+        composable(Routes.SETUP) {
+            SetupRoute(onFinish = { nav.popBackStack(Routes.HOME, inclusive = false) })
         }
     }
 }

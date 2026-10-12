@@ -6,18 +6,30 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import app.nuddle.domain.SetupStep
+import app.nuddle.domain.Snooze
 import app.nuddle.domain.TimeLeft
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.screens.code.CodeScreen
 import app.nuddle.ui.screens.code.CodeUiState
+import app.nuddle.ui.screens.home.DeadlineChoice
+import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.HomeScreen
 import app.nuddle.ui.screens.home.HomeUiState
+import app.nuddle.ui.screens.home.NextUpUi
+import app.nuddle.ui.screens.home.PreviewCallbacks
+import app.nuddle.ui.screens.home.PreviewUi
 import app.nuddle.ui.screens.name.NameScreen
 import app.nuddle.ui.screens.name.NameUiState
 import app.nuddle.ui.screens.phone.PhoneScreen
 import app.nuddle.ui.screens.phone.PhoneUiState
+import app.nuddle.ui.screens.poke.PokeDemoScreen
 import app.nuddle.ui.screens.poke.PokeScreen
 import app.nuddle.ui.screens.poke.PokeUiState
+import app.nuddle.ui.screens.setup.PermissionStepUi
+import app.nuddle.ui.screens.setup.PermissionsScreen
+import app.nuddle.ui.screens.setup.SetupDemoScreen
+import app.nuddle.ui.screens.setup.SetupUiState
 import app.nuddle.ui.screens.welcome.WelcomeScreen
 import app.nuddle.ui.screens.welcome.WelcomeUiState
 import app.nuddle.ui.theme.DurtTheme
@@ -28,6 +40,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Instant
 
 /**
  * Every interactive element carries its test tag (docs/testing.md, Android `e2e` flavor): the Maestro flows in
@@ -149,8 +162,7 @@ class TestTagsTest {
                     title = "Para çek",
                     detail = null,
                     timeLeft = TimeLeft.Minutes(45),
-                    snoozeMinutes = 10,
-                    lastSnooze = false,
+                    snooze = Snooze(minutes = 10, last = false),
                 ),
                 onDone = { clicked += "done" },
                 onSnooze = { clicked += "snooze" },
@@ -159,6 +171,95 @@ class TestTagsTest {
         }
         assertShown(TestTags.POKE)
         assertTaps(TestTags.POKE_DONE to "done", TestTags.POKE_SNOOZE to "snooze", TestTags.POKE_CANT_TODAY to "cant")
+    }
+
+    @Test
+    fun `home with a task next up`() {
+        content {
+            HomeScreen(
+                state =
+                    HomeUiState(
+                        myName = "Eren",
+                        nextUp = NextUpUi("task-1", "Para çek", "1.000 TL", DeadlineText.Tomorrow("09:00"), photo = false),
+                    ),
+                onBell = { clicked += "bell" },
+                onProfile = { clicked += "profile" },
+                onInvite = { clicked += "invite" },
+                onComposeTextChange = {},
+                onComposeSend = { clicked += "send" },
+                onVoiceStart = {},
+                onVoiceEnd = {},
+                onFinishNextUp = { clicked += "doneEarly" },
+            )
+        }
+        assertShown(TestTags.HOME_NEXT_UP)
+        assertTaps(TestTags.HOME_DONE_EARLY to "doneEarly", TestTags.HOME_INVITE to "invite")
+    }
+
+    @Test
+    fun `preview sheet with a deadline chosen`() {
+        val morning = DeadlineChoice.TomorrowMorning(Instant.parse("2026-10-12T09:00:00+03:00"))
+        content {
+            HomeScreen(
+                state =
+                    HomeUiState(
+                        myName = "Eren",
+                        preview = PreviewUi("1000 tl çek", "Para çek", "1.000 TL", listOf(morning), morning, "23:00", "07:00"),
+                    ),
+                onBell = {},
+                onProfile = {},
+                onInvite = {},
+                onComposeTextChange = {},
+                onComposeSend = {},
+                onVoiceStart = {},
+                onVoiceEnd = {},
+                preview =
+                    PreviewCallbacks(
+                        onChoice = { clicked += "choice" },
+                        onConfirm = { clicked += "confirm" },
+                        onDismiss = { clicked += "dismiss" },
+                    ),
+            )
+        }
+        assertShown(TestTags.PREVIEW, TestTags.PREVIEW_PICK_TIME)
+        assertTaps(TestTags.PREVIEW_MORNING to "choice", TestTags.SHEET_PRIMARY to "confirm", TestTags.SHEET_DISMISS to "dismiss")
+    }
+
+    @Test
+    fun `setup, try first`() {
+        content { SetupDemoScreen(SetupUiState.Intro(), onTry = { clicked += "try" }, onSkipDemo = { clicked += "skip" }) }
+        assertShown(TestTags.SETUP)
+        assertTaps(TestTags.SETUP_TRY to "try", TestTags.SETUP_SKIP_DEMO to "skip")
+    }
+
+    @Test
+    fun `setup, demo poke`() {
+        content { PokeDemoScreen(settingsLeft = 2, onContinue = { clicked += "continue" }) }
+        assertShown(TestTags.SETUP_DEMO)
+        assertTaps(TestTags.SETUP_DEMO_OK to "continue")
+    }
+
+    @Test
+    fun `setup, steps`() {
+        content {
+            PermissionsScreen(
+                SetupUiState.Steps(
+                    settingsCount = 2,
+                    notificationsGranted = true,
+                    steps =
+                        listOf(
+                            PermissionStepUi(SetupStep.NOTIFICATIONS, granted = true, skipped = false),
+                            PermissionStepUi(SetupStep.EXACT_ALARM, granted = false, skipped = false),
+                            PermissionStepUi(SetupStep.FULL_SCREEN, granted = false, skipped = false),
+                        ),
+                    active = SetupStep.EXACT_ALARM,
+                ),
+                onOpenActive = { clicked += "open" },
+                onSkipActive = { clicked += "skip" },
+            )
+        }
+        assertShown(TestTags.SETUP_STEPS)
+        assertTaps(TestTags.SETUP_OPEN_ACTIVE to "open", TestTags.SETUP_SKIP_STEP to "skip")
     }
 
     private fun homeWith(compose: ComposeState) {

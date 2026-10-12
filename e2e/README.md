@@ -30,7 +30,7 @@ Before the first run:
 | `emulator-5554` | `nuddle-selin` | Selin |
 | `emulator-5556` | `nuddle-eren` | Eren |
 
-Image `system-images;android-36;google_apis_playstore;arm64-v8a` (stock Android with Google Play, for FCM). The hardware profile matches a Galaxy S23: 1080 x 2340 px, 480 dpi, about 360 x 780 dp, 2 GB RAM. Emulators stay up after a run and are reused; `mise run e2e:emulators:stop` shuts them down. `--cold` (`pnpm --filter @nuddle/e2e smoke -- --cold`) wipes their data first.
+Image `system-images;android-36;google_apis_playstore;arm64-v8a` (stock Android with Google Play, for FCM). The hardware profile matches a Galaxy S23: 1080 x 2340 px, 480 dpi, about 360 x 780 dp, 2 GB RAM. Emulators stay up after a run and are reused; `mise run e2e:emulators:stop` shuts them down. `--cold` (`pnpm --filter @nuddle/e2e smoke --cold`) wipes their data first.
 
 ## Clean state
 
@@ -38,7 +38,8 @@ Every run:
 - drops and re-creates the `nuddle_e2e` database from `supabase/migrations/` (same local Supabase stack, separate database; no seed),
 - starts `next dev` with `E2E=1` against it,
 - builds `assembleE2eDebug`, uninstalls and reinstalls `app.nuddle.debug` on both emulators with runtime permissions granted (`-g`) and `USE_FULL_SCREEN_INTENT` allowed (the setup screens 2c to 2e arrive in slice 1),
-- clears logcat.
+- clears logcat,
+- after sign-up moves Selin's quiet hours to a one hour window 12 hours away, so the smoke plans pokes at any time of day (the default 23:00-07:00 would leave a night run with an empty plan).
 
 Auth users live in the stack's Auth service and are not deleted; the app sees a new person because `people` is empty.
 

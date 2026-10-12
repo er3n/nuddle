@@ -221,6 +221,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/commands/snooze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recipient: Ertele. 15 then 10 minutes, at most twice, never past the deadline */
+        post: operations["snooze"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/commands/did_it_later": {
         parameters: {
             query?: never;
@@ -466,7 +483,7 @@ export interface components {
                 /** @example DRT-4001 */
                 code: string;
                 /** @enum {string} */
-                name: "validation_failed" | "unauthorized" | "not_registered" | "not_found" | "idempotency_key_reused" | "invalid_otp" | "forbidden" | "wrong_status" | "not_sender" | "not_recipient" | "wrong_finish_mode" | "deadline_not_in_future" | "not_connected" | "recipient_unavailable" | "invite_not_open" | "wrong_invitee" | "self_invite" | "internal" | "upstream_failed";
+                name: "validation_failed" | "unauthorized" | "not_registered" | "not_found" | "idempotency_key_reused" | "invalid_otp" | "forbidden" | "wrong_status" | "not_sender" | "not_recipient" | "wrong_finish_mode" | "deadline_not_in_future" | "not_connected" | "recipient_unavailable" | "snooze_not_allowed" | "invite_not_open" | "wrong_invitee" | "self_invite" | "internal" | "upstream_failed";
                 message: string;
                 requestId: string;
             };
@@ -595,6 +612,7 @@ export interface components {
              */
             statusChangedAt: string;
             inRecipientList: boolean;
+            snoozesUsed?: number;
         };
         /** @enum {string} */
         FinishMode: "done" | "photo";
@@ -754,6 +772,15 @@ export interface components {
             /** Format: uuid */
             taskId: string;
             note: string | null;
+        };
+        SnoozeCommand: {
+            /**
+             * Format: uuid
+             * @description Client generated UUIDv7; a replay returns the first result (ADR 0006)
+             */
+            idempotencyKey: string;
+            /** Format: uuid */
+            taskId: string;
         };
         DidItLaterCommand: {
             /**
@@ -1664,6 +1691,84 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CantTodayCommand"];
+            };
+        };
+        responses: {
+            /** @description The result; a replay with the same key returns it again */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskCommandResult"];
+                };
+            };
+            /** @description Error with a DRT code */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    snooze: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SnoozeCommand"];
             };
         };
         responses: {

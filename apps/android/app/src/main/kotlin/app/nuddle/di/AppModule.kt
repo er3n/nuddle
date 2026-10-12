@@ -11,11 +11,15 @@ import androidx.work.WorkManager
 import app.nuddle.alarm.AlarmManagerScheduler
 import app.nuddle.alarm.AndroidPokeNotifications
 import app.nuddle.alarm.FullScreenPermission
+import app.nuddle.alarm.PokeActions
 import app.nuddle.alarm.PokeAlarms
 import app.nuddle.alarm.PokeNotifications
 import app.nuddle.data.ApiAuthRepository
+import app.nuddle.data.ApiTaskRepository
 import app.nuddle.data.AuthRepository
 import app.nuddle.data.SessionStarter
+import app.nuddle.data.TaskCloser
+import app.nuddle.data.TaskRepository
 import app.nuddle.data.db.NuddleDatabase
 import app.nuddle.data.db.OutboxDao
 import app.nuddle.data.db.PokeStepDao
@@ -23,10 +27,13 @@ import app.nuddle.data.db.TaskDao
 import app.nuddle.data.outbox.OutboxDrainer
 import app.nuddle.data.outbox.WorkManagerScheduling
 import app.nuddle.data.session.DataStoreSessionStore
+import app.nuddle.data.session.DataStoreSetupStore
 import app.nuddle.data.session.SessionStore
+import app.nuddle.data.session.SetupStore
 import app.nuddle.data.sync.AlarmRearmer
 import app.nuddle.domain.AlarmScheduler
 import app.nuddle.domain.IdGenerator
+import app.nuddle.domain.PermissionReader
 import app.nuddle.push.AppSessionStarter
 import app.nuddle.push.DevicePermissions
 import dagger.Binds
@@ -120,5 +127,17 @@ abstract class BindingsModule {
     abstract fun fullScreenPermission(impl: DevicePermissions): FullScreenPermission
 
     @Binds
+    abstract fun permissionReader(impl: DevicePermissions): PermissionReader
+
+    @Binds
+    abstract fun setupStore(impl: DataStoreSetupStore): SetupStore
+
+    @Binds
     abstract fun sessionStarter(impl: AppSessionStarter): SessionStarter
+
+    @Binds
+    abstract fun taskRepository(impl: ApiTaskRepository): TaskRepository
+
+    @Binds
+    abstract fun taskCloser(impl: PokeActions): TaskCloser
 }

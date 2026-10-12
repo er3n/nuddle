@@ -5,6 +5,8 @@
 -->
 <resources>
     <string name="app_name">dürt</string>
+    <!-- The language of these strings: uppercase labels use it, not the device locale (NUD-37). "en" in values-en. -->
+    <string name="ui_locale" translatable="false">tr</string>
     <!-- TODO(open-questions#11): the in-app logo follows the locale through this resource. -->
     <string name="logo_text">dürt</string>
 
@@ -66,6 +68,95 @@
     <string name="home_invite_action">Birini davet et</string>
     <string name="home_empty_title">Henüz görev yok</string>
     <string name="home_empty_body">Beklerken kendine de yazabilirsin. Zamanı gelince seni dürterim.</string>
+    <string name="home_next_up">Sıradaki</string>
+    <string name="home_to_self">Kendine</string>
+    <string name="home_deadline_label">Son zaman</string>
+    <string name="home_finish_label">Bitince</string>
+    <string name="home_finish_done">\"Bitti\" demen yeter</string>
+    <!-- Copy for a photo task to self: open-questions#27. -->
+    <string name="home_finish_photo">Fotoğrafını çek</string>
+    <string name="home_done_early">Şimdiden bitti</string>
+    <string name="home_invite_compact_body">Birini davet et, birbirinize görev yazın</string>
+    <string name="preview_you_wrote">Yazdığın: \"%1$s\"</string>
+    <string name="preview_to">Kime</string>
+    <string name="preview_detail">Detay</string>
+    <string name="preview_question_deadline">Ne zamana kadar?</string>
+    <string name="preview_tonight">Bugün akşam</string>
+    <string name="preview_tomorrow_morning">Yarın sabah</string>
+    <string name="preview_pick_time">Saat seç</string>
+    <string name="preview_quiet_hint">Zamanı gelince seni dürterim. Gece %1$s ile %2$s arası asla.</string>
+    <string name="preview_confirm">Kur</string>
+    <!-- Undo toast for a task to self: open-questions#29. -->
+    <string name="undo_self_title">Kuruldu</string>
+    <string name="undo_finish_photo">bitince fotoğraf</string>
+    <string name="deadline_today_inline">bugün %1$s</string>
+    <string name="deadline_tomorrow_inline">yarın %1$s</string>
+    <string name="done_note_title">\"%1$s\" tamamlandı</string>
+    <string name="done_note_caught">Bu sefer seni %1$d. dürtmede yakaladım.</string>
+    <string name="deadline_today">Bugün %1$s</string>
+    <string name="deadline_tomorrow">Yarın %1$s</string>
+    <!-- Day, month name, time: "14 Ekim 09:00". open-questions#27. -->
+    <string name="deadline_on_date">%1$d %2$s %3$s</string>
+    <string-array name="month_names">
+        <item>Ocak</item>
+        <item>Şubat</item>
+        <item>Mart</item>
+        <item>Nisan</item>
+        <item>Mayıs</item>
+        <item>Haziran</item>
+        <item>Temmuz</item>
+        <item>Ağustos</item>
+        <item>Eylül</item>
+        <item>Ekim</item>
+        <item>Kasım</item>
+        <item>Aralık</item>
+    </string-array>
+
+    <!-- 2c, 2d, 2e Setup. The invited variants (Selin's name) come with invites (slice 2). -->
+    <string name="setup_eyebrow">Bir kerelik kurulum</string>
+    <string name="setup_demo_title">Önce bir dene, dürtme nasıl hissettiriyor gör</string>
+    <!-- TODO(open-questions#5): copy for users who write only to themselves. -->
+    <string name="setup_demo_body_self">İşlerini kaçırmaya başlarsan böyle dürterim. 3 saniye sonra çalar, sonra birlikte kuralım.</string>
+    <string name="setup_demo_task">Ekmek al</string>
+    <string name="setup_demo_phone_caption">Ekranı kaplar, sesi susturana kadar çalar</string>
+    <string name="setup_try">Bir dene</string>
+    <string name="setup_skip_demo">Denemeden kur</string>
+    <string name="setup_demo_badge">DENEME · gerçek bir iş değil</string>
+    <!-- TODO(open-questions#30): the design has only "Selin'den · örnek" (invited). -->
+    <string name="setup_demo_from_self">Kendine · örnek</string>
+    <string name="setup_demo_message">İşte bu. Telefonun kilitliyken de ekranı açar. Gerçek bir işte buna nadiren gerek kalır, önce kibarca denerim.</string>
+    <string name="setup_demo_ok">Anladım, kuralım</string>
+    <plurals name="setup_demo_settings_left">
+        <item quantity="one">Bu ekranın her seferinde çıkabilmesi için %1$d ayar gerekiyor.</item>
+        <item quantity="other">Bu ekranın her seferinde çıkabilmesi için %1$d ayar gerekiyor.</item>
+    </plurals>
+    <plurals name="setup_steps_title">
+        <item quantity="one">Seni zamanında dürtebilmem için %1$d ayar</item>
+        <item quantity="other">Seni zamanında dürtebilmem için %1$d ayar</item>
+    </plurals>
+    <string name="setup_steps_body_two">Bildirim iznini verdin. Kalan ikisi Android\'in ayar sayfasında, her biri tek düğme.</string>
+    <!-- TODO(open-questions#30): the design shows only the case with both settings left and notifications allowed. -->
+    <string name="setup_steps_body_one">Bildirim iznini verdin. Kalanı Android\'in ayar sayfasında, tek düğme.</string>
+    <string name="setup_steps_title_notifications">Seni dürtebilmem için bildirim izni gerekiyor</string>
+    <string name="setup_steps_body_notifications">Önce bildirim izni, kalanlar Android\'in ayar sayfasında, her biri tek düğme.</string>
+    <string name="setup_step_notifications">Bildirimler</string>
+    <!-- TODO(open-questions#30): the notifications and full screen steps open have no design copy. -->
+    <string name="setup_step_notifications_body">Dürtmeler bildirim olarak gelir. Bu izin olmadan sana hiç ulaşamam.</string>
+    <string name="setup_step_notifications_action">İzin ver</string>
+    <string name="setup_step_alarm">Alarmlar ve hatırlatıcılar</string>
+    <string name="setup_step_alarm_body">Dürtmelerin tam saatinde çalması için. Bu olmadan telefon onları biriktirir, dakikalarca bazen saatlerce geç çalarlar.</string>
+    <string name="setup_hint_lead">Açılan sayfada</string>
+    <string name="setup_step_alarm_hint">\"Alarm ve hatırlatıcı ayarlamaya izin ver\"i aç, sonra geri dön.</string>
+    <string name="setup_step_full_screen">Tam ekran dürtme</string>
+    <string name="setup_step_full_screen_body">Telefonun kilitliyken de dürtmenin ekranı açması için. Bu olmadan dürtmeler sadece bildirim olarak gelir.</string>
+    <string name="setup_step_full_screen_hint">\"Tam ekran bildirimlere izin ver\"i aç, sonra geri dön.</string>
+    <string name="setup_required">Gerekli</string>
+    <string name="setup_next">Sırada</string>
+    <!-- TODO(open-questions#30): "Atlandı" and the full screen skip link have no design copy. -->
+    <string name="setup_skipped">Atlandı</string>
+    <string name="setup_footer">İzinleri istediğin an Ayarlar\'dan geri alabilirsin. Biri kapanırsa zilde haber veririm.</string>
+    <string name="setup_skip_alarm">Alarmsız devam et, dürtmeler geç çalabilir</string>
+    <string name="setup_skip_full_screen">Tam ekransız devam et, dürtmeler bildirim olarak gelir</string>
 
     <!-- ComposeBar -->
     <string name="compose_label">Yeni görev</string>

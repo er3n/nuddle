@@ -76,6 +76,16 @@ data class DurtDimens(
     val pokeBell: Dp = 68.dp,
     val avatarBadge: Dp = 36.dp,
     val illustrationTilt: Float = 2f,
+    // 2c: the phone that shows what a poke looks like, and the progress bar of 2e.
+    val setupPhoneWidth: Dp = 210.dp,
+    val setupPhoneHeight: Dp = 360.dp,
+    val setupPhoneFrame: Dp = 6.dp,
+    val setupPhoneRadius: Dp = 32.dp,
+    val setupPhoneRing: Dp = 76.dp,
+    val setupPhoneBell: Dp = 48.dp,
+    val setupPhoneButton: Dp = 36.dp,
+    val setupPhoneButtonRadius: Dp = 10.dp,
+    val progressBar: Dp = 6.dp,
     // radius
     val radiusPill: Dp = 999.dp,
     val radiusSheet: Dp = 26.dp,

@@ -9,7 +9,7 @@ Naming: the handoff used `Durt*` prefixes. Keep them for now; whether to rename 
 ## 1. DurtButton
 
 ```kotlin
-enum class DurtButtonKind { Primary, Accent, Secondary, Ghost, Danger, DangerOutline, Soft, OnPoke, OnPokeOutline }
+enum class DurtButtonKind { Primary, Accent, Secondary, Ghost, Danger, DangerOutline, Soft, Success, OnPoke, OnPokeOutline }
 enum class DurtButtonSize(val height: Dp) { Poke(62.dp), Large(56.dp), Medium(52.dp), Small(44.dp) }
 
 @Composable fun DurtButton(
@@ -21,6 +21,7 @@ enum class DurtButtonSize(val height: Dp) { Poke(62.dp), Large(56.dp), Medium(52
 - Text 15-16 sp / 600 (Poke: 18 / 700). Corner: Large and Poke 18, others 16.
 - Disabled: background `border`, text `textTertiary`. Loading: 20 dp spinner instead of text, width fixed, double taps blocked.
 - Pressed: background darkens 8% (no ripple). At most one Primary or Accent per screen.
+- Success: `success` background, `surface` text. Used for "Şimdiden bitti" on the next-up card (2f).
 
 ## 2. TopBar and BackBar
 
@@ -105,7 +106,7 @@ sealed interface ComposeState { data object Idle; data class Typing(val text: St
 
 - `Avatar(name, color, size)`: first letter, Space Grotesk 700, about 40% of the size. No photos in the MVP. The user's own avatar is always `ink`.
 - `CodeInput(length = 6, value, error, onComplete)`: 6 boxes, active box 2 dp `ink`; on error all boxes get `poke` border and `highlightSoft` fill. SMS Retriever autofill, submits on the 6th digit.
-- `PermissionStep(index, title, state: Done | Active | Next, badge?)`: Done shows a green tick and "Tamam"; Active has a 2 dp `ink` border, expands with description and "Ayarları aç"; Next is dashed and gray.
+- `PermissionStep(index, title, state: Done | Active | Next, badge?, description?, hint?, action?)`: Done shows a green tick and "Tamam"; Active has a 2 dp `ink` border, expands with description, the gray hint box ("**Açılan sayfada** ...") and "Ayarları aç" (or `action`, e.g. "İzin ver" for the system dialog); Next is dashed and gray.
 
 ## Screen-specific parts
 
