@@ -223,6 +223,89 @@ describe("scenarios: task lifecycle", () => {
     expect(world.task(taskId)).toMatchObject({ status: "DONE", late: true });
   });
 
+  it("missed, then 'Süreyi uzat' (5d): poking starts again for the new deadline", async () => {
+    const { world, selin, eren } = await selinAndEren();
+    const taskId = await writeTask(selin, TEXT.trashToEren);
+    await world.advanceTo(at("2026-10-12T19:01:00"));
+    expect(world.task(taskId).status).toBe("MISSED");
+
+    // Selin's phone has what the Kaçırıldı card says: how many pokes rang and that she was told.
+    const selinSaw = selin.phone.events.filter((e) => e.taskId === taskId).map((e) => e.type);
+    expect(selinSaw.filter((t) => t === "poke_fired")).toHaveLength(3);
+    expect(selinSaw).toEqual(expect.arrayContaining(["human_notified", "missed"]));
+
+    expect(
+      await selin.command(taskId, { type: "new_deadline", deadline: at("2026-10-13T19:00:00") }),
+    ).toEqual({ ok: true });
+    expect(world.task(taskId).status).toBe("SCHEDULED");
+    expect(world.push.to("eren").at(-1)).toMatchObject({ taskId, hint: "plan_changed" });
+    await world.advanceTo(at("2026-10-13T19:01:00"));
+    expect(rings(eren.phone.ringsFor(taskId)).slice(3)).toEqual([
+      "SILENT@18:00",
+      "SOUND@18:30",
+      "FULL_SCREEN@18:45",
+    ]);
+    expect(world.task(taskId).status).toBe("MISSED");
+    expect(world.violations).toEqual([]);
+  });
+
+  it("missed, then cancel (5d İptal et): the card goes, nothing rings", async () => {
+    const { world, selin, eren } = await selinAndEren();
+    const taskId = await writeTask(selin, TEXT.trashToEren);
+    await world.advanceTo(at("2026-10-12T19:01:00"));
+
+    expect(await selin.command(taskId, { type: "cancel", note: null })).toEqual({ ok: true });
+    expect(world.task(taskId).status).toBe("CANCELLED");
+    expect(world.pendingActions(taskId)).toEqual([]);
+    // Too late for "Sonradan yaptım".
+    expect(await eren.command(taskId, { type: "did_it_later" })).toMatchObject({ ok: false });
+  });
+
+  it("dropped with a note, then 'Ben hallederim' (5d): closed for good (open-questions#8)", async () => {
+    const { world, selin, eren } = await selinAndEren();
+    const taskId = await writeTask(selin, TEXT.trashToEren);
+    await world.advanceTo(at("2026-10-12T18:46:00"));
+    expect(await eren.command(taskId, { type: "cant_today", note: "Vaktim olmadı" })).toEqual({
+      ok: true,
+    });
+    expect(selin.phone.events).toContainEqual({
+      taskId,
+      type: "dropped",
+      payload: { note: "Vaktim olmadı" },
+    });
+
+    expect(await selin.command(taskId, { type: "sender_handles" })).toEqual({ ok: true });
+    expect(world.task(taskId).status).toBe("CANCELLED");
+    expect(world.eventsOf(taskId).at(-1)).toMatchObject({
+      type: "cancelled",
+      payload: { reason: "sender_handles" },
+    });
+    // Eren's phone learns why, so it does not show a "Selin iptal etti" row for a task he gave up himself.
+    expect(eren.phone.events.at(-1)).toMatchObject({
+      taskId,
+      type: "cancelled",
+      payload: { reason: "sender_handles" },
+    });
+    await world.advanceTo(at("2026-10-12T20:00:00"));
+    expect(rings(eren.phone.ringsFor(taskId))).toEqual([
+      "SILENT@18:00",
+      "SOUND@18:30",
+      "FULL_SCREEN@18:45",
+    ]);
+    expect(world.pendingActions(taskId)).toEqual([]);
+  });
+
+  it("human channel (7a): only while the task is open", async () => {
+    const { world, selin, eren } = await selinAndEren();
+    const taskId = await writeTask(selin, TEXT.trashToEren);
+    await world.advanceTo(at("2026-10-12T18:50:00"));
+    expect(await eren.command(taskId, { type: "done" })).toEqual({ ok: true });
+
+    await world.advanceTo(at("2026-10-12T19:30:00"));
+    expect(world.push.to("selin").map((p) => p.event)).not.toContain("human_notified");
+    expect(selin.phone.events.map((e) => e.type)).not.toContain("human_notified");
+  });
+
   it("a missed card leaves the recipient's list after one day", async () => {
     const { world, selin } = await selinAndEren();
     const taskId = await writeTask(selin, TEXT.trashToEren);
