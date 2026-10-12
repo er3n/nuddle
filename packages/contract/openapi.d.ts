@@ -119,6 +119,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/photos/view-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A short-lived signed URL to the photo waiting for approval (4f) */
+        post: operations["createPhotoViewUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/commands/register": {
         parameters: {
             query?: never;
@@ -653,6 +670,13 @@ export interface components {
              * @example 2026-10-12T09:00:00+03:00
              */
             createdAt?: string;
+            /**
+             * Format: date-time
+             * @description ISO 8601 with offset
+             * @example 2026-10-12T09:00:00+03:00
+             */
+            photoSentAt?: string | null;
+            reRequestNote?: string | null;
         };
         /** @enum {string} */
         FinishMode: "done" | "photo";
@@ -722,6 +746,19 @@ export interface components {
             url: string;
         };
         PhotoUploadUrlRequest: {
+            /** Format: uuid */
+            taskId: string;
+        };
+        PhotoViewUrlResult: {
+            url: string;
+            /**
+             * Format: date-time
+             * @description ISO 8601 with offset
+             * @example 2026-10-12T09:00:00+03:00
+             */
+            sentAt: string;
+        };
+        PhotoViewUrlRequest: {
             /** Format: uuid */
             taskId: string;
         };
@@ -1291,6 +1328,75 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PhotoUploadUrlResult"];
+                };
+            };
+            /** @description Error with a DRT code */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createPhotoViewUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PhotoViewUrlRequest"];
+            };
+        };
+        responses: {
+            /** @description Where to load the photo from */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoViewUrlResult"];
                 };
             };
             /** @description Error with a DRT code */

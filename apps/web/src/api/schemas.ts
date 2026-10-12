@@ -223,6 +223,15 @@ export const PhotoUploadUrlResult = z
   })
   .openapi("PhotoUploadUrlResult");
 
+export const PhotoViewUrlRequest = z.object({ taskId: Id }).openapi("PhotoViewUrlRequest");
+export const PhotoViewUrlResult = z
+  .object({
+    /** GET the image here; valid for a few minutes. */
+    url: z.string(),
+    sentAt: Instant,
+  })
+  .openapi("PhotoViewUrlResult");
+
 // ---- sync -----------------------------------------------------------------------------------
 
 export const SyncQuery = z.object({
@@ -261,6 +270,10 @@ const SyncTask = z
     snoozesUsed: z.int().optional(),
     /** When the sender wrote it: "Selin yazdı · 14:32" (4c). Optional for the same reason as snoozesUsed. */
     createdAt: Instant.optional(),
+    /** When the last photo was sent: "08:24'te gönderdin" (4e), "Eren fotoğraf gönderdi · 08:24" (4f). */
+    photoSentAt: Instant.nullable().optional(),
+    /** The note of the last "Tekrar iste" while the task is REJECTED (4g); null otherwise. */
+    reRequestNote: z.string().nullable().optional(),
   })
   .openapi("SyncTask");
 

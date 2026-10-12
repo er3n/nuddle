@@ -590,7 +590,12 @@ export interface SyncRows {
   connections: { edge: Edge; person: Person; devices: Device[] }[];
   sentInvites: (Invite & { createdAt: Date })[];
   receivedInvites: (Invite & { inviterName: string; createdAt: Date })[];
-  tasks: (Task & { snoozesUsed: number; createdAt: Date })[];
+  tasks: (Task & {
+    snoozesUsed: number;
+    createdAt: Date;
+    photoSentAt: Date | null;
+    reRequestNote: string | null;
+  })[];
   events: (TaskEvent & { id: string })[];
   plans: PokePlan[];
 }
@@ -651,6 +656,30 @@ export async function syncRows(tx: Tx, me: Person, cursor: number): Promise<Sync
           .groupBy(taskEvents.taskId);
   const snoozesUsed = new Map(snoozeRows.map((r) => [r.taskId, r.used]));
 
+  // The last photo and the last re-request note, for 4e, 4f and 4g. Events are few per task.
+  const photoRows =
+    taskIds.length === 0
+      ? []
+      : await tx
+          .select()
+          .from(taskEvents)
+          .where(
+            and(
+              inArray(taskEvents.taskId, taskIds),
+              inArray(taskEvents.type, ["photo_sent", "re_requested"]),
+            ),
+          )
+          .orderBy(asc(taskEvents.id));
+  const photoSentAt = new Map<string, Date>();
+  const reRequestNote = new Map<string, string | null>();
+  for (const e of photoRows) {
+    if (e.type === "photo_sent") photoSentAt.set(e.taskId, e.createdAt);
+    else {
+      const note = e.payload.note;
+      reRequestNote.set(e.taskId, typeof note === "string" ? note : null);
+    }
+  }
+
   const received_ = taskRows.map(toTask).filter((t) => t.recipientId === me.id);
   const plans: PokePlan[] = [];
   for (const t of received_) plans.push(await currentPlan(tx, t));
@@ -677,6 +706,8 @@ export async function syncRows(tx: Tx, me: Person, cursor: number): Promise<Sync
       ...toTask(t),
       snoozesUsed: snoozesUsed.get(t.id) ?? 0,
       createdAt: t.createdAt,
+      photoSentAt: photoSentAt.get(t.id) ?? null,
+      reRequestNote: t.status === "REJECTED" ? (reRequestNote.get(t.id) ?? null) : null,
     })),
     events: eventRows.map((r) => ({ ...toEvent(r.e), id: String(r.e.id) })),
     plans,

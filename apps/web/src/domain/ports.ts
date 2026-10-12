@@ -25,5 +25,7 @@ export interface TaskExtractor {
 /** Private photo bucket, one path per task. */
 export interface PhotoStorage {
   createUploadUrl(taskId: TaskId): Promise<{ path: string; url: string }>;
+  /** A short-lived signed URL to look at an uploaded photo (4f). */
+  createViewUrl(path: string): Promise<string>;
   deleteForTask(taskId: TaskId): Promise<void>;
 }

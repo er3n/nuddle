@@ -184,6 +184,8 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
             inRecipientList: t.inRecipientList,
             snoozesUsed: t.snoozesUsed,
             createdAt: iso(t.createdAt),
+            photoSentAt: t.photoSentAt === null ? null : iso(t.photoSentAt),
+            reRequestNote: t.reRequestNote,
           })),
           sentInvites: r.sentInvites.map((i) => ({
             id: i.id,
@@ -269,6 +271,30 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
         await svc.photoUploadUrl(deps, await person(c.get("caller")), c.req.valid("json").taskId),
         200,
       ),
+  );
+
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/v1/photos/view-url",
+      operationId: "createPhotoViewUrl",
+      summary: "A short-lived signed URL to the photo waiting for approval (4f)",
+      tags: ["photos"],
+      security: [{ bearer: [] }],
+      request: { body: { required: true, content: json(s.PhotoViewUrlRequest) } },
+      responses: {
+        200: { description: "Where to load the photo from", content: json(s.PhotoViewUrlResult) },
+        ...errors([400, 401, 403, 404, 409]),
+      },
+    }),
+    async (c) => {
+      const r = await svc.photoViewUrl(
+        deps,
+        await person(c.get("caller")),
+        c.req.valid("json").taskId,
+      );
+      return c.json({ url: r.url, sentAt: iso(r.sentAt) }, 200);
+    },
   );
 
   // ---- commands -----------------------------------------------------------------------------
