@@ -20,6 +20,7 @@ import {
 import { repoRoot, RunContext } from "./context";
 import { allDevices } from "./devices";
 import { run, waitFor } from "./proc";
+import { invite } from "./smoke/invite";
 import { smokeExtractions, taskToSelf } from "./smoke/task-to-self";
 
 const TIMEOUT_MS = 20 * 60_000;
@@ -137,6 +138,7 @@ async function main(): Promise<void> {
   });
 
   await taskToSelf(ctx, databaseUrl);
+  await invite(ctx, databaseUrl);
 }
 
 main().then(

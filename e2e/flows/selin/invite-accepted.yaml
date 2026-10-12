@@ -1,0 +1,11 @@
+# After Eren says İzin ver, the invite_accepted hint makes Selin's app sync and the pending invite (1g)
+# leaves home.
+appId: app.nuddle.debug
+---
+- launchApp
+- extendedWaitUntil:
+    notVisible:
+      id: home.pendingInvite
+    timeout: 60000
+- assertVisible:
+    id: home.invite

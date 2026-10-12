@@ -55,7 +55,11 @@ export async function taskToSelf(run: RunContext, databaseUrl: string): Promise<
 
   await run.step("sign-up", async (dir) => {
     await selin.wakeAndUnlock();
-    await selin.maestro("selin/sign-up.yaml", dir, { PHONE: SELIN_PHONE.slice(3), NAME: "Selin" });
+    await selin.maestro("selin/sign-up.yaml", dir, {
+      PHONE: SELIN_PHONE.slice(3),
+      NAME: "Selin",
+      DONE: "home.screen",
+    });
   });
 
   await run.step("device-registered", async (dir) => {

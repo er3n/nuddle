@@ -40,6 +40,7 @@ import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.screens.BigTextField
 import app.nuddle.ui.screens.FieldLabel
 import app.nuddle.ui.screens.NoteCard
+import app.nuddle.ui.screens.PhoneGrouping
 import app.nuddle.ui.screens.ScreenLayout
 import app.nuddle.ui.screens.SignInHeader
 import app.nuddle.ui.theme.DurtTheme
@@ -146,31 +147,6 @@ private fun CountryBox() {
             tint = colors.ink,
             modifier = Modifier.size(dimens.iconSmall),
         )
-    }
-}
-
-/** Shows "5321234567" as "532 123 45 67" while the state keeps digits only. */
-private object PhoneGrouping : VisualTransformation {
-    private val spacesAfter = intArrayOf(3, 6, 8)
-
-    override fun filter(text: AnnotatedString): TransformedText {
-        val grouped = TurkishPhone.group(text.text)
-        val mapping =
-            object : OffsetMapping {
-                override fun originalToTransformed(offset: Int): Int = offset + spacesAfter.count { it < offset }
-
-                // A space sits at transformed index `at + i` (the i-th space), present once the number is longer than `at`.
-                override fun transformedToOriginal(offset: Int): Int {
-                    val spaces =
-                        spacesAfter
-                            .withIndex()
-                            .filter { (_, at) ->
-                                text.length > at
-                            }.map { (i, at) -> at + i }
-                    return (offset - spaces.count { it < offset }).coerceIn(0, text.length)
-                }
-            }
-        return TransformedText(AnnotatedString(grouped), mapping)
     }
 }
 

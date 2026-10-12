@@ -1,8 +1,7 @@
 # Writes a task to self in the compose bar (2a); the fixture extractor answers TEXT with a confident
 # task, so it is created directly and shows as the "Sıradaki" card on home (2f).
+# TEXT comes from the orchestrator (no default: see sign-up.yaml).
 appId: app.nuddle.debug
-env:
-  TEXT: para cek
 ---
 - extendedWaitUntil:
     visible:
