@@ -29,6 +29,8 @@ data class TaskEntity(
     val photoSentAt: Long? = null,
     /** The note of the last Tekrar iste while the task is REJECTED (4g). */
     val reRequestNote: String? = null,
+    /** Epoch milliseconds of the last status change: a cancelled row stays a day after it (7e). 0 before NUD-16. */
+    @ColumnInfo(defaultValue = "0") val statusChangedAt: Long = 0,
 )
 
 /** A connection from sync (SyncConnection): what [displayName] is to me, how far pokes reach them, their phone. */
@@ -85,4 +87,19 @@ data class OutboxEntity(
     /** Epoch milliseconds. */
     val createdAt: Long,
     val attempts: Int = 0,
+)
+
+/**
+ * A task event as synced (SyncEvent): the drop note and the poke count on the 5d and 7e cards, the "cevap vermiyor"
+ * notification (7a) and the bell (7b) are built from these. `payload` is the event's JSON object as text.
+ */
+@Entity(tableName = "task_events", indices = [Index("taskId")])
+data class TaskEventEntity(
+    @PrimaryKey val id: String,
+    val taskId: String,
+    val actorId: String?,
+    val type: String,
+    val payload: String,
+    /** Epoch milliseconds. */
+    val at: Long,
 )

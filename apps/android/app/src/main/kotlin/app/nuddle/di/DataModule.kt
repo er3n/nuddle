@@ -18,6 +18,7 @@ import app.nuddle.data.db.NuddleDatabase
 import app.nuddle.data.db.OutboxDao
 import app.nuddle.data.db.PokeStepDao
 import app.nuddle.data.db.TaskDao
+import app.nuddle.data.db.TaskEventDao
 import app.nuddle.data.outbox.WorkManagerScheduling
 import app.nuddle.data.photo.ApiPhotoLoader
 import app.nuddle.data.photo.PhotoLoader
@@ -63,6 +64,9 @@ object DatabaseModule {
 
     @Provides
     fun connections(db: NuddleDatabase): ConnectionDao = db.connections()
+
+    @Provides
+    fun taskEvents(db: NuddleDatabase): TaskEventDao = db.taskEvents()
 }
 
 /** The in-app camera, or in the `e2e` flavor the photo the orchestrator put on the phone (NUD-29). */

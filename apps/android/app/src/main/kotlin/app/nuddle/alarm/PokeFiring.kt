@@ -143,14 +143,17 @@ class PokeActions
             outbox.enqueue("cancel", id, CancelCommand(idempotencyKey = id, taskId = taskId, note = note), CancelCommand.serializer())
         }
 
-        /** The optional note sheet (7f) arrives with feature slice 5; until then the drop has no note. */
-        suspend fun cantToday(key: AlarmKey) {
+        /** "Bugün olmaz" on the notification closes without a note; the full screen poke may add one (7f). */
+        suspend fun cantToday(
+            key: AlarmKey,
+            note: String? = null,
+        ) {
             close(key.taskId, TaskStatus.DROPPED)
             val id = ids.next()
             outbox.enqueue(
                 "cant_today",
                 id,
-                CantTodayCommand(idempotencyKey = id, taskId = key.taskId, note = null),
+                CantTodayCommand(idempotencyKey = id, taskId = key.taskId, note = note?.trim()?.takeIf { it.isNotEmpty() }),
                 CantTodayCommand.serializer(),
             )
         }

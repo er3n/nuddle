@@ -33,6 +33,7 @@ import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
@@ -77,6 +78,7 @@ class SyncAndOutboxTest {
             tasks = db.tasks(),
             invites = db.invites(),
             connections = db.connections(),
+            events = db.taskEvents(),
             alarms = alarms,
             announcer = announcer,
             json = testJson,
@@ -128,6 +130,39 @@ class SyncAndOutboxTest {
                     .sorted(),
             )
             assertEquals(1, rearms)
+        }
+
+    @Test
+    fun `sync stores task events with their payload and when the status changed`() =
+        runTest {
+            server.enqueue(
+                json(
+                    200,
+                    syncBody.replace(
+                        """"events":[]""",
+                        """
+                        "events":[{"id":"9","taskId":"${Cast.TASK_ID}","actorId":"${Cast.EREN_ID}","type":"dropped",
+                                   "payload":{"note":"Vaktim olmadı"},"at":"2026-10-12T08:46:00+03:00"},
+                                  {"id":"10","taskId":"${Cast.TASK_ID}","actorId":null,"type":"approved",
+                                   "payload":{"auto":true},"at":"2026-10-12T09:00:00+03:00"}]
+                        """.trimIndent(),
+                    ),
+                ),
+            )
+
+            assertTrue(syncRepository().sync())
+
+            val events = db.taskEvents().forTask(Cast.TASK_ID)
+            assertEquals(listOf("dropped", "approved"), events.map { it.type })
+            assertEquals("Vaktim olmadı", events[0].note)
+            assertEquals(Cast.EREN_ID, events[0].actorId)
+            assertTrue(events[1].auto)
+            assertNull(events[1].note)
+            assertEquals(Instant.parse("2026-10-12T08:46:00+03:00").toEpochMilliseconds(), events[0].at)
+            assertEquals(
+                Instant.parse("2026-10-11T14:32:00+03:00").toEpochMilliseconds(),
+                db.tasks().get(Cast.TASK_ID)!!.statusChangedAt,
+            )
         }
 
     @Test
@@ -230,6 +265,7 @@ class SyncAndOutboxTest {
                     db.tasks(),
                     db.invites(),
                     db.connections(),
+                    db.taskEvents(),
                     alarms,
                     announcer,
                     testJson,

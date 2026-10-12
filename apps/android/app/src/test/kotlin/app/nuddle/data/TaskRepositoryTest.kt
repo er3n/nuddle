@@ -6,11 +6,15 @@ import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.WriteTaskResult
 import app.nuddle.data.db.NuddleDatabase
 import app.nuddle.data.db.PokeStepEntity
+import app.nuddle.data.outbox.Outbox
 import app.nuddle.data.sync.AlarmRearmer
 import app.nuddle.data.sync.SyncRepository
+import app.nuddle.domain.IdGenerator
 import app.nuddle.testing.Cast
+import app.nuddle.testing.FakeClock
 import app.nuddle.testing.InMemorySessionStore
 import app.nuddle.testing.RecordingAnnouncer
+import app.nuddle.testing.RecordingDrainer
 import app.nuddle.testing.aSession
 import app.nuddle.testing.aStep
 import app.nuddle.testing.aTask
@@ -68,6 +72,7 @@ class TaskRepositoryTest {
                         db.tasks(),
                         db.invites(),
                         db.connections(),
+                        db.taskEvents(),
                         alarms,
                         RecordingAnnouncer(),
                         testJson,
@@ -95,6 +100,8 @@ class TaskRepositoryTest {
                 sessions = sessions,
                 tasks = db.tasks(),
                 pokeSteps = db.pokeSteps(),
+                outbox = Outbox(db.outbox(), testJson, FakeClock(), RecordingDrainer()),
+                ids = IdGenerator(FakeClock()),
                 json = testJson,
             )
     }
@@ -233,6 +240,58 @@ class TaskRepositoryTest {
 
             server.close()
             assertEquals(WriteOutcome.Failed, repository.write("asdf", "key-3"))
+        }
+
+    @Test
+    fun `Sonradan yaptım closes a missed task at once and queues did_it_later`() =
+        runTest {
+            db.tasks().upsert(listOf(aTask().copy(status = "MISSED")))
+
+            repository.didItLater(Cast.TASK_ID)
+
+            assertEquals("DONE", db.tasks().get(Cast.TASK_ID)?.status)
+            val queued = db.outbox().pending().single()
+            assertEquals("did_it_later", queued.command)
+            assertTrue(""""taskId":"${Cast.TASK_ID}"""" in queued.body, queued.body)
+            assertEquals(0, server.requestCount)
+        }
+
+    @Test
+    fun `Ben hallederim cancels a dropped task at once and queues sender_handles`() =
+        runTest {
+            db.tasks().upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SELIN_ID, status = "DROPPED")))
+
+            repository.senderHandles(Cast.TASK_ID)
+
+            assertEquals("CANCELLED", db.tasks().get(Cast.TASK_ID)?.status)
+            assertEquals(
+                "sender_handles",
+                db
+                    .outbox()
+                    .pending()
+                    .single()
+                    .command,
+            )
+        }
+
+    @Test
+    fun `a new deadline is sent with its key, then the task syncs`() =
+        runTest {
+            server.enqueue(json(200, """{"taskId":"${Cast.TASK_ID}","status":"SCHEDULED","planVersion":3}"""))
+            server.enqueue(json(200, syncBody))
+
+            val outcome = repository.newDeadline(Cast.TASK_ID, Instant.parse("2026-10-13T19:00:00+03:00"), "key-8")
+
+            assertEquals(WriteOutcome.Created(Cast.TASK_ID), outcome)
+            val request = server.takeRequest()
+            assertEquals("/api/v1/commands/new_deadline", request.url.encodedPath)
+            val body = request.body?.utf8() ?: ""
+            assertTrue(""""idempotencyKey":"key-8"""" in body, body)
+            assertTrue(""""deadline":"2026-10-13T16:00:00Z"""" in body, body)
+            assertEquals("/api/v1/sync", server.takeRequest().url.encodedPath)
+
+            server.enqueue(drtError(409, "DRT-2001", "wrong_status"))
+            assertEquals(WriteOutcome.Failed, repository.newDeadline(Cast.TASK_ID, Instant.parse("2026-10-13T19:00:00+03:00"), "key-9"))
         }
 
     @Test
