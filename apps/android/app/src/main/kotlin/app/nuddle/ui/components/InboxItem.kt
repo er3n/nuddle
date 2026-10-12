@@ -22,7 +22,13 @@ import app.nuddle.ui.preview.PreviewComponent
 import app.nuddle.ui.preview.PreviewSurface
 import app.nuddle.ui.theme.DurtTheme
 
-/** One entry in the bell (components.md, 7). Unread: title 600 and an 8 dp `poke` dot on the right. */
+/** The icon's colors: a warning, something finished, or something that stopped (7b). */
+enum class InboxTone { Warning, Success, Neutral }
+
+/**
+ * One entry in the bell (components.md, 7). Unread: title 600 and an 8 dp `poke` dot on the right. Without
+ * [onClick] the entry is only text.
+ */
 @Composable
 fun InboxItem(
     icon: ImageVector,
@@ -30,26 +36,33 @@ fun InboxItem(
     subtitle: String,
     time: String,
     unread: Boolean,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    tone: InboxTone = InboxTone.Warning,
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
+    val (background, tint) =
+        when (tone) {
+            InboxTone.Warning -> colors.warningSoft to colors.warning
+            InboxTone.Success -> colors.successSoft to colors.success
+            InboxTone.Neutral -> colors.neutralPill to colors.textSecondary
+        }
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .heightIn(min = dimens.listRowWithDescription)
-                .clickable(onClick = onClick)
+                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
                 .padding(vertical = dimens.space10),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(dimens.space12),
     ) {
         Box(
-            Modifier.size(dimens.avatarList).background(colors.warningSoft, CircleShape),
+            Modifier.size(dimens.avatarList).background(background, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, contentDescription = null, tint = colors.warning, modifier = Modifier.size(dimens.icon))
+            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(dimens.icon))
         }
         Column(Modifier.weight(1f)) {
             Text(title, style = if (unread) DurtTheme.type.bodyStrong else DurtTheme.type.body, color = colors.ink)
@@ -74,7 +87,15 @@ private fun InboxItemPreview() {
                 onClick = {},
             )
             GroupDivider()
-            InboxItem(DurtIcons.Check, "Eren bitirdi: \"Çöpü at\"", "Bitti dedi", "07:58", unread = false, onClick = {})
+            InboxItem(
+                DurtIcons.Check,
+                "Eren bitirdi: \"Çöpü at\"",
+                "Bitti dedi",
+                "07:58",
+                unread = false,
+                onClick = null,
+                tone = InboxTone.Success,
+            )
         }
     }
 }

@@ -177,7 +177,9 @@ fun NuddleNavHost(
                 takeOpenRoute()
                 nav.navigate(route) { launchSingleTop = true }
             }
-            val unread by invites.unread.collectAsStateWithLifecycle()
+            val unreadInvites by invites.unread.collectAsStateWithLifecycle()
+            val unreached by issues.unreached.collectAsStateWithLifecycle()
+            val unread = unreadInvites + unreached
             // Bell, profile and voice are routes of the feature slices (docs/bootstrap-plan.md).
             state?.let {
                 HomeScreen(
@@ -260,6 +262,7 @@ fun NuddleNavHost(
                 state = state,
                 onBack = { nav.popBackStack() },
                 onOpenInvite = { nav.navigate(Routes.consent(it.inviteId, fromBell = true)) },
+                onOpenTask = { nav.navigate(Routes.task(it)) { launchSingleTop = true } },
             )
         }
         composable(
