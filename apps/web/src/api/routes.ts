@@ -1,6 +1,7 @@
 // Public API routes under /api/v1 (ADR 0003, 0006, 0008). Each route is defined with its zod
 // schemas so validation and the OpenAPI document come from the same source.
 import { createRoute, type OpenAPIHono, type z } from "@hono/zod-openapi";
+import { brandFix } from "../domain/brand-fixes";
 import type { Command } from "../domain/task-machine";
 import type { Person } from "../domain/types";
 import type { Caller } from "../infra/auth/jwt";
@@ -248,6 +249,26 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
         await svc.registerDevice(deps, await person(c.get("caller")), c.req.valid("json")),
         200,
       ),
+  );
+
+  app.openapi(
+    createRoute({
+      method: "get",
+      path: "/v1/brand-fix",
+      operationId: "brandFix",
+      summary: "Settings that stop this phone brand from killing the app (2h)",
+      tags: ["devices"],
+      security: [{ bearer: [] }],
+      request: { query: s.BrandFixQuery },
+      responses: {
+        200: {
+          description: "The steps for the brand, or the default ones",
+          content: json(s.BrandFix),
+        },
+        ...errors([400, 401]),
+      },
+    }),
+    (c) => c.json(brandFix(c.req.valid("query").manufacturer), 200),
   );
 
   app.openapi(

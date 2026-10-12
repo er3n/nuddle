@@ -31,7 +31,7 @@ Things not yet decided. If you hit one while building, do not decide silently: p
 19. **Play policy** for `USE_EXACT_ALARM` and `USE_FULL_SCREEN_INTENT` as an alarm app. Submit an early closed test build.
 20. **Avatar color palette:** six colors, each 4.5:1 with white text.
 21. **Turkish suffixes after user content** (e.g. `Eren "Çöpü at"ı bitirdi`). *Default:* rephrase strings so user content is never suffixed (`Eren bitirdi: "Çöpü at"`).
-22. **Brand fix JSON** content for Xiaomi, Samsung, Huawei, Oppo, Vivo (dontkillmyapp.com as reference).
+22. **Brand fix JSON** content for Xiaomi, Samsung, Huawei, Oppo, Vivo (dontkillmyapp.com as reference). *Default:* `apps/web/src/domain/brand-fixes.json`, served by `GET /api/v1/brand-fix?manufacturer=`. Two steps per brand (autostart or app launch, then battery), sub-brands share their parent's steps under their own name (Redmi, Poco, Honor, Realme, OnePlus, iQOO), every other phone gets one default step (app battery usage "Kısıtlanmamış"). Each step lists activities to try in order and ends with the app details page. Menu names are from dontkillmyapp.com and need a check on real phones.
 23. **Pricing confirmations:** Supabase and Vercel plan limits and prices at launch time.
 24. **Dark theme:** after the MVP. Tokens are structured for it.
 25. **License for the public repo.** Without a LICENSE file the code is visible but all rights are reserved. *Default:* a short `LICENSE` stating "Copyright (c) 2026 Eren Öztürk. All rights reserved." until an open source license is chosen.

@@ -102,6 +102,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/brand-fix": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Settings that stop this phone brand from killing the app (2h) */
+        get: operations["brandFix"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/photos/upload-url": {
         parameters: {
             query?: never;
@@ -799,6 +816,25 @@ export interface components {
                 poke_alarm: boolean;
             };
         };
+        BrandFix: {
+            brand: string;
+            name: string | null;
+            reason: string | null;
+            steps: components["schemas"]["BrandFixStep"][];
+        };
+        BrandFixStep: {
+            id: string;
+            title: string;
+            hint: string;
+            /** @enum {string} */
+            check?: "battery_optimization";
+            targets: components["schemas"]["BrandFixTarget"][];
+        };
+        BrandFixTarget: {
+            component?: string;
+            action?: string;
+            withPackage?: boolean;
+        };
         PhotoUploadUrlResult: {
             path: string;
             url: string;
@@ -1404,6 +1440,47 @@ export interface operations {
             };
             /** @description Error with a DRT code */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    brandFix: {
+        parameters: {
+            query: {
+                /** @description Build.MANUFACTURER */
+                manufacturer: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The steps for the brand, or the default ones */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrandFix"];
+                };
+            };
+            /** @description Error with a DRT code */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

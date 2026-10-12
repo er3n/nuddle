@@ -581,6 +581,59 @@ components:
         - exactAlarm
         - fullScreen
         - channels
+    BrandFix:
+      type: object
+      properties:
+        brand:
+          type: string
+        name:
+          type: string
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/BrandFixStep"
+          minItems: 1
+      required:
+        - brand
+        - name
+        - reason
+        - steps
+    BrandFixStep:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        hint:
+          type: string
+        check:
+          type: string
+          enum:
+            - battery_optimization
+        targets:
+          type: array
+          items:
+            $ref: "#/components/schemas/BrandFixTarget"
+          minItems: 1
+      required:
+        - id
+        - title
+        - hint
+        - targets
+    BrandFixTarget:
+      type: object
+      properties:
+        component:
+          type: string
+        action:
+          type: string
+        withPackage:
+          type: boolean
     PhotoUploadUrlResult:
       type: object
       properties:
@@ -1357,6 +1410,42 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/brand-fix:
+    get:
+      operationId: brandFix
+      summary: Settings that stop this phone brand from killing the app (2h)
+      tags:
+        - devices
+      security:
+        - bearer: []
+      parameters:
+        - schema:
+            type: string
+            maxLength: 64
+            description: Build.MANUFACTURER
+          required: true
+          description: Build.MANUFACTURER
+          name: manufacturer
+          in: query
+      responses:
+        "200":
+          description: The steps for the brand, or the default ones
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrandFix"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
           description: Error with a DRT code
           content:
             application/json:

@@ -42,7 +42,7 @@ A channel disabled in system settings is treated like a missing permission: reac
 - Every fired alarm reports planned and actual time.
 - The server counts a poke as lost when the report does not arrive while the device appears online.
 - On launch, `ActivityManager.getHistoricalProcessExitReasons()` (API 30+) tells whether the previous exit was a force stop.
-- On a loss, the bell shows "Son dürtmen çalmadı" (2g) and brand-specific steps (2h). Steps come from a server JSON keyed by `Build.MANUFACTURER`, so they change without an app update. First version covers Xiaomi, Samsung, Huawei, Oppo, Vivo (dontkillmyapp.com as reference).
+- On a loss, the bell shows "Son dürtmen çalmadı" (2g) and brand-specific steps (2h). Steps come from a server JSON keyed by `Build.MANUFACTURER` (`GET /api/v1/brand-fix`), so they change without an app update; any other phone gets a default step. First version covers Xiaomi, Samsung, Huawei, Oppo, Vivo (dontkillmyapp.com as reference).
 
 ## Other
 

@@ -72,6 +72,11 @@ export class SimPhone {
   online = true;
   /** Pushes are lost while true (FCM delay); the phone still rings and reports. */
   pushesDelayed = false;
+  /**
+   * The phone brand kills the app's alarms while true (docs/ux/platform.md, Missed-ring detection): due alarms are
+   * gone without ringing, while the phone stays online.
+   */
+  alarmsKilled = false;
   /** Steps per task, from the latest plan version the phone has synced. */
   private readonly alarms = new Map<TaskId, PokePlan>();
   /** `taskId|version|seq` of alarms already handled (rung or skipped). */
@@ -159,6 +164,7 @@ export class SimPhone {
     for (const alarm of this.pendingAlarms()) {
       if (alarm.at.getTime() > now.getTime()) continue;
       this.handled.add(alarmKey(alarm.taskId, alarm.version, alarm.seq));
+      if (this.alarmsKilled) continue;
       if (isQuiet(now, person.quietHours)) {
         this.world.violations.push(`planned in quiet hours: ${alarm.taskId}#${String(alarm.seq)}`);
         continue;
