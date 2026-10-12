@@ -18,6 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -42,6 +44,8 @@ data class TaskUi(
 data class CardAction(
     val text: String,
     val onClick: () -> Unit,
+    val icon: ImageVector? = null,
+    val testTag: String = "",
 )
 
 @Composable
@@ -178,7 +182,8 @@ fun TaskActionCard(
                 text = primary.text,
                 onClick = primary.onClick,
                 size = DurtButtonSize.Compact,
-                modifier = Modifier.weight(1f),
+                leadingIcon = primary.icon,
+                modifier = Modifier.weight(1f).testTag(primary.testTag),
             )
             if (secondary != null) {
                 DurtButton(
@@ -186,7 +191,8 @@ fun TaskActionCard(
                     onClick = secondary.onClick,
                     kind = DurtButtonKind.Secondary,
                     size = DurtButtonSize.Compact,
-                    modifier = Modifier.weight(1f),
+                    leadingIcon = secondary.icon,
+                    modifier = Modifier.weight(1f).testTag(secondary.testTag),
                 )
             }
         }
@@ -203,8 +209,8 @@ private fun TaskCardsPreview() {
             TaskActionCard(
                 task = TaskUi("Para çek", "Selin · bugün 09:00'a kadardı", PillStatus.Missed, "Selin", selin),
                 message = "Son zaman geçti. Selin'e haber verdim.",
-                primary = CardAction("Sonradan yaptım") {},
-                secondary = CardAction("Selin'i ara") {},
+                primary = CardAction("Sonradan yaptım", {}),
+                secondary = CardAction("Ara", {}),
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(DurtTheme.dimens.space8)) {
                 PillStatus.entries.forEach { StatusPill(it, Modifier.padding(bottom = DurtTheme.dimens.space8)) }

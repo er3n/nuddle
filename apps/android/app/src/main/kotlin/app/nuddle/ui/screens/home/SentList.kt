@@ -24,6 +24,8 @@ internal fun ColumnScope.SentSection(
     sent: List<SentUi>,
     fresh: String?,
     onOpen: (taskId: String, awaitingApproval: Boolean) -> Unit,
+    issues: List<SentIssueUi> = emptyList(),
+    issueActions: IssueCallbacks = IssueCallbacks(),
 ) {
     val colors = DurtTheme.colors
     Text(
@@ -32,6 +34,8 @@ internal fun ColumnScope.SentSection(
         color = colors.textTertiary,
         modifier = Modifier.semantics { heading() },
     )
+    // Dropped and missed wait for my answer, so they come first (5d).
+    issues.forEach { SentIssueCard(it, issueActions) }
     sent.forEach { task ->
         val isFresh = task.taskId == fresh
         val parts =

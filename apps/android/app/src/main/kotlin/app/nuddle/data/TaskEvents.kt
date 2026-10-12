@@ -32,6 +32,8 @@ val TaskEventEntity.level: String? get() = field("level")?.contentOrNull
 
 /** Event types the app reads (TaskEventType values). */
 object EventTypes {
+    const val CREATED = "created"
+    const val EDITED = "edited"
     const val DONE = "done"
     const val APPROVED = "approved"
     const val DROPPED = "dropped"

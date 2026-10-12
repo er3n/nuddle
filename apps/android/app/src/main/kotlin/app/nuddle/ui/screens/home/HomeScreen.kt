@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -77,6 +78,10 @@ data class HomeUiState(
     val connected: Boolean = false,
     /** 1g: shown instead of the invite card while my invite waits. */
     val pendingInvite: PendingInviteUi? = null,
+    /** 7e and 5d: missed, dropped and cancelled tasks that wait for an answer. */
+    val issues: IssuesUi = IssuesUi(),
+    /** The new deadline sheet of 5d, while open. */
+    val newDeadline: NewDeadlineUi? = null,
 )
 
 @Immutable
@@ -111,6 +116,8 @@ fun HomeScreen(
     preview: PreviewCallbacks = PreviewCallbacks(),
     undo: UndoCallbacks = UndoCallbacks(),
     pendingInvite: PendingInviteCallbacks = PendingInviteCallbacks(),
+    issueActions: IssueCallbacks = IssueCallbacks(),
+    newDeadline: NewDeadlineCallbacks = NewDeadlineCallbacks(),
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
@@ -135,24 +142,42 @@ fun HomeScreen(
         if (waiting != null) {
             PendingInviteCard(state.myName, waiting, { pendingInvite.onReshare(waiting) }, { pendingInvite.onRevoke(waiting) })
         }
-        if (nextUp == null && state.sent.isEmpty()) {
+        val issues = state.issues
+        if (nextUp == null && state.sent.isEmpty() && issues.isEmpty) {
             if (waiting == null && !state.connected) InviteCard(state.myName, onInvite)
             EmptyTasks(Modifier.padding(top = dimens.space48))
         } else {
-            if (nextUp != null) {
-                Text(
-                    text = stringResource(R.string.home_next_up).uppercaseForUi(),
-                    style = DurtTheme.type.overline,
-                    color = colors.textTertiary,
-                    modifier = Modifier.semantics { heading() },
-                )
-                NextUpCard(nextUp, nextUpActions, state.nextUpPhoto)
-            }
-            if (state.sent.isNotEmpty()) SentSection(state.sent, fresh = state.undo?.taskId, onOpen = onOpenTask)
+            Tasks(state, nextUpActions, onOpenTask, issueActions)
             if (waiting == null && !state.connected) CompactInviteCard(onInvite)
         }
     }
     state.preview?.let { PreviewSheet(it, preview) }
+    state.newDeadline?.let { NewDeadlineSheet(it, newDeadline) }
+}
+
+/** Sıradaki, then what waits for an answer (7e), then my tasks to others with 5d on top. */
+@Composable
+private fun ColumnScope.Tasks(
+    state: HomeUiState,
+    nextUpActions: NextUpCallbacks,
+    onOpenTask: (taskId: String, awaitingApproval: Boolean) -> Unit,
+    issueActions: IssueCallbacks,
+) {
+    val nextUp = state.nextUp
+    val issues = state.issues
+    if (nextUp != null) {
+        Text(
+            text = stringResource(R.string.home_next_up).uppercaseForUi(),
+            style = DurtTheme.type.overline,
+            color = DurtTheme.colors.textTertiary,
+            modifier = Modifier.semantics { heading() },
+        )
+        NextUpCard(nextUp, nextUpActions, state.nextUpPhoto)
+    }
+    if (issues.toMe) ToMeIssues(issues, issueActions)
+    if (state.sent.isNotEmpty() || issues.sent.isNotEmpty()) {
+        SentSection(state.sent, fresh = state.undo?.taskId, onOpen = onOpenTask, issues = issues.sent, issueActions = issueActions)
+    }
 }
 
 @Composable
