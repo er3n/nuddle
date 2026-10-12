@@ -25,6 +25,7 @@ const errors = {
   invite_not_open: { code: "DRT-4101", status: 409 },
   wrong_invitee: { code: "DRT-4102", status: 403 },
   self_invite: { code: "DRT-4103", status: 409 },
+  not_inviter: { code: "DRT-4104", status: 403 },
 
   internal: { code: "DRT-5001", status: 500 },
   upstream_failed: { code: "DRT-5002", status: 502 },

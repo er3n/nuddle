@@ -309,8 +309,19 @@ export class Client {
       }),
       "create_invite",
     );
+    this.world.inviteIds.set(r.code, r.inviteId);
     await this.world.refresh();
     return r.code;
+  }
+
+  async revokeInvite(code: string): Promise<void> {
+    ok(
+      await this.api.POST("/api/v1/commands/revoke_invite", {
+        body: { idempotencyKey: uuidv7(), inviteId: this.world.inviteIds.get(code) ?? code },
+      }),
+      "revoke_invite",
+    );
+    await this.world.refresh();
   }
 
   async acceptInvite(code: string, relationship: EdgeType): Promise<void> {
@@ -365,6 +376,7 @@ interface Snapshot {
   edges: Edge[];
   devices: Device[];
   invitesSeen: Map<PersonId, { code: string; status: string }[]>;
+  invitesReceived: Map<PersonId, { code: string; status: string }[]>;
 }
 
 const emptySnapshot = (): Snapshot => ({
@@ -376,6 +388,7 @@ const emptySnapshot = (): Snapshot => ({
   edges: [],
   devices: [],
   invitesSeen: new Map(),
+  invitesReceived: new Map(),
 });
 
 export class World {
@@ -386,6 +399,8 @@ export class World {
   readonly extractor: FixtureExtractor;
   /** Device-side rule breaks (ringing in quiet hours). Scenarios assert this stays empty. */
   readonly violations: string[] = [];
+  /** Invite ids by code, so anyone in a scenario can try to revoke an invite by its code. */
+  readonly inviteIds = new Map<string, string>();
 
   private readonly ready: Promise<TestServer>;
   private readonly clients = new Map<PersonId, Client>();
@@ -520,6 +535,10 @@ export class World {
     return this.snap.invitesSeen.get(inviterId) ?? [];
   }
 
+  invitesReceivedBy(inviteeId: PersonId): { code: string; status: string }[] {
+    return this.snap.invitesReceived.get(inviteeId) ?? [];
+  }
+
   pendingActions(taskId?: TaskId): ClaimedAction[] {
     return this.snap.pendingActions.filter((a) => taskId === undefined || a.taskId === taskId);
   }
@@ -604,6 +623,10 @@ export class World {
         snap.invitesSeen.set(
           name,
           r.data.sentInvites.map((i) => ({ code: i.code, status: i.status })),
+        );
+        snap.invitesReceived.set(
+          name,
+          r.data.receivedInvites.map((i) => ({ code: i.code, status: i.status })),
         );
       }
     }

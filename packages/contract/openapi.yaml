@@ -78,6 +78,7 @@ components:
                 - invite_not_open
                 - wrong_invitee
                 - self_invite
+                - not_inviter
                 - internal
                 - upstream_failed
             message:
@@ -287,6 +288,11 @@ components:
             - accepted
             - revoked
             - expired
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-10-12T09:00:00+03:00
+          description: ISO 8601 with offset
       required:
         - id
         - code
@@ -294,6 +300,7 @@ components:
         - prefilledName
         - relationship
         - status
+        - createdAt
     SyncReceivedInvite:
       type: object
       properties:
@@ -319,6 +326,11 @@ components:
             - declined
             - revoked
             - expired
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-10-12T09:00:00+03:00
+          description: ISO 8601 with offset
       required:
         - id
         - code
@@ -327,6 +339,7 @@ components:
         - prefilledName
         - relationship
         - status
+        - createdAt
     SyncTask:
       type: object
       properties:
@@ -981,6 +994,19 @@ components:
       required:
         - idempotencyKey
         - code
+    RevokeInviteCommand:
+      type: object
+      properties:
+        idempotencyKey:
+          type: string
+          format: uuid
+          description: Client generated UUIDv7; a replay returns the first result (ADR 0006)
+        inviteId:
+          type: string
+          format: uuid
+      required:
+        - idempotencyKey
+        - inviteId
     LogOutCommand:
       type: object
       properties:
@@ -2256,6 +2282,63 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/DeclineInviteCommand"
+      responses:
+        "200":
+          description: The result; a replay with the same key returns it again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ok"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/commands/revoke_invite:
+    post:
+      operationId: revokeInvite
+      summary: "Inviter: İptal et on a pending invite"
+      tags:
+        - commands
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevokeInviteCommand"
       responses:
         "200":
           description: The result; a replay with the same key returns it again

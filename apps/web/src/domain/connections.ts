@@ -16,7 +16,7 @@ export interface Invite {
   status: InviteStatus;
 }
 
-export type ConnectionError = "invite_not_open" | "wrong_invitee" | "self_invite";
+export type ConnectionError = "invite_not_open" | "wrong_invitee" | "self_invite" | "not_inviter";
 
 export type ConnectionResult<T> = { ok: true; value: T } | { ok: false; error: ConnectionError };
 
@@ -75,6 +75,18 @@ export function declineInvite(invite: Invite, invitee: Person): ConnectionResult
   if (invite.status !== "open") return { ok: false, error: "invite_not_open" };
   if (invitee.phone !== invite.inviteePhone) return { ok: false, error: "wrong_invitee" };
   return { ok: true, value: { ...invite, status: "declined" } };
+}
+
+/**
+ * "İptal et" on the pending invite (1g). Only the inviter, only while it is open to them: a decline still looks
+ * open to the inviter, so it can be revoked too, and nothing tells them it was declined.
+ */
+export function revokeInvite(invite: Invite, inviter: Person): ConnectionResult<Invite> {
+  if (invite.inviterId !== inviter.id) return { ok: false, error: "not_inviter" };
+  if (invite.status !== "open" && invite.status !== "declined") {
+    return { ok: false, error: "invite_not_open" };
+  }
+  return { ok: true, value: { ...invite, status: "revoked" } };
 }
 
 /** The invite status as the inviter may see it. A decline looks like an invite still open. */

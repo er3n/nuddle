@@ -193,6 +193,7 @@ export const AcceptInviteCommand = keyed({
 export const DeclineInviteCommand = keyed({ code: z.string().min(1) }).openapi(
   "DeclineInviteCommand",
 );
+export const RevokeInviteCommand = keyed({ inviteId: Id }).openapi("RevokeInviteCommand");
 export const LogOutCommand = keyed({ deviceId: Id }).openapi("LogOutCommand");
 export const DeleteAccountCommand = keyed({}).openapi("DeleteAccountCommand");
 
@@ -309,6 +310,8 @@ export const SyncResponse = z
           relationship: EdgeType,
           /** A declined invite looks open to the inviter. */
           status: z.enum(["open", "accepted", "revoked", "expired"]),
+          /** When the invite was made: "Davet 14:32'de paylaşıldı" (1g). */
+          createdAt: Instant,
         })
         .openapi("SyncSentInvite"),
     ),
@@ -322,6 +325,8 @@ export const SyncResponse = z
           prefilledName: z.string(),
           relationship: EdgeType,
           status: z.enum(["open", "accepted", "declined", "revoked", "expired"]),
+          /** "2 sa önce" in the bell (1c, 1d). */
+          createdAt: Instant,
         })
         .openapi("SyncReceivedInvite"),
     ),

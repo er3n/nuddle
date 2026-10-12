@@ -254,6 +254,11 @@ export async function findInviteByCode(tx: Tx, code: string): Promise<Invite | n
   return row ? toInvite(row) : null;
 }
 
+export async function findInviteById(tx: Tx, id: string): Promise<Invite | null> {
+  const [row] = await tx.select().from(invites).where(eq(invites.id, id)).for("update");
+  return row ? toInvite(row) : null;
+}
+
 /**
  * `visibleChange` false keeps the sync cursor untouched, so the inviter's feed does not even
  * re-send the row when an invite is declined (declining is never shown to the inviter).
@@ -583,8 +588,8 @@ export async function saveIdempotentResult(
 export interface SyncRows {
   cursor: number;
   connections: { edge: Edge; person: Person; devices: Device[] }[];
-  sentInvites: Invite[];
-  receivedInvites: (Invite & { inviterName: string })[];
+  sentInvites: (Invite & { createdAt: Date })[];
+  receivedInvites: (Invite & { inviterName: string; createdAt: Date })[];
   tasks: (Task & { snoozesUsed: number })[];
   events: (TaskEvent & { id: string })[];
   plans: PokePlan[];
@@ -662,10 +667,11 @@ export async function syncRows(tx: Tx, me: Person, cursor: number): Promise<Sync
       person: toPerson(r.people),
       devices: otherDevices.filter((d) => d.personId === r.people.id),
     })),
-    sentInvites: sent.map(toInvite),
+    sentInvites: sent.map((r) => ({ ...toInvite(r), createdAt: r.createdAt })),
     receivedInvites: received.map((r) => ({
       ...toInvite(r.invites),
       inviterName: r.people.displayName,
+      createdAt: r.invites.createdAt,
     })),
     tasks: taskRows.map((t) => ({ ...toTask(t), snoozesUsed: snoozesUsed.get(t.id) ?? 0 })),
     events: eventRows.map((r) => ({ ...toEvent(r.e), id: String(r.e.id) })),
