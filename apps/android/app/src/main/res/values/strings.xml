@@ -5,6 +5,8 @@
 -->
 <resources>
     <string name="app_name">dürt</string>
+    <!-- The language of these strings: uppercase labels use it, not the device locale (NUD-37). "en" in values-en. -->
+    <string name="ui_locale" translatable="false">tr</string>
     <!-- TODO(open-questions#11): the in-app logo follows the locale through this resource. -->
     <string name="logo_text">dürt</string>
 

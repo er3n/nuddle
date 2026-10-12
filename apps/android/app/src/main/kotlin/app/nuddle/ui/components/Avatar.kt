@@ -18,6 +18,7 @@ import app.nuddle.ui.preview.PreviewComponent
 import app.nuddle.ui.preview.PreviewSurface
 import app.nuddle.ui.theme.DurtTheme
 import app.nuddle.ui.theme.SpaceGrotesk
+import app.nuddle.ui.uppercaseForUi
 
 private const val INITIAL_SCALE = 0.4f
 
@@ -32,7 +33,7 @@ fun Avatar(
     size: Dp,
     modifier: Modifier = Modifier,
 ) {
-    val initial = name.trim().firstOrNull()?.uppercase() ?: ""
+    val initial = name.trim().take(1).uppercaseForUi()
     // The initial scales with the circle, not with the font scale: it must always fit.
     val fontSize = with(LocalDensity.current) { (size * INITIAL_SCALE).toSp() }
     Box(
