@@ -7,12 +7,17 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import app.nuddle.api.model.EdgeType
+import app.nuddle.domain.Ago
 import app.nuddle.domain.SetupStep
 import app.nuddle.domain.Snooze
 import app.nuddle.domain.TimeLeft
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.screens.code.CodeScreen
 import app.nuddle.ui.screens.code.CodeUiState
+import app.nuddle.ui.screens.consent.ConsentCallbacks
+import app.nuddle.ui.screens.consent.ConsentScreen
+import app.nuddle.ui.screens.consent.ConsentUiState
+import app.nuddle.ui.screens.consent.MatchedScreen
 import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.HomeScreen
@@ -22,6 +27,9 @@ import app.nuddle.ui.screens.home.PendingInviteCallbacks
 import app.nuddle.ui.screens.home.PendingInviteUi
 import app.nuddle.ui.screens.home.PreviewCallbacks
 import app.nuddle.ui.screens.home.PreviewUi
+import app.nuddle.ui.screens.inbox.InboxInviteUi
+import app.nuddle.ui.screens.inbox.InboxScreen
+import app.nuddle.ui.screens.inbox.InboxUiState
 import app.nuddle.ui.screens.invite.InviteCallbacks
 import app.nuddle.ui.screens.invite.InviteScreen
 import app.nuddle.ui.screens.invite.InviteUiState
@@ -290,6 +298,53 @@ class TestTagsTest {
         }
         assertShown(TestTags.HOME_PENDING_INVITE)
         assertTaps(TestTags.HOME_INVITE_RESHARE to "reshare", TestTags.HOME_INVITE_REVOKE to "revoke")
+    }
+
+    @Test
+    fun `consent after sign-in`() {
+        content {
+            ConsentScreen(
+                ConsentUiState("Selin", EdgeType.SPOUSE, EdgeType.SPOUSE, "23:00", "07:00"),
+                ConsentCallbacks(
+                    onAllow = { clicked += "allow" },
+                    onLater = { clicked += "later" },
+                    onChangeRelationship = { clicked += "change" },
+                ),
+            )
+        }
+        assertShown(TestTags.CONSENT)
+        assertTaps(TestTags.CONSENT_CHANGE to "change", TestTags.CONSENT_ALLOW to "allow", TestTags.CONSENT_LATER to "later")
+    }
+
+    @Test
+    fun `invite detail from the bell`() {
+        content {
+            ConsentScreen(
+                ConsentUiState("Selin", EdgeType.SPOUSE, EdgeType.SPOUSE, "23:00", "07:00", fromBell = true),
+                ConsentCallbacks(onDecline = { clicked += "decline" }, onBack = { clicked += "back" }),
+            )
+        }
+        assertTaps(TestTags.CONSENT_DECLINE to "decline", TestTags.BACK to "back")
+    }
+
+    @Test
+    fun matched() {
+        content { MatchedScreen("Selin", "Eren", onStart = { clicked += "start" }) }
+        assertShown(TestTags.MATCHED)
+        assertTaps(TestTags.MATCHED_START to "start")
+    }
+
+    @Test
+    fun `bell with an invite`() {
+        content {
+            InboxScreen(
+                InboxUiState(listOf(InboxInviteUi("i1", "Selin", Ago.Hours(2)))),
+                onBack = { clicked += "back" },
+                onOpenInvite = { clicked += "open" },
+            )
+        }
+        assertShown(TestTags.INBOX)
+        assertTaps(TestTags.INBOX_OPEN_INVITE to "open", TestTags.BACK to "back")
     }
 
     @Test

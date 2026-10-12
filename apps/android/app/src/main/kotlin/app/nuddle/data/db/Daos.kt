@@ -39,6 +39,9 @@ interface InviteDao {
 
     @Query("SELECT * FROM invites ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<InviteEntity>>
+
+    @Query("SELECT * FROM invites WHERE id = :id")
+    fun observe(id: String): Flow<InviteEntity?>
 }
 
 @Dao

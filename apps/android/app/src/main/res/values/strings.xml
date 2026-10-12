@@ -153,6 +153,60 @@
     <string name="relationship_as_sibling">Kardeşin</string>
     <string name="relationship_as_roommate">Ev arkadaşın</string>
 
+    <!-- 0f Consent and 1d Invite detail. Names take no suffix (open-questions#21); TODO(open-questions#33) for rephrased lines. -->
+    <string name="consent_title">%1$s seni dürtebilsin mi?</string>
+    <string name="consent_added_as">%1$s seni %2$s olarak ekledi.</string>
+    <string name="consent_added">%1$s seni ekledi.</string>
+    <string name="consent_change">Değiştir</string>
+    <string name="consent_my_pick">Senin için: %1$s</string>
+    <string name="consent_promise_tasks">Birbirinize görev yazabilirsiniz.</string>
+    <string name="consent_promise_full_screen">Gerekirse tam ekran alarmla dürtülebilirsin.</string>
+    <string name="consent_promise_quiet">%1$s ile %2$s arası kimse dürtülmez.</string>
+    <string name="consent_promise_reach_out">%1$s bir işi tüm hatırlatmalara rağmen kaçırırsa sana da haber verebilirim. İstemezsen kapatabilirsin.</string>
+    <string name="consent_promise_remove">İstediğin an bağlantıyı kaldırabilirsin. Karşı tarafa bildirim gitmez.</string>
+    <string name="consent_allow">İzin ver</string>
+    <string name="consent_later">Şimdi değil</string>
+    <string name="consent_decline">Reddet</string>
+    <string name="consent_decline_note">Reddedersen karşı tarafa bildirim gitmez.</string>
+    <string name="consent_detail_eyebrow">Davet · %1$s</string>
+    <string name="consent_pick_title">%1$s senin neyin?</string>
+    <string name="consent_failed_title">Cevabın gitmedi</string>
+    <string name="consent_gone_title">Bu davet artık geçerli değil</string>
+    <string name="consent_gone_body">Davet geri alınmış ya da daha önce cevaplanmış.</string>
+    <string name="relationship_their_spouse">eşi</string>
+    <string name="relationship_their_parent">annesi ya da babası</string>
+    <string name="relationship_their_child">çocuğu</string>
+    <string name="relationship_their_sibling">kardeşi</string>
+    <string name="relationship_their_roommate">ev arkadaşı</string>
+
+    <!-- 0g Matched -->
+    <string name="matched_title_line1">Sen ve %1$s</string>
+    <string name="matched_title_line2">eşleştiniz</string>
+    <!-- TODO(open-questions#33): the design says "Selin, Bizimkiler listende."; kept, the name is not suffixed. -->
+    <string name="matched_body">Artık birbirinize görev yazabilirsiniz. %1$s, Bizimkiler listende.</string>
+    <string name="matched_start">Başla</string>
+
+    <!-- 1c Bell -->
+    <string name="inbox_title">Bildirimler</string>
+    <string name="inbox_new">Yeni</string>
+    <string name="inbox_invite_title">%1$s seni davet etti</string>
+    <string name="inbox_invite_body">Seni dürtmek için izin istiyor</string>
+    <string name="inbox_invite_open">Daveti gör</string>
+    <string name="inbox_no_older">Daha eski bildirim yok</string>
+    <string name="ago_now">şimdi</string>
+    <plurals name="ago_minutes">
+        <item quantity="one">%1$d dk önce</item>
+        <item quantity="other">%1$d dk önce</item>
+    </plurals>
+    <plurals name="ago_hours">
+        <item quantity="one">%1$d sa önce</item>
+        <item quantity="other">%1$d sa önce</item>
+    </plurals>
+    <plurals name="ago_days">
+        <item quantity="one">%1$d gün önce</item>
+        <item quantity="other">%1$d gün önce</item>
+    </plurals>
+
     <!-- 2c, 2d, 2e Setup. The invited variants (Selin's name) come with invites (slice 2). -->
     <string name="setup_eyebrow">Bir kerelik kurulum</string>
     <string name="setup_demo_title">Önce bir dene, dürtme nasıl hissettiriyor gör</string>

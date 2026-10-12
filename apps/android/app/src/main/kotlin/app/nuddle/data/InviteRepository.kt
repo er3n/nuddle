@@ -1,7 +1,9 @@
 package app.nuddle.data
 
 import app.nuddle.api.CommandsApi
+import app.nuddle.api.model.AcceptInviteCommand
 import app.nuddle.api.model.CreateInviteCommand
+import app.nuddle.api.model.DeclineInviteCommand
 import app.nuddle.api.model.EdgeType
 import app.nuddle.api.model.RevokeInviteCommand
 import app.nuddle.data.api.ApiResult
@@ -18,8 +20,9 @@ object InviteLinks {
 }
 
 /**
- * Inviting someone (1e, 1f) and taking a pending invite back (1g). Both go straight to the API, not through the
- * outbox: the share sheet needs the code the server makes, and a revoke only makes sense while online.
+ * Inviting someone (1e, 1f), taking a pending invite back (1g), and answering one (0f, 1d). All go straight to the
+ * API, not through the outbox: the share sheet needs the code the server makes, and the answers only make sense
+ * while online (the screen says when one did not go).
  */
 interface InviteRepository {
     /** The invite's code, or null when it did not reach the server. Reuse [idempotencyKey] when retrying. */
@@ -32,6 +35,19 @@ interface InviteRepository {
 
     suspend fun revoke(
         inviteId: String,
+        idempotencyKey: String,
+    ): Boolean
+
+    /** İzin ver (0f, 1d). [relationship] is what the inviter is to me. */
+    suspend fun accept(
+        code: String,
+        relationship: EdgeType,
+        idempotencyKey: String,
+    ): Boolean
+
+    /** Reddet (1d). Never shown to the inviter. */
+    suspend fun decline(
+        code: String,
         idempotencyKey: String,
     ): Boolean
 }
@@ -68,6 +84,27 @@ class ApiInviteRepository
             idempotencyKey: String,
         ): Boolean {
             val result = apiCall(json) { commandsApi.revokeInvite(RevokeInviteCommand(idempotencyKey, inviteId)) }
+            if (result !is ApiResult.Success) return false
+            sync.sync()
+            return true
+        }
+
+        override suspend fun accept(
+            code: String,
+            relationship: EdgeType,
+            idempotencyKey: String,
+        ): Boolean {
+            val result = apiCall(json) { commandsApi.acceptInvite(AcceptInviteCommand(idempotencyKey, code, relationship)) }
+            if (result !is ApiResult.Success) return false
+            sync.sync()
+            return true
+        }
+
+        override suspend fun decline(
+            code: String,
+            idempotencyKey: String,
+        ): Boolean {
+            val result = apiCall(json) { commandsApi.declineInvite(DeclineInviteCommand(idempotencyKey, code)) }
             if (result !is ApiResult.Success) return false
             sync.sync()
             return true

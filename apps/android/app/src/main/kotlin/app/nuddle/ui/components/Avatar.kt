@@ -24,7 +24,8 @@ private const val INITIAL_SCALE = 0.4f
 
 /**
  * First letter on a colored circle, Space Grotesk 700 at about 40% of the size (docs/ux/components.md, 9).
- * No photos in the MVP. The user's own avatar is always `ink`. Decorative: callers describe the person.
+ * No photos in the MVP. The user's own avatar is always `ink`, except on a dark screen (0g), where it is a white
+ * circle with an `ink` letter ([letterColor]). Decorative: callers describe the person.
  */
 @Composable
 fun Avatar(
@@ -32,6 +33,7 @@ fun Avatar(
     color: Color,
     size: Dp,
     modifier: Modifier = Modifier,
+    letterColor: Color = DurtTheme.colors.surface,
 ) {
     val initial = name.trim().take(1).uppercaseForUi()
     // The initial scales with the circle, not with the font scale: it must always fit.
@@ -45,7 +47,7 @@ fun Avatar(
     ) {
         Text(
             text = initial,
-            color = DurtTheme.colors.surface,
+            color = letterColor,
             fontFamily = SpaceGrotesk,
             fontWeight = FontWeight.Bold,
             fontSize = fontSize,

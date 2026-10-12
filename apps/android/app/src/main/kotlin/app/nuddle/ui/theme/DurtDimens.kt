@@ -43,6 +43,7 @@ data class DurtDimens(
     val avatarNotification: Dp = 40.dp,
     val avatarList: Dp = 36.dp,
     val avatarCard: Dp = 32.dp,
+    val avatarInbox: Dp = 48.dp,
     val avatarInline: Dp = 28.dp,
     val avatarSmall: Dp = 24.dp,
     // size.switch, pill, sheet handle
