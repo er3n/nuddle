@@ -36,6 +36,8 @@ import app.nuddle.ui.theme.DurtTheme
 @Immutable
 data class NextUpCallbacks(
     val onDone: () -> Unit = {},
+    /** "Bitti, çek" on a photo task: the camera (4d) for that task. */
+    val onTakePhoto: (taskId: String) -> Unit = {},
     /** The phone number of the person who wrote the task. */
     val onCall: (String) -> Unit = {},
     val onMessage: (String) -> Unit = {},

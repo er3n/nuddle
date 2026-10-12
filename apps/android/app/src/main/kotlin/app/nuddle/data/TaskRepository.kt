@@ -47,7 +47,16 @@ data class TaskDraft(
 /** Closes a task on the device at once (implemented by the alarm package, which also stops its alarms). */
 interface TaskCloser {
     /** The recipient finished it. */
-    suspend fun done(taskId: String)
+    suspend fun done(
+        taskId: String,
+        cameraUnavailable: Boolean = false,
+    )
+
+    /**
+     * A photo was taken for the task (4d): pokes stop at once and it waits for approval, or closes for a task to
+     * self (open-questions#7). The upload follows separately.
+     */
+    suspend fun photoTaken(taskId: String)
 
     /** The sender takes it back: "Geri al" on the undo toast, or "Görevi iptal et" (7d) with an optional note. */
     suspend fun cancel(
@@ -94,7 +103,10 @@ interface TaskRepository {
      * "Şimdiden bitti": applied locally at once, then sent through the outbox. Returns the number of the poke that
      * caught the person (the last one that rang in the current plan), or null when none had rung.
      */
-    suspend fun done(taskId: String): Int?
+    suspend fun done(
+        taskId: String,
+        cameraUnavailable: Boolean = false,
+    ): Int?
 
     /** "Geri al" or "İptal et" (7d): applied locally at once, then sent through the outbox. */
     suspend fun cancel(
@@ -199,14 +211,17 @@ class ApiTaskRepository
             return WriteOutcome.Created(taskId)
         }
 
-        override suspend fun done(taskId: String): Int? {
+        override suspend fun done(
+            taskId: String,
+            cameraUnavailable: Boolean,
+        ): Int? {
             val planVersion = tasks.get(taskId)?.planVersion
             val caught =
                 pokeSteps
                     .forTask(taskId)
                     .filter { it.planVersion == planVersion && it.firedAt != null }
                     .maxOfOrNull { it.seq }
-            closer.done(taskId)
+            closer.done(taskId, cameraUnavailable)
             return caught
         }
 

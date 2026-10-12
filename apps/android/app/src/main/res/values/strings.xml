@@ -240,6 +240,23 @@
     <string name="cancel_reason_hint">Sebep opsiyonel, seçersen nota eklenir.</string>
     <string name="cancel_confirm">İptal et</string>
 
+    <!-- 4d Take photo. open-questions#35: the design says "Selin\'e gidecek", "Selin\'le paylaşılır" and
+         "Selin\'e gönder"; rephrased so the name takes no suffix. The shutter, a task to self and no camera have no
+         design copy. -->
+    <string name="photo_to">%1$s görecek</string>
+    <string name="photo_to_detail">%1$s görecek · %2$s istendi</string>
+    <string name="photo_privacy">Fotoğrafı sadece %1$s görür, görev kapanınca silinir. Kart numarası ya da bakiye görünüyorsa kapatarak çekebilirsin.</string>
+    <string name="photo_privacy_self">Fotoğraf görev kapanınca silinir. Kart numarası ya da bakiye görünüyorsa kapatarak çekebilirsin.</string>
+    <string name="photo_send">Gönder</string>
+    <string name="photo_retake">Tekrar çek</string>
+    <string name="photo_shoot">Fotoğraf çek</string>
+    <string name="photo_close">Kapat</string>
+    <string name="photo_no_camera_title">Kamera kullanılamıyor</string>
+    <string name="photo_no_camera_body">Kamera izni olmadan fotoğraf çekemem. Fotoğrafsız da bitirebilirsin.</string>
+    <string name="photo_done_without">Fotoğrafsız bitti</string>
+    <!-- 4c: the next-up card of a photo task. -->
+    <string name="home_done_photo">Bitti, çek</string>
+
     <!-- 1c Bell -->
     <string name="inbox_title">Bildirimler</string>
     <string name="inbox_new">Yeni</string>

@@ -112,15 +112,25 @@ class PokeActions
         suspend fun done(key: AlarmKey) {
             val title = tasks.get(key.taskId)?.title
             val caughtAt = alarms.step(key)?.number
-            done(key.taskId)
+            done(key.taskId, cameraUnavailable = false)
             if (title != null) doneNotes.post(DoneNote(key.taskId, title, caughtAt))
         }
 
         /** Also "Şimdiden bitti" on home (2f), before any alarm rang. */
-        override suspend fun done(taskId: String) {
+        override suspend fun done(
+            taskId: String,
+            cameraUnavailable: Boolean,
+        ) {
             close(taskId, TaskStatus.DONE)
             val id = ids.next()
-            outbox.enqueue("done", id, DoneCommand(idempotencyKey = id, taskId = taskId), DoneCommand.serializer())
+            // A photo task without a usable camera falls back to plain Bitti (docs/domain.md, Task states).
+            val command = DoneCommand(idempotencyKey = id, taskId = taskId, cameraUnavailable = cameraUnavailable.takeIf { it })
+            outbox.enqueue("done", id, command, DoneCommand.serializer())
+        }
+
+        override suspend fun photoTaken(taskId: String) {
+            val task = tasks.get(taskId) ?: return
+            close(taskId, if (task.senderId == task.recipientId) TaskStatus.DONE else TaskStatus.AWAITING_APPROVAL)
         }
 
         /** The sender takes the task back: "Geri al" on the undo toast, or "İptal et" in 7d with an optional note. */
