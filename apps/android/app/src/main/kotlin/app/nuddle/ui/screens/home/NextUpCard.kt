@@ -41,7 +41,7 @@ import app.nuddle.ui.theme.DurtTheme
 // Parts of home once there is a task (2f). Kept next to HomeScreen.kt, used only there.
 
 @Composable
-private fun DeadlineText.text(): String =
+internal fun DeadlineText.text(): String =
     when (this) {
         is DeadlineText.Today -> stringResource(R.string.deadline_today, time)
         is DeadlineText.Tomorrow -> stringResource(R.string.deadline_tomorrow, time)

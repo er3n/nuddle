@@ -9,7 +9,7 @@ Naming: the handoff used `Durt*` prefixes. Keep them for now; whether to rename 
 ## 1. DurtButton
 
 ```kotlin
-enum class DurtButtonKind { Primary, Accent, Secondary, Ghost, Danger, DangerOutline, Soft, Success, OnPoke, OnPokeOutline }
+enum class DurtButtonKind { Primary, Accent, Secondary, Ghost, Danger, DangerOutline, DangerGhost, Soft, Success, OnPoke, OnPokeOutline }
 enum class DurtButtonSize(val height: Dp) { Poke(62.dp), Large(56.dp), Medium(52.dp), Small(44.dp) }
 
 @Composable fun DurtButton(
@@ -22,6 +22,7 @@ enum class DurtButtonSize(val height: Dp) { Poke(62.dp), Large(56.dp), Medium(52
 - Disabled: background `border`, text `textTertiary`. Loading: 20 dp spinner instead of text, width fixed, double taps blocked.
 - Pressed: background darkens 8% (no ripple). At most one Primary or Accent per screen.
 - Success: `success` background, `surface` text. Used for "Şimdiden bitti" on the next-up card (2f).
+- DangerGhost: no background or border, `danger` text. Used for "İptal et" on the pending invite card (1g).
 
 ## 2. TopBar and BackBar
 

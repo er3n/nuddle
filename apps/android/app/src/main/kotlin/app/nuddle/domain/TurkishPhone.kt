@@ -17,6 +17,22 @@ object TurkishPhone {
 
     fun toE164(national: String): String? = if (isValidMobile(national)) COUNTRY_CODE + national else null
 
+    /**
+     * A number as a contact stores it ("+90 532 123 45 67", "0090...", "0532 ...", "532-123-4567") to E.164, or null
+     * when it is not a Turkish mobile number (1e).
+     */
+    fun fromContact(raw: String): String? {
+        val digits = raw.filter(Char::isDigit)
+        val national =
+            when {
+                digits.length == NATIONAL_LENGTH + 4 && digits.startsWith("0090") -> digits.drop(4)
+                digits.length == NATIONAL_LENGTH + 2 && digits.startsWith("90") -> digits.drop(2)
+                digits.length == NATIONAL_LENGTH + 1 && digits.startsWith("0") -> digits.drop(1)
+                else -> digits
+            }
+        return toE164(national)
+    }
+
     /** "5321234567" -> "532 123 45 67"; partial input is grouped as far as it goes. */
     fun group(national: String): String {
         val parts = mutableListOf<String>()

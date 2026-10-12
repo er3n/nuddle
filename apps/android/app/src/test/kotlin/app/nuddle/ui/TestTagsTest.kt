@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import app.nuddle.api.model.EdgeType
 import app.nuddle.domain.SetupStep
 import app.nuddle.domain.Snooze
 import app.nuddle.domain.TimeLeft
@@ -17,8 +18,14 @@ import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.HomeScreen
 import app.nuddle.ui.screens.home.HomeUiState
 import app.nuddle.ui.screens.home.NextUpUi
+import app.nuddle.ui.screens.home.PendingInviteCallbacks
+import app.nuddle.ui.screens.home.PendingInviteUi
 import app.nuddle.ui.screens.home.PreviewCallbacks
 import app.nuddle.ui.screens.home.PreviewUi
+import app.nuddle.ui.screens.invite.InviteCallbacks
+import app.nuddle.ui.screens.invite.InviteScreen
+import app.nuddle.ui.screens.invite.InviteUiState
+import app.nuddle.ui.screens.invite.Invitee
 import app.nuddle.ui.screens.name.NameScreen
 import app.nuddle.ui.screens.name.NameUiState
 import app.nuddle.ui.screens.phone.PhoneScreen
@@ -223,6 +230,66 @@ class TestTagsTest {
         }
         assertShown(TestTags.PREVIEW, TestTags.PREVIEW_PICK_TIME)
         assertTaps(TestTags.PREVIEW_MORNING to "choice", TestTags.SHEET_PRIMARY to "confirm", TestTags.SHEET_DISMISS to "dismiss")
+    }
+
+    @Test
+    fun `invite, nothing chosen`() {
+        content {
+            InviteScreen(
+                InviteUiState(),
+                InviteCallbacks(
+                    onBack = { clicked += "back" },
+                    onPickContact = { clicked += "pick" },
+                    onTypeNumber = { clicked += "type" },
+                    onRelationship = { clicked += it.value },
+                ),
+            )
+        }
+        assertShown(TestTags.INVITE, TestTags.INVITE_SEND)
+        assertTaps(
+            TestTags.INVITE_PICK_CONTACT to "pick",
+            TestTags.INVITE_TYPE_NUMBER to "type",
+            TestTags.INVITE_RELATIONSHIP + "spouse" to "spouse",
+            TestTags.BACK to "back",
+        )
+    }
+
+    @Test
+    fun `invite, ready to send`() {
+        content {
+            InviteScreen(
+                InviteUiState(contact = Invitee("Selin", "+905329876543"), relationship = EdgeType.SPOUSE),
+                InviteCallbacks(onPickContact = { clicked += "change" }, onSend = { clicked += "send" }),
+            )
+        }
+        assertTaps(TestTags.INVITE_PICK_CONTACT to "change", TestTags.INVITE_SEND to "send")
+    }
+
+    @Test
+    fun `invite, typing a number`() {
+        content { InviteScreen(InviteUiState(typing = true), InviteCallbacks()) }
+        assertShown(TestTags.INVITE_NAME, TestTags.INVITE_NUMBER)
+    }
+
+    @Test
+    fun `home with a pending invite`() {
+        val invite = PendingInviteUi("i1", "abc", "Selin", EdgeType.SPOUSE, DeadlineText.Today("14:32"))
+        content {
+            HomeScreen(
+                state = HomeUiState(myName = "Eren", pendingInvite = invite),
+                onBell = {},
+                onProfile = {},
+                onInvite = {},
+                onComposeTextChange = {},
+                onComposeSend = {},
+                onVoiceStart = {},
+                onVoiceEnd = {},
+                pendingInvite =
+                    PendingInviteCallbacks(onReshare = { clicked += "reshare" }, onRevoke = { clicked += "revoke" }),
+            )
+        }
+        assertShown(TestTags.HOME_PENDING_INVITE)
+        assertTaps(TestTags.HOME_INVITE_RESHARE to "reshare", TestTags.HOME_INVITE_REVOKE to "revoke")
     }
 
     @Test

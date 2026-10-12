@@ -9,6 +9,7 @@ import app.nuddle.data.DoneNotes
 import app.nuddle.data.SetupGate
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.WriteOutcome
+import app.nuddle.data.db.InviteDao
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.session.SessionStore
 import app.nuddle.domain.IdGenerator
@@ -47,6 +48,7 @@ class HomeViewModel
     constructor(
         private val sessions: SessionStore,
         private val taskDao: TaskDao,
+        private val inviteDao: InviteDao,
         private val tasks: TaskRepository,
         private val ids: IdGenerator,
         private val setupGate: SetupGate,
@@ -101,7 +103,8 @@ class HomeViewModel
                 preview,
                 undo,
                 doneNote,
-            ) { (name, compose, nextUp), preview, undo, doneNote ->
+                inviteDao.observeAll().map { pendingInvite(it, clock.now(), timeZone) },
+            ) { (name, compose, nextUp), preview, undo, doneNote, pendingInvite ->
                 HomeUiState(
                     myName = name,
                     compose = compose,
@@ -109,6 +112,7 @@ class HomeViewModel
                     preview = preview?.ui,
                     undo = undo,
                     doneNote = doneNote,
+                    pendingInvite = pendingInvite,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
