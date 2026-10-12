@@ -48,7 +48,10 @@ export type Command =
   // Server
   | { type: "deadline_passed" }
   | { type: "approval_timeout" }
-  | { type: "account_deleted"; personId: PersonId };
+  | { type: "account_deleted"; personId: PersonId }
+  | { type: "connection_removed"; personId: PersonId }
+  /** Quiet hours or a human channel switch changed: same status, a new plan. */
+  | { type: "replan" };
 
 type CommandType = Command["type"];
 
@@ -80,6 +83,8 @@ export interface TaskContext {
   sender: Person;
   recipient: Person;
   reachability: Reachability;
+  /** The sender's edge to the recipient (5b switch); absent for a task to self. */
+  senderEdge?: Pick<Edge, "notifyMe"> | null;
   /** This task's events so far, oldest first. */
   history: readonly TaskEvent[];
   now: Date;
@@ -101,6 +106,8 @@ function transitionsFrom(status: TaskStatus): Partial<Record<CommandType, TaskSt
         cancel: "CANCELLED",
         edit: "SCHEDULED",
         account_deleted: "CANCELLED",
+        connection_removed: "CANCELLED",
+        replan: "SCHEDULED",
       };
     case "AWAITING_APPROVAL":
       // Never MISSED: the deadline applies to sending the photo, not to approval.
@@ -110,6 +117,7 @@ function transitionsFrom(status: TaskStatus): Partial<Record<CommandType, TaskSt
         re_request: "REJECTED",
         cancel: "CANCELLED",
         account_deleted: "CANCELLED",
+        connection_removed: "CANCELLED",
       };
     case "REJECTED":
       return {
@@ -119,6 +127,8 @@ function transitionsFrom(status: TaskStatus): Partial<Record<CommandType, TaskSt
         deadline_passed: "MISSED",
         cancel: "CANCELLED",
         account_deleted: "CANCELLED",
+        connection_removed: "CANCELLED",
+        replan: "REJECTED",
       };
     case "MISSED":
       return {
@@ -129,6 +139,7 @@ function transitionsFrom(status: TaskStatus): Partial<Record<CommandType, TaskSt
         new_deadline: "SCHEDULED",
         cancel: "CANCELLED",
         account_deleted: "CANCELLED",
+        connection_removed: "CANCELLED",
       };
     case "DROPPED":
       return {
@@ -136,6 +147,7 @@ function transitionsFrom(status: TaskStatus): Partial<Record<CommandType, TaskSt
         // TODO(open-questions#8): "Ben hallederim" closes as CANCELLED with reason sender_handles.
         sender_handles: "CANCELLED",
         account_deleted: "CANCELLED",
+        connection_removed: "CANCELLED",
       };
     case "DONE":
     case "CANCELLED":
@@ -163,6 +175,8 @@ function actorOf(type: CommandType): Actor {
     case "deadline_passed":
     case "approval_timeout":
     case "account_deleted":
+    case "connection_removed":
+    case "replan":
       return "server";
   }
 }
@@ -227,6 +241,7 @@ function effectsOfStatus(
         task,
         recipient: ctx.recipient,
         sender: ctx.sender,
+        senderEdge: ctx.senderEdge,
         reachability: ctx.reachability,
         history: ctx.history,
         now: planFrom ?? now,
@@ -351,6 +366,11 @@ function pushesFor(task: Task, e: TaskEvent): PushMessage[] {
         ? [push(recipientId, "sync", task, e.type)]
         : [push(recipientId, "sync", task, e.type), push(senderId, "sync", task, e.type)];
     case "cancelled": {
+      // Removing a connection tells nobody (5b): both sides only sync, so the alarms stop on every
+      // phone, the remover's included.
+      if (e.payload.reason === "connection_removed") {
+        return [push(senderId, "sync", task, e.type), push(recipientId, "sync", task, e.type)];
+      }
       if (e.payload.reason === "account_deleted") {
         const other = e.actorId === senderId ? recipientId : senderId;
         return self ? [] : [push(other, "task_cancelled", task, e.type)];
@@ -441,15 +461,12 @@ function eventFor(
     case "deadline_passed":
       return [event(task, null, "missed", {}, now)];
     case "account_deleted":
+    case "connection_removed":
       return [
-        event(
-          task,
-          cmd.personId,
-          "cancelled",
-          { reason: "account_deleted" satisfies CancelReason },
-          now,
-        ),
+        event(task, cmd.personId, "cancelled", { reason: cmd.type satisfies CancelReason }, now),
       ];
+    case "replan":
+      return [];
   }
 }
 
@@ -528,9 +545,12 @@ export function applyCommand(
       next.deadline = cmd.deadline;
       break;
     case "account_deleted":
+    case "connection_removed":
       if (cmd.personId !== task.senderId && cmd.personId !== task.recipientId) {
         return { ok: false, error: "not_sender" };
       }
+      break;
+    case "replan":
       break;
     case "cant_today":
     case "cancel":
@@ -552,7 +572,7 @@ export function applyCommand(
   const effects = effectsOfStatus(
     next,
     ctx,
-    cmd.type === "re_request" || snooze !== null,
+    cmd.type === "re_request" || cmd.type === "replan" || snooze !== null,
     snooze?.until,
   );
   if (effects.planEvent) events.push(effects.planEvent);
@@ -564,7 +584,10 @@ export function applyCommand(
       events,
       plan: effects.plan,
       scheduledActions: effects.scheduledActions,
-      pushes: dedupe(events.flatMap((e) => pushesFor(next, e))),
+      pushes:
+        cmd.type === "replan"
+          ? [push(next.recipientId, "plan_changed", next, "plan_generated")]
+          : dedupe(events.flatMap((e) => pushesFor(next, e))),
       deletePhotos: effects.deletePhotos,
     },
   };
@@ -632,7 +655,14 @@ export function createTask(input: CreateTaskInput): Result<Outcome> {
   const created = event(task, sender.id, "created", {}, now);
   const effects = effectsOfStatus(
     task,
-    { sender, recipient, reachability: input.reachability, history: [], now },
+    {
+      sender,
+      recipient,
+      senderEdge: input.edge,
+      reachability: input.reachability,
+      history: [],
+      now,
+    },
     false,
   );
   const events = effects.planEvent ? [created, effects.planEvent] : [created];

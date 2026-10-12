@@ -37,7 +37,7 @@ Example:
 
 > Selin writes "eren yarın 9dan önce temizlikçi için 1000 çeksin" → task created for Eren with photo mode → a plan is pushed to Eren's device → three steps fire without response → Selin gets "Eren'e ulaşamıyorum" → Eren sends a photo → status `AWAITING_APPROVAL`, poking stopped → 3 hours pass → auto-approved → Eren gets the done note.
 
-Start the backend scenario suite with: task to self, task to other with done, photo + approve, photo + re-request, can't today with note, missed then "Sonradan yaptım", sender cancel, quiet hours shift, deadline edit regenerates plan, invite accepted / declined (declined invisible to inviter), logout makes reachability `NONE`, account deletion cancels the other side's open tasks.
+Start the backend scenario suite with: task to self, task to other with done, photo + approve, photo + re-request, can't today with note, missed then "Sonradan yaptım", sender cancel, quiet hours shift, deadline edit regenerates plan, invite accepted / declined (declined invisible to inviter), logout makes reachability `NONE`, account deletion cancels the other side's open tasks, a quiet hours or human channel switch change replans open tasks, removing a connection cancels open tasks both ways without a notification.
 
 ## LLM eval
 

@@ -72,6 +72,7 @@ type TaskRow = typeof tasks.$inferSelect;
 type DeviceRow = typeof devices.$inferSelect;
 type InviteRow = typeof invites.$inferSelect;
 type EventRow = typeof taskEvents.$inferSelect;
+type EdgeRow = typeof edges.$inferSelect;
 
 export function toPerson(r: PersonRow): Person {
   return {
@@ -87,6 +88,16 @@ export function toPerson(r: PersonRow): Person {
     useConnectionsForMyTasks: r.useConnectionsForMyTasks,
     notifyMeForOthersTasks: r.notifyMeForOthersTasks,
     deletedAt: r.deletedAt,
+  };
+}
+
+function toEdge(r: EdgeRow): Edge {
+  return {
+    fromPersonId: r.fromPersonId,
+    toPersonId: r.toPersonId,
+    type: r.type,
+    status: r.status,
+    notifyMe: r.notifyMe,
   };
 }
 
@@ -171,6 +182,35 @@ export async function upsertPerson(
   return toPerson(row);
 }
 
+/** Quiet hours and the two human channel switches (5a, 7g). */
+export async function updatePersonSettings(
+  tx: Tx,
+  id: PersonId,
+  patch: {
+    quietHours?: { start: string; end: string };
+    useConnectionsForMyTasks?: boolean;
+    notifyMeForOthersTasks?: boolean;
+  },
+): Promise<Person> {
+  const [row] = await tx
+    .update(people)
+    .set({
+      ...(patch.quietHours === undefined
+        ? {}
+        : { quietHoursStart: patch.quietHours.start, quietHoursEnd: patch.quietHours.end }),
+      ...(patch.useConnectionsForMyTasks === undefined
+        ? {}
+        : { useConnectionsForMyTasks: patch.useConnectionsForMyTasks }),
+      ...(patch.notifyMeForOthersTasks === undefined
+        ? {}
+        : { notifyMeForOthersTasks: patch.notifyMeForOthersTasks }),
+    })
+    .where(eq(people.id, id))
+    .returning();
+  if (!row) throw new Error(`no person ${id}`);
+  return toPerson(row);
+}
+
 export async function markPersonDeleted(tx: Tx, person: Person): Promise<void> {
   await tx.update(people).set({ deletedAt: person.deletedAt }).where(eq(people.id, person.id));
 }
@@ -187,12 +227,7 @@ export async function activeConnections(
     .where(and(eq(edges.fromPersonId, personId), eq(edges.status, "active")))
     .orderBy(asc(edges.changeSeq));
   return rows.map((r) => ({
-    edge: {
-      fromPersonId: r.edges.fromPersonId,
-      toPersonId: r.edges.toPersonId,
-      type: r.edges.type,
-      status: r.edges.status,
-    },
+    edge: toEdge(r.edges),
     person: toPerson(r.people),
   }));
 }
@@ -202,14 +237,7 @@ export async function findEdge(ex: Executor, from: PersonId, to: PersonId): Prom
     .select()
     .from(edges)
     .where(and(eq(edges.fromPersonId, from), eq(edges.toPersonId, to)));
-  return row
-    ? {
-        fromPersonId: row.fromPersonId,
-        toPersonId: row.toPersonId,
-        type: row.type,
-        status: row.status,
-      }
-    : null;
+  return row ? toEdge(row) : null;
 }
 
 export async function edgesTouching(ex: Executor, personId: PersonId): Promise<Edge[]> {
@@ -218,12 +246,7 @@ export async function edgesTouching(ex: Executor, personId: PersonId): Promise<E
     .from(edges)
     .where(or(eq(edges.fromPersonId, personId), eq(edges.toPersonId, personId)))
     .orderBy(asc(edges.changeSeq));
-  return rows.map((r) => ({
-    fromPersonId: r.fromPersonId,
-    toPersonId: r.toPersonId,
-    type: r.type,
-    status: r.status,
-  }));
+  return rows.map(toEdge);
 }
 
 export async function upsertEdges(tx: Tx, list: readonly Edge[], now: Date): Promise<void> {
@@ -233,7 +256,15 @@ export async function upsertEdges(tx: Tx, list: readonly Edge[], now: Date): Pro
       .values({ ...e, createdAt: now, updatedAt: now })
       .onConflictDoUpdate({
         target: [edges.fromPersonId, edges.toPersonId],
-        set: { type: e.type, status: e.status, updatedAt: now, changeSeq: nextSeq },
+        set: {
+          type: e.type,
+          status: e.status,
+          notifyMe: e.notifyMe,
+          // "3 aydır bağlısınız" (5b) counts from the latest time the connection became active.
+          createdAt: sql`case when ${edges.status} <> 'active' and excluded.status = 'active' then excluded.created_at else ${edges.createdAt} end`,
+          updatedAt: now,
+          changeSeq: nextSeq,
+        },
       });
   }
 }
@@ -372,6 +403,45 @@ export async function unclosedTasksOf(tx: Tx, personId: PersonId): Promise<Task[
       and(
         or(eq(tasks.senderId, personId), eq(tasks.recipientId, personId)),
         notInArray(tasks.status, ["DONE", "CANCELLED"]),
+      ),
+    )
+    .orderBy(asc(tasks.changeSeq))
+    .for("update");
+  return rows.map(toTask);
+}
+
+/** Tasks between the two people, either direction, that are not closed yet (5b, remove). */
+export async function unclosedTasksBetween(tx: Tx, a: PersonId, b: PersonId): Promise<Task[]> {
+  const rows = await tx
+    .select()
+    .from(tasks)
+    .where(
+      and(
+        or(
+          and(eq(tasks.senderId, a), eq(tasks.recipientId, b)),
+          and(eq(tasks.senderId, b), eq(tasks.recipientId, a)),
+        ),
+        notInArray(tasks.status, ["DONE", "CANCELLED"]),
+      ),
+    )
+    .orderBy(asc(tasks.changeSeq))
+    .for("update");
+  return rows.map(toTask);
+}
+
+/** Tasks still being poked whose plan depends on a setting: by recipient, sender, or both. */
+export async function pokedTasks(
+  tx: Tx,
+  by: { recipientId?: PersonId; senderId?: PersonId },
+): Promise<Task[]> {
+  const rows = await tx
+    .select()
+    .from(tasks)
+    .where(
+      and(
+        by.recipientId === undefined ? undefined : eq(tasks.recipientId, by.recipientId),
+        by.senderId === undefined ? undefined : eq(tasks.senderId, by.senderId),
+        inArray(tasks.status, ["SCHEDULED", "REJECTED"]),
       ),
     )
     .orderBy(asc(tasks.changeSeq))
@@ -587,7 +657,7 @@ export async function saveIdempotentResult(
 
 export interface SyncRows {
   cursor: number;
-  connections: { edge: Edge; person: Person; devices: Device[] }[];
+  connections: { edge: Edge; connectedAt: Date; person: Person; devices: Device[] }[];
   sentInvites: (Invite & { createdAt: Date })[];
   receivedInvites: (Invite & { inviterName: string; createdAt: Date })[];
   tasks: (Task & {
@@ -687,12 +757,8 @@ export async function syncRows(tx: Tx, me: Person, cursor: number): Promise<Sync
   return {
     cursor: Math.max(cursor, Number(seq?.value ?? 0)),
     connections: edgeRows.map((r) => ({
-      edge: {
-        fromPersonId: r.edges.fromPersonId,
-        toPersonId: r.edges.toPersonId,
-        type: r.edges.type,
-        status: r.edges.status,
-      },
+      edge: toEdge(r.edges),
+      connectedAt: r.edges.createdAt,
       person: toPerson(r.people),
       devices: otherDevices.filter((d) => d.personId === r.people.id),
     })),

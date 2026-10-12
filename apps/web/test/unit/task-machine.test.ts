@@ -13,7 +13,13 @@ import { aPerson, aTask } from "../builders";
 const selin = aPerson("Selin");
 const eren = aPerson("Eren");
 const now = new Date("2026-10-11T20:00:00+03:00");
-const edge: Edge = { fromPersonId: "selin", toPersonId: "eren", type: "spouse", status: "active" };
+const edge: Edge = {
+  fromPersonId: "selin",
+  toPersonId: "eren",
+  type: "spouse",
+  status: "active",
+  notifyMe: true,
+};
 
 function ctx(history: TaskEvent[] = [], at: Date = now): TaskContext {
   return { sender: selin, recipient: eren, reachability: "FULL_SCREEN", history, now: at };
@@ -39,6 +45,8 @@ const commands: { cmd: Command; actor: string | null }[] = [
   { cmd: { type: "deadline_passed" }, actor: null },
   { cmd: { type: "approval_timeout" }, actor: null },
   { cmd: { type: "account_deleted", personId: "eren" }, actor: null },
+  { cmd: { type: "connection_removed", personId: "selin" }, actor: null },
+  { cmd: { type: "replan" }, actor: null },
 ];
 
 // The table in docs/domain.md, Task states. Anything not listed must be rejected.
@@ -51,6 +59,8 @@ const allowed: Record<TaskStatus, Partial<Record<Command["type"], TaskStatus>>> 
     cancel: "CANCELLED",
     edit: "SCHEDULED",
     account_deleted: "CANCELLED",
+    connection_removed: "CANCELLED",
+    replan: "SCHEDULED",
   },
   AWAITING_APPROVAL: {
     approve: "DONE",
@@ -58,6 +68,7 @@ const allowed: Record<TaskStatus, Partial<Record<Command["type"], TaskStatus>>> 
     re_request: "REJECTED",
     cancel: "CANCELLED",
     account_deleted: "CANCELLED",
+    connection_removed: "CANCELLED",
   },
   REJECTED: {
     photo_sent: "AWAITING_APPROVAL",
@@ -65,14 +76,22 @@ const allowed: Record<TaskStatus, Partial<Record<Command["type"], TaskStatus>>> 
     deadline_passed: "MISSED",
     cancel: "CANCELLED",
     account_deleted: "CANCELLED",
+    connection_removed: "CANCELLED",
+    replan: "REJECTED",
   },
   MISSED: {
     did_it_later: "DONE",
     new_deadline: "SCHEDULED",
     cancel: "CANCELLED",
     account_deleted: "CANCELLED",
+    connection_removed: "CANCELLED",
   },
-  DROPPED: { new_deadline: "SCHEDULED", sender_handles: "CANCELLED", account_deleted: "CANCELLED" },
+  DROPPED: {
+    new_deadline: "SCHEDULED",
+    sender_handles: "CANCELLED",
+    account_deleted: "CANCELLED",
+    connection_removed: "CANCELLED",
+  },
   DONE: {},
   CANCELLED: {},
 };
@@ -255,6 +274,53 @@ describe("task state machine", () => {
     expect(o.events[0]).toMatchObject({ actorId: "eren", payload: { reason: "account_deleted" } });
     expect(o.pushes).toEqual([
       { to: "selin", hint: "task_cancelled", taskId: "task-1", event: "cancelled" },
+    ]);
+  });
+
+  it("cancels without a notification when a connection is removed (5b)", () => {
+    const o = apply(aTask().build(), { type: "connection_removed", personId: "selin" }, null);
+    expect(o.task.status).toBe("CANCELLED");
+    expect(o.events[0]).toMatchObject({
+      actorId: "selin",
+      payload: { reason: "connection_removed" },
+    });
+    expect(o.plan.steps).toEqual([]);
+    expect(o.pushes).toEqual([
+      { to: "selin", hint: "sync", taskId: "task-1", event: "cancelled" },
+      { to: "eren", hint: "sync", taskId: "task-1", event: "cancelled" },
+    ]);
+  });
+
+  it("refuses to cancel for a removal by someone outside the task", () => {
+    const r = applyCommand(
+      aTask().build(),
+      { type: "connection_removed", personId: "ayse" },
+      null,
+      ctx(),
+    );
+    expect(r).toEqual({ ok: false, error: "not_sender" });
+  });
+
+  it("replans from the level reached when a setting changes, keeping the status", () => {
+    const fired: TaskEvent = {
+      taskId: "task-1",
+      actorId: "eren",
+      type: "poke_fired",
+      payload: { seq: 2, level: "SOUND" },
+      at: now,
+    };
+    const task = aTask().build();
+    const o = apply(task, { type: "replan" }, null, {
+      ...ctx([fired]),
+      senderEdge: { ...edge, notifyMe: false },
+    });
+    expect(o.task.status).toBe("SCHEDULED");
+    expect(o.task.statusChangedAt).toEqual(task.statusChangedAt);
+    expect(o.task.planVersion).toBe(task.planVersion + 1);
+    expect(o.plan.steps.map((s) => s.level)).toEqual(["SOUND", "FULL_SCREEN"]);
+    expect(o.events.map((e) => e.type)).toEqual(["plan_generated"]);
+    expect(o.pushes).toEqual([
+      { to: "eren", hint: "plan_changed", taskId: "task-1", event: "plan_generated" },
     ]);
   });
 });

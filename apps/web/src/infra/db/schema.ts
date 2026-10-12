@@ -118,6 +118,8 @@ export const edges = pgTable(
       .references(() => people.id),
     type: edgeType("type").notNull(),
     status: edgeStatus("status").notNull(),
+    // "Selin'in işleri için bana haber verilebilir" (5b), the from-person's switch for this connection.
+    notifyMe: boolean("notify_me").notNull().default(true),
     weights: jsonb("weights").notNull().default({}),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

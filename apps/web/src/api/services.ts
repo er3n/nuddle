@@ -4,10 +4,12 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import {
   acceptInvite,
+  changeConnection,
   createInvite,
   declineInvite,
   deleteAccount as deleteAccountDomain,
   inviteStatusForInviter,
+  removeConnection as removeConnectionDomain,
   revokeInvite,
 } from "../domain/connections";
 import { resolveExtraction, type Extraction, type MissingField } from "../domain/extraction";
@@ -70,13 +72,16 @@ import {
   markPersonDeleted,
   markStepFired,
   persistOutcome,
+  pokedTasks,
   saveIdempotentResult,
   setInviteStatus,
   syncRows,
   touchDevice,
   touchEdgesTo,
   touchTask,
+  unclosedTasksBetween,
   unclosedTasksOf,
+  updatePersonSettings,
   upsertDevice,
   upsertEdges,
   upsertPerson,
@@ -163,6 +168,7 @@ async function taskContext(tx: Tx, task: Task, now: Date): Promise<TaskContext> 
   return {
     sender,
     recipient,
+    senderEdge: sender.id === recipient.id ? null : await findEdge(tx, sender.id, recipient.id),
     reachability: await reachabilityOf(tx, task.recipientId),
     history: await eventsOf(tx, task.id),
     now,
@@ -541,6 +547,124 @@ export async function deleteAccount(
   });
 }
 
+// ---- settings and connections (5a, 5b, 7g) -------------------------------------------------
+
+/** Persist each outcome and collect what to do after commit. */
+async function persistAll(
+  tx: Tx,
+  deps: AppDeps,
+  outcomes: readonly Outcome[],
+  now: Date,
+): Promise<Effects> {
+  const pushes: PushMessage[] = [];
+  const deletePhotosFor: TaskId[] = [];
+  for (const outcome of outcomes) {
+    const o = adjust(deps, outcome, now);
+    await persistOutcome(tx, o, now);
+    const e = effectsOf(o);
+    pushes.push(...e.pushes);
+    deletePhotosFor.push(...e.deletePhotosFor);
+  }
+  return { pushes, deletePhotosFor };
+}
+
+/** New plans for tasks still being poked after a setting they depend on changed. */
+async function replan(tx: Tx, deps: AppDeps, list: readonly Task[], now: Date): Promise<Effects> {
+  const outcomes: Outcome[] = [];
+  const seen = new Set<TaskId>();
+  for (const task of list) {
+    if (seen.has(task.id)) continue;
+    seen.add(task.id);
+    const r = applyCommand(task, { type: "replan" }, null, await taskContext(tx, task, now));
+    if (r.ok) outcomes.push(r.value);
+  }
+  return persistAll(tx, deps, outcomes, now);
+}
+
+/** Quiet hours (7g) and the two human channel switches (5a). Plans that depend on them are redone. */
+export async function updateSettings(
+  deps: AppDeps,
+  caller: Person,
+  input: {
+    idempotencyKey: string;
+    quietHours?: { start: string; end: string };
+    useConnectionsForMyTasks?: boolean;
+    notifyMeForOthersTasks?: boolean;
+  },
+): Promise<Person> {
+  return runCommand(deps, caller.id, "update_settings", input.idempotencyKey, async (tx, now) => {
+    const updated = await updatePersonSettings(tx, caller.id, {
+      quietHours: input.quietHours,
+      useConnectionsForMyTasks: input.useConnectionsForMyTasks,
+      notifyMeForOthersTasks: input.notifyMeForOthersTasks,
+    });
+    const asRecipient =
+      updated.quietHours.start !== caller.quietHours.start ||
+      updated.quietHours.end !== caller.quietHours.end ||
+      updated.useConnectionsForMyTasks !== caller.useConnectionsForMyTasks;
+    const asSender = updated.notifyMeForOthersTasks !== caller.notifyMeForOthersTasks;
+    const affected = [
+      ...(asRecipient ? await pokedTasks(tx, { recipientId: caller.id }) : []),
+      ...(asSender ? await pokedTasks(tx, { senderId: caller.id }) : []),
+    ].filter((t) => t.senderId !== t.recipientId || asRecipient);
+    return { result: updated, effects: await replan(tx, deps, affected, now) };
+  });
+}
+
+/** My relationship to the person and my switch for their tasks (5b). */
+export async function updateConnection(
+  deps: AppDeps,
+  caller: Person,
+  input: {
+    idempotencyKey: string;
+    personId: PersonId;
+    relationship?: EdgeType;
+    notifyMe?: boolean;
+  },
+): Promise<{ ok: true }> {
+  return runCommand(deps, caller.id, "update_connection", input.idempotencyKey, async (tx, now) => {
+    const mine = await findEdge(tx, caller.id, input.personId);
+    const r = changeConnection(mine, input);
+    if (!r.ok) throw new ApiError(r.error);
+    await upsertEdges(tx, [r.value], now);
+    const effects =
+      r.value.notifyMe === mine?.notifyMe
+        ? noEffects
+        : await replan(
+            tx,
+            deps,
+            await pokedTasks(tx, { senderId: caller.id, recipientId: input.personId }),
+            now,
+          );
+    return { result: { ok: true as const }, effects };
+  });
+}
+
+/** "Bağlantıyı kaldır" (5b): both edges go, tasks between the two are cancelled, nobody is told. */
+export async function removeConnection(
+  deps: AppDeps,
+  caller: Person,
+  input: { idempotencyKey: string; personId: PersonId },
+): Promise<{ ok: true }> {
+  return runCommand(deps, caller.id, "remove_connection", input.idempotencyKey, async (tx, now) => {
+    const edges = [
+      await findEdge(tx, caller.id, input.personId),
+      await findEdge(tx, input.personId, caller.id),
+    ].filter((e) => e !== null);
+    const contexts = [];
+    for (const task of await unclosedTasksBetween(tx, caller.id, input.personId)) {
+      contexts.push({ task, ctx: await taskContext(tx, task, now) });
+    }
+    const r = removeConnectionDomain(caller, edges, contexts);
+    if (!r.ok) throw new ApiError(r.error);
+    await upsertEdges(tx, r.value.edges, now);
+    return {
+      result: { ok: true as const },
+      effects: await persistAll(tx, deps, r.value.cancelled, now),
+    };
+  });
+}
+
 // ---- devices --------------------------------------------------------------------------------
 
 /** Sent on every launch and whenever a permission or channel changes (docs/domain.md). */
@@ -591,6 +715,8 @@ export async function sync(
       reachability: c.person.deletedAt === null ? deriveReachability(c.devices) : ("NONE" as const),
       // Only while connected: a removed connection or a deleted account keeps no way to reach the person.
       phone: c.edge.status === "active" && c.person.deletedAt === null ? c.person.phone : undefined,
+      connectedAt: c.connectedAt,
+      notifyMe: c.edge.notifyMe,
     })),
     sentInvites: rows.sentInvites.map((i) => ({ ...i, status: inviteStatusForInviter(i) })),
     receivedInvites: rows.receivedInvites,

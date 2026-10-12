@@ -168,6 +168,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
         {
           ...r,
           me: meDto(r.me),
+          connections: r.connections.map((cn) => ({ ...cn, connectedAt: iso(cn.connectedAt) })),
           tasks: r.tasks.map((t) => ({
             id: t.id,
             senderId: t.senderId,
@@ -523,6 +524,48 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
     async (c) =>
       c.json(
         await svc.revokeInviteCommand(deps, await person(c.get("caller")), c.req.valid("json")),
+        200,
+      ),
+  );
+  app.openapi(
+    command(
+      "update_settings",
+      "updateSettings",
+      "Quiet hours and the human channel switches (5a, 7g); affected plans are redone",
+      s.UpdateSettingsCommand,
+      s.Me,
+    ),
+    async (c) =>
+      c.json(
+        meDto(await svc.updateSettings(deps, await person(c.get("caller")), c.req.valid("json"))),
+        200,
+      ),
+  );
+  app.openapi(
+    command(
+      "update_connection",
+      "updateConnection",
+      "My relationship to a connection and my switch for their tasks (5b)",
+      s.UpdateConnectionCommand,
+      s.Ok,
+    ),
+    async (c) =>
+      c.json(
+        await svc.updateConnection(deps, await person(c.get("caller")), c.req.valid("json")),
+        200,
+      ),
+  );
+  app.openapi(
+    command(
+      "remove_connection",
+      "removeConnection",
+      "Remove a connection (5b); open tasks between the two are cancelled, nobody is told",
+      s.RemoveConnectionCommand,
+      s.Ok,
+    ),
+    async (c) =>
+      c.json(
+        await svc.removeConnection(deps, await person(c.get("caller")), c.req.valid("json")),
         200,
       ),
   );

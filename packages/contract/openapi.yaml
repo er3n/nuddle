@@ -247,6 +247,13 @@ components:
           pattern: ^\+[1-9]\d{7,14}$
           example: "+905320000002"
           description: E.164
+        connectedAt:
+          type: string
+          format: date-time
+          example: 2026-10-12T09:00:00+03:00
+          description: ISO 8601 with offset
+        notifyMe:
+          type: boolean
       required:
         - personId
         - displayName
@@ -1057,6 +1064,63 @@ components:
       required:
         - idempotencyKey
         - inviteId
+    UpdateSettingsCommand:
+      type: object
+      properties:
+        idempotencyKey:
+          type: string
+          format: uuid
+          description: Client generated UUIDv7; a replay returns the first result (ADR 0006)
+        quietHours:
+          type: object
+          properties:
+            start:
+              type: string
+              pattern: ^([01]\d|2[0-3]):[0-5]\d$
+              example: 23:00
+            end:
+              type: string
+              pattern: ^([01]\d|2[0-3]):[0-5]\d$
+              example: 23:00
+          required:
+            - start
+            - end
+        useConnectionsForMyTasks:
+          type: boolean
+        notifyMeForOthersTasks:
+          type: boolean
+      required:
+        - idempotencyKey
+    UpdateConnectionCommand:
+      type: object
+      properties:
+        idempotencyKey:
+          type: string
+          format: uuid
+          description: Client generated UUIDv7; a replay returns the first result (ADR 0006)
+        personId:
+          type: string
+          format: uuid
+        relationship:
+          $ref: "#/components/schemas/EdgeType"
+        notifyMe:
+          type: boolean
+      required:
+        - idempotencyKey
+        - personId
+    RemoveConnectionCommand:
+      type: object
+      properties:
+        idempotencyKey:
+          type: string
+          format: uuid
+          description: Client generated UUIDv7; a replay returns the first result (ADR 0006)
+        personId:
+          type: string
+          format: uuid
+      required:
+        - idempotencyKey
+        - personId
     LogOutCommand:
       type: object
       properties:
@@ -2440,6 +2504,177 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/RevokeInviteCommand"
+      responses:
+        "200":
+          description: The result; a replay with the same key returns it again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ok"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/commands/update_settings:
+    post:
+      operationId: updateSettings
+      summary: Quiet hours and the human channel switches (5a, 7g); affected plans are redone
+      tags:
+        - commands
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSettingsCommand"
+      responses:
+        "200":
+          description: The result; a replay with the same key returns it again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/commands/update_connection:
+    post:
+      operationId: updateConnection
+      summary: My relationship to a connection and my switch for their tasks (5b)
+      tags:
+        - commands
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateConnectionCommand"
+      responses:
+        "200":
+          description: The result; a replay with the same key returns it again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ok"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/commands/remove_connection:
+    post:
+      operationId: removeConnection
+      summary: Remove a connection (5b); open tasks between the two are cancelled, nobody is told
+      tags:
+        - commands
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoveConnectionCommand"
       responses:
         "200":
           description: The result; a replay with the same key returns it again

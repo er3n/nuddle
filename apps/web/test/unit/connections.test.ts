@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   acceptInvite,
+  changeConnection,
   createInvite,
   declineInvite,
   deleteAccount,
   inviteStatusForInviter,
+  removeConnection,
   revokeInvite,
   type Invite,
 } from "../../src/domain/connections";
@@ -38,8 +40,20 @@ describe("invites", () => {
     if (!r.ok) throw new Error(r.error);
     expect(r.value.invite.status).toBe("accepted");
     expect(r.value.edges).toEqual([
-      { fromPersonId: "selin", toPersonId: "eren", type: "spouse", status: "active" },
-      { fromPersonId: "eren", toPersonId: "selin", type: "spouse", status: "active" },
+      {
+        fromPersonId: "selin",
+        toPersonId: "eren",
+        type: "spouse",
+        status: "active",
+        notifyMe: true,
+      },
+      {
+        fromPersonId: "eren",
+        toPersonId: "selin",
+        type: "spouse",
+        status: "active",
+        notifyMe: true,
+      },
     ]);
     expect(r.value.pushes).toEqual([
       { to: "selin", hint: "sync", taskId: null, event: "invite_accepted" },
@@ -85,8 +99,20 @@ describe("invites", () => {
 describe("deleteAccount", () => {
   it("removes connections and cancels open tasks on both sides", () => {
     const edges: Edge[] = [
-      { fromPersonId: "selin", toPersonId: "eren", type: "spouse", status: "active" },
-      { fromPersonId: "eren", toPersonId: "selin", type: "spouse", status: "active" },
+      {
+        fromPersonId: "selin",
+        toPersonId: "eren",
+        type: "spouse",
+        status: "active",
+        notifyMe: true,
+      },
+      {
+        fromPersonId: "eren",
+        toPersonId: "selin",
+        type: "spouse",
+        status: "active",
+        notifyMe: true,
+      },
     ];
     const ctx = { sender: selin, recipient: eren, reachability: "NONE" as const, history: [], now };
     const r = deleteAccount(
@@ -101,5 +127,75 @@ describe("deleteAccount", () => {
     expect(r.person.deletedAt).toEqual(now);
     expect(r.edges.every((e) => e.status === "removed")).toBe(true);
     expect(r.cancelled.map((o) => o.task.id)).toEqual(["task-1"]);
+  });
+});
+
+describe("person detail (5b)", () => {
+  const mine: Edge = {
+    fromPersonId: "eren",
+    toPersonId: "selin",
+    type: "spouse",
+    status: "active",
+    notifyMe: true,
+  };
+  const theirs: Edge = { ...mine, fromPersonId: "selin", toPersonId: "eren", type: "other" };
+  const ctx = { sender: selin, recipient: eren, reachability: "NONE" as const, history: [], now };
+
+  it("changes only my own edge: relationship and the switch for their tasks", () => {
+    expect(changeConnection(mine, { relationship: "roommate" })).toEqual({
+      ok: true,
+      value: { ...mine, type: "roommate" },
+    });
+    expect(changeConnection(mine, { notifyMe: false })).toEqual({
+      ok: true,
+      value: { ...mine, notifyMe: false },
+    });
+  });
+
+  it("changes nothing on a connection that is not active", () => {
+    expect(changeConnection(null, { notifyMe: false })).toEqual({
+      ok: false,
+      error: "not_connected",
+    });
+    expect(changeConnection({ ...mine, status: "removed" }, { notifyMe: false })).toEqual({
+      ok: false,
+      error: "not_connected",
+    });
+  });
+
+  it("removing drops both edges and cancels what is not closed, in both directions", () => {
+    const toMe = { ...aTask().build(), id: "to-me", senderId: "selin", recipientId: "eren" };
+    const fromMe = {
+      ...aTask().withStatus("MISSED").build(),
+      id: "from-me",
+      senderId: "eren",
+      recipientId: "selin",
+    };
+    const done = { ...aTask().withStatus("DONE").build(), id: "done" };
+    const r = removeConnection(
+      eren,
+      [mine, theirs],
+      [
+        { task: toMe, ctx },
+        { task: fromMe, ctx: { ...ctx, sender: eren, recipient: selin } },
+        { task: done, ctx },
+      ],
+    );
+    if (!r.ok) throw new Error(r.error);
+    expect(r.value.edges.map((e) => e.status)).toEqual(["removed", "removed"]);
+    expect(r.value.cancelled.map((o) => o.task.id)).toEqual(["to-me", "from-me"]);
+    expect(r.value.cancelled.flatMap((o) => o.pushes.map((p) => p.hint))).toEqual([
+      "sync",
+      "sync",
+      "sync",
+      "sync",
+    ]);
+  });
+
+  it("cannot remove a connection that is already gone", () => {
+    expect(removeConnection(eren, [{ ...mine, status: "removed" }, theirs], [])).toEqual({
+      ok: false,
+      error: "not_connected",
+    });
   });
 });
