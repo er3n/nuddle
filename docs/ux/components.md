@@ -37,13 +37,14 @@ enum class DurtButtonSize(val height: Dp) { Poke(62.dp), Large(56.dp), Medium(52
 ## 3. ComposeBar
 
 ```kotlin
-sealed interface ComposeState { data object Idle; data class Typing(val text: String); data class Failed(val text: String); data object Sending }
+sealed interface ComposeState { data object Idle; data class Typing(val text: String); data class Failed(val text: String); data object Sending; data class Listening(val heard: String) }
 @Composable fun ComposeBar(state: ComposeState, onTextChange: (String) -> Unit, onSend: () -> Unit,
-    onVoiceStart: () -> Unit, onVoiceEnd: (cancelled: Boolean) -> Unit)
+    onVoiceStart: () -> Unit, onVoiceEnd: (cancelled: Boolean) -> Unit, notice: VoiceNotice? = null)
 ```
 - Idle: one line, 1 dp `border`, 52 dp orange mic button. Placeholder "Yaz ya da basılı tutup konuş...".
 - Focused: 2 dp `ink` border, radius 20, text 18 sp, grows to at most 4 lines. With text the mic turns into a send arrow (same place and size, 150 ms crossfade).
-- Mic: hold to record (screen 4h), release to send, slide to cancel. A short tap shows a "Basılı tut" hint bubble for 2 s.
+- Mic: hold to record (screen 4h), release to send, slide left to cancel (open-questions #6). A short tap shows a "Basılı tut" hint bubble for 2 s; `notice` shows a voice note in the same bubble (open-questions #40).
+- Listening: the 4h panel replaces the bar (transcript card, big mic, how to cancel). The hold gesture belongs to the whole bar, so it survives the switch.
 - Failed: text is kept, the button becomes "Tekrar dene", an InlineAlert shows above.
 - Sits above the keyboard with `imePadding()`.
 

@@ -187,7 +187,7 @@ Note: "sıradaki 08:40" reveals the next poke time. This conflicts with the hidd
 
 ### 4h Voice input (press and hold) · `VoiceHold.png`
 **Copy:** Dinliyorum | (live transcript) | Bırakınca gönderirim | Vazgeçmek için parmağını sola kaydır
-Note: the component spec says "slide up to cancel", the screen says "slide left". Pick one (open question).
+Slide left cancels (open-questions #6). Rules and the notes not in the design: open-questions #40.
 
 ### 4i Sent directly, undo · `QuickSent.png`
 Sender home with the new task marked "Yeni" and the UndoToast.

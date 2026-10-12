@@ -53,6 +53,7 @@ import app.nuddle.ui.components.PillStatus
 import app.nuddle.ui.components.StatusBanner
 import app.nuddle.ui.components.StatusPill
 import app.nuddle.ui.components.TopBar
+import app.nuddle.ui.components.VoiceNotice
 import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.screens.ScreenLayout
@@ -90,6 +91,8 @@ data class HomeUiState(
     val queued: List<QueuedUi> = emptyList(),
     /** The code 6f shows instead of home while it is open. */
     val unrecoverable: String? = null,
+    /** A short note by the mic about voice input (4h). */
+    val voiceNotice: VoiceNotice? = null,
 )
 
 /** Anything to list: next up, an issue, a task I wrote, a text waiting for the connection. */

@@ -27,6 +27,7 @@ import { photoTask, photoTaskExtractions } from "./smoke/photo-task";
 import { dropTask, dropTaskExtractions } from "./smoke/drop-task";
 import { missedRing } from "./smoke/missed-ring";
 import { offline } from "./smoke/offline";
+import { voice } from "./smoke/voice";
 import { removeConnection } from "./smoke/remove-connection";
 
 const TIMEOUT_MS = 30 * 60_000;
@@ -163,6 +164,7 @@ async function main(): Promise<void> {
   await removeConnection(ctx);
   await missedRing(ctx);
   await offline(ctx);
+  await voice(ctx);
 }
 
 main().then(

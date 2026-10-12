@@ -68,6 +68,7 @@ Auth users live in the stack's Auth service and are not deleted; the app sees a 
 | 8 | Eren removes the connection on person detail; the open task is cancelled and his alarms stop | `orchestrator/src/smoke/remove-connection.ts` |
 | 9 | Eren's app is force stopped before his pokes; the bell says "Son dürtmen çalmadı", "Düzelt" opens the brand steps | `orchestrator/src/smoke/missed-ring.ts` |
 | 10 | Eren goes offline: the banner shows and a text waits as "Sırada"; back online it goes out and the task is on home | `orchestrator/src/smoke/offline.ts` |
+| 11 | Selin holds the mic and speaks a task (injected speech); lifting the finger creates it | `orchestrator/src/smoke/voice.ts` |
 | 5, 6 | `docs/testing.md`, Smoke set (Doze, reboot) | not yet |
 
 Smokes run in the order of the table: each one starts from the state the one before left.

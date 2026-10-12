@@ -17,6 +17,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import app.nuddle.data.InviteLinks
+import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.screens.LightSystemBarIcons
 import app.nuddle.ui.screens.approve.ApproveViewModel
 import app.nuddle.ui.screens.code.CodeScreen
@@ -37,6 +38,8 @@ import app.nuddle.ui.screens.home.NextUpCallbacks
 import app.nuddle.ui.screens.home.PendingInviteCallbacks
 import app.nuddle.ui.screens.home.PreviewCallbacks
 import app.nuddle.ui.screens.home.UndoCallbacks
+import app.nuddle.ui.screens.home.VoiceViewModel
+import app.nuddle.ui.screens.home.rememberVoiceInput
 import app.nuddle.ui.screens.inbox.BellWarning
 import app.nuddle.ui.screens.inbox.InboxScreen
 import app.nuddle.ui.screens.inbox.InboxViewModel
@@ -196,10 +199,17 @@ fun NuddleNavHost(
                 invites.onResume()
                 onPauseOrDispose {}
             }
+            val voice: VoiceViewModel = hiltViewModel()
+            val listening by voice.listening.collectAsStateWithLifecycle()
+            val voiceNotice by voice.notice.collectAsStateWithLifecycle()
+            val voiceInput =
+                rememberVoiceInput(voice) { heard ->
+                    viewModel.onComposeTextChange(heard)
+                    viewModel.onComposeSend()
+                }
             val unreadInvites by invites.unread.collectAsStateWithLifecycle()
             val unreached by issues.unreached.collectAsStateWithLifecycle()
             val unread = unreadInvites + unreached
-            // Voice is a route of a later feature slice (docs/bootstrap-plan.md).
             val code = state?.unrecoverable
             if (code != null) {
                 BackHandler { viewModel.onUnrecoverableClose(retry = false) }
@@ -213,14 +223,21 @@ fun NuddleNavHost(
             }
             state?.takeIf { code == null }?.let {
                 HomeScreen(
-                    state = it.copy(unread = unread, issues = issuesUi, newDeadline = newDeadline),
+                    state =
+                        it.copy(
+                            unread = unread,
+                            issues = issuesUi,
+                            newDeadline = newDeadline,
+                            compose = listening?.let(ComposeState::Listening) ?: it.compose,
+                            voiceNotice = voiceNotice,
+                        ),
                     onBell = { nav.navigate(Routes.INBOX) { launchSingleTop = true } },
                     onProfile = { nav.navigate(Routes.PROFILE) { launchSingleTop = true } },
                     onInvite = { nav.navigate(Routes.INVITE) { launchSingleTop = true } },
                     onComposeTextChange = viewModel::onComposeTextChange,
                     onComposeSend = viewModel::onComposeSend,
-                    onVoiceStart = {},
-                    onVoiceEnd = {},
+                    onVoiceStart = voiceInput.onStart,
+                    onVoiceEnd = voiceInput.onEnd,
                     nextUpActions =
                         NextUpCallbacks(
                             onDone = viewModel::onFinishNextUp,

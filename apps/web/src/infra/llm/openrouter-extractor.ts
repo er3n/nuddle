@@ -39,6 +39,7 @@ const completionSchema = z.object({
 
 const RULES = `You turn one sentence (usually Turkish) into a reminder task for a family reminder app.
 Return only JSON that matches the schema.
+The text may be a speech transcript (4h): no punctuation, numbers and times in words ("dokuzda", "sekiz buçukta", "yarım saat sonra", "iki bin beş yüz"), filler words ("şey", "hmm") to ignore.
 
 recipient
 - "self" when the sender writes to themselves: first person ("ödeyeyim"), "bana", "beni", or a plain imperative with no person named.

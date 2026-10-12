@@ -33,5 +33,5 @@ internal fun ColumnScope.HomeBottom(
             Modifier.padding(bottom = dimens.space10).testTag(TestTags.HOME_SEND_FAILED),
         )
     }
-    ComposeBar(state.compose, onComposeTextChange, onComposeSend, onVoiceStart, onVoiceEnd)
+    ComposeBar(state.compose, onComposeTextChange, onComposeSend, onVoiceStart, onVoiceEnd, notice = state.voiceNotice)
 }

@@ -1,0 +1,14 @@
+# Hold the mic (4h): the injected speech is heard, lifting the finger writes it, the task is created (undo toast).
+appId: app.nuddle.debug
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: compose.mic
+    timeout: 30000
+- longPressOn:
+    id: compose.mic
+- extendedWaitUntil:
+    visible:
+      id: home.undo
+    timeout: 30000
