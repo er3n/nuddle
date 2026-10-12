@@ -8,6 +8,7 @@ import {
   declineInvite,
   deleteAccount as deleteAccountDomain,
   inviteStatusForInviter,
+  revokeInvite,
 } from "../domain/connections";
 import { resolveExtraction, type Extraction, type MissingField } from "../domain/extraction";
 import {
@@ -56,6 +57,7 @@ import {
   findEdge,
   findIdempotentResult,
   findInviteByCode,
+  findInviteById,
   findPerson,
   findTask,
   inSyncReadTx,
@@ -452,6 +454,22 @@ export async function declineInviteCommand(
     if (!r.ok) throw new ApiError(r.error);
     // Never shown to the inviter: the sync cursor does not move.
     await setInviteStatus(tx, invite.id, r.value.status, now, false);
+    return { result: { ok: true as const }, effects: noEffects };
+  });
+}
+
+export async function revokeInviteCommand(
+  deps: AppDeps,
+  caller: Person,
+  input: { idempotencyKey: string; inviteId: string },
+): Promise<{ ok: true }> {
+  return runCommand(deps, caller.id, "revoke_invite", input.idempotencyKey, async (tx, now) => {
+    const invite = await findInviteById(tx, input.inviteId);
+    if (!invite) throw new ApiError("not_found");
+    const r = revokeInvite(invite, caller);
+    if (!r.ok) throw new ApiError(r.error);
+    // Visible to both: the inviter's card goes, and the invitee's bell no longer offers it.
+    await setInviteStatus(tx, invite.id, r.value.status, now, true);
     return { result: { ok: true as const }, effects: noEffects };
   });
 }

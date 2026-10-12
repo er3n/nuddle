@@ -5,6 +5,7 @@ import {
   declineInvite,
   deleteAccount,
   inviteStatusForInviter,
+  revokeInvite,
   type Invite,
 } from "../../src/domain/connections";
 import type { Edge } from "../../src/domain/types";
@@ -57,6 +58,20 @@ describe("invites", () => {
     if (!r.ok) throw new Error(r.error);
     expect(r.value.status).toBe("declined");
     expect(inviteStatusForInviter(r.value)).toBe("open");
+  });
+
+  it("only the inviter revokes, while the invite is open to them", () => {
+    expect(revokeInvite(invite, eren)).toEqual({ ok: false, error: "not_inviter" });
+    expect(revokeInvite(invite, selin)).toEqual({
+      ok: true,
+      value: { ...invite, status: "revoked" },
+    });
+    // A decline looks open to the inviter, so it can still be taken back.
+    expect(revokeInvite({ ...invite, status: "declined" }, selin).ok).toBe(true);
+    expect(revokeInvite({ ...invite, status: "accepted" }, selin)).toEqual({
+      ok: false,
+      error: "invite_not_open",
+    });
   });
 
   it("cannot accept twice", () => {

@@ -191,6 +191,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
             prefilledName: i.prefilledName,
             relationship: i.relationship,
             status: i.status,
+            createdAt: iso(i.createdAt),
           })),
           receivedInvites: r.receivedInvites.map((i) => ({
             id: i.id,
@@ -200,6 +201,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
             prefilledName: i.prefilledName,
             relationship: i.relationship,
             status: i.status,
+            createdAt: iso(i.createdAt),
           })),
           events: r.events.map((e) => ({
             id: e.id,
@@ -479,6 +481,20 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
     async (c) =>
       c.json(
         await svc.declineInviteCommand(deps, await person(c.get("caller")), c.req.valid("json")),
+        200,
+      ),
+  );
+  app.openapi(
+    command(
+      "revoke_invite",
+      "revokeInvite",
+      "Inviter: İptal et on a pending invite",
+      s.RevokeInviteCommand,
+      s.Ok,
+    ),
+    async (c) =>
+      c.json(
+        await svc.revokeInviteCommand(deps, await person(c.get("caller")), c.req.valid("json")),
         200,
       ),
   );

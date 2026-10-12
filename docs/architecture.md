@@ -121,6 +121,7 @@ The app shows the code on the unrecoverable error screen (6f) and sends it to Cr
 | DRT-4101 | `invite_not_open` | 409 | |
 | DRT-4102 | `wrong_invitee` | 403 | The invite is bound to another number |
 | DRT-4103 | `self_invite` | 409 | |
+| DRT-4104 | `not_inviter` | 403 | Only the inviter can revoke an invite |
 | DRT-5001 | `internal` | 500 | Unexpected server error |
 | DRT-5002 | `upstream_failed` | 502 | Supabase Auth, the SMS provider or the LLM failed |
 

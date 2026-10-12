@@ -38,6 +38,25 @@ describe("scenarios: people", () => {
     expect(await selin.write(TEXT.homeworkToDefne)).toEqual({ kind: "ask", question: "recipient" });
   });
 
+  it("invite revoked: gone for both sides, and the code no longer works", async () => {
+    const world = emptyWorld();
+    const selin = await world.addPerson("Selin");
+    const eren = await world.addPerson("Eren");
+
+    const code = await selin.invite(eren.person.phone, "spouse", "Eren");
+    const sent = await selin.api.GET("/api/v1/sync", { params: { query: {} } });
+    expect(sent.data?.sentInvites[0]?.createdAt).toBe(world.clock.now().toISOString());
+    expect(world.invitesReceivedBy("eren")).toEqual([{ code, status: "open" }]);
+
+    await expect(eren.revokeInvite(code)).rejects.toThrow(/DRT-4104/);
+    await selin.revokeInvite(code);
+
+    expect(world.invitesSeenBy("selin")).toEqual([{ code, status: "revoked" }]);
+    expect(world.invitesReceivedBy("eren")).toEqual([{ code, status: "revoked" }]);
+    await expect(eren.acceptInvite(code, "spouse")).rejects.toThrow(/DRT-4101/);
+    expect(world.edgesOf("selin")).toEqual([]);
+  });
+
   it("logout makes reachability NONE and pokes stop reaching that phone", async () => {
     const { world, selin, eren } = await selinAndEren();
     expect(world.reachabilityOf("eren")).toBe("FULL_SCREEN");

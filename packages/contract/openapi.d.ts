@@ -425,6 +425,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/commands/revoke_invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Inviter: İptal et on a pending invite */
+        post: operations["revokeInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/commands/log_out": {
         parameters: {
             query?: never;
@@ -483,7 +500,7 @@ export interface components {
                 /** @example DRT-4001 */
                 code: string;
                 /** @enum {string} */
-                name: "validation_failed" | "unauthorized" | "not_registered" | "not_found" | "idempotency_key_reused" | "invalid_otp" | "forbidden" | "wrong_status" | "not_sender" | "not_recipient" | "wrong_finish_mode" | "deadline_not_in_future" | "not_connected" | "recipient_unavailable" | "snooze_not_allowed" | "invite_not_open" | "wrong_invitee" | "self_invite" | "internal" | "upstream_failed";
+                name: "validation_failed" | "unauthorized" | "not_registered" | "not_found" | "idempotency_key_reused" | "invalid_otp" | "forbidden" | "wrong_status" | "not_sender" | "not_recipient" | "wrong_finish_mode" | "deadline_not_in_future" | "not_connected" | "recipient_unavailable" | "snooze_not_allowed" | "invite_not_open" | "wrong_invitee" | "self_invite" | "not_inviter" | "internal" | "upstream_failed";
                 message: string;
                 requestId: string;
             };
@@ -572,6 +589,12 @@ export interface components {
             relationship: components["schemas"]["EdgeType"];
             /** @enum {string} */
             status: "open" | "accepted" | "revoked" | "expired";
+            /**
+             * Format: date-time
+             * @description ISO 8601 with offset
+             * @example 2026-10-12T09:00:00+03:00
+             */
+            createdAt: string;
         };
         SyncReceivedInvite: {
             /** Format: uuid */
@@ -584,6 +607,12 @@ export interface components {
             relationship: components["schemas"]["EdgeType"];
             /** @enum {string} */
             status: "open" | "accepted" | "declined" | "revoked" | "expired";
+            /**
+             * Format: date-time
+             * @description ISO 8601 with offset
+             * @example 2026-10-12T09:00:00+03:00
+             */
+            createdAt: string;
         };
         SyncTask: {
             /** Format: uuid */
@@ -920,6 +949,15 @@ export interface components {
              */
             idempotencyKey: string;
             code: string;
+        };
+        RevokeInviteCommand: {
+            /**
+             * Format: uuid
+             * @description Client generated UUIDv7; a replay returns the first result (ADR 0006)
+             */
+            idempotencyKey: string;
+            /** Format: uuid */
+            inviteId: string;
         };
         LogOutCommand: {
             /**
@@ -2627,6 +2665,84 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["DeclineInviteCommand"];
+            };
+        };
+        responses: {
+            /** @description The result; a replay with the same key returns it again */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ok"];
+                };
+            };
+            /** @description Error with a DRT code */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    revokeInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevokeInviteCommand"];
             };
         };
         responses: {
