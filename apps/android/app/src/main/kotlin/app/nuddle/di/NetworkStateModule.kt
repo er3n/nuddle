@@ -2,8 +2,8 @@ package app.nuddle.di
 
 import app.nuddle.data.network.AndroidConnectivity
 import app.nuddle.data.network.Connectivity
+import app.nuddle.data.network.CrashlyticsErrorReporter
 import app.nuddle.data.network.ErrorReporter
-import app.nuddle.data.network.LogErrorReporter
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -17,5 +17,5 @@ abstract class NetworkStateModule {
     abstract fun connectivity(impl: AndroidConnectivity): Connectivity
 
     @Binds
-    abstract fun errorReporter(impl: LogErrorReporter): ErrorReporter
+    abstract fun errorReporter(impl: CrashlyticsErrorReporter): ErrorReporter
 }
