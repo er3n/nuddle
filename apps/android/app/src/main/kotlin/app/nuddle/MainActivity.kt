@@ -13,6 +13,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.nuddle.data.InviteLinks
 import app.nuddle.ui.TestTagsRoot
 import app.nuddle.ui.nav.NuddleNavHost
+import app.nuddle.ui.nav.Routes
 import app.nuddle.ui.nav.StartViewModel
 import app.nuddle.ui.theme.DurtTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -26,20 +27,20 @@ class MainActivity : ComponentActivity() {
     /** The code of an invite link that opened the app, until home has acted on it. */
     private val inviteCode = MutableStateFlow<String?>(null)
 
-    /** A photo task whose Bitti was tapped on the poke or its notification: the camera (4d) opens for it. */
-    private val photoTask = MutableStateFlow<String?>(null)
+    /** A screen a poke or a notification asked for (the camera for a photo task, an approval), until home opens it. */
+    private val openRoute = MutableStateFlow<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) {
             inviteCode.value = InviteLinks.codeOf(intent?.dataString)
-            photoTask.value = intent?.getStringExtra(EXTRA_PHOTO_TASK)
+            openRoute.value = intent?.getStringExtra(EXTRA_ROUTE)
         }
         enableEdgeToEdge()
         setContent {
             val route by start.startRoute.collectAsStateWithLifecycle()
             val code by inviteCode.collectAsStateWithLifecycle()
-            val photo by photoTask.collectAsStateWithLifecycle()
+            val open by openRoute.collectAsStateWithLifecycle()
             DurtTheme {
                 TestTagsRoot {
                     route?.let {
@@ -47,8 +48,8 @@ class MainActivity : ComponentActivity() {
                             startRoute = it,
                             inviteCode = code,
                             onInviteCodeTake = { inviteCode.value = null },
-                            photoTask = photo,
-                            onPhotoTaskTake = { photoTask.value = null },
+                            openRoute = open,
+                            onOpenRouteTake = { openRoute.value = null },
                         )
                     }
                 }
@@ -60,20 +61,32 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         InviteLinks.codeOf(intent.dataString)?.let { inviteCode.value = it }
-        intent.getStringExtra(EXTRA_PHOTO_TASK)?.let { photoTask.value = it }
+        intent.getStringExtra(EXTRA_ROUTE)?.let { openRoute.value = it }
     }
 
     companion object {
-        private const val EXTRA_PHOTO_TASK = "photoTask"
+        private const val EXTRA_ROUTE = "route"
 
         /** Opens the camera (4d) for [taskId]: Bitti on the poke or its notification for a photo task. */
         fun takePhoto(
             context: Context,
             taskId: String,
+        ): Intent = open(context, Routes.photo(taskId))
+
+        /** Opens the approval (4f) of [taskId]: Gör on "Eren fotoğraf gönderdi". */
+        fun approve(
+            context: Context,
+            taskId: String,
+        ): Intent = open(context, Routes.approve(taskId))
+
+        // The route is also the data URI, which keeps PendingIntents for different screens apart.
+        private fun open(
+            context: Context,
+            route: String,
         ): Intent =
             Intent(context, MainActivity::class.java)
-                .setData("nuddle://photo/$taskId".toUri())
-                .putExtra(EXTRA_PHOTO_TASK, taskId)
+                .setData("nuddle://$route".toUri())
+                .putExtra(EXTRA_ROUTE, route)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
     }
 }

@@ -263,6 +263,22 @@
     <string name="photo_auto_approve">%1$s bakmazsa 3 saat sonra kendiliğinden kapanır.</string>
     <string name="rerequest_resumes">Dürtme kaldığı yerden devam ediyor</string>
     <string name="rerequest_new_photo">Yeni fotoğraf çek</string>
+    <!-- 4f Approval. open-questions#35: the design says "[Eren\'in fotoğrafı]"; the photo has a description without a
+         suffix. A photo that cannot be loaded has no design copy. -->
+    <string name="approve_from">%1$s fotoğraf gönderdi</string>
+    <string name="approve_asked">%1$s istemiştin</string>
+    <string name="approve_photo_description">Gönderilen fotoğraf: %1$s</string>
+    <string name="approve_photo_failed">Fotoğraf açılamadı.</string>
+    <string name="approve_note_label">Tekrar istersen not</string>
+    <string name="approve_note_optional">(isteğe bağlı)</string>
+    <string name="approve_note_placeholder">örn. 1.500 lazımdı</string>
+    <string name="approve_rerequest">Tekrar iste</string>
+    <string name="approve_ok">Onayla</string>
+    <string name="approve_auto">Bakmazsan 3 saat sonra kendiliğinden onaylanır.</string>
+    <!-- No design copy: the sender is told a photo came (opens 4f). -->
+    <string name="photo_arrived_title">%1$s fotoğraf gönderdi</string>
+    <string name="photo_arrived_body">%1$s · onayını bekliyor.</string>
+    <string name="sent_photo_arrived">fotoğraf geldi</string>
     <!-- 4c: the next-up card of a photo task. -->
     <string name="home_done_photo">Bitti, çek</string>
 

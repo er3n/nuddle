@@ -110,7 +110,8 @@ class TaskDetailViewModel
                 sessions.displayName,
                 local,
             ) { task, connections, myName, local ->
-                if (task == null || task.status != TaskStatus.SCHEDULED.value) {
+                // Still going: to do, or asked again for a photo (4g). A photo waiting is answered on 4f.
+                if (task == null || task.status !in setOf(TaskStatus.SCHEDULED.value, TaskStatus.REJECTED.value)) {
                     closeChannel.trySend(Unit)
                     return@combine null
                 }

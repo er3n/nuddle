@@ -5,6 +5,7 @@ import app.nuddle.alarm.FullScreenPermission
 import app.nuddle.alarm.PokeNotifications
 import app.nuddle.api.model.EdgeType
 import app.nuddle.api.model.FinishMode
+import app.nuddle.data.Approvals
 import app.nuddle.data.AuthRepository
 import app.nuddle.data.InviteRepository
 import app.nuddle.data.SessionStarter
@@ -389,6 +390,14 @@ class FakeInviteRepository : InviteRepository {
 class RecordingAnnouncer : TaskAnnouncer {
     val announced = mutableListOf<Pair<String, String>>()
     val withdrawn = mutableListOf<String>()
+    val photos = mutableListOf<Pair<String, String>>()
+
+    override fun photoArrived(
+        task: TaskEntity,
+        recipientName: String,
+    ) {
+        photos += task.id to recipientName
+    }
 
     override fun announce(
         task: TaskEntity,
@@ -424,5 +433,22 @@ class FakePhotoLoader : PhotoLoader {
             Bitmap.createBitmap(4, 3, Bitmap.Config.ARGB_8888).compress(Bitmap.CompressFormat.JPEG, 90, it)
             it.toByteArray()
         }
+    }
+}
+
+/** Records the sender's answers to a photo (4f). */
+class RecordingApprovals : Approvals {
+    val approved = mutableListOf<String>()
+    val reRequested = mutableListOf<Pair<String, String?>>()
+
+    override suspend fun approve(taskId: String) {
+        approved += taskId
+    }
+
+    override suspend fun reRequest(
+        taskId: String,
+        note: String?,
+    ) {
+        reRequested += taskId to note
     }
 }

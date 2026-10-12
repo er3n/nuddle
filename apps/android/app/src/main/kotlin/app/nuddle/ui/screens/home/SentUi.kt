@@ -18,11 +18,19 @@ data class SentUi(
     val photo: Boolean,
     val toId: String,
     val toName: String,
+    /** A photo came and waits for my approval (4f). */
+    val awaitingApproval: Boolean = false,
+    /** I asked for another photo (4g). */
+    val reRequested: Boolean = false,
 )
 
+/** My tasks to others that are still going: to do, a photo waiting for me, asked again. */
+private val SENT_STATUSES =
+    setOf(TaskStatus.SCHEDULED.value, TaskStatus.AWAITING_APPROVAL.value, TaskStatus.REJECTED.value)
+
 /**
- * My open tasks to other people, due first on top. Slice 3 has only scheduled ones; awaiting approval, dropped and
- * missed come with slices 4 and 5. A task to someone sync has no connection for is left out: there is no name.
+ * My open tasks to other people: a photo waiting for my approval on top, then due first. Dropped and missed come
+ * with slice 5. A task to someone sync has no connection for is left out: there is no name.
  */
 fun sentTasks(
     tasks: List<TaskEntity>,
@@ -32,8 +40,8 @@ fun sentTasks(
     timeZone: TimeZone,
 ): List<SentUi> =
     tasks
-        .filter { it.senderId == me && it.recipientId != me && it.status == TaskStatus.SCHEDULED.value }
-        .sortedBy { it.deadline }
+        .filter { it.senderId == me && it.recipientId != me && it.status in SENT_STATUSES }
+        .sortedWith(compareBy({ it.status != TaskStatus.AWAITING_APPROVAL.value }, { it.deadline }))
         .mapNotNull { task ->
             val to = connections[task.recipientId] ?: return@mapNotNull null
             SentUi(
@@ -44,5 +52,7 @@ fun sentTasks(
                 photo = task.finishMode == FinishMode.PHOTO.value,
                 toId = to.personId,
                 toName = to.displayName,
+                awaitingApproval = task.status == TaskStatus.AWAITING_APPROVAL.value,
+                reRequested = task.status == TaskStatus.REJECTED.value,
             )
         }

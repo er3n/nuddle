@@ -23,7 +23,7 @@ import app.nuddle.ui.uppercaseForUi
 internal fun ColumnScope.SentSection(
     sent: List<SentUi>,
     fresh: String?,
-    onOpen: (String) -> Unit,
+    onOpen: (taskId: String, awaitingApproval: Boolean) -> Unit,
 ) {
     val colors = DurtTheme.colors
     Text(
@@ -35,17 +35,27 @@ internal fun ColumnScope.SentSection(
     sent.forEach { task ->
         val isFresh = task.taskId == fresh
         val parts =
-            listOfNotNull(task.detail, task.deadline.inlineText(), if (task.photo) stringResource(R.string.sent_photo) else null)
+            if (task.awaitingApproval) {
+                listOfNotNull(task.detail, stringResource(R.string.sent_photo_arrived))
+            } else {
+                listOfNotNull(task.detail, task.deadline.inlineText(), if (task.photo) stringResource(R.string.sent_photo) else null)
+            }
         TaskRow(
             task =
                 TaskUi(
                     title = task.title,
                     subtitle = parts.reduce { line, part -> stringResource(R.string.separator_dot, line, part) },
-                    status = if (isFresh) PillStatus.New else PillStatus.Scheduled,
+                    status =
+                        when {
+                            isFresh -> PillStatus.New
+                            task.awaitingApproval -> PillStatus.AwaitingMyApproval
+                            task.reRequested -> PillStatus.Rejected
+                            else -> PillStatus.Scheduled
+                        },
                     personName = task.toName,
                     personColor = colors.avatarFor(task.toId),
                 ),
-            onClick = { onOpen(task.taskId) },
+            onClick = { onOpen(task.taskId, task.awaitingApproval) },
             highlighted = isFresh,
             modifier = Modifier.testTag(TestTags.HOME_SENT),
         )

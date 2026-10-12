@@ -106,7 +106,8 @@ fun HomeScreen(
     onVoiceEnd: (cancelled: Boolean) -> Unit,
     modifier: Modifier = Modifier,
     nextUpActions: NextUpCallbacks = NextUpCallbacks(),
-    onOpenTask: (taskId: String) -> Unit = {},
+    /** A row under "Senin yazdıkların": its detail (7c), or the approval (4f) when a photo waits. */
+    onOpenTask: (taskId: String, awaitingApproval: Boolean) -> Unit = { _, _ -> },
     preview: PreviewCallbacks = PreviewCallbacks(),
     undo: UndoCallbacks = UndoCallbacks(),
     pendingInvite: PendingInviteCallbacks = PendingInviteCallbacks(),

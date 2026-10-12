@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import app.nuddle.data.InviteLinks
 import app.nuddle.ui.screens.LightSystemBarIcons
+import app.nuddle.ui.screens.approve.ApproveViewModel
 import app.nuddle.ui.screens.code.CodeScreen
 import app.nuddle.ui.screens.code.CodeViewModel
 import app.nuddle.ui.screens.code.SignedInDestination
@@ -58,6 +59,10 @@ object Routes {
 
     fun photo(taskId: String): String = "photo/$taskId"
 
+    const val APPROVE = "approve/{${ApproveViewModel.ARG_TASK}}"
+
+    fun approve(taskId: String): String = "approve/$taskId"
+
     fun task(taskId: String): String = "task/$taskId"
 
     fun consent(
@@ -86,12 +91,12 @@ fun NuddleNavHost(
     startRoute: String,
     inviteCode: String? = null,
     onInviteCodeTake: () -> Unit = {},
-    photoTask: String? = null,
-    onPhotoTaskTake: () -> Unit = {},
+    openRoute: String? = null,
+    onOpenRouteTake: () -> Unit = {},
 ) {
     val nav = rememberNavController()
     val takeInviteCode by rememberUpdatedState(onInviteCodeTake)
-    val takePhotoTask by rememberUpdatedState(onPhotoTaskTake)
+    val takeOpenRoute by rememberUpdatedState(onOpenRouteTake)
     NavHost(navController = nav, startDestination = startRoute) {
         composable(Routes.WELCOME) {
             LightSystemBarIcons()
@@ -155,11 +160,11 @@ fun NuddleNavHost(
                     launchSingleTop = true
                 }
             }
-            // Bitti on a photo task's poke or notification: the camera for it (4d).
-            LaunchedEffect(photoTask) {
-                val taskId = photoTask ?: return@LaunchedEffect
-                takePhotoTask()
-                nav.navigate(Routes.photo(taskId)) { launchSingleTop = true }
+            // A screen a poke or a notification asked for: the camera of a photo task (4d), an approval (4f).
+            LaunchedEffect(openRoute) {
+                val route = openRoute ?: return@LaunchedEffect
+                takeOpenRoute()
+                nav.navigate(route) { launchSingleTop = true }
             }
             val unread by invites.unread.collectAsStateWithLifecycle()
             // Bell, profile and voice are routes of the feature slices (docs/bootstrap-plan.md).
@@ -180,7 +185,9 @@ fun NuddleNavHost(
                             onCall = { activity?.dial(it) },
                             onMessage = { activity?.message(it) },
                         ),
-                    onOpenTask = { nav.navigate(Routes.task(it)) { launchSingleTop = true } },
+                    onOpenTask = { taskId, awaitingApproval ->
+                        nav.navigate(if (awaitingApproval) Routes.approve(taskId) else Routes.task(taskId)) { launchSingleTop = true }
+                    },
                     preview =
                         PreviewCallbacks(
                             onChoice = viewModel.previewSheet::onChoice,
@@ -209,6 +216,9 @@ fun NuddleNavHost(
         }
         composable(Routes.PHOTO, arguments = listOf(navArgument(PhotoViewModel.ARG_TASK) { type = NavType.StringType })) {
             PhotoRoute(onClose = { nav.popBackStack() })
+        }
+        composable(Routes.APPROVE, arguments = listOf(navArgument(ApproveViewModel.ARG_TASK) { type = NavType.StringType })) {
+            ApproveRoute(onBack = { nav.popBackStack() })
         }
         composable(Routes.INVITE) {
             InviteRoute(onBack = { nav.popBackStack() }, onShare = { nav.popBackStack(Routes.HOME, inclusive = false) })

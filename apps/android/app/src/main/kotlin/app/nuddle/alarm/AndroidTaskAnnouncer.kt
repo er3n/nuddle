@@ -1,6 +1,7 @@
 package app.nuddle.alarm
 
 import android.Manifest
+import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -45,7 +46,8 @@ internal fun Context.deadlineInline(deadline: DeadlineText): String =
 
 /**
  * 4b: "Selin sana bir görev yazdı" on the `tasks` channel. It only says a task is there and that nothing is needed
- * yet; the pokes come with the plan. Gör opens home, where the task is the next-up card (4c).
+ * yet; the pokes come with the plan. Gör opens home, where the task is the next-up card (4c). For the sender, "Eren
+ * fotoğraf gönderdi" with Gör opening the approval (4f).
  */
 class AndroidTaskAnnouncer
     @Inject
@@ -58,11 +60,6 @@ class AndroidTaskAnnouncer
             task: TaskEntity,
             senderName: String,
         ) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-            ) {
-                return
-            }
             val deadline = context.deadlineInline(deadlineText(Instant.fromEpochMilliseconds(task.deadline), clock.now(), timeZone))
             val body =
                 if (task.finishMode == FinishMode.PHOTO.value) {
@@ -91,7 +88,46 @@ class AndroidTaskAnnouncer
                     .setAutoCancel(true)
                     .addAction(0, context.getString(R.string.task_arrived_open), open)
                     .build()
-            NotificationManagerCompat.from(context).notify(notificationId(task.id), notification)
+            post(notificationId(task.id), notification)
+        }
+
+        override fun photoArrived(
+            task: TaskEntity,
+            recipientName: String,
+        ) {
+            val open =
+                PendingIntent.getActivity(
+                    context,
+                    notificationId(task.id),
+                    MainActivity.approve(context, task.id),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+            val notification =
+                NotificationCompat
+                    .Builder(context, NotificationChannels.TASKS)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setColor(ContextCompat.getColor(context, R.color.poke))
+                    .setContentTitle(context.getString(R.string.photo_arrived_title, recipientName))
+                    .setContentText(context.getString(R.string.photo_arrived_body, task.title))
+                    .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                    .setContentIntent(open)
+                    .setAutoCancel(true)
+                    .addAction(0, context.getString(R.string.task_arrived_open), open)
+                    .build()
+            post(notificationId(task.id), notification)
+        }
+
+        /** Posts unless notifications are not allowed; the check sits next to the call for Android Lint. */
+        private fun post(
+            id: Int,
+            notification: Notification,
+        ) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) {
+                return
+            }
+            NotificationManagerCompat.from(context).notify(id, notification)
         }
 
         override fun withdraw(taskId: String) {

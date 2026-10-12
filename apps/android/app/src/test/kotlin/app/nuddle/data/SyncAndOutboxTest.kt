@@ -9,12 +9,14 @@ import app.nuddle.data.outbox.Outbox
 import app.nuddle.data.outbox.OutboxSender
 import app.nuddle.data.sync.AlarmRearmer
 import app.nuddle.data.sync.SyncRepository
+import app.nuddle.domain.IdGenerator
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.InMemorySessionStore
 import app.nuddle.testing.RecordingAnnouncer
 import app.nuddle.testing.RecordingDrainer
 import app.nuddle.testing.aSession
+import app.nuddle.testing.aTask
 import app.nuddle.testing.drtError
 import app.nuddle.testing.inMemoryDatabase
 import app.nuddle.testing.json
@@ -212,6 +214,54 @@ class SyncAndOutboxTest {
 
             assertTrue(announcer.announced.isEmpty())
             assertEquals(listOf(Cast.TASK_ID), announcer.withdrawn)
+        }
+
+    @Test
+    fun `my task's photo coming tells me once, and the note goes when it is answered`() =
+        runTest {
+            sessions.cursor = "40"
+            // Selin's phone: the task in syncBody is hers to Eren.
+            val mine = syncBody.replace("\"connections\":[]", selinConnection.replace(Cast.SELIN_ID, Cast.EREN_ID).replace("Selin", "Eren"))
+            val selinSession = InMemorySessionStore(aSession().copy(personId = Cast.SELIN_ID)).also { it.cursor = "40" }
+            val repo =
+                SyncRepository(
+                    server.retrofit().create(SyncApi::class.java),
+                    selinSession,
+                    db.tasks(),
+                    db.invites(),
+                    db.connections(),
+                    alarms,
+                    announcer,
+                    testJson,
+                )
+            val waiting = mine.replace("\"status\":\"SCHEDULED\"", "\"status\":\"AWAITING_APPROVAL\"")
+            server.enqueue(json(200, mine))
+            server.enqueue(json(200, waiting))
+            server.enqueue(json(200, waiting))
+            server.enqueue(json(200, waiting.replace("\"status\":\"AWAITING_APPROVAL\"", "\"status\":\"DONE\"")))
+
+            repeat(4) { assertTrue(repo.sync()) }
+
+            assertEquals(listOf(Cast.TASK_ID to "Eren"), announcer.photos)
+            assertEquals(Cast.TASK_ID, announcer.withdrawn.last())
+            assertTrue(announcer.announced.isEmpty(), "a task I wrote is never announced to me")
+        }
+
+    @Test
+    fun `Onayla and Tekrar iste apply at once and wait in the outbox`() =
+        runTest {
+            db.tasks().upsert(listOf(aTask(status = "AWAITING_APPROVAL")))
+            val outbox = Outbox(db.outbox(), testJson, FakeClock(), RecordingDrainer())
+            val approvals = OutboxApprovals(db.tasks(), outbox, IdGenerator(FakeClock()))
+
+            approvals.reRequest(Cast.TASK_ID, "1.500 lazımdı")
+            assertEquals("REJECTED", db.tasks().get(Cast.TASK_ID)!!.status)
+            approvals.approve(Cast.TASK_ID)
+            assertEquals("DONE", db.tasks().get(Cast.TASK_ID)!!.status)
+
+            val queued = db.outbox().pending()
+            assertEquals(listOf("re_request", "approve"), queued.map { it.command })
+            assertTrue(""""note":"1.500 lazımdı"""" in queued.first().body)
         }
 
     @Test
