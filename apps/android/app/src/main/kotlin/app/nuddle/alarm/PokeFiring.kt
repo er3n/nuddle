@@ -14,6 +14,7 @@ import app.nuddle.data.db.PokeStepDao
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.outbox.Outbox
+import app.nuddle.data.session.MissedRingStore
 import app.nuddle.data.session.SessionStore
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.AlarmScheduler
@@ -60,6 +61,7 @@ class PokeFiring
         private val ids: IdGenerator,
         private val clock: Clock,
         private val timeZone: TimeZone,
+        private val missedRings: MissedRingStore,
     ) {
         suspend fun fire(key: AlarmKey) {
             val step = alarms.step(key) ?: return
@@ -70,6 +72,8 @@ class PokeFiring
             if (decision !is FireDecision.Ring || task == null) return
             notifications.show(task, step, decision.level)
             steps.markFired(key.taskId, key.planVersion, key.seq, now.toEpochMilliseconds())
+            // A poke rang again: an older "Son dürtmen çalmadı" no longer applies (2g).
+            missedRings.rang(now)
             // TODO(NUD-26): without a registered device (no Firebase config) the fired report cannot name the device.
             val deviceId = sessions.deviceId() ?: return
             val id = ids.next()

@@ -38,6 +38,7 @@ class InboxViewModel
         tasks: TaskDao,
         events: TaskEventDao,
         connections: ConnectionDao,
+        private val bellWarnings: BellWarningSource,
         clock: Clock,
         timeZone: TimeZone,
     ) : ViewModel() {
@@ -50,12 +51,21 @@ class InboxViewModel
             ) { me, allTasks, allEvents, people -> bellDays(allTasks, allEvents, me, people, clock.now(), timeZone) }
 
         val state: StateFlow<InboxUiState> =
-            combine(invites.observeAll(), days.onStart { emit(emptyList()) }) { all, days ->
+            combine(
+                invites.observeAll(),
+                days.onStart { emit(emptyList()) },
+                bellWarnings.warnings.onStart { emit(emptyList()) },
+            ) { all, days, warnings ->
                 InboxUiState(
-                    openReceived(all).map {
-                        InboxInviteUi(it.id, it.name, Ago.between(Instant.fromEpochMilliseconds(it.createdAt), clock.now()))
-                    },
-                    days,
+                    invites =
+                        openReceived(all).map {
+                            InboxInviteUi(it.id, it.name, Ago.between(Instant.fromEpochMilliseconds(it.createdAt), clock.now()))
+                        },
+                    warnings = warnings,
+                    days = days,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), InboxUiState())
+
+        /** Back from a settings page: the permissions may have changed. */
+        fun onResume() = bellWarnings.refresh()
     }

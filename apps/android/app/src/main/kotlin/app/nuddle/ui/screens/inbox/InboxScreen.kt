@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import app.nuddle.R
 import app.nuddle.domain.Ago
+import app.nuddle.domain.SetupStep
 import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.Avatar
 import app.nuddle.ui.components.BackBar
@@ -49,10 +50,12 @@ data class InboxInviteUi(
     val ago: Ago,
 )
 
-/** 1c and 7b. Approvals, permission warnings and the rest come with their slices. */
+/** 2g, 1c and 7b: warnings and invites under "Yeni", then my tasks to others by day. */
 @Immutable
 data class InboxUiState(
     val invites: List<InboxInviteUi> = emptyList(),
+    /** A poke that did not ring and permissions that are off (2g). */
+    val warnings: List<BellWarning> = emptyList(),
     /** My tasks to others from the last week, as text (7b). */
     val days: List<BellDay> = emptyList(),
 )
@@ -64,18 +67,20 @@ fun InboxScreen(
     onOpenInvite: (InboxInviteUi) -> Unit,
     modifier: Modifier = Modifier,
     onOpenTask: (taskId: String) -> Unit = {},
+    onFix: (BellWarning) -> Unit = {},
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
     ScreenLayout(background = colors.background, modifier = modifier.testTag(TestTags.INBOX)) {
         BackBar(title = stringResource(R.string.inbox_title), onBack = onBack)
-        if (state.invites.isNotEmpty()) {
+        if (state.invites.isNotEmpty() || state.warnings.isNotEmpty()) {
             Text(
                 stringResource(R.string.inbox_new).uppercaseForUi(),
                 style = DurtTheme.type.overline,
                 color = colors.textTertiary,
                 modifier = Modifier.semantics { heading() },
             )
+            BellWarningCards(state.warnings, onFix)
             state.invites.forEach { InviteCard(it, onOpen = { onOpenInvite(it) }) }
         }
         BellList(state.days, onOpenTask)
@@ -154,6 +159,25 @@ private fun InviteCard(
 private fun InboxScreenPreview() {
     DurtTheme {
         InboxScreen(InboxUiState(listOf(InboxInviteUi("i1", "Selin", Ago.Hours(2)))), onBack = {}, onOpenInvite = {})
+    }
+}
+
+/** 2g (NotificationsPerm.png). */
+@PreviewScreens
+@Composable
+private fun InboxScreenWarningsPreview() {
+    DurtTheme {
+        InboxScreen(
+            InboxUiState(
+                warnings =
+                    listOf(
+                        BellWarning.MissedRing,
+                        BellWarning.PermissionOff(SetupStep.FULL_SCREEN, NextPokeUi("Para çek", PokeDay.Tomorrow)),
+                    ),
+            ),
+            onBack = {},
+            onOpenInvite = {},
+        )
     }
 }
 

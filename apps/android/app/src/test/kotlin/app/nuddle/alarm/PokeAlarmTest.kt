@@ -11,6 +11,7 @@ import app.nuddle.domain.QuietHours
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.FakeFullScreen
+import app.nuddle.testing.InMemoryMissedRingStore
 import app.nuddle.testing.InMemorySessionStore
 import app.nuddle.testing.RecordingDrainer
 import app.nuddle.testing.RecordingNotifications
@@ -47,6 +48,7 @@ class PokeAlarmTest {
     private val sessions = InMemorySessionStore(aSession())
     private val drainer = RecordingDrainer()
     private val doneNotes = DoneNotes()
+    private val missedRings = InMemoryMissedRingStore()
     private lateinit var alarms: PokeAlarms
     private lateinit var firing: PokeFiring
     private lateinit var actions: PokeActions
@@ -71,6 +73,7 @@ class PokeAlarmTest {
                 ids,
                 clock,
                 TimeZone.UTC,
+                missedRings,
             )
         actions = PokeActions(db.tasks(), alarms, scheduler, notifications, outbox, ids, clock, doneNotes)
     }
@@ -129,6 +132,25 @@ class PokeAlarmTest {
 
             alarms.rearm()
             assertEquals(setOf(key(2)), scheduler.scheduled.keys)
+        }
+
+    @Test
+    fun `a poke that rings is remembered, so an older missed ring stops showing (2g)`() =
+        runTest {
+            givenPlan()
+            clock.advance(15.minutes)
+            firing.fire(key(1))
+            assertEquals(clock.now(), missedRings.value.rangAt)
+        }
+
+    @Test
+    fun `a step that does not ring is not remembered as a ring`() =
+        runTest {
+            givenPlan()
+            db.tasks().upsert(listOf(aTask(status = "DONE", planVersion = 2)))
+            clock.advance(15.minutes)
+            firing.fire(key(1))
+            assertNull(missedRings.value.rangAt)
         }
 
     @Test

@@ -85,6 +85,11 @@ export class Device {
     await this.shell("wm dismiss-keyguard");
   }
 
+  /** Force stop, as a phone brand's battery manager does: the app's alarms go with it. */
+  async forceStop(): Promise<void> {
+    await this.shell(`am force-stop ${APP_ID}`);
+  }
+
   /** Screen off: the full screen intent opens the poke over the lock screen only when the screen is off. */
   async screenOff(): Promise<void> {
     await this.shell("input keyevent KEYCODE_SLEEP");

@@ -352,6 +352,37 @@
     <string name="bell_dropped_title">%1$s bugün yapamayacak: \"%2$s\"</string>
     <string name="bell_footer">Biten işler sadece burada yazı olarak durur, ayrıca bildirim göndermem. Fotoğraflı işler onayına düşer.</string>
     <string name="inbox_no_older">Daha eski bildirim yok</string>
+    <!-- 2g: warnings at the top of the bell (open-questions#38) -->
+    <string name="bell_fix">Düzelt</string>
+    <string name="missed_ring_title">Son dürtmen çalmadı</string>
+    <string name="bell_missed_ring_body">Telefonun beni arka planda kapatmış. Düzeltmezsen bir sonraki dürtme de kaybolabilir.</string>
+    <string name="bell_full_screen_off_title">Tam ekran izni kapalı</string>
+    <string name="bell_full_screen_off_today">Bugünkü \"%1$s\" dürtmen sadece bildirim olarak gelecek. Kaçırma ihtimalin artıyor.</string>
+    <string name="bell_full_screen_off_tomorrow">Yarınki \"%1$s\" dürtmen sadece bildirim olarak gelecek. Kaçırma ihtimalin artıyor.</string>
+    <string name="bell_full_screen_off_later">Sıradaki \"%1$s\" dürtmen sadece bildirim olarak gelecek. Kaçırma ihtimalin artıyor.</string>
+    <string name="bell_full_screen_off_body">Dürtmelerin ekranı açamayacak, sadece bildirim olarak gelecek. Kaçırma ihtimalin artıyor.</string>
+    <string name="bell_alarms_off_title">Alarm izni kapalı</string>
+    <string name="bell_alarms_off_body">Dürtmelerin tam saatinde çalmayabilir, bazen dakikalarca geç kalabilir.</string>
+    <string name="bell_notifications_off_title">Bildirimler kapalı</string>
+    <string name="bell_notifications_off_body">Bildirimler kapalıyken seni dürtemem, hiçbir dürtme gelmez.</string>
+    <!-- 2h: brand steps after a poke did not ring -->
+    <string name="missed_ring_body">Seni %1$s için dürtecektim, telefonun beni kapatmış.</string>
+    <string name="missed_ring_body_unknown">Seni dürtecektim, telefonun beni kapatmış.</string>
+    <string name="missed_ring_today">bugün %1$s</string>
+    <string name="missed_ring_yesterday">dün %1$s</string>
+    <string name="missed_ring_on_date">%1$d %2$s %3$s</string>
+    <string name="missed_ring_one_step">Tek ayarla düzelir.</string>
+    <string name="missed_ring_steps">%1$s ayarla düzelir.</string>
+    <string-array name="missed_ring_count_words">
+        <item>İki</item>
+        <item>Üç</item>
+        <item>Dört</item>
+        <item>Beş</item>
+    </string-array>
+    <string name="missed_ring_open">Ayarı aç</string>
+    <string name="missed_ring_footer">Bu adımları sadece dürtmesi kaybolan telefonlarda gösteririm. Adımlar markaya göre değişir.</string>
+    <string name="missed_ring_failed_body">Adımları alamadım. Bağlantını kontrol edip tekrar dene.</string>
+    <string name="missed_ring_retry">Tekrar dene</string>
     <string name="ago_now">şimdi</string>
     <plurals name="ago_minutes">
         <item quantity="one">%1$d dk önce</item>

@@ -4,13 +4,16 @@ import app.cash.turbine.test
 import app.nuddle.data.db.InviteEntity
 import app.nuddle.data.sync.Syncer
 import app.nuddle.domain.IdGenerator
+import app.nuddle.domain.SetupStep
 import app.nuddle.testing.Cast
+import app.nuddle.testing.FakeBellWarnings
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.FakeInviteRepository
 import app.nuddle.testing.InMemoryConsentPrompts
 import app.nuddle.testing.InMemoryInviteDao
 import app.nuddle.testing.MainDispatcherRule
 import app.nuddle.ui.screens.home.HomeInvitesViewModel
+import app.nuddle.ui.screens.inbox.BellWarning
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -29,7 +32,8 @@ class HomeInvitesViewModelTest {
             syncs++
             true
         }
-    private val vm by lazy { HomeInvitesViewModel(inviteDao, prompts, FakeInviteRepository(), IdGenerator(FakeClock()), syncer) }
+    private val warnings = FakeBellWarnings()
+    private val vm by lazy { HomeInvitesViewModel(inviteDao, prompts, FakeInviteRepository(), IdGenerator(FakeClock()), syncer, warnings) }
 
     private fun invite(
         id: String,
@@ -47,6 +51,17 @@ class HomeInvitesViewModelTest {
         }
 
     @Test
+    fun `the badge also counts the bell's warnings, read again when home comes back (2g)`() =
+        runTest(main.dispatcher) {
+            backgroundScope.launch { vm.unread.collect {} }
+            inviteDao.upsert(listOf(invite("a")))
+            warnings.current.value = listOf(BellWarning.MissedRing, BellWarning.PermissionOff(SetupStep.FULL_SCREEN))
+            assertEquals(3, vm.unread.value)
+            vm.onResume()
+            assertEquals(1, warnings.refreshes)
+        }
+
+    @Test
     fun `the consent screen opens once per invite, oldest first`() =
         runTest(main.dispatcher) {
             inviteDao.upsert(listOf(invite("new", createdAt = 2), invite("old", createdAt = 1)))
@@ -55,7 +70,7 @@ class HomeInvitesViewModelTest {
                 awaitComplete()
             }
             assertEquals(setOf("old"), prompts.ids)
-            HomeInvitesViewModel(inviteDao, prompts, FakeInviteRepository(), IdGenerator(FakeClock()), syncer).openConsent.test {
+            HomeInvitesViewModel(inviteDao, prompts, FakeInviteRepository(), IdGenerator(FakeClock()), syncer, warnings).openConsent.test {
                 assertEquals("new", awaitItem())
                 awaitComplete()
             }

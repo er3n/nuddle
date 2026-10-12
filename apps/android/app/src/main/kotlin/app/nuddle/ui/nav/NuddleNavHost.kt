@@ -7,6 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -31,6 +32,7 @@ import app.nuddle.ui.screens.home.NextUpCallbacks
 import app.nuddle.ui.screens.home.PendingInviteCallbacks
 import app.nuddle.ui.screens.home.PreviewCallbacks
 import app.nuddle.ui.screens.home.UndoCallbacks
+import app.nuddle.ui.screens.inbox.BellWarning
 import app.nuddle.ui.screens.inbox.InboxScreen
 import app.nuddle.ui.screens.inbox.InboxViewModel
 import app.nuddle.ui.screens.name.NameScreen
@@ -54,6 +56,7 @@ object Routes {
     const val SETUP = "setup"
     const val INVITE = "invite"
     const val INBOX = "inbox"
+    const val MISSED_RING = "missed-ring"
     const val PROFILE = "profile"
     const val PERSON = "person/{${PersonViewModel.ARG_PERSON}}"
 
@@ -183,6 +186,10 @@ fun NuddleNavHost(
                 takeOpenRoute()
                 nav.navigate(route) { launchSingleTop = true }
             }
+            LifecycleResumeEffect(invites) {
+                invites.onResume()
+                onPauseOrDispose {}
+            }
             val unreadInvites by invites.unread.collectAsStateWithLifecycle()
             val unreached by issues.unreached.collectAsStateWithLifecycle()
             val unread = unreadInvites + unreached
@@ -275,12 +282,26 @@ fun NuddleNavHost(
         composable(Routes.INBOX) {
             val viewModel: InboxViewModel = hiltViewModel()
             val state by viewModel.state.collectAsStateWithLifecycle()
+            val activity = LocalActivity.current
+            LifecycleResumeEffect(viewModel) {
+                viewModel.onResume()
+                onPauseOrDispose {}
+            }
             InboxScreen(
                 state = state,
                 onBack = { nav.popBackStack() },
                 onOpenInvite = { nav.navigate(Routes.consent(it.inviteId, fromBell = true)) },
                 onOpenTask = { nav.navigate(Routes.task(it)) { launchSingleTop = true } },
+                onFix = { warning ->
+                    when (warning) {
+                        BellWarning.MissedRing -> nav.navigate(Routes.MISSED_RING) { launchSingleTop = true }
+                        is BellWarning.PermissionOff -> activity?.let { it.startActivity(settingsIntent(it, warning.step)) }
+                    }
+                },
             )
+        }
+        composable(Routes.MISSED_RING) {
+            MissedRingRoute(onBack = { nav.popBackStack() })
         }
         composable(
             Routes.CONSENT,
