@@ -82,7 +82,7 @@ export const en: Messages = {
     items: [
       {
         title: "Write it once",
-        body: '"Cleaner comes tomorrow at 9, get cash out." Who, what, by when: the AI works out the rest. No forms, no date pickers, no patience test.',
+        body: '"Alex pays the rent by 9 tomorrow." Who, what, by when: the AI works out the rest. No forms, no date pickers, no patience test.',
       },
       {
         title: "They get poked",
