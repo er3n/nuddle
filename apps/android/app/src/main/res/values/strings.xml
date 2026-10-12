@@ -406,6 +406,16 @@
     <string name="poke_snooze_last">%1$d dk ertele · son hakkın</string>
     <string name="poke_cant_today_short">Bugün olmaz</string>
     <string name="poke_cant_today">Bugün yapamayacağım</string>
+    <!-- 7f: the optional note after Bugün yapamayacağım (open-questions#36) -->
+    <string name="drop_title">Tamam, bugün olmuyor</string>
+    <string name="drop_body">%1$s için bir not bırakmak ister misin? Zorunlu değil.</string>
+    <string name="drop_reason_no_time">Vaktim olmadı</string>
+    <string name="drop_reason_tomorrow">Yarın hallederim</string>
+    <string name="drop_reason_could_not_go_out">Dışarı çıkamadım</string>
+    <string name="drop_note_placeholder">Ya da kendin yaz</string>
+    <string name="drop_hint">Görev \"bırakıldı\" olarak kapanır, dürtmeler durur. Başarısız sayılmaz.</string>
+    <string name="drop_send_note">Notla gönder</string>
+    <string name="drop_without_note">Notsuz kapat</string>
     <string name="poke_time_left">son zamana %1$s</string>
     <string name="poke_time_left_sentence">Son zamana %1$s var.</string>
     <string name="duration_minutes">%1$d dk</string>
