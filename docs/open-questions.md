@@ -20,7 +20,7 @@ Things not yet decided. If you hit one while building, do not decide silently: p
 11. **In-app logo and English UI.** Store name is "dürt" in Turkey and Nuddle elsewhere. Does the in-app logo follow the locale ("dürt." vs "nuddle.")? *Default:* follow the locale via a string resource.
 12. **Theme and component prefix.** Handoff uses `DurtTheme`, `DurtButton`. *Default:* keep `Durt*` in the MVP, rename in one PR before the global launch if wanted.
 13. **Invite link host and path.** Handoff used `durtmobil.com/d/{inviteCode}`. *Decided 2026-10-12:* `https://nuddle.app/i/{inviteCode}` as the App Links host, with `durtmobil.com` redirecting. Kept here so the number stays stable.
-14. **Landing page.** Canvas landing is Turkish and branded dürt. *Decided 2026-10-12 (NUD-21):* Next serves `/` in English (Nuddle) and `/tr` in Turkish (dürt), from one typed dictionary per language (`apps/web/src/i18n`). Pages without a locale in the path (the invite link `/i/{code}`, the 404) pick it from `Accept-Language`, English by default. Kept here so the number stays stable.
+14. **Landing page.** Canvas landing is Turkish and branded dürt. *Decided 2026-10-12 (NUD-21):* Next serves `/` in English (Nuddle) and `/tr` in Turkish (dürt), from one typed dictionary per language (`apps/web/src/i18n`). `/` sends a visitor to their own language: a language picked with the switch (kept in the `locale` cookie) wins, else `Accept-Language`, else English (`src/proxy.ts`). `/tr` is never redirected. Pages without a locale in the path (the invite link `/i/{code}`, the 404) pick it from `Accept-Language`, English by default. Kept here so the number stays stable.
 15. **Trademark check** for Nuddle in the US/EU and the status of nuddle.com, before the global launch.
 
 ## Technical

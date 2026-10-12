@@ -1,4 +1,5 @@
-// Web locales (open-questions#14): English Nuddle at `/`, Turkish dürt at `/tr`.
+// Web locales (open-questions#14): English Nuddle at `/`, Turkish dürt at `/tr`. A visitor who
+// opens `/` is sent to their own language (src/proxy.ts).
 
 export const locales = ["en", "tr"] as const;
 
@@ -8,7 +9,10 @@ const defaultLocale: Locale = "en";
 
 export const landingPath: Record<Locale, string> = { en: "/", tr: "/tr" };
 
-function isLocale(value: string): value is Locale {
+/** Remembers the language a visitor picked with the language switch. */
+export const LOCALE_COOKIE = "locale";
+
+export function isLocale(value: string): value is Locale {
   return (locales as readonly string[]).includes(value);
 }
 
@@ -28,4 +32,9 @@ export function negotiateLocale(acceptLanguage: string | null): Locale {
     if (best === undefined || q > best.q) best = { locale: language, q };
   }
   return best?.locale ?? defaultLocale;
+}
+
+/** The language for `/`: the one the visitor picked before, else the browser's. */
+export function rootLocale(picked: string | undefined, acceptLanguage: string | null): Locale {
+  return picked !== undefined && isLocale(picked) ? picked : negotiateLocale(acceptLanguage);
 }

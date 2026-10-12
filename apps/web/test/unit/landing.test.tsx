@@ -18,7 +18,7 @@ describe("Landing", () => {
     const html = renderToStaticMarkup(<Landing locale="tr" />);
     expect(text(html)).toContain("Evde biri hep unutuyor. Artık unutamayacak.");
     expect(text(html)).toContain("dürt .");
-    expect(html).toContain('href="/" hrefLang="en" lang="en"');
+    expect(html).toContain('href="/?lang=en" hrefLang="en" lang="en"');
     expect(text(html)).toContain("Bu sayfa seni 0 kez dürttü. Şimdilik.");
   });
 
@@ -26,7 +26,7 @@ describe("Landing", () => {
     const html = renderToStaticMarkup(<Landing locale="en" />);
     expect(text(html)).toContain("Someone at home always forgets. Now they can't.");
     expect(text(html)).toContain("nuddle .");
-    expect(html).toContain('href="/tr" hrefLang="tr" lang="tr"');
+    expect(html).toContain('href="/tr?lang=tr" hrefLang="tr" lang="tr"');
     expect(text(html)).not.toMatch(/Evde|dürt/);
   });
 

@@ -53,7 +53,12 @@ function Header({ locale, m }: { locale: Locale; m: Messages }) {
         <a href="#pricing" className={styles.navLink}>
           {m.nav.pricing}
         </a>
-        <a href={landingPath[other]} hrefLang={other} lang={other} className={styles.navLink}>
+        <a
+          href={`${landingPath[other]}?lang=${other}`}
+          hrefLang={other}
+          lang={other}
+          className={styles.navLink}
+        >
           {m.nav.otherLanguage}
         </a>
         <a href="#download" className={styles.navCta}>
