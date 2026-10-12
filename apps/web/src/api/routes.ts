@@ -383,6 +383,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
   taskCommand("done", "done", "Recipient: Bitti", s.DoneCommand, (b) => ({
     type: "done",
     ...(b.cameraUnavailable === undefined ? {} : { cameraUnavailable: b.cameraUnavailable }),
+    ...(b.doneAt === undefined ? {} : { doneAt: new Date(b.doneAt) }),
   }));
   taskCommand(
     "photo_sent",

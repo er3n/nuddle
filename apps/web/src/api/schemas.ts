@@ -147,6 +147,8 @@ export const CreateTaskCommand = keyed({
 
 export const DoneCommand = taskKeyed({
   cameraUnavailable: z.boolean().optional(),
+  /** When Bitti was tapped: a Bitti tapped offline before the deadline counts even if it reaches the server after it (6a). */
+  doneAt: Instant.optional(),
 }).openapi("DoneCommand");
 export const PhotoSentCommand = taskKeyed({
   photoPath: z.string().min(1),

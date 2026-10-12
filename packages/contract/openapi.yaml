@@ -823,6 +823,11 @@ components:
           format: uuid
         cameraUnavailable:
           type: boolean
+        doneAt:
+          type: string
+          format: date-time
+          example: 2026-10-12T09:00:00+03:00
+          description: ISO 8601 with offset
       required:
         - idempotencyKey
         - taskId

@@ -43,6 +43,7 @@ Client-only status: `QUEUED` (written offline, not yet on the server).
 | `REJECTED` | can't today / deadline passed / cancel | `DROPPED` / `MISSED` / `CANCELLED` | as above |
 | `MISSED` | "Sonradan yaptım" | `DONE` with `late = true` **(proposed)** | recipient |
 | `MISSED` | photo sent that was taken before the deadline (`takenAt`), upload delayed (6e) | `AWAITING_APPROVAL` | recipient |
+| `MISSED` | done tapped offline before the deadline (`doneAt`), sent late (6a) | `DONE` | recipient |
 | `MISSED` | "Süreyi uzat" (new deadline) | `SCHEDULED` | sender |
 | `MISSED` | cancel | `CANCELLED` | sender |
 | `DROPPED` | "Yeni zaman ver" (new deadline) | `SCHEDULED` | sender |
@@ -53,7 +54,7 @@ Client-only status: `QUEUED` (written offline, not yet on the server).
 
 Invariants:
 - A task awaiting approval can never become `MISSED`. The deadline applies to sending the photo, not to approval.
-- The deadline counts from the send attempt (docs/product.md, Errors): `photo_sent` and the upload URL carry `takenAt`, the moment Gönder was tapped on the device. A missed task takes a photo whose `takenAt` is at or before the deadline and not after the server's now; a later one is refused.
+- The deadline counts from the send attempt (docs/product.md, Errors): `photo_sent` and the upload URL carry `takenAt`, the moment Gönder was tapped on the device. A missed task takes a photo whose `takenAt` is at or before the deadline and not after the server's now; a later one is refused. `done` carries `doneAt` the same way: a Bitti tapped offline before the deadline closes a missed task as done (not late) when it reaches the server.
 - Every transition stops or regenerates the plan in the same transaction and appends a `task_events` row.
 - A task to self has the same sender and recipient. Photo mode for self tasks: approval is skipped and the photo closes the task **(proposed)**.
 - Tasks cannot be written to a pending (not yet joined) person.
@@ -122,7 +123,7 @@ Each device step also gets a `lost_poke_check` timer at planned time + 5 minutes
 3. On `BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`, `TIME_SET` and `TIMEZONE_CHANGED`, all pending alarms are re-set from Room.
 4. When an alarm fires, a receiver re-checks quiet hours and plan version, shows the notification for the level, and for `FULL_SCREEN` opens `PokeActivity` via `setFullScreenIntent` (`showWhenLocked`, `turnScreenOn`).
 5. Every fired step reports planned and actual time to the server.
-6. Done, Snooze and Can't today are applied locally first (remaining alarms cancelled immediately, even offline), then sent to the server with WorkManager.
+6. Done, Snooze and Can't today are applied locally first (remaining alarms cancelled immediately, even offline), then sent to the server with WorkManager. Done carries the moment it was tapped (`doneAt`).
 7. A cancelled task can still ring if the cancel push is delayed. Accepted edge case in the MVP; the fired report lets the server answer with a cancel and the ring stops on the next sync.
 
 ## Reachability
