@@ -52,7 +52,7 @@ describe("StoreButton", () => {
   it("links to the listing once there is one", () => {
     const url = "https://play.google.com/store/apps/details?id=app.nuddle";
     const html = renderToStaticMarkup(<StoreButton url={url} download={messages.en.download} />);
-    expect(html).toContain(`href="${url.replace("&", "&amp;")}"`);
+    expect(html).toContain(`href="${url.replaceAll("&", "&amp;")}"`);
     expect(text(html)).toContain("Get it on Google Play");
   });
 });
