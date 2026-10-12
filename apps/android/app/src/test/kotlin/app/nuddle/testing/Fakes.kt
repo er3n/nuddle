@@ -250,17 +250,24 @@ class FakeTaskRepository : TaskRepository {
         cancelled += taskId
     }
 
-    override suspend fun createForSelf(
+    override suspend fun create(
         title: String,
         detail: String?,
         deadline: Instant,
         finishMode: FinishMode,
         rawText: String,
         idempotencyKey: String,
+        recipientId: String?,
     ): WriteOutcome {
         created += Triple(title, deadline, idempotencyKey)
+        createdFor += recipientId
+        createdFinishModes += finishMode
         return createOutcome
     }
+
+    /** The recipient of each create; null for a task to self. */
+    val createdFor = mutableListOf<String?>()
+    val createdFinishModes = mutableListOf<FinishMode>()
 
     /** What [done] answers: the poke number that caught the person. */
     var caughtAt: Int? = null

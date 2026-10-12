@@ -41,6 +41,12 @@ object TestTags {
 
     fun cancelReason(name: String) = "task.cancelReason.$name"
 
+    const val PREVIEW_FINISH_DONE = "preview.finishDone"
+    const val PREVIEW_FINISH_PHOTO = "preview.finishPhoto"
+
+    /** null is "Kendine". */
+    fun previewRecipient(personId: String?) = "preview.recipient.${personId ?: "self"}"
+
     const val HOME_MESSAGE = "home.message"
     const val HOME_UNDO = "home.undo"
     const val HOME_DONE_NOTE = "home.doneNote"

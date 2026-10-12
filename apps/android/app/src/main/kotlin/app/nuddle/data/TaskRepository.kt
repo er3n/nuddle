@@ -32,11 +32,16 @@ sealed interface WriteOutcome {
     data object Failed : WriteOutcome
 }
 
-/** What the server understood from the text (WriteTaskResult.draft). */
+/**
+ * What the server understood from the text (WriteTaskResult.draft). [recipient] is "self", a connection's name as the
+ * extraction gave it, or null; [deadline] is null when the text gave none or it could not be read.
+ */
 data class TaskDraft(
     val title: String?,
     val detail: String?,
     val finishMode: FinishMode,
+    val recipient: String? = null,
+    val deadline: Instant? = null,
 )
 
 /** Closes a task on the device at once (implemented by the alarm package, which also stops its alarms). */
@@ -59,14 +64,15 @@ interface TaskRepository {
         idempotencyKey: String,
     ): WriteOutcome
 
-    /** Creates a task to self from the preview (2b) once its one question is answered. */
-    suspend fun createForSelf(
+    /** Creates a task from the preview (2b, 4a) once its question is answered. [recipientId] null is a task to self. */
+    suspend fun create(
         title: String,
         detail: String?,
         deadline: Instant,
         finishMode: FinishMode,
         rawText: String,
         idempotencyKey: String,
+        recipientId: String? = null,
     ): WriteOutcome
 
     /** "Düzenle" on the undo toast for a task to self: a new deadline, detail and finish mode kept. */
@@ -117,25 +123,34 @@ class ApiTaskRepository
                 WriteTaskResult.Kind.ASK -> {
                     WriteOutcome.Ask(
                         result.value.question,
-                        result.value.draft?.let { TaskDraft(it.title, it.detail, it.finishMode) },
+                        result.value.draft?.let { draft ->
+                            TaskDraft(
+                                title = draft.title,
+                                detail = draft.detail,
+                                finishMode = draft.finishMode,
+                                recipient = draft.recipient,
+                                deadline = draft.deadline?.let { runCatching { Instant.parse(it) }.getOrNull() },
+                            )
+                        },
                     )
                 }
             }
         }
 
-        override suspend fun createForSelf(
+        override suspend fun create(
             title: String,
             detail: String?,
             deadline: Instant,
             finishMode: FinishMode,
             rawText: String,
             idempotencyKey: String,
+            recipientId: String?,
         ): WriteOutcome {
             val me = sessions.current()?.personId ?: return WriteOutcome.Failed
             val command =
                 CreateTaskCommand(
                     idempotencyKey = idempotencyKey,
-                    recipientId = me,
+                    recipientId = recipientId ?: me,
                     title = title,
                     detail = detail,
                     deadline = deadline.toString(),

@@ -3,6 +3,7 @@ package app.nuddle.ui.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.nuddle.api.model.FinishMode
+import app.nuddle.api.model.Reachability
 import app.nuddle.api.model.SyncConnection
 import app.nuddle.api.model.WriteTaskResult
 import app.nuddle.data.DoneNote
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -61,7 +63,10 @@ class HomeViewModel
         private val timeZone: TimeZone,
     ) : ViewModel() {
         private val compose = MutableStateFlow<ComposeState>(ComposeState.Idle)
-        private val preview = MutableStateFlow<OpenPreview?>(null)
+
+        /** The preview sheet's choices; the route binds its callbacks to this. */
+        internal val previewSheet = PreviewHolder(clock, timeZone)
+        private val preview = previewSheet.open
         private val undo = MutableStateFlow<UndoUi?>(null)
         private val setup = Channel<Unit>(Channel.CONFLATED)
 
@@ -84,14 +89,6 @@ class HomeViewModel
                     }
                 }
             }
-
-        /** The preview on screen plus what is needed to create the task from it, or to edit [editing]. */
-        private data class OpenPreview(
-            val ui: PreviewUi,
-            val finishMode: FinishMode,
-            val key: String,
-            val editing: String? = null,
-        )
 
         /** Kept while the same text is retried, so a write the server got but did not answer is not created twice. */
         private var pendingKey: String? = null
@@ -182,36 +179,25 @@ class HomeViewModel
         }
 
         /**
-         * 2b for the deadline question. Asking for the recipient comes with tasks for others (slice 3); a missing
-         * title has no design yet, so for both the text simply stays in the bar.
+         * 2b or 4a for the deadline or the recipient question. A missing title has no design yet, nor a recipient the
+         * text names but no connection matches: the text simply stays in the bar then.
          */
         private suspend fun openPreview(
             text: String,
             ask: WriteOutcome.Ask,
         ) {
-            val title = ask.draft?.title
-            if (ask.question != WriteTaskResult.Question.DEADLINE || title == null) return
             val quiet = sessions.quietHours() ?: QuietHours.default(timeZone)
+            val connections = connectionDao.observeAll().first().filter { it.status == ACTIVE }
             preview.value =
-                OpenPreview(
-                    ui = previewFor(text, title, ask.draft.detail, quiet, clock.now()),
-                    finishMode = ask.draft.finishMode,
-                    key = ids.next(),
-                )
-        }
-
-        /** A second tap on the selected choice clears it (ChoiceChip, docs/ux/components.md 5). */
-        fun onPreviewChoice(choice: DeadlineChoice) {
-            preview.update { it?.copy(ui = it.ui.copy(selected = if (it.ui.selected == choice) null else choice)) }
-        }
-
-        fun onPreviewTimePicked(time: LocalTime) {
-            val picked = DeadlineChoice.Picked(nextOccurrence(time, clock.now(), timeZone), time.format(HOUR_MINUTE))
-            preview.update { it?.copy(ui = it.ui.copy(selected = picked)) }
-        }
-
-        fun onPreviewDismiss() {
-            preview.value = null
+                previewFor(text, ask, connections, quiet, clock.now())?.let { (ui, knownDeadline) ->
+                    OpenPreview(
+                        ui = ui,
+                        finishMode = ask.draft?.finishMode ?: FinishMode.DONE,
+                        key = ids.next(),
+                        knownDeadline = knownDeadline,
+                        reaches = connections.associate { it.personId to (Reachability.decode(it.reachability) ?: Reachability.NONE) },
+                    )
+                }
         }
 
         /**
@@ -220,28 +206,30 @@ class HomeViewModel
          */
         fun onPreviewConfirm() {
             val open = preview.value ?: return
-            val deadline = open.ui.selected ?: return
-            if (open.ui.sending) return
+            val deadline = open.deadline ?: return
+            if (open.ui.sending || !open.ui.ready) return
             preview.value = open.copy(ui = open.ui.copy(sending = true))
             viewModelScope.launch {
                 val outcome =
                     if (open.editing != null) {
-                        tasks.editDeadline(open.editing, deadline.at, open.key)
+                        tasks.editDeadline(open.editing, deadline, open.key)
                     } else {
-                        tasks.createForSelf(
+                        tasks.create(
                             title = open.ui.title,
                             detail = open.ui.detail,
-                            deadline = deadline.at,
-                            finishMode = open.finishMode,
+                            deadline = deadline,
+                            finishMode = open.chosenFinishMode,
                             rawText = open.ui.rawText,
                             idempotencyKey = open.key,
+                            recipientId = (open.ui.recipient as? RecipientChoice.Person)?.personId,
                         )
                     }
                 when {
                     outcome is WriteOutcome.Created -> {
                         preview.value = null
                         compose.value = ComposeState.Idle
-                        if (setupGate.needed()) setup.send(Unit)
+                        // Setup follows a task to self only (open-questions#30).
+                        if (!open.ui.toOther && setupGate.needed()) setup.send(Unit)
                     }
 
                     // The task exists: Tekrar dene on the bar would write a second one, so Kur stays for a retry.

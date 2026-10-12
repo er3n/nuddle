@@ -158,7 +158,7 @@ class TaskRepositoryTest {
             server.enqueue(json(200, syncBody))
 
             val outcome =
-                repository.createForSelf(
+                repository.create(
                     title = "Para çek",
                     detail = "1.000 TL",
                     deadline = Instant.parse("2026-10-12T09:00:00+03:00"),
