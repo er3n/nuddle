@@ -61,7 +61,13 @@ Auth users live in the stack's Auth service and are not deleted; the app sees a 
 | # | Flow | State |
 |---|---|---|
 | 1 | Sign up with a test number, a task to self, the full screen poke rings, "Bitti", the task is done | `orchestrator/src/smoke/task-to-self.ts` |
-| 2 to 6 | `docs/testing.md`, Smoke set | arrive with their feature slices |
+| 2 | Selin invites Eren, Eren consents and completes setup | `orchestrator/src/smoke/invite.ts` |
+| 4 | A task to Eren, his alarms, Selin cancels it with a reason | `orchestrator/src/smoke/task-to-other.ts` |
+| 3 | A photo task, Bitti on the poke opens the camera, the photo, Selin approves | `orchestrator/src/smoke/photo-task.ts` |
+| 7 | Bugün yapamayacağım with a note on the poke, Selin gives a new time | `orchestrator/src/smoke/drop-task.ts` |
+| 5, 6 | `docs/testing.md`, Smoke set (Doze, reboot) | not yet |
+
+Smokes run in the order of the table: each one starts from the state the one before left.
 
 Smoke 1 until slice 1: the task is created through the API (`create_task`), not in the app (NUD-10), and "the task leaves the list" is checked on the server (status `DONE`, no open task in sync) and on the device (no pending poke alarm), because home has no task list yet.
 

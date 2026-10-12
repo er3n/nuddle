@@ -97,6 +97,7 @@ FCM needs Google Play system images and the dev Firebase app. Flows wait with ti
 4. Selin writes a task to Eren, it is his next-up card and his phone sets its alarms; Selin cancels it from the task detail with a reason, Eren's pending alarms are gone.
 5. Doze: a `SOUND` step still rings on time.
 6. Reboot: pending alarms are re-set.
+7. Selin writes a task to Eren, the full screen poke rings, Eren answers Bugün yapamayacağım with a ready note and his pokes stop; Selin sees it dropped with the note, gives a new time, and Eren's phone has alarms again.
 
 The full set runs nightly or on demand. Because the repo is public, standard GitHub-hosted Linux runners are free and have KVM, so the smoke set can also run in CI (two emulators on one runner, or one job per device role). Locally remains the default while flows are young.
 
