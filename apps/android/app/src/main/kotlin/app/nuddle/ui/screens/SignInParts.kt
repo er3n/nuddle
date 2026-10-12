@@ -22,7 +22,11 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
+import app.nuddle.domain.TurkishPhone
 import app.nuddle.ui.theme.DurtTheme
 
 /** Title and sub line of the sign-in screens (0c to 0e): `onboardingTitle` from the canvas. */
@@ -112,4 +116,29 @@ fun FieldLabel(
     modifier: Modifier = Modifier,
 ) {
     Text(text, style = DurtTheme.type.bodySmallStrong, color = DurtTheme.colors.ink, modifier = modifier)
+}
+
+/** Shows "5321234567" as "532 123 45 67" while the state keeps digits only (0c, and the typed number on 1e). */
+internal object PhoneGrouping : VisualTransformation {
+    private val spacesAfter = intArrayOf(3, 6, 8)
+
+    override fun filter(text: AnnotatedString): TransformedText {
+        val grouped = TurkishPhone.group(text.text)
+        val mapping =
+            object : OffsetMapping {
+                override fun originalToTransformed(offset: Int): Int = offset + spacesAfter.count { it < offset }
+
+                // A space sits at transformed index `at + i` (the i-th space), present once the number is longer than `at`.
+                override fun transformedToOriginal(offset: Int): Int {
+                    val spaces =
+                        spacesAfter
+                            .withIndex()
+                            .filter { (_, at) ->
+                                text.length > at
+                            }.map { (i, at) -> at + i }
+                    return (offset - spaces.count { it < offset }).coerceIn(0, text.length)
+                }
+            }
+        return TransformedText(AnnotatedString(grouped), mapping)
+    }
 }

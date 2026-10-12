@@ -51,6 +51,7 @@ import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.screens.BigTextField
 import app.nuddle.ui.screens.FieldLabel
 import app.nuddle.ui.screens.NoteCard
+import app.nuddle.ui.screens.PhoneGrouping
 import app.nuddle.ui.screens.ScreenLayout
 import app.nuddle.ui.theme.DurtTheme
 
@@ -142,10 +143,11 @@ private fun ColumnScope.Who(
                 modifier = Modifier.fillMaxWidth().testTag(TestTags.INVITE_NAME),
             )
             BigTextField(
-                value = TurkishPhone.group(state.typedNumber),
+                value = state.typedNumber,
                 onValueChange = callbacks.onTypedNumber,
                 label = stringResource(R.string.phone_label),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Done),
+                visualTransformation = PhoneGrouping,
                 modifier = Modifier.fillMaxWidth().testTag(TestTags.INVITE_NUMBER),
             )
             TextLink(
