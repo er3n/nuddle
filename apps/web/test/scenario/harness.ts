@@ -225,6 +225,8 @@ export class Client {
     private readonly world: World,
     readonly person: Person,
     readonly api: ApiClient,
+    /** The real id on the server; `person.id` is the scenario name. */
+    readonly uuid: string,
   ) {}
 
   get id(): PersonId {
@@ -297,6 +299,8 @@ export class Client {
       case "deadline_passed":
       case "approval_timeout":
       case "account_deleted":
+      case "connection_removed":
+      case "replan":
         throw new Error(`${cmd.type} is a server command`);
     }
   }
@@ -349,6 +353,45 @@ export class Client {
         body: { idempotencyKey: uuidv7(), code },
       }),
       "decline_invite",
+    );
+    await this.world.refresh();
+  }
+
+  /** Quiet hours (7g) and the human channel switches (5a). */
+  async updateSettings(patch: {
+    quietHours?: { start: string; end: string };
+    useConnectionsForMyTasks?: boolean;
+    notifyMeForOthersTasks?: boolean;
+  }): Promise<void> {
+    ok(
+      await this.api.POST("/api/v1/commands/update_settings", {
+        body: { idempotencyKey: uuidv7(), ...patch },
+      }),
+      "update_settings",
+    );
+    await this.world.refresh();
+  }
+
+  /** Person detail (5b): my relationship to them and my switch for their tasks. */
+  async updateConnection(
+    other: Client,
+    patch: { relationship?: EdgeType; notifyMe?: boolean },
+  ): Promise<void> {
+    ok(
+      await this.api.POST("/api/v1/commands/update_connection", {
+        body: { idempotencyKey: uuidv7(), personId: other.uuid, ...patch },
+      }),
+      "update_connection",
+    );
+    await this.world.refresh();
+  }
+
+  async removeConnection(other: Client): Promise<void> {
+    ok(
+      await this.api.POST("/api/v1/commands/remove_connection", {
+        body: { idempotencyKey: uuidv7(), personId: other.uuid },
+      }),
+      "remove_connection",
     );
     await this.world.refresh();
   }
@@ -477,7 +520,7 @@ export class World {
       permissions,
       lastSeenAt: this.clock.now(),
     };
-    const client = new Client(this, person, api);
+    const client = new Client(this, person, api, uuid);
     this.clients.set(person.id, client);
     this.phones.set(person.id, new SimPhone(this, api, device));
     await this.refresh();
@@ -616,6 +659,7 @@ export class World {
         toPersonId: named(e.toPersonId),
         type: e.type,
         status: e.status,
+        notifyMe: e.notifyMe,
       }),
     );
     snap.devices = (await db.select().from(schema.devices)).map((d) => ({

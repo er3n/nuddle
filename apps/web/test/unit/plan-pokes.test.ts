@@ -119,6 +119,25 @@ describe("planPokes v0", () => {
     expect(senderOff.map((s) => s.level)).not.toContain("HUMAN");
   });
 
+  it("has no HUMAN step when the sender turned the switch off for this connection (5b)", () => {
+    const input = {
+      task: aTask().withDeadline("2026-10-12T09:00:00+03:00").build(),
+      recipient: eren,
+      sender: selin,
+      reachability: "FULL_SCREEN" as const,
+      history: [],
+      now: new Date("2026-10-11T20:00:00+03:00"),
+    };
+    expect(planPokes({ ...input, senderEdge: { notifyMe: false } }).map((s) => s.level)).toEqual([
+      "SILENT",
+      "SOUND",
+      "FULL_SCREEN",
+    ]);
+    expect(planPokes({ ...input, senderEdge: { notifyMe: true } }).map((s) => s.level)).toContain(
+      "HUMAN",
+    );
+  });
+
   it("resumes from the floor level and keeps it monotonic", () => {
     const steps = planPokes({
       task: aTask().withDeadline("2026-10-12T09:00:00+03:00").build(),

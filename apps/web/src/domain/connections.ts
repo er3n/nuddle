@@ -16,7 +16,8 @@ export interface Invite {
   status: InviteStatus;
 }
 
-export type ConnectionError = "invite_not_open" | "wrong_invitee" | "self_invite" | "not_inviter";
+export type ConnectionError =
+  "invite_not_open" | "wrong_invitee" | "self_invite" | "not_inviter" | "not_connected";
 
 export type ConnectionResult<T> = { ok: true; value: T } | { ok: false; error: ConnectionError };
 
@@ -57,12 +58,14 @@ export function acceptInvite(
           toPersonId: invitee.id,
           type: invite.relationship,
           status: "active",
+          notifyMe: true,
         },
         {
           fromPersonId: invitee.id,
           toPersonId: invite.inviterId,
           type: relationship,
           status: "active",
+          notifyMe: true,
         },
       ],
       pushes: [{ to: invite.inviterId, hint: "sync", taskId: null, event: "invite_accepted" }],
@@ -130,5 +133,53 @@ export function deleteAccount(
       .filter((e) => e.fromPersonId === person.id || e.toPersonId === person.id)
       .map((e) => ({ ...e, status: "removed" })),
     cancelled,
+  };
+}
+
+/**
+ * "İlişki" and "Selin'in işleri için bana haber verilebilir" on person detail (5b). Only my own
+ * edge changes: each side picks its own relationship and its own switch.
+ */
+export function changeConnection(
+  mine: Edge | null,
+  patch: { relationship?: EdgeType; notifyMe?: boolean },
+): ConnectionResult<Edge> {
+  if (mine?.status !== "active") return { ok: false, error: "not_connected" };
+  return {
+    ok: true,
+    value: {
+      ...mine,
+      ...(patch.relationship === undefined ? {} : { type: patch.relationship }),
+      ...(patch.notifyMe === undefined ? {} : { notifyMe: patch.notifyMe }),
+    },
+  };
+}
+
+export interface Removed {
+  edges: Edge[];
+  /** One outcome per task between the two that was not closed; nobody is notified. */
+  cancelled: Outcome[];
+}
+
+/**
+ * "Bağlantıyı kaldır" (5b): both directed edges are removed and every task between the two that
+ * is not closed is cancelled with reason `connection_removed`. The other side gets no notification
+ * ("Selin'e bildirim gitmez"); their lists change on the next sync.
+ */
+export function removeConnection(
+  me: Person,
+  edges: readonly Edge[],
+  tasks: readonly { task: Task; ctx: TaskContext }[],
+): ConnectionResult<Removed> {
+  const mine = edges.find((e) => e.fromPersonId === me.id);
+  if (mine?.status !== "active") return { ok: false, error: "not_connected" };
+  const cancelled: Outcome[] = [];
+  for (const { task, ctx } of tasks) {
+    const r = applyCommand(task, { type: "connection_removed", personId: me.id }, null, ctx);
+    if (r.ok) cancelled.push(r.value);
+  }
+  return {
+    ok: true,
+    value: { edges: edges.map((e) => ({ ...e, status: "removed" })), cancelled },
   };
 }

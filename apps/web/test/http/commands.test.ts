@@ -45,6 +45,39 @@ describe("http: commands", () => {
     expect(reused.error?.error.code).toBe("DRT-1005");
   });
 
+  it("update_settings returns me and refuses quiet hours without a length or a bad time", async () => {
+    const r = await eren.api.POST("/api/v1/commands/update_settings", {
+      body: { idempotencyKey: uuidv7(), quietHours: { start: "22:30", end: "06:30" } },
+    });
+    expect(r.data?.quietHours).toMatchObject({ start: "22:30", end: "06:30" });
+    expect(r.data?.useConnectionsForMyTasks).toBe(true);
+
+    for (const quietHours of [
+      { start: "07:00", end: "07:00" },
+      { start: "24:00", end: "07:00" },
+      { start: "7:00", end: "07:00" },
+    ]) {
+      const bad = await eren.api.POST("/api/v1/commands/update_settings", {
+        body: { idempotencyKey: uuidv7(), quietHours },
+      });
+      expect(bad.response.status).toBe(400);
+    }
+  });
+
+  it("a connection that does not exist cannot be changed or removed (409)", async () => {
+    const stranger = await signUp(server, "Mert");
+    for (const path of [
+      "/api/v1/commands/update_connection",
+      "/api/v1/commands/remove_connection",
+    ] as const) {
+      const r = await selin.api.POST(path, {
+        body: { idempotencyKey: uuidv7(), personId: stranger.id, notifyMe: false },
+      });
+      expect(r.response.status).toBe(409);
+      expect(r.error?.error.name).toBe("not_connected");
+    }
+  });
+
   it("maps domain errors: wrong status 409, wrong side 403, not your task 404", async () => {
     const taskId = await createTask(selin, eren);
 

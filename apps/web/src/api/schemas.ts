@@ -199,6 +199,28 @@ export const RevokeInviteCommand = keyed({ inviteId: Id }).openapi("RevokeInvite
 export const LogOutCommand = keyed({ deviceId: Id }).openapi("LogOutCommand");
 export const DeleteAccountCommand = keyed({}).openapi("DeleteAccountCommand");
 
+const LocalTime = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+  .openapi({ example: "23:00" });
+export const UpdateSettingsCommand = keyed({
+  /** In the caller's time zone; start may be after end (23:00-07:00 spans midnight). */
+  quietHours: z
+    .object({ start: LocalTime, end: LocalTime })
+    .refine((q) => q.start !== q.end, { message: "quiet hours need a length" })
+    .optional(),
+  useConnectionsForMyTasks: z.boolean().optional(),
+  notifyMeForOthersTasks: z.boolean().optional(),
+}).openapi("UpdateSettingsCommand");
+export const UpdateConnectionCommand = keyed({
+  personId: Id,
+  /** What this person is to me. */
+  relationship: EdgeType.optional(),
+  /** "Selin'in işleri için bana haber verilebilir" (5b). */
+  notifyMe: z.boolean().optional(),
+}).openapi("UpdateConnectionCommand");
+export const RemoveConnectionCommand = keyed({ personId: Id }).openapi("RemoveConnectionCommand");
+
 // ---- devices and photos ---------------------------------------------------------------------
 
 export const RegisterDeviceRequest = z
@@ -325,6 +347,10 @@ export const SyncResponse = z
            * connection. Optional so an app reading an older server's sync does not fail.
            */
           phone: Phone.optional(),
+          /** Since when the connection is active: "3 aydır bağlısınız" (5b). Optional like `phone`. */
+          connectedAt: Instant.optional(),
+          /** My "Selin'in işleri için bana haber verilebilir" switch (5b). Optional like `phone`. */
+          notifyMe: z.boolean().optional(),
         })
         .openapi("SyncConnection"),
     ),

@@ -39,9 +39,12 @@ export interface Edge {
   toPersonId: PersonId;
   type: EdgeType;
   status: EdgeStatus;
+  /** "Selin'in işleri için bana haber verilebilir" (5b): the from-person may be told about the to-person's tasks. */
+  notifyMe: boolean;
 }
 
-export type CancelReason = "sender_cancelled" | "sender_handles" | "account_deleted";
+export type CancelReason =
+  "sender_cancelled" | "sender_handles" | "account_deleted" | "connection_removed";
 
 export interface Task {
   id: TaskId;

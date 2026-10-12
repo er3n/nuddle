@@ -9,7 +9,7 @@ Items marked **(proposed)** are reasonable defaults that were not explicitly dec
 | Entity | Table | Notes |
 |---|---|---|
 | Person | `people` | id, phone (E.164, unique), display name, created/deleted timestamps, quiet hours (default 23:00-07:00, stored as local times + IANA time zone), the two human channel switches (both default `true`). The user is a person. |
-| Connection | `edges` | Directed pair (from, to) with `type` (`spouse`, `parent`, `child`, `sibling`, `roommate`, `other`) and learned statistics/weights. A 1:1 connection is two directed edges created together, because each side picks its own relationship ("Selin senin neyin?") and weights are per direction. Status: `pending` (invite out), `active`, `removed`. |
+| Connection | `edges` | Directed pair (from, to) with `type` (`spouse`, `parent`, `child`, `sibling`, `roommate`, `other`) and learned statistics/weights. A 1:1 connection is two directed edges created together, because each side picks its own relationship ("Selin senin neyin?") and weights are per direction. Status: `pending` (invite out), `active`, `removed`. `notify_me` (default `true`, **proposed**) is the from-person's switch on 5b, "Selin'in işleri için bana haber verilebilir": the from-person may be told about the to-person's tasks. It narrows the person's own "Başkalarının işleri için bana haber verilebilir" switch for this one connection. |
 | Invite | `invites` **(proposed table)** | Inviter, invitee phone, chosen relationship, prefilled name, code for the link, status (`open`, `accepted`, `declined`, `revoked`, `expired`). Declining is stored but never shown to the inviter. |
 | Task | `tasks` | Sender, recipient (may equal sender), title, detail (e.g. amount), deadline, finish mode (`done` or `photo`), raw text the sender typed, status, plan version. |
 | Task event | `task_events` | Append-only log of everything that happens to a task. It is also the sync feed (see `architecture.md`). |
@@ -47,6 +47,9 @@ Client-only status: `QUEUED` (written offline, not yet on the server).
 | `MISSED` | cancel | `CANCELLED` | sender |
 | `DROPPED` | "Yeni zaman ver" (new deadline) | `SCHEDULED` | sender |
 | `DROPPED` | "Ben hallederim" | `CANCELLED` with reason `sender_handles` **(proposed)** | sender |
+| any status but `DONE` and `CANCELLED` | either side deletes the account | `CANCELLED` with reason `account_deleted`, the other side is told | server |
+| any status but `DONE` and `CANCELLED` | either side removes the connection (5b) | `CANCELLED` with reason `connection_removed`, no notification to the other side **(proposed)** | server |
+| `SCHEDULED`, `REJECTED` | a setting the plan depends on changed (quiet hours, a human channel switch) | same status, plan regenerated from the level already reached **(proposed)** | server |
 
 Invariants:
 - A task awaiting approval can never become `MISSED`. The deadline applies to sending the photo, not to approval.
@@ -105,7 +108,7 @@ The MVP heuristic, implemented in `apps/web/src/domain/plan-pokes.ts` (open-ques
 2. **Window:** the last 60 minutes before the end. It never starts before now. If it overlaps quiet hours it starts when they end; if less than 2 minutes would remain (a deadline at 07:00), the window moves before quiet hours instead.
 3. **Ladder** at nominal offsets before the end: `SILENT` -60 min, `SOUND` -30, `FULL_SCREEN` -15, `HUMAN` -5. A shorter window shrinks every offset proportionally.
 4. **Resume:** after a re-request the plan starts at the highest device level that already fired (no new `SILENT`).
-5. **`HUMAN`** is planned only when someone else can be told: not a task to self, and both human channel switches allow it. It is always the last step. The server fires it through a `human_check` timer only if the task is still open, and it does not stop poking.
+5. **`HUMAN`** is planned only when someone else can be told: not a task to self, both human channel switches allow it (the recipient's "Benim işlerimde tanıdıklarımı kullanabilirsin", the sender's "Başkalarının işleri için bana haber verilebilir"), and the sender's `notify_me` on their edge to the recipient is on. It is always the last step. The server fires it through a `human_check` timer only if the task is still open, and it does not stop poking.
 6. **Very short window** (under 2 minutes): a single `SOUND` step, no `HUMAN`.
 7. **No time left** outside quiet hours before the deadline: no steps; the deadline timer still marks the task missed.
 8. Reachability does not remove steps: a level the device cannot reach stays in the plan and degrades on the device.

@@ -82,6 +82,7 @@ export function e2eRoutes(deps: AppDeps, e2e: { clock: OffsetClock }): Hono<AppE
           toPersonId: ids.get(e.to) ?? "",
           type: e.type,
           status: "active" as const,
+          notifyMe: true,
         })),
         now,
       );

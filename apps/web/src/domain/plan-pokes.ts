@@ -21,7 +21,7 @@
 import { latestQuietOverlap, quietIntervalAt } from "./quiet-hours";
 import type { Reachability } from "./reachability";
 import { MINUTE } from "./time";
-import type { DeviceLevel, Person, PokeLevel, PokeStep, Task, TaskEvent } from "./types";
+import type { DeviceLevel, Edge, Person, PokeLevel, PokeStep, Task, TaskEvent } from "./types";
 
 const POKE_WINDOW_MS = 60 * MINUTE;
 const MIN_WINDOW_MS = 2 * MINUTE;
@@ -40,6 +40,8 @@ export interface PlanPokesInput {
   recipient: Pick<Person, "quietHours" | "useConnectionsForMyTasks">;
   /** The human channel in the MVP is the sender (docs/product.md, Human channel). */
   sender: Pick<Person, "notifyMeForOthersTasks">;
+  /** The sender's edge to the recipient; its `notifyMe` narrows the sender's switch (5b). */
+  senderEdge?: Pick<Edge, "notifyMe"> | null;
   reachability: Reachability;
   history: readonly TaskEvent[];
   now: Date;
@@ -91,7 +93,8 @@ export function planPokes(input: PlanPokesInput): PokeStep[] {
   const humanChannel =
     task.senderId !== task.recipientId &&
     recipient.useConnectionsForMyTasks &&
-    sender.notifyMeForOthersTasks;
+    sender.notifyMeForOthersTasks &&
+    input.senderEdge?.notifyMe !== false;
   if (humanChannel) planned.push({ level: "HUMAN", at: end.getTime() - HUMAN_OFFSET_MS * scale });
 
   return planned.map((p, i) => ({
