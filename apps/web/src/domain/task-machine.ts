@@ -19,6 +19,7 @@ import type {
   TaskEvent,
   TaskEventType,
   TaskId,
+  PokeStep,
   TaskStatus,
   Timing,
 } from "./types";
@@ -239,6 +240,8 @@ function effectsOfStatus(
   resume: boolean,
   /** Plan as if it were this time: the end of a snooze. Defaults to `ctx.now`. */
   planFrom?: Date,
+  /** Steps the LLM planner proposed and `checkPlan` passed (ADR 0017); plan v0 otherwise. */
+  planned?: PokeStep[],
 ): Pick<Outcome, "plan" | "scheduledActions" | "deletePhotos"> & { planEvent: TaskEvent | null } {
   const version = task.planVersion;
   const { now } = ctx;
@@ -247,16 +250,18 @@ function effectsOfStatus(
   switch (task.status) {
     case "SCHEDULED":
     case "REJECTED": {
-      const steps = planPokes({
-        task,
-        recipient: ctx.recipient,
-        sender: ctx.sender,
-        senderEdge: ctx.senderEdge,
-        reachability: ctx.reachability,
-        history: ctx.history,
-        now: planFrom ?? now,
-        floor: resume ? resumeLevel(ctx.history) : "SILENT",
-      });
+      const steps =
+        planned ??
+        planPokes({
+          task,
+          recipient: ctx.recipient,
+          sender: ctx.sender,
+          senderEdge: ctx.senderEdge,
+          reachability: ctx.reachability,
+          history: ctx.history,
+          now: planFrom ?? now,
+          floor: resume ? resumeLevel(ctx.history) : "SILENT",
+        });
       const actions: ScheduledAction[] = [
         {
           kind: "deadline",
@@ -286,7 +291,13 @@ function effectsOfStatus(
         plan: { taskId: task.id, version, steps },
         scheduledActions: actions,
         deletePhotos: false,
-        planEvent: event(task, null, "plan_generated", { version, steps: steps.length }, now),
+        planEvent: event(
+          task,
+          null,
+          "plan_generated",
+          { version, steps: steps.length, source: planned ? "llm" : "v0" },
+          now,
+        ),
       };
     }
     case "AWAITING_APPROVAL":
@@ -617,6 +628,35 @@ export function applyCommand(
           ? [push(next.recipientId, "plan_changed", next, "plan_generated")]
           : dedupe(events.flatMap((e) => pushesFor(next, e))),
       deletePhotos: effects.deletePhotos,
+    },
+  };
+}
+
+/**
+ * Replace plan v0 of an open task with the LLM planner's checked steps (ADR 0017). The caller
+ * checks that the task is still on `expectedVersion`; a newer version means something happened
+ * meanwhile and that plan wins.
+ */
+export function adoptPlan(
+  task: Task,
+  steps: PokeStep[],
+  expectedVersion: number,
+  ctx: TaskContext,
+): Result<Outcome> {
+  if (!isOpen(task.status) || task.planVersion !== expectedVersion || steps.length === 0) {
+    return { ok: false, error: "wrong_status" };
+  }
+  const next: Task = { ...task, planVersion: task.planVersion + 1 };
+  const effects = effectsOfStatus(next, ctx, false, undefined, steps);
+  return {
+    ok: true,
+    value: {
+      task: next,
+      events: effects.planEvent ? [effects.planEvent] : [],
+      plan: effects.plan,
+      scheduledActions: effects.scheduledActions,
+      pushes: [push(next.recipientId, "plan_changed", next, "plan_generated")],
+      deletePhotos: false,
     },
   };
 }

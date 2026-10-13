@@ -1,6 +1,7 @@
 // Interfaces to external services (docs/architecture.md, Layering rules). Real adapters live in
 // src/infra, recording fakes in test/fakes.
 import type { Extraction, ExtractionInput } from "./extraction";
+import type { PlannerInput, PlanProposal } from "./planner";
 import type { PushMessage, TaskId } from "./types";
 
 export interface Clock {
@@ -20,6 +21,11 @@ export interface OtpSender {
 /** LLM task extraction (docs/domain.md, LLM task extraction). */
 export interface TaskExtractor {
   extract(input: ExtractionInput): Promise<Extraction>;
+}
+
+/** LLM poke planner (ADR 0017). Its answer is checked by `checkPlan` before it is used. */
+export interface PokePlanner {
+  plan(input: PlannerInput): Promise<PlanProposal>;
 }
 
 /** Private photo bucket, one path per task. */

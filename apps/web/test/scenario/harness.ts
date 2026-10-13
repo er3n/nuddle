@@ -11,7 +11,7 @@ import { asc } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { afterEach } from "vitest";
 import type { MissingField } from "../../src/domain/extraction";
-import type { FixtureExtraction } from "../../src/infra/llm/fixture-extractor";
+import type { PokePlanner } from "../../src/domain/ports";
 import { isQuiet } from "../../src/domain/quiet-hours";
 import {
   deriveReachability,
@@ -36,7 +36,7 @@ import type {
 } from "../../src/domain/types";
 import * as schema from "../../src/infra/db/schema";
 import { toPerson, toTask } from "../../src/infra/db/store";
-import { FixtureExtractor } from "../../src/infra/llm/fixture-extractor";
+import { FixtureExtractor, type FixtureExtraction } from "../../src/infra/llm/fixture-extractor";
 import { aPerson, allPermissions } from "../builders";
 import { FakeClock, FakePhotoStorage, RecordingPushSender } from "../fakes";
 import { startTestServer, TICK_SECRET, type ApiClient, type TestServer } from "../support/server";
@@ -471,11 +471,15 @@ export class World {
   private readonly names = new Map<string, PersonId>();
   private snap = emptySnapshot();
 
-  constructor(fixtures: Record<string, FixtureExtraction> = {}) {
+  constructor(
+    fixtures: Record<string, FixtureExtraction> = {},
+    options: { planner?: PokePlanner } = {},
+  ) {
     this.extractor = new FixtureExtractor(new Map(Object.entries(fixtures)));
     this.ready = startTestServer({
       clock: this.clock,
       extractor: this.extractor,
+      planner: options.planner ?? null,
       photos: this.photos,
       push: {
         send: async (message: PushMessage) => {
