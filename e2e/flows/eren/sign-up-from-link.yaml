@@ -1,0 +1,42 @@
+# Eren opens Selin's invite link before he has an account (0b, ADR 0016): the welcome shows who
+# invites, and the name screen (0e) starts with the name Selin typed. The orchestrator opens the link
+# with `am start`; the app was installed with every permission and never opened, so it is signed out.
+# PHONE comes from the orchestrator.
+appId: app.nuddle.debug
+env:
+  CODE: "123456"
+---
+- extendedWaitUntil:
+    visible:
+      id: welcome.inviter
+    timeout: 30000
+- assertVisible: "Selin seni dürt'e davet etti"
+- tapOn:
+    id: welcome.start
+- tapOn:
+    id: phone.input
+- inputText: ${PHONE}
+- hideKeyboard
+- tapOn:
+    id: phone.send
+- extendedWaitUntil:
+    visible:
+      id: code.input
+    timeout: 30000
+- tapOn:
+    id: code.input
+- inputText: ${CODE}
+- extendedWaitUntil:
+    visible:
+      id: name.input
+    timeout: 30000
+- assertVisible:
+    id: name.input
+    text: "Eren"
+- assertVisible: 'Selin seni "Eren" diye eklemişti. Değiştirebilirsin.'
+- tapOn:
+    id: name.continue
+- extendedWaitUntil:
+    visible:
+      id: consent.screen
+    timeout: 60000

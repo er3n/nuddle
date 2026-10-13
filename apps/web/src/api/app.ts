@@ -39,12 +39,21 @@ function baseApp(): App {
   return app;
 }
 
+const invitePreviewPath = /^\/api\/v1\/invites\/[^/]+\/preview$/;
+
 export async function createApp(deps: AppDeps): Promise<App> {
   const app = baseApp();
 
-  // Every /api/v1 route except sign-in and health needs a Supabase access token.
+  // Every /api/v1 route except sign-in, health and the invite preview (ADR 0016) needs a Supabase
+  // access token.
   app.use("/api/v1/*", async (c, next) => {
-    if (c.req.path.startsWith("/api/v1/auth/") || c.req.path === "/api/v1/health") return next();
+    if (
+      c.req.path.startsWith("/api/v1/auth/") ||
+      c.req.path === "/api/v1/health" ||
+      invitePreviewPath.test(c.req.path)
+    ) {
+      return next();
+    }
     const header = c.req.header("authorization") ?? "";
     const token = header.startsWith("Bearer ") ? header.slice("Bearer ".length) : "";
     try {

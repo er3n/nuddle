@@ -150,6 +150,7 @@ private fun InviterChip(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .testTag(TestTags.WELCOME_INVITER)
                 .background(colors.darkSurface, shape)
                 .border(dimens.borderCard, colors.darkBorder, shape)
                 .padding(dimens.space10),

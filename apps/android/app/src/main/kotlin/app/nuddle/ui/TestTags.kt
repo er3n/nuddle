@@ -19,6 +19,7 @@ object TestTags {
 
     const val WELCOME_START = "welcome.start"
     const val WELCOME_TERMS = "welcome.terms"
+    const val WELCOME_INVITER = "welcome.inviter"
 
     const val PHONE_INPUT = "phone.input"
     const val PHONE_SEND = "phone.send"

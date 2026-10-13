@@ -94,7 +94,7 @@ FCM needs Google Play system images and the dev Firebase app. Flows wait with ti
 
 ### Smoke set (runs before a PR is merged)
 1. Sign up with a test number, write a task to self, full screen poke rings, Done.
-2. Selin invites Eren, Eren consents and completes setup, both see each other.
+2. Selin invites Eren; Eren opens the link before he has an account (0b, name prefilled on 0e), signs up, consents and completes setup, both see each other.
 3. Selin writes a photo task to Eren, Eren gets poked, Bitti on the full screen poke opens the camera, he sends a photo and his pokes stop, Selin approves.
 4. Selin writes a task to Eren, it is his next-up card and his phone sets its alarms; Selin cancels it from the task detail with a reason, Eren's pending alarms are gone.
 5. Doze: a `SOUND` step still rings on time.

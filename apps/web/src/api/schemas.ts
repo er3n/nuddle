@@ -208,6 +208,17 @@ export const DeclineInviteCommand = keyed({ code: z.string().min(1) }).openapi(
   "DeclineInviteCommand",
 );
 export const RevokeInviteCommand = keyed({ inviteId: Id }).openapi("RevokeInviteCommand");
+export const InvitePreviewParams = z.object({
+  code: z
+    .string()
+    .min(1)
+    .max(64)
+    .openapi({ param: { name: "code", in: "path" } }),
+});
+/** Before sign-in, an invite link shows who invites and the name they typed (0b, 0e; ADR 0016). */
+export const InvitePreview = z
+  .object({ inviterName: z.string(), prefilledName: z.string() })
+  .openapi("InvitePreview");
 export const LogOutCommand = keyed({ deviceId: Id }).openapi("LogOutCommand");
 export const DeleteAccountCommand = keyed({}).openapi("DeleteAccountCommand");
 

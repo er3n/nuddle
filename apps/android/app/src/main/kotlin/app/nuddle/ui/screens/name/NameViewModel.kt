@@ -3,6 +3,7 @@ package app.nuddle.ui.screens.name
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.nuddle.data.AuthRepository
+import app.nuddle.data.InvitePreviews
 import app.nuddle.data.SessionStarter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -17,15 +18,24 @@ import javax.inject.Inject
 
 private const val MAX_NAME_LENGTH = 60
 
-/** Sends the `register` command (ADR 0014), then continues home. */
+/**
+ * Sends the `register` command (ADR 0014), then continues home. Opened from an invite link, the name starts as what
+ * the inviter typed (ADR 0016).
+ */
 @HiltViewModel
 class NameViewModel
     @Inject
     constructor(
         private val auth: AuthRepository,
         private val starter: SessionStarter,
+        previews: InvitePreviews,
     ) : ViewModel() {
-        private val mutableState = MutableStateFlow(NameUiState())
+        private val mutableState =
+            MutableStateFlow(
+                previews.current.value?.let {
+                    NameUiState(name = it.prefilledName.take(MAX_NAME_LENGTH), invitedBy = it.inviterName, invitedAs = it.prefilledName)
+                } ?: NameUiState(),
+            )
         val state: StateFlow<NameUiState> = mutableState.asStateFlow()
 
         private val done = Channel<Unit>(Channel.BUFFERED)

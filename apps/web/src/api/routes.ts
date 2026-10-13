@@ -259,6 +259,26 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
   app.openapi(
     createRoute({
       method: "get",
+      path: "/v1/invites/{code}/preview",
+      operationId: "invitePreview",
+      summary: "Before sign-in: who sent this open invite and the name they typed (0b, 0e)",
+      tags: ["invites"],
+      security: [],
+      request: { params: s.InvitePreviewParams },
+      responses: {
+        200: {
+          description: "The inviter's name and the prefilled name",
+          content: json(s.InvitePreview),
+        },
+        ...errors([400, 404]),
+      },
+    }),
+    async (c) => c.json(await svc.invitePreview(deps, c.req.valid("param").code), 200),
+  );
+
+  app.openapi(
+    createRoute({
+      method: "get",
       path: "/v1/brand-fix",
       operationId: "brandFix",
       summary: "Settings that stop this phone brand from killing the app (2h)",

@@ -4,6 +4,7 @@ import app.nuddle.BuildConfig
 import app.nuddle.api.AuthApi
 import app.nuddle.api.CommandsApi
 import app.nuddle.api.DevicesApi
+import app.nuddle.api.InvitesApi
 import app.nuddle.api.PhotosApi
 import app.nuddle.api.SyncApi
 import app.nuddle.data.api.AuthInterceptor
@@ -72,6 +73,13 @@ object NetworkModule {
                 .build()
         return retrofit(client, json)
     }
+
+    /** The invite preview is read before sign-in (ADR 0016). */
+    @Provides
+    @Singleton
+    fun invitesApi(
+        @Named("public") retrofit: Retrofit,
+    ): InvitesApi = retrofit.create(InvitesApi::class.java)
 
     @Provides
     @Singleton
