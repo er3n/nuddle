@@ -5,8 +5,7 @@ import { z } from "zod";
 import type { Extraction, ExtractionInput } from "../../domain/extraction";
 import type { TaskExtractor } from "../../domain/ports";
 import { toLocalIso } from "../../domain/time";
-
-const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
+import { completeJson, type OpenRouterOptions } from "./openrouter";
 
 const extractionSchema = z.object({
   recipient: z.string().nullable(),
@@ -45,10 +44,6 @@ const jsonSchema = {
     missing: { type: "array", items: { type: "string", enum: ["recipient", "title", "deadline"] } },
   },
 };
-
-const completionSchema = z.object({
-  choices: z.array(z.object({ message: z.object({ content: z.string() }) })).min(1),
-});
 
 const RULES = `You turn one sentence (usually Turkish) into a reminder task for a family reminder app.
 Return only JSON that matches the schema.
@@ -109,51 +104,16 @@ export function buildPrompt(input: ExtractionInput): string {
   ].join("\n");
 }
 
-export interface OpenRouterOptions {
-  apiKey: string;
-  model: string;
-  fetch?: typeof fetch;
-}
-
 export class OpenRouterExtractor implements TaskExtractor {
-  private readonly fetchFn: typeof fetch;
-
-  constructor(private readonly options: OpenRouterOptions) {
-    this.fetchFn = options.fetch ?? fetch;
-  }
+  constructor(private readonly options: OpenRouterOptions) {}
 
   async extract(input: ExtractionInput): Promise<Extraction> {
-    const response = await this.fetchFn(ENDPOINT, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.options.apiKey}`,
-        "Content-Type": "application/json",
-        "X-Title": "Nuddle",
-      },
-      body: JSON.stringify({
-        model: this.options.model,
-        temperature: 0,
-        messages: [
-          { role: "system", content: RULES },
-          { role: "user", content: buildPrompt(input) },
-        ],
-        response_format: {
-          type: "json_schema",
-          json_schema: { name: "task_extraction", strict: true, schema: jsonSchema },
-        },
-      }),
+    const json = await completeJson(this.options, {
+      system: RULES,
+      user: buildPrompt(input),
+      name: "task_extraction",
+      schema: jsonSchema,
     });
-    if (!response.ok) {
-      throw new Error(`OpenRouter request failed with status ${String(response.status)}`);
-    }
-    const completion = completionSchema.parse(await response.json());
-    const content = completion.choices[0]?.message.content ?? "";
-    return extractionSchema.parse(JSON.parse(stripCodeFence(content)));
+    return extractionSchema.parse(json);
   }
-}
-
-/** Some models wrap JSON in a Markdown code fence even with structured output. */
-function stripCodeFence(s: string): string {
-  const match = /^\s*```(?:json)?\s*([\s\S]*?)\s*```\s*$/.exec(s);
-  return match?.[1] ?? s;
 }

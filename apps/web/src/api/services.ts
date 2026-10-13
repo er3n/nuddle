@@ -14,12 +14,22 @@ import {
 } from "../domain/connections";
 import { resolveExtraction, type Extraction, type MissingField } from "../domain/extraction";
 import { afterWrongCode, lockedUntil } from "../domain/otp-attempts";
+import { humanChannelAllowed } from "../domain/plan-pokes";
+import { addMs, DAY } from "../domain/time";
+import {
+  checkPlan,
+  HISTORY_DAYS,
+  HISTORY_TASKS,
+  historyItem,
+  type PlannerInput,
+} from "../domain/planner";
 import {
   deriveReachability,
   type PermissionSummary,
   type Reachability,
 } from "../domain/reachability";
 import {
+  adoptPlan,
   applyCommand,
   createTask as createTaskDomain,
   isOpen,
@@ -47,6 +57,7 @@ import type {
   PersonId,
   PushMessage,
   Task,
+  TaskEvent,
   TaskId,
   TaskStatus,
   Timing,
@@ -80,6 +91,7 @@ import {
   rescheduleAction,
   persistOutcome,
   pokedTasks,
+  recentClosedTasksOf,
   saveIdempotentResult,
   saveOtpAttempts,
   setInviteStatus,
@@ -101,12 +113,21 @@ import { ApiError } from "./errors";
 interface Effects {
   pushes: readonly PushMessage[];
   deletePhotosFor: readonly TaskId[];
+  /** New plan versions the LLM planner may improve after commit (ADR 0017). */
+  replans?: readonly { taskId: TaskId; version: number }[];
 }
 
 const noEffects: Effects = { pushes: [], deletePhotosFor: [] };
 
 function effectsOf(o: Outcome): Effects {
-  return { pushes: o.pushes, deletePhotosFor: o.deletePhotos ? [o.task.id] : [] };
+  return {
+    pushes: o.pushes,
+    deletePhotosFor: o.deletePhotos ? [o.task.id] : [],
+    replans:
+      o.plan.steps.length > 0 && isOpen(o.task.status)
+        ? [{ taskId: o.task.id, version: o.plan.version }]
+        : [],
+  };
 }
 
 /** After commit. A failed hint or cleanup does not undo a committed command; sync is the truth. */
@@ -125,6 +146,137 @@ async function afterCommit(deps: AppDeps, effects: Effects): Promise<void> {
       // The task's photo_cleanup timer tries again (NUD-25).
       console.error("photo deletion failed", taskId, error);
     }
+  }
+  for (const r of effects.replans ?? []) {
+    await deps.background(() => refinePlan(deps, r.taskId, r.version));
+  }
+}
+
+/** The end of the task's latest snooze if it is still ahead, otherwise `now`. */
+function snoozeEnd(history: readonly TaskEvent[], now: Date): Date {
+  const until = history
+    .filter((e) => e.type === "snoozed" && typeof e.payload.until === "string")
+    .map((e) => new Date(e.payload.until as string))
+    .at(-1);
+  return until && until.getTime() > now.getTime() ? until : now;
+}
+
+const deviceRank: Record<DeviceLevel, number> = { SILENT: 0, SOUND: 1, FULL_SCREEN: 2 };
+
+/**
+ * After a new plan v0 is committed, ask the LLM planner for a better one and, when it passes
+ * `checkPlan`, store it as the next plan version (ADR 0017). Any failure keeps v0. Runs after the
+ * response, so the caller never waits for it.
+ */
+async function refinePlan(deps: AppDeps, taskId: TaskId, version: number): Promise<void> {
+  const planner = deps.planner;
+  if (!planner) return;
+  try {
+    const now = deps.clock.now();
+    const task = await findTask(deps.db, taskId);
+    if (!task || task.planVersion !== version || !isOpen(task.status)) return;
+    const sender = await findPerson(deps.db, task.senderId);
+    const recipient = await findPerson(deps.db, task.recipientId);
+    if (!sender || !recipient) return;
+    const self = sender.id === recipient.id;
+    const senderEdge = self ? null : await findEdge(deps.db, sender.id, recipient.id);
+    const backEdge = self ? null : await findEdge(deps.db, recipient.id, sender.id);
+    const events = await eventsOf(deps.db, task.id);
+    const v0 = await currentPlan(deps.db, task);
+    // Plan v0 already starts at the level reached after a snooze or re-request.
+    const floor = v0.steps
+      .map((s) => s.level)
+      .filter((l): l is DeviceLevel => l !== "HUMAN")
+      .reduce<DeviceLevel>((low, l) => (deviceRank[l] < deviceRank[low] ? l : low), "FULL_SCREEN");
+    const notBefore = snoozeEnd(events, now);
+
+    const past = await recentClosedTasksOf(
+      deps.db,
+      recipient.id,
+      addMs(now, -HISTORY_DAYS * DAY),
+      HISTORY_TASKS,
+    );
+    const senders = new Map<PersonId, { name: string; relationship: EdgeType | null }>();
+    for (const p of past) {
+      const id = p.task.senderId;
+      if (senders.has(id) || id === recipient.id) continue;
+      const person = await findPerson(deps.db, id);
+      const edge = await findEdge(deps.db, recipient.id, id);
+      senders.set(id, { name: person?.displayName ?? "?", relationship: edge?.type ?? null });
+    }
+    const connections = await activeConnections(deps.db, recipient.id);
+
+    const input: PlannerInput = {
+      now,
+      timeZone: recipient.quietHours.timeZone,
+      task: {
+        rawText: task.rawText,
+        title: task.title,
+        detail: task.detail,
+        finishMode: task.finishMode,
+        timing: task.timing,
+        time: task.remindAt ?? task.deadline,
+        deadline: task.deadline,
+        notBefore,
+        floor: v0.steps.length > 0 ? floor : "SILENT",
+        snoozesSoFar: events.filter((e) => e.type === "snoozed").length,
+      },
+      sender: { name: sender.displayName, self },
+      recipient: { name: recipient.displayName },
+      relationship:
+        self || !senderEdge
+          ? null
+          : { recipientIsToSender: senderEdge.type, senderIsToRecipient: backEdge?.type ?? null },
+      recipientConnections: connections.map((c) => ({
+        name: c.person.displayName,
+        relationship: c.edge.type,
+      })),
+      quietHours: recipient.quietHours,
+      reachability: await reachabilityOf(deps.db, recipient.id),
+      humanAllowed: humanChannelAllowed({ task, recipient, sender, senderEdge }),
+      history: past.map((p) =>
+        historyItem(
+          p.task,
+          p.events,
+          p.fired,
+          senders.get(p.task.senderId) ?? { name: "self", relationship: null },
+        ),
+      ),
+    };
+    const proposal = await planner.plan(input);
+    const steps = checkPlan(proposal, {
+      task,
+      recipient,
+      sender,
+      senderEdge,
+      notBefore,
+      floor: input.task.floor,
+    });
+    if (!steps) {
+      console.warn("poke planner: no valid plan, keeping v0", taskId, proposal.reason);
+      return;
+    }
+    const out = await inWriteTx(deps.db, async (tx) => {
+      const fresh = await findTask(tx, taskId, true);
+      if (!fresh) return null;
+      const txNow = deps.clock.now();
+      const r = adoptPlan(fresh, steps, version, await taskContext(tx, fresh, txNow));
+      if (!r.ok) return null;
+      const o = adjust(deps, r.value, txNow);
+      await persistOutcome(tx, o, txNow);
+      return o;
+    });
+    if (!out) return;
+    console.info("poke planner: plan adopted", taskId, out.plan.version, proposal.reason);
+    for (const p of out.pushes) {
+      try {
+        await deps.push.send(p);
+      } catch (error) {
+        console.error("push failed", p, error);
+      }
+    }
+  } catch (error) {
+    console.error("poke planner failed, keeping v0", taskId, error);
   }
 }
 
@@ -165,7 +317,10 @@ export async function requirePerson(deps: AppDeps, id: PersonId): Promise<Person
   return person;
 }
 
-async function reachabilityOf(tx: Tx, personId: PersonId): Promise<Reachability> {
+async function reachabilityOf(
+  tx: Parameters<typeof devicesOf>[0],
+  personId: PersonId,
+): Promise<Reachability> {
   return deriveReachability(await devicesOf(tx, personId));
 }
 

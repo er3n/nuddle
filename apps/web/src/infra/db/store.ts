@@ -4,14 +4,38 @@
 // Every write that touches sync rows runs in `inWriteTx`, which takes one advisory lock. That
 // serializes writers so `change_seq` values commit in order and a sync cursor never skips a row
 // committed late. Fine at MVP scale; revisit (e.g. per-person locks) when writes contend.
-import { and, asc, eq, gt, inArray, isNull, lte, ne, notInArray, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lte,
+  ne,
+  notInArray,
+  or,
+  sql,
+} from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import type { Invite, InviteStatus } from "../../domain/connections";
 import { noAttempts, type OtpAttempts } from "../../domain/otp-attempts";
 import type { Device, PermissionSummary } from "../../domain/reachability";
 import type { ClaimedAction } from "../../domain/tick";
 import type { Outcome } from "../../domain/task-machine";
-import type { Edge, Person, PersonId, PokePlan, Task, TaskEvent, TaskId } from "../../domain/types";
+import type {
+  Edge,
+  Person,
+  PersonId,
+  PokeLevel,
+  PokePlan,
+  Task,
+  TaskEvent,
+  TaskId,
+} from "../../domain/types";
 import {
   devices,
   edges,
@@ -473,6 +497,54 @@ export async function eventsOf(ex: Executor, taskId: TaskId): Promise<TaskEvent[
     .where(eq(taskEvents.taskId, taskId))
     .orderBy(asc(taskEvents.id));
   return rows.map(toEvent);
+}
+
+/**
+ * The person's most recent closed tasks as recipient, with their events and the pokes that rang:
+ * the history the LLM planner reads (ADR 0017, open-questions#42).
+ */
+export async function recentClosedTasksOf(
+  ex: Executor,
+  recipientId: PersonId,
+  since: Date,
+  limit: number,
+): Promise<
+  {
+    task: Task;
+    events: TaskEvent[];
+    fired: { level: PokeLevel; plannedAt: Date; firedAt: Date }[];
+  }[]
+> {
+  const rows = await ex
+    .select()
+    .from(tasks)
+    .where(
+      and(
+        eq(tasks.recipientId, recipientId),
+        inArray(tasks.status, ["DONE", "DROPPED", "MISSED", "CANCELLED"]),
+        gte(tasks.updatedAt, since),
+      ),
+    )
+    .orderBy(desc(tasks.updatedAt))
+    .limit(limit);
+  if (rows.length === 0) return [];
+  const ids = rows.map((r) => r.id);
+  const eventRows = await ex
+    .select()
+    .from(taskEvents)
+    .where(inArray(taskEvents.taskId, ids))
+    .orderBy(asc(taskEvents.id));
+  const stepRows = await ex
+    .select()
+    .from(pokeSteps)
+    .where(and(inArray(pokeSteps.taskId, ids), isNotNull(pokeSteps.firedAt)));
+  return rows.map((r) => ({
+    task: toTask(r),
+    events: eventRows.filter((e) => e.taskId === r.id).map(toEvent),
+    fired: stepRows
+      .filter((s) => s.taskId === r.id && s.firedAt !== null)
+      .map((s) => ({ level: s.level, plannedAt: s.plannedAt, firedAt: s.firedAt ?? s.plannedAt })),
+  }));
 }
 
 export async function currentPlan(ex: Executor, task: Task): Promise<PokePlan> {

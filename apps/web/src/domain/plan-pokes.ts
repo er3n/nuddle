@@ -87,7 +87,9 @@ function pokeWindow(
 }
 
 /** Whether the sender may be told: rule 5. */
-function humanChannelAllowed(input: PlanPokesInput): boolean {
+export function humanChannelAllowed(
+  input: Pick<PlanPokesInput, "task" | "recipient" | "sender" | "senderEdge">,
+): boolean {
   const { task, recipient, sender } = input;
   return (
     task.senderId !== task.recipientId &&

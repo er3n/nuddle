@@ -3,7 +3,8 @@
 import { readFile } from "node:fs/promises";
 import { z } from "zod";
 import type { Extraction } from "../domain/extraction";
-import type { TaskExtractor } from "../domain/ports";
+import { after } from "next/server";
+import type { PokePlanner, TaskExtractor } from "../domain/ports";
 import { JoseTokenVerifier } from "../infra/auth/jwt";
 import { SupabaseAuthGateway } from "../infra/auth/supabase-auth";
 import { OffsetClock, systemClock } from "../infra/clock";
@@ -11,6 +12,7 @@ import { connectDb } from "../infra/db/client";
 import { fidsOf } from "../infra/db/store";
 import { FixtureExtractor } from "../infra/llm/fixture-extractor";
 import { OpenRouterExtractor } from "../infra/llm/openrouter-extractor";
+import { OpenRouterPlanner } from "../infra/llm/openrouter-planner";
 import { TwilioOtpSender, unconfiguredOtpSender } from "../infra/otp/twilio";
 import { FcmPushSender } from "../infra/push/fcm";
 import { logPushSender } from "../infra/push/log";
@@ -61,10 +63,16 @@ export async function createProductionApp(
     : null;
 
   let extractor: TaskExtractor;
+  // E2E mode keeps plan v0 only: compressed, deterministic plans (docs/testing.md).
+  let planner: PokePlanner | null = null;
   if (e2eMode) {
     extractor = await e2eExtractor(env.E2E_EXTRACTOR_FIXTURES);
   } else if (env.OPENROUTER_API_KEY !== null && env.OPENROUTER_MODEL !== null) {
     extractor = new OpenRouterExtractor({
+      apiKey: env.OPENROUTER_API_KEY,
+      model: env.OPENROUTER_MODEL,
+    });
+    planner = new OpenRouterPlanner({
       apiKey: env.OPENROUTER_API_KEY,
       model: env.OPENROUTER_MODEL,
     });
@@ -93,6 +101,11 @@ export async function createProductionApp(
     push,
     otp,
     extractor,
+    planner,
+    // The planner runs after the response is sent (ADR 0017).
+    background: (job) => {
+      after(job);
+    },
     photos: new SupabasePhotoStorage(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY),
     tokens: JoseTokenVerifier.forSupabase(env.SUPABASE_URL),
     auth: new SupabaseAuthGateway(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY),

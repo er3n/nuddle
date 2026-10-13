@@ -216,7 +216,7 @@ depends = ["_install"]
 run = "pnpm --filter @nuddle/web contract:gen"
 
 [tasks.eval]
-description = "LLM extraction golden set (needs an API key)"
+description = "LLM golden sets: extraction and poke plans (needs an API key)"
 # OPENROUTER_API_KEY and OPENROUTER_MODEL from the environment or apps/web/.env.local.
 depends = ["_install"]
 run = "pnpm --filter @nuddle/web eval"

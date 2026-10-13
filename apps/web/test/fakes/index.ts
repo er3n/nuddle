@@ -1,7 +1,14 @@
 // Recording fakes for the external service interfaces (docs/testing.md, Ground rules 2).
 // Assertions read the records.
 import { randomUUID } from "node:crypto";
-import type { Clock, OtpSender, PhotoStorage, PushSender } from "../../src/domain/ports";
+import type { PlannerInput, PlanProposal } from "../../src/domain/planner";
+import type {
+  Clock,
+  OtpSender,
+  PhotoStorage,
+  PokePlanner,
+  PushSender,
+} from "../../src/domain/ports";
 import type { PushMessage, TaskId } from "../../src/domain/types";
 import type { AuthGateway, Session } from "../../src/infra/auth/supabase-auth";
 
@@ -111,5 +118,19 @@ export class FakeAuthGateway implements AuthGateway {
     const id = this.users.get(phone) ?? randomUUID();
     this.users.set(phone, id);
     return Promise.resolve(id);
+  }
+}
+
+/** A poke planner that answers with whatever the test gives it and records what it was asked. */
+export class ScriptedPlanner implements PokePlanner {
+  readonly calls: PlannerInput[] = [];
+
+  constructor(
+    private readonly answer: (input: PlannerInput) => PlanProposal | Promise<PlanProposal>,
+  ) {}
+
+  async plan(input: PlannerInput): Promise<PlanProposal> {
+    this.calls.push(input);
+    return this.answer(input);
   }
 }
