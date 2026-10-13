@@ -144,6 +144,7 @@ export function toTask(r: TaskRow): Task {
     planVersion: r.planVersion,
     // Decided in NUD-8: tasks.updated_at is the status change time.
     statusChangedAt: r.updatedAt,
+    removedByRecipientAt: r.removedByRecipientAt,
   };
 }
 
@@ -667,6 +668,14 @@ export async function markStepFired(
 }
 
 /** Something about the task changed that sync must re-send (new events, list visibility). */
+/** The recipient removed the missed card (NUD-49): stored, and synced through a new change_seq. */
+export async function markMissedCardRemoved(tx: Tx, task: Task): Promise<void> {
+  await tx
+    .update(tasks)
+    .set({ removedByRecipientAt: task.removedByRecipientAt, changeSeq: nextSeq })
+    .where(eq(tasks.id, task.id));
+}
+
 export async function touchTask(tx: Tx, taskId: TaskId): Promise<void> {
   await tx.update(tasks).set({ changeSeq: nextSeq }).where(eq(tasks.id, taskId));
 }

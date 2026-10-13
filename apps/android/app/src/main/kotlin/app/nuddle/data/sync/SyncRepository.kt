@@ -9,6 +9,7 @@ import app.nuddle.api.model.SyncSentInvite
 import app.nuddle.api.model.SyncTask
 import app.nuddle.api.model.TaskEventType
 import app.nuddle.api.model.TaskStatus
+import app.nuddle.api.model.Timing
 import app.nuddle.data.EventTypes
 import app.nuddle.data.api.ApiResult
 import app.nuddle.data.api.apiCall
@@ -199,6 +200,7 @@ internal fun SyncTask.toEntity() =
         photoSentAt = photoSentAt?.let { Instant.parse(it).toEpochMilliseconds() },
         reRequestNote = reRequestNote,
         statusChangedAt = Instant.parse(statusChangedAt).toEpochMilliseconds(),
+        remindAt = remindAt?.takeIf { timing == Timing.AT }?.let { Instant.parse(it).toEpochMilliseconds() },
     )
 
 internal fun SyncEvent.toEntity() =

@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -44,14 +45,6 @@ import app.nuddle.ui.theme.DurtTheme
 
 // Parts of home once there is a task (2f). Kept next to HomeScreen.kt, used only there.
 
-@Composable
-internal fun DeadlineText.text(): String =
-    when (this) {
-        is DeadlineText.Today -> stringResource(R.string.deadline_today, time)
-        is DeadlineText.Tomorrow -> stringResource(R.string.deadline_tomorrow, time)
-        is DeadlineText.OnDate -> stringResource(R.string.deadline_on_date, day, stringArrayResource(R.array.month_names)[month - 1], time)
-    }
-
 private val NextUpStatus.pill: PillStatus
     get() =
         when (this) {
@@ -70,6 +63,8 @@ internal fun NextUpCard(
     task: NextUpUi,
     callbacks: NextUpCallbacks,
     photo: ImageBitmap? = null,
+    /** A task to self opens its detail (7c) to edit or cancel it (NUD-47); null keeps the card still. */
+    onOpen: (() -> Unit)? = null,
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
@@ -79,6 +74,8 @@ internal fun NextUpCard(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .clip(shape)
+                .then(if (onOpen != null) Modifier.clickable(onClick = onOpen) else Modifier)
                 .background(colors.surface, shape)
                 .border(dimens.borderCard, colors.border, shape)
                 .padding(dimens.space16)
@@ -135,7 +132,7 @@ private fun ColumnScope.Heading(task: NextUpUi) {
         Column {
             Text(task.title, style = DurtTheme.type.brand, color = colors.ink)
             // Once the photo is involved the tiles go and the deadline joins the line (4e, 4g).
-            val deadline = stringResource(R.string.home_deadline_inline, task.deadline.inlineText())
+            val deadline = task.deadline.phrase()
             val line =
                 when {
                     task.status == NextUpStatus.Scheduled -> task.detail
@@ -157,7 +154,7 @@ private fun ColumnScope.ToDo(
     val from = task.from
     // Both tiles as tall as the taller one when a value wraps at large font scales.
     Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(dimens.space10)) {
-        InfoTile(stringResource(R.string.home_deadline_label), task.deadline.text(), Modifier.weight(1f))
+        InfoTile(task.deadline.timeLabel(), task.deadline.text(), Modifier.weight(1f))
         InfoTile(
             label = stringResource(R.string.home_finish_label),
             value =
@@ -256,15 +253,6 @@ private fun Modifier.dashedBorder(
             cornerRadius = CornerRadius(radius.toPx()),
             style = Stroke(width = stroke, pathEffect = PathEffect.dashPathEffect(floatArrayOf(DASH, DASH))),
         )
-    }
-
-/** The deadline inside a sentence: "yarın 09:00". */
-@Composable
-internal fun DeadlineText.inlineText(): String =
-    when (this) {
-        is DeadlineText.Today -> stringResource(R.string.deadline_today_inline, time)
-        is DeadlineText.Tomorrow -> stringResource(R.string.deadline_tomorrow_inline, time)
-        is DeadlineText.OnDate -> stringResource(R.string.deadline_on_date, day, stringArrayResource(R.array.month_names)[month - 1], time)
     }
 
 /**

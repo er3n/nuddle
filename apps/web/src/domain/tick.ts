@@ -115,7 +115,12 @@ export function handleAction(action: ScheduledAction, ctx: ActionContext): Actio
 export function visibleToRecipient(task: Task, missedCardTtlMs: number, now: Date): boolean {
   switch (task.status) {
     case "MISSED":
-      return now.getTime() < task.statusChangedAt.getTime() + missedCardTtlMs;
+      // A removal counts for this miss only: a task missed again after a new time shows again.
+      return (
+        (task.removedByRecipientAt === null ||
+          task.removedByRecipientAt.getTime() < task.statusChangedAt.getTime()) &&
+        now.getTime() < task.statusChangedAt.getTime() + missedCardTtlMs
+      );
     case "SCHEDULED":
     case "AWAITING_APPROVAL":
     case "REJECTED":

@@ -44,6 +44,7 @@ import app.nuddle.ui.screens.ScreenLayout
 import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.text
+import app.nuddle.ui.screens.home.timeLabel
 import app.nuddle.ui.theme.DurtTheme
 import kotlinx.datetime.LocalTime
 
@@ -111,10 +112,13 @@ fun TaskDetailScreen(
         Text(state.title, style = DurtTheme.type.h1, color = colors.ink, modifier = Modifier.semantics { heading() })
         StatusCard(state)
         SettingsGroup(title = stringResource(R.string.preview_detail)) {
-            LineRow(label = stringResource(R.string.preview_to), value = state.toName)
+            LineRow(
+                label = stringResource(R.string.preview_to),
+                value = if (state.self) stringResource(R.string.home_to_self) else state.toName,
+            )
             GroupDivider()
             LineRow(
-                label = stringResource(R.string.home_deadline_label),
+                label = state.deadline.timeLabel(),
                 value = state.deadline.text(),
                 onClick = { callbacks.onEdit(EditRow.Deadline) },
                 modifier = Modifier.testTag(TestTags.TASK_EDIT_DEADLINE),
@@ -132,7 +136,7 @@ fun TaskDetailScreen(
             )
         }
         Text(
-            stringResource(R.string.task_edit_hint, state.toName),
+            if (state.self) stringResource(R.string.task_edit_hint_self) else stringResource(R.string.task_edit_hint, state.toName),
             style = DurtTheme.type.caption,
             color = colors.textSecondary,
             modifier = Modifier.padding(horizontal = dimens.space8),
@@ -150,7 +154,9 @@ private fun StatusCard(state: TaskDetailUiState) {
     val shape = RoundedCornerShape(dimens.radiusXl)
     val level = state.reachability.level?.let { stringResource(it) }
     val sentence =
-        if (level == null) {
+        if (state.self) {
+            buildAnnotatedString { append(stringResource(R.string.task_reach_self)) }
+        } else if (level == null) {
             buildAnnotatedString { append(stringResource(R.string.task_reach_none, state.toName)) }
         } else {
             val full = stringResource(R.string.task_reach, state.toName, level)
@@ -191,10 +197,14 @@ private fun CancelSheet(
 ) {
     DurtBottomSheet(
         title = stringResource(R.string.cancel_title),
-        description = stringResource(R.string.cancel_body, state.toName, state.myName),
+        description =
+            if (state.self) stringResource(R.string.cancel_body_self) else stringResource(R.string.cancel_body, state.toName, state.myName),
         onDismiss = callbacks.onCancelDismiss,
         primary = cancelAction(state, callbacks),
-    ) { CancelReasons(state, callbacks) }
+    ) {
+        // The reasons are a note for the recipient; nobody else reads one on a task to self.
+        if (!state.self) CancelReasons(state, callbacks)
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class) // Reason: FlowRow is the layout for wrapping chips; no stable alternative.
@@ -233,6 +243,26 @@ private val previewState =
 @Composable
 private fun TaskDetailScreenPreview() {
     DurtTheme { TaskDetailScreen(previewState, TaskDetailCallbacks()) }
+}
+
+/** A task to self at a moment, opened from the next-up card (NUD-47, open-questions#43). */
+@PreviewScreens
+@Composable
+private fun TaskDetailScreenSelfPreview() {
+    DurtTheme {
+        TaskDetailScreen(
+            previewState.copy(
+                title = "Su iç",
+                rawText = "2 dakika sonra su iç",
+                toName = "",
+                self = true,
+                deadline = DeadlineText.Today("19:48", moment = true),
+                detail = null,
+                photo = false,
+            ),
+            TaskDetailCallbacks(),
+        )
+    }
 }
 
 @PreviewScreens

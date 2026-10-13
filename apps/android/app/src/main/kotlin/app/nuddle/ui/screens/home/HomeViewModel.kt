@@ -315,6 +315,8 @@ class HomeViewModel
                             rawText = open.ui.rawText,
                             idempotencyKey = open.key,
                             recipientId = (open.ui.recipient as? RecipientChoice.Person)?.personId,
+                            moment = open.ui.knownDeadline?.moment == true,
+                            missAfterMinutes = open.ui.missAfterMinutes,
                         )
                     }
                 when {

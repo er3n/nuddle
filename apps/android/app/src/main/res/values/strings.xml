@@ -78,6 +78,8 @@
     <string name="home_next_up">Sıradaki</string>
     <string name="home_to_self">Kendine</string>
     <string name="home_deadline_label">Son zaman</string>
+    <!-- The moment of an `at` task, "2 dakika sonra su iç" (ADR 0017, open-questions#43). -->
+    <string name="home_time_label">Zaman</string>
     <string name="home_finish_label">Bitince</string>
     <string name="home_finish_done">\"Bitti\" demen yeter</string>
     <!-- Copy for a photo task to self: open-questions#27. -->
@@ -116,10 +118,13 @@
     <string name="home_sent">Senin yazdıkların</string>
     <!-- 7e, 5d: what needs an answer on home (open-questions#36) -->
     <string name="home_to_me">Sana yazılanlar</string>
-    <string name="issue_from_deadline">%1$s · son zaman %2$s</string>
-    <string name="issue_self_deadline">Kendine · son zaman %1$s</string>
+    <!-- %2$s / %1$s: "son zaman yarın 09:00", or "yarın 09:00" for an `at` task (open-questions#43). -->
+    <string name="issue_from_deadline">%1$s · %2$s</string>
+    <string name="issue_self_deadline">Kendine · %1$s</string>
     <string name="issue_missed_to_me">Son zaman geçti. %1$s haberdar, yeni bir zaman verebilir.</string>
     <string name="issue_missed_self">Son zaman geçti.</string>
+    <string name="issue_missed_to_me_moment">Zamanı geçti. %1$s haberdar, yeni bir zaman verebilir.</string>
+    <string name="issue_missed_self_moment">Zamanı geçti.</string>
     <string name="issue_did_it_later">Sonradan yaptım</string>
     <string name="issue_cancelled_title">%1$s iptal etti: \"%2$s\"</string>
     <string name="issue_pokes_stopped">Dürtmeler durdu</string>
@@ -129,7 +134,9 @@
     <string name="issue_sent_deadline">Son zaman %1$s</string>
     <string name="issue_dropped">%1$s bugün yapamayacağını söyledi.</string>
     <string name="issue_missed_photo">Son zaman geçti, fotoğraf gelmedi.</string>
+    <string name="issue_missed_photo_moment">Zamanı geçti, fotoğraf gelmedi.</string>
     <string name="issue_missed_done">Son zaman geçti, %1$s bitti demedi.</string>
+    <string name="issue_missed_done_moment">Zamanı geçti, %1$s bitti demedi.</string>
     <plurals name="issue_pokes">
         <item quantity="one">%1$d kez dürttüm.</item>
         <item quantity="other">%1$d kez dürttüm.</item>
@@ -244,8 +251,8 @@
     <!-- 4b A task from someone else arrived. open-questions#34: the design says "yarın 09:00'dan önce"; rephrased so the
          time takes no suffix (open-questions#21), and a task finished by "Bitti" has no second sentence. -->
     <string name="task_arrived_title">%1$s sana bir görev yazdı</string>
-    <string name="task_arrived_body">%1$s · son zaman %2$s.</string>
-    <string name="task_arrived_body_photo">%1$s · son zaman %2$s. Bitince fotoğrafını istiyor.</string>
+    <string name="task_arrived_body">%1$s · %2$s.</string>
+    <string name="task_arrived_body_photo">%1$s · %2$s. Bitince fotoğrafını istiyor.</string>
     <string name="task_arrived_calm">Bir şey yapman gerekmiyor. Zamanı gelince seni dürterim.</string>
     <string name="task_arrived_open">Gör</string>
 
@@ -253,6 +260,10 @@
          rephrased so the name takes no suffix. "Dürtmeler başladı" is left out: the plan is hidden from the sender. -->
     <string name="task_detail_title">Görev</string>
     <string name="task_reach">Şu an %1$s için en güçlü dürtme: %2$s. Bitince sana yazarım.</string>
+    <!-- 7c for a task to self, opened from the next-up card (NUD-47). -->
+    <string name="task_reach_self">Zamanı gelince seni dürterim.</string>
+    <string name="task_edit_hint_self">Bir satıra dokunup değiştirebilirsin.</string>
+    <string name="cancel_body_self">Dürtmeler hemen durur.</string>
     <string name="task_reach_none">Şu an %1$s telefonunda dürtülemiyor. Bitince sana yazarım.</string>
     <string name="reach_full_screen">tam ekran</string>
     <string name="reach_sound">sesli bildirim</string>
@@ -314,14 +325,14 @@
     <!-- 7a on the reach_out channel (open-questions#36) -->
     <string name="reach_title">%1$s cevap vermiyor</string>
     <plurals name="reach_body">
-        <item quantity="one">%2$s · son zaman %3$s. %1$d kez dürttüm, cevap yok.</item>
-        <item quantity="other">%2$s · son zaman %3$s. %1$d kez dürttüm, cevap yok.</item>
+        <item quantity="one">%2$s · %3$s. %1$d kez dürttüm, cevap yok.</item>
+        <item quantity="other">%2$s · %3$s. %1$d kez dürttüm, cevap yok.</item>
     </plurals>
     <plurals name="reach_body_full_screen">
-        <item quantity="one">%2$s · son zaman %3$s. %1$d kez dürttüm, tam ekran dahil, cevap yok.</item>
-        <item quantity="other">%2$s · son zaman %3$s. %1$d kez dürttüm, tam ekran dahil, cevap yok.</item>
+        <item quantity="one">%2$s · %3$s. %1$d kez dürttüm, tam ekran dahil, cevap yok.</item>
+        <item quantity="other">%2$s · %3$s. %1$d kez dürttüm, tam ekran dahil, cevap yok.</item>
     </plurals>
-    <string name="reach_body_no_pokes">%1$s · son zaman %2$s. Cevap yok.</string>
+    <string name="reach_body_no_pokes">%1$s · %2$s. Cevap yok.</string>
     <string name="reach_call_hint">Bir arasan iyi olur. Ben dürtmeye devam ediyorum.</string>
     <string name="reach_message">Mesaj</string>
     <string name="photo_arrived_title">%1$s fotoğraf gönderdi</string>
@@ -349,7 +360,7 @@
     <string name="inbox_yesterday">Dün</string>
     <string name="inbox_on_date">%1$d %2$s</string>
     <string name="bell_unreached_title">%1$s cevap vermiyor: %2$s</string>
-    <string name="bell_unreached_body">Son zaman %1$s · bir arasan iyi olur</string>
+    <string name="bell_unreached_body">%1$s · bir arasan iyi olur</string>
     <string name="bell_done_title">%1$s bitirdi: \"%2$s\"</string>
     <string name="bell_said_done">Bitti dedi</string>
     <string name="bell_no_photo">Fotoğrafsız bitti dedi</string>
@@ -599,6 +610,8 @@
     <string name="delete_confirm">Hesabımı sil</string>
     <string name="poke_time_left">son zamana %1$s</string>
     <string name="poke_time_left_sentence">Son zamana %1$s var.</string>
+    <!-- A poke of an `at` task: its moment has come, no time left to count (open-questions#43). -->
+    <string name="poke_moment_now">Zamanı geldi.</string>
     <string name="duration_minutes">%1$d dk</string>
     <plurals name="duration_hours">
         <item quantity="one">%1$d saat</item>

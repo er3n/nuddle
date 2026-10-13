@@ -248,6 +248,19 @@ describe("scenarios: task lifecycle", () => {
     expect(world.task(taskId)).toMatchObject({ status: "DONE", late: true });
   });
 
+  it("missed card: Kaldır takes it off Eren's list at once, Sibel still sees it missed (NUD-49)", async () => {
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.trashToEren);
+    await world.advanceTo(at("2026-10-12T19:01:00"));
+    expect(eren.phone.inList.get(taskId)).toBe(true);
+
+    expect(await sibel.removeMissed(taskId)).toEqual({ ok: false, error: "not_recipient" });
+    expect(await eren.removeMissed(taskId)).toEqual({ ok: true });
+    await eren.phone.sync();
+    expect(eren.phone.inList.get(taskId)).toBe(false);
+    expect(world.task(taskId).status).toBe("MISSED");
+  });
+
   it("missed, then 'Süreyi uzat' (5d): poking starts again for the new deadline", async () => {
     const { world, sibel, eren } = await sibelAndEren();
     const taskId = await writeTask(sibel, TEXT.trashToEren);

@@ -46,6 +46,18 @@ class NextUpTest {
     }
 
     @Test
+    fun `an at task shows and sorts by its moment, not by the deadline after its grace (ADR 0017)`() {
+        // "2 dakika sonra su iç": moment 20:02, missed at 20:32.
+        val water =
+            selfTask("water", "2026-10-11T20:32:00+03:00")
+                .copy(remindAt = Instant.parse("2026-10-11T20:02:00+03:00").toEpochMilliseconds())
+        val bill = selfTask("bill", "2026-10-11T20:20:00+03:00")
+        val card = nextUp(listOf(bill, water), Cast.EREN_ID, emptyMap(), now, istanbul)
+        assertEquals("water", card?.taskId)
+        assertEquals(DeadlineText.Today("20:02", moment = true), card?.deadline)
+    }
+
+    @Test
     fun `closed tasks and tasks off my list are not next up`() {
         val dropped = selfTask("dropped", "2026-10-12T09:00:00+03:00", status = "DROPPED")
         val hidden = selfTask("hidden", "2026-10-12T09:00:00+03:00").copy(inRecipientList = false)

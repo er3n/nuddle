@@ -57,6 +57,7 @@ sealed interface ComposeState { data object Idle; data class Typing(val text: St
     primary: Action, secondary: Action?)                              // avatar 32, message box, 1-2 actions
 @Composable fun StatusPill(status: TaskStatus)
 ```
+- TaskActionCard: an optional `onRemove` puts a small close button (×, "Kaldır") in the card's top right; the recipient's missed card uses it (NUD-49).
 - TaskRow: white card, 1 dp `border`, radius 16, padding 12x14. Title 15/600 single line with ellipsis. Sub line 13 `textSecondary`: "Person · deadline" or a status sentence. `highlighted`: 2 dp `accent` border, for the task that just went out (4i).
 - TaskActionCard: for states that need a decision (missed, dropped, awaiting approval). Radius 20, message box `background` radius 12, action buttons 42 dp.
 - StatusPill: 12/600, horizontal padding 10, height 24. Mapping in `screens.md` (Status to UI).

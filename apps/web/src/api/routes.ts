@@ -406,6 +406,20 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
       );
     });
 
+  app.openapi(
+    command(
+      "remove_missed",
+      "removeMissed",
+      "Recipient: Kaldır on a missed card (only off their own list)",
+      s.RemoveMissedCommand,
+      s.TaskCommandResult,
+    ),
+    async (c) => {
+      const b = c.req.valid("json");
+      return c.json(await svc.removeMissed(deps, await person(c.get("caller")), b), 200);
+    },
+  );
+
   taskCommand("done", "done", "Recipient: Bitti", s.DoneCommand, (b) => ({
     type: "done",
     ...(b.cameraUnavailable === undefined ? {} : { cameraUnavailable: b.cameraUnavailable }),

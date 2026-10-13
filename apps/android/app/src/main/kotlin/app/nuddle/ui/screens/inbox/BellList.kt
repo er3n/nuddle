@@ -19,6 +19,7 @@ import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.WrittenText
 import app.nuddle.ui.screens.home.inlineText
+import app.nuddle.ui.screens.home.startPhrase
 import app.nuddle.ui.theme.DurtTheme
 
 @Composable
@@ -76,7 +77,7 @@ private fun BellRow(
             InboxItem(
                 icon = DurtIcons.Warning,
                 title = stringResource(R.string.bell_unreached_title, entry.name, entry.title),
-                subtitle = stringResource(R.string.bell_unreached_body, entry.deadline.inlineText()),
+                subtitle = stringResource(R.string.bell_unreached_body, entry.deadline.startPhrase()),
                 time = entry.time,
                 unread = entry.open,
                 onClick = if (entry.open) ({ onOpenTask(entry.taskId) }) else null,

@@ -72,7 +72,7 @@ All of these live in pure functions that receive `now` from an injected `Clock` 
 | Quiet hours | Default 23:00-07:00 in the recipient's time zone, editable. No channel fires inside the window, full screen included. Checked when planning on the server and again on the device right before ringing. |
 | Deadline inside quiet hours | The plan moves pokes earlier so the last one lands before quiet hours start. |
 | Auto-approve | 3 hours after the photo is sent. |
-| Missed card | Removed from the recipient's list 1 day after `MISSED`. |
+| Missed card | Removed from the recipient's list 1 day after `MISSED`, or at once when the recipient taps "Kaldır" on it (NUD-49). Removing only hides it on the recipient's side: the task stays `MISSED`, the sender still sees it. |
 | Undo toast | 5 seconds after send, 10 seconds when TalkBack is on. Timeout confirms the task. |
 | Done note | 4 seconds. |
 | OTP | 6 digits. 3 wrong codes per phone, the remaining ones shown, then a 15 minute wait in which no code is checked or sent (open-questions #41). A sign-in clears the count; a new code does not. Resend countdown on the code screen. |

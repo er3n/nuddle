@@ -125,6 +125,9 @@ export class SimPhone {
     await this.sync();
   }
 
+  /** Whether each task is on this phone's list, as the last sync said (a missed card leaves it, NUD-49). */
+  readonly inList = new Map<TaskId, boolean>();
+
   /** GET /api/v1/sync from the last cursor and store newer plans. */
   async sync(): Promise<void> {
     if (!this.online || this.device.fid === null) return;
@@ -136,7 +139,10 @@ export class SimPhone {
     );
     this.cursor = data.cursor;
     this.device = { ...this.device, lastSeenAt: this.world.clock.now() };
-    for (const task of data.tasks) this.snoozes.set(task.id, task.snoozesUsed ?? 0);
+    for (const task of data.tasks) {
+      this.snoozes.set(task.id, task.snoozesUsed ?? 0);
+      this.inList.set(task.id, task.inRecipientList);
+    }
     for (const e of data.events)
       this.events.push({ taskId: e.taskId, type: e.type, payload: e.payload });
     for (const plan of data.plans) {
@@ -242,6 +248,15 @@ export class Client {
 
   get phone(): SimPhone {
     return this.world.phoneOf(this.id);
+  }
+
+  /** "Kaldır" on a missed card (NUD-49). */
+  async removeMissed(taskId: TaskId): Promise<CommandResult> {
+    const r = await this.api.POST("/api/v1/commands/remove_missed", {
+      body: { idempotencyKey: uuidv7(), taskId },
+    });
+    await this.world.refresh();
+    return r.error ? { ok: false, error: r.error.error.name as DomainError } : { ok: true };
   }
 
   /** Write free text in the one input box. A text queued offline (6a) is sent again with its [idempotencyKey]. */

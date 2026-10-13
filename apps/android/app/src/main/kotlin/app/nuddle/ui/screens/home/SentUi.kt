@@ -5,6 +5,7 @@ import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.TaskStatus
 import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.TaskEntity
+import app.nuddle.data.db.shownTime
 import kotlinx.datetime.TimeZone
 import kotlin.time.Instant
 
@@ -41,14 +42,14 @@ fun sentTasks(
 ): List<SentUi> =
     tasks
         .filter { it.senderId == me && it.recipientId != me && it.status in SENT_STATUSES }
-        .sortedWith(compareBy({ it.status != TaskStatus.AWAITING_APPROVAL.value }, { it.deadline }))
+        .sortedWith(compareBy({ it.status != TaskStatus.AWAITING_APPROVAL.value }, { it.shownTime }))
         .mapNotNull { task ->
             val to = connections[task.recipientId] ?: return@mapNotNull null
             SentUi(
                 taskId = task.id,
                 title = task.title,
                 detail = task.detail,
-                deadline = deadlineText(Instant.fromEpochMilliseconds(task.deadline), now, timeZone),
+                deadline = task.timeText(now, timeZone),
                 photo = task.finishMode == FinishMode.PHOTO.value,
                 toId = to.personId,
                 toName = to.displayName,
