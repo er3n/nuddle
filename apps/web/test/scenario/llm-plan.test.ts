@@ -90,6 +90,7 @@ describe("scenarios: LLM poke plan", () => {
       relationship: "spouse",
       outcome: "DONE",
       actedAt: at("2026-10-12T18:40:00"),
+      actedAfter: { poke: 2, level: "SOUND" },
     });
     expect(asked?.history[0]?.pokes.map((p) => p.level)).toEqual(["SILENT", "SOUND"]);
     expect(world.violations).toEqual([]);

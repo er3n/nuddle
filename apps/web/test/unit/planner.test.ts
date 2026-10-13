@@ -169,6 +169,8 @@ describe("historyItem", () => {
       cantToday: false,
     });
     expect(item.pokes.map((p) => p.level)).toEqual(["SILENT", "SOUND"]);
+    // Acted 3m55s after the second poke that rang.
+    expect(item.actedAfter).toEqual({ poke: 2, level: "SOUND", secondsAfter: 235 });
   });
 });
 
