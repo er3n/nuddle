@@ -88,6 +88,9 @@ wait_one() {
     "$ADB" -s "$serial" shell settings put global "$s" 0
   done
   "$ADB" -s "$serial" shell svc power stayon true
+  # A slow emulator (software GPU on a CI runner) shows "System UI isn't responding" over the app, which hides
+  # every element from Maestro. The app under test is still checked by its own flows.
+  "$ADB" -s "$serial" shell settings put global hide_error_dialogs 1
   echo "$serial booted"
 }
 
