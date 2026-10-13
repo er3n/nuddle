@@ -21,7 +21,9 @@ ADB="$ANDROID_HOME/platform-tools/adb"
 EMULATOR="$ANDROID_HOME/emulator/emulator"
 AVDMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager"
 SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-AVD_HOME="${ANDROID_AVD_HOME:-$HOME/.android/avd}"
+# avdmanager and the emulator pick their own default AVD folder (XDG_CONFIG_HOME on a GitHub runner), so pin one for both.
+export ANDROID_AVD_HOME="${ANDROID_AVD_HOME:-$HOME/.android/avd}"
+AVD_HOME="$ANDROID_AVD_HOME"
 BOOT_TIMEOUT_S=${E2E_BOOT_TIMEOUT_S:-300}
 
 # role:avd:port
@@ -40,6 +42,7 @@ create_one() {
   local avd=$1
   if [[ -d "$AVD_HOME/$avd.avd" ]]; then return; fi
   echo "creating AVD $avd"
+  mkdir -p "$AVD_HOME"
   echo no | "$AVDMANAGER" create avd --name "$avd" --package "$IMAGE" --force >/dev/null
   # Galaxy S23: 1080 x 2340 px, 480 dpi (about 360 x 780 dp). Published values, not measured.
   cat >>"$AVD_HOME/$avd.avd/config.ini" <<EOF
@@ -85,6 +88,9 @@ wait_one() {
     "$ADB" -s "$serial" shell settings put global "$s" 0
   done
   "$ADB" -s "$serial" shell svc power stayon true
+  # A slow emulator (software GPU on a CI runner) shows "System UI isn't responding" over the app, which hides
+  # every element from Maestro. The app under test is still checked by its own flows.
+  "$ADB" -s "$serial" shell settings put global hide_error_dialogs 1
   echo "$serial booted"
 }
 
