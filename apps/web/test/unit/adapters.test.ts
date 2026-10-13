@@ -73,7 +73,7 @@ describe("TwilioOtpSender", () => {
 });
 
 describe("FcmPushSender", () => {
-  it("sends a high priority data message to every device of the person", async () => {
+  it("sends a high priority data message to the FID of every device of the person", async () => {
     const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
     const app = initializeApp(
       {
@@ -106,15 +106,15 @@ describe("FcmPushSender", () => {
     );
 
     const push = new FcmPushSender(messaging, (id) =>
-      Promise.resolve(id === "eren" ? ["token-a", "token-b"] : []),
+      Promise.resolve(id === "eren" ? ["fid-a", "fid-b"] : []),
     );
     await push.send({ to: "eren", hint: "plan_changed", taskId: "task-1", event: "created" });
     await push.send({ to: "selin", hint: "sync", taskId: null, event: "invite_accepted" });
 
     expect(sent).toEqual(
-      ["token-a", "token-b"].map((token) => ({
+      ["fid-a", "fid-b"].map((fid) => ({
         message: {
-          token,
+          fid,
           data: { hint: "plan_changed", taskId: "task-1", event: "created" },
           android: { priority: "high" },
         },

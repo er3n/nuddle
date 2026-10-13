@@ -15,7 +15,7 @@ Items marked **(proposed)** are reasonable defaults that were not explicitly dec
 | Task event | `task_events` | Append-only log of everything that happens to a task. It is also the sync feed (see `architecture.md`). |
 | Poke step | `poke_steps` **(proposed table)** | The plan: ordered steps with planned time and level, versioned per task. Never exposed to clients except the recipient's device, which needs times and levels to set alarms. |
 | Scheduled action | `scheduled_actions` | Server-side timers: deadline check, approval timeout, human channel check, lost poke check, missed card expiry. Executed by `tick(now)`. |
-| Device | `devices` **(proposed table)** | Person, FCM token, platform, app version, last seen, permission summary (notifications, exact alarm, full screen, channel states). Source of reachability. |
+| Device | `devices` **(proposed table)** | Person, Firebase Installation ID (FID, ADR 0015), platform, app version, last seen, permission summary (notifications, exact alarm, full screen, channel states). Source of reachability. |
 | Idempotency key | `idempotency_keys` **(proposed table)** | Command key, caller, stored result. Replayed commands return the stored result (ADR 0006). |
 | Photo | Supabase Storage + row on the task event | Private bucket, path per task. Deleted when the task closes. |
 

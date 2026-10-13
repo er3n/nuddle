@@ -251,7 +251,8 @@ export const devices = pgTable(
     personId: uuid("person_id")
       .notNull()
       .references(() => people.id),
-    fcmToken: text("fcm_token").notNull().unique(),
+    // Firebase Installation ID; FCM targets it with `fids` (ADR 0015).
+    fid: text("fid").notNull().unique(),
     platform: devicePlatform("platform").notNull(),
     appVersion: text("app_version").notNull(),
     // Notifications, exact alarm, full screen and channel states as reported by the device.

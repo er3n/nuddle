@@ -7,7 +7,9 @@ import app.nuddle.api.model.RegisterDeviceRequest
 import app.nuddle.data.api.ApiResult
 import app.nuddle.data.api.apiCall
 import app.nuddle.data.session.SessionStore
+import com.google.android.gms.tasks.Task
 import com.google.firebase.FirebaseApp
+import com.google.firebase.installations.FirebaseInstallations
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -17,8 +19,9 @@ import javax.inject.Singleton
 import kotlin.coroutines.resume
 
 /**
- * `POST /api/v1/devices` with the FCM token and the permission summary; the returned `deviceId` goes back on sync
- * and `report_fired` (NUD-26). Sent on every launch and when the token changes (docs/domain.md, Device execution).
+ * `POST /api/v1/devices` with the Firebase Installation ID and the permission summary; the returned `deviceId` goes
+ * back on sync and `report_fired`. Sent on every launch and when FCM reports a new registration (docs/domain.md,
+ * Device execution; ADR 0015).
  */
 @Singleton
 class DeviceRegistrar
@@ -31,14 +34,14 @@ class DeviceRegistrar
         private val json: Json,
     ) {
         /** Returns false when it should be tried again later. Without Firebase config (CI, fresh clone) it is skipped. */
-        suspend fun register(token: String? = null): Boolean {
+        suspend fun register(fid: String? = null): Boolean {
             if (sessions.current()?.registered != true) return true
             if (FirebaseApp.getApps(context).isEmpty()) return true
-            val fcmToken = token ?: currentToken() ?: return false
+            val installationId = fid ?: currentFid() ?: return false
             val request =
                 RegisterDeviceRequest(
                     deviceId = sessions.deviceId(),
-                    fcmToken = fcmToken,
+                    fid = installationId,
                     platform = RegisterDeviceRequest.Platform.ANDROID,
                     appVersion = BuildConfig.VERSION_NAME,
                     permissions = permissions.summary(),
@@ -48,14 +51,22 @@ class DeviceRegistrar
             return result is ApiResult.Success
         }
 
-        // Reason: Firebase deprecates registration tokens in favor of installation IDs; NUD-26 keeps tokens until the
-        // server, the devices table and the contract move together.
-        @Suppress("DEPRECATION")
-        private suspend fun currentToken(): String? =
+        /** Registers this install with FCM, then reads its FID. Null when either step fails. */
+        private suspend fun currentFid(): String? {
+            if (await(FirebaseMessaging.getInstance().register()).isFailure) return null
+            return await(FirebaseInstallations.getInstance().id).getOrNull()
+        }
+
+        private suspend fun <T> await(task: Task<T>): Result<T> =
             suspendCancellableCoroutine { continuation ->
-                FirebaseMessaging
-                    .getInstance()
-                    .token
-                    .addOnCompleteListener { task -> continuation.resume(if (task.isSuccessful) task.result else null) }
+                task.addOnCompleteListener {
+                    val result =
+                        if (it.isSuccessful) {
+                            Result.success(it.result)
+                        } else {
+                            Result.failure(it.exception ?: IllegalStateException("task failed"))
+                        }
+                    continuation.resume(result)
+                }
             }
     }

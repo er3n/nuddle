@@ -177,6 +177,7 @@ dependencies {
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
+    implementation(libs.firebase.installations)
     implementation(libs.firebase.crashlytics)
 
     testImplementation(libs.junit)

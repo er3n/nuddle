@@ -237,7 +237,8 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
       method: "post",
       path: "/v1/devices",
       operationId: "registerDevice",
-      summary: "Register the device: FCM token and permission summary (source of reachability)",
+      summary:
+        "Register the device: Firebase Installation ID and permission summary (source of reachability)",
       tags: ["devices"],
       security: [{ bearer: [] }],
       request: { body: { required: true, content: json(s.RegisterDeviceRequest) } },
