@@ -122,7 +122,7 @@ class TestTagsTest {
 
     @Test
     fun invitedWelcome() {
-        content { WelcomeScreen(WelcomeUiState(inviterName = "Selin"), onStart = {}, onTerms = {}, onPrivacy = {}) }
+        content { WelcomeScreen(WelcomeUiState(inviterName = "Sibel"), onStart = {}, onTerms = {}, onPrivacy = {}) }
         assertShown(TestTags.WELCOME_INVITER)
     }
 
@@ -173,7 +173,7 @@ class TestTagsTest {
 
     @Test
     fun name() {
-        content { NameScreen(NameUiState(name = "Selin"), onNameChange = {}, onContinue = { clicked += "continue" }) }
+        content { NameScreen(NameUiState(name = "Sibel"), onNameChange = {}, onContinue = { clicked += "continue" }) }
         assertShown(TestTags.NAME_INPUT)
         assertTaps(TestTags.NAME_CONTINUE to "continue")
     }
@@ -243,7 +243,7 @@ class TestTagsTest {
 
     @Test
     fun `home with a task I sent`() {
-        val sent = SentUi("task-1", "Para çek", null, DeadlineText.Tomorrow("09:00"), photo = false, toId = Cast.SELIN_ID, toName = "Selin")
+        val sent = SentUi("task-1", "Para çek", null, DeadlineText.Tomorrow("09:00"), photo = false, toId = Cast.SIBEL_ID, toName = "Sibel")
         content {
             HomeScreen(
                 state = HomeUiState(myName = "Eren", connected = true, sent = listOf(sent)),
@@ -267,7 +267,7 @@ class TestTagsTest {
                 myName = "Eren",
                 title = "Para çek",
                 rawText = null,
-                toName = "Selin",
+                toName = "Sibel",
                 reachability = Reachability.SOUND,
                 deadline = DeadlineText.Tomorrow("09:00"),
                 detail = null,
@@ -285,7 +285,7 @@ class TestTagsTest {
 
     @Test
     fun `photo, checking the shot`() {
-        val state = PhotoUiState("Para çek", "Selin", null, stage = PhotoStage.Review(ImageBitmap(3, 4)))
+        val state = PhotoUiState("Para çek", "Sibel", null, stage = PhotoStage.Review(ImageBitmap(3, 4)))
         content {
             PhotoScreen(
                 state,
@@ -352,7 +352,7 @@ class TestTagsTest {
 
     @Test
     fun `photo upload failed`() {
-        content { UnsentPhotoScreen(UnsentPhotoUiState("Selin", null), onBack = { clicked += "back" }, onRetry = { clicked += "retry" }) }
+        content { UnsentPhotoScreen(UnsentPhotoUiState("Sibel", null), onBack = { clicked += "back" }, onRetry = { clicked += "retry" }) }
         assertTaps(TestTags.UNSENT_RETRY to "retry")
     }
 
@@ -371,7 +371,7 @@ class TestTagsTest {
                                 null,
                                 DeadlineText.Today("09:00"),
                                 photo = true,
-                                from = FromUi("Selin", WrittenText.Today("08:00"), null),
+                                from = FromUi("Sibel", WrittenText.Today("08:00"), null),
                                 status = NextUpStatus.AwaitingApproval,
                                 uploadFailed = true,
                             ),
@@ -390,8 +390,8 @@ class TestTagsTest {
     }
 
     @Test
-    fun `home with a task from Selin`() {
-        val from = FromUi("Selin", WrittenText.Today("14:32"), Cast.SELIN_PHONE)
+    fun `home with a task from Sibel`() {
+        val from = FromUi("Sibel", WrittenText.Today("14:32"), Cast.SIBEL_PHONE)
         content {
             HomeScreen(
                 state =
@@ -417,8 +417,8 @@ class TestTagsTest {
         assertShown(TestTags.HOME_NEXT_UP)
         assertTaps(
             TestTags.HOME_DONE_EARLY to "doneEarly",
-            TestTags.HOME_CALL to "call ${Cast.SELIN_PHONE}",
-            TestTags.HOME_MESSAGE to "message ${Cast.SELIN_PHONE}",
+            TestTags.HOME_CALL to "call ${Cast.SIBEL_PHONE}",
+            TestTags.HOME_MESSAGE to "message ${Cast.SIBEL_PHONE}",
         )
     }
 
@@ -477,7 +477,7 @@ class TestTagsTest {
     fun `invite, ready to send`() {
         content {
             InviteScreen(
-                InviteUiState(contact = Invitee("Selin", "+905329876543"), relationship = EdgeType.SPOUSE),
+                InviteUiState(contact = Invitee("Sibel", "+905329876543"), relationship = EdgeType.SPOUSE),
                 InviteCallbacks(onPickContact = { clicked += "change" }, onSend = { clicked += "send" }),
             )
         }
@@ -492,7 +492,7 @@ class TestTagsTest {
 
     @Test
     fun `home with a pending invite`() {
-        val invite = PendingInviteUi("i1", "abc", "Selin", EdgeType.SPOUSE, DeadlineText.Today("14:32"))
+        val invite = PendingInviteUi("i1", "abc", "Sibel", EdgeType.SPOUSE, DeadlineText.Today("14:32"))
         content {
             HomeScreen(
                 state = HomeUiState(myName = "Eren", pendingInvite = invite),
@@ -515,7 +515,7 @@ class TestTagsTest {
     fun `consent after sign-in`() {
         content {
             ConsentScreen(
-                ConsentUiState("Selin", EdgeType.SPOUSE, EdgeType.SPOUSE, "23:00", "07:00"),
+                ConsentUiState("Sibel", EdgeType.SPOUSE, EdgeType.SPOUSE, "23:00", "07:00"),
                 ConsentCallbacks(
                     onAllow = { clicked += "allow" },
                     onLater = { clicked += "later" },
@@ -531,7 +531,7 @@ class TestTagsTest {
     fun `invite detail from the bell`() {
         content {
             ConsentScreen(
-                ConsentUiState("Selin", EdgeType.SPOUSE, EdgeType.SPOUSE, "23:00", "07:00", fromBell = true),
+                ConsentUiState("Sibel", EdgeType.SPOUSE, EdgeType.SPOUSE, "23:00", "07:00", fromBell = true),
                 ConsentCallbacks(onDecline = { clicked += "decline" }, onBack = { clicked += "back" }),
             )
         }
@@ -540,7 +540,7 @@ class TestTagsTest {
 
     @Test
     fun matched() {
-        content { MatchedScreen("Selin", "Eren", onStart = { clicked += "start" }) }
+        content { MatchedScreen("Sibel", "Eren", onStart = { clicked += "start" }) }
         assertShown(TestTags.MATCHED)
         assertTaps(TestTags.MATCHED_START to "start")
     }
@@ -549,7 +549,7 @@ class TestTagsTest {
     fun `bell with an invite`() {
         content {
             InboxScreen(
-                InboxUiState(listOf(InboxInviteUi("i1", "Selin", Ago.Hours(2)))),
+                InboxUiState(listOf(InboxInviteUi("i1", "Sibel", Ago.Hours(2)))),
                 onBack = { clicked += "back" },
                 onOpenInvite = { clicked += "open" },
             )
@@ -598,7 +598,7 @@ class TestTagsTest {
     private fun homeWith(compose: ComposeState) {
         content {
             HomeScreen(
-                state = HomeUiState(myName = "Selin", compose = compose),
+                state = HomeUiState(myName = "Sibel", compose = compose),
                 onBell = { clicked += "bell" },
                 onProfile = { clicked += "profile" },
                 onInvite = { clicked += "invite" },

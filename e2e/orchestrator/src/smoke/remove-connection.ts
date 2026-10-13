@@ -1,5 +1,5 @@
-// Smoke 8 (docs/testing.md, Smoke set), with the slice 6 screens: Eren opens profile (5a), then Selin (5b), and
-// removes the connection. The task Selin gave a new time in smoke 7 is cancelled with reason connection_removed, his
+// Smoke 8 (docs/testing.md, Smoke set), with the slice 6 screens: Eren opens profile (5a), then Sibel (5b), and
+// removes the connection. The task Sibel gave a new time in smoke 7 is cancelled with reason connection_removed, his
 // alarms for it go, and both sides see the connection as removed.
 // Runs after smoke 7: that task is SCHEDULED with alarms on Eren's device.
 import { Phone, signIn } from "../api";
@@ -8,12 +8,12 @@ import { devices } from "../devices";
 import { waitFor } from "../proc";
 
 const EREN_PHONE = "+905320000002";
-const SELIN_PHONE = "+905320000001";
+const SIBEL_PHONE = "+905320000001";
 
 export async function removeConnection(run: RunContext): Promise<void> {
   const { eren } = devices;
   const erenApi = new Phone(await signIn(EREN_PHONE));
-  const selinApi = new Phone(await signIn(SELIN_PHONE));
+  const sibelApi = new Phone(await signIn(SIBEL_PHONE));
 
   const taskId = await run.step("open-task-before-removal", async () => {
     const task = (await erenApi.tasks()).find((t) => t.status === "SCHEDULED");
@@ -21,7 +21,7 @@ export async function removeConnection(run: RunContext): Promise<void> {
     return task.id;
   });
 
-  await run.step("eren-removes-selin", async (dir) => {
+  await run.step("eren-removes-sibel", async (dir) => {
     await eren.wakeAndUnlock();
     await eren.maestro("eren/remove-connection.yaml", dir);
   });
@@ -37,7 +37,7 @@ export async function removeConnection(run: RunContext): Promise<void> {
     );
     for (const [who, api] of [
       ["Eren", erenApi],
-      ["Selin", selinApi],
+      ["Sibel", sibelApi],
     ] as const) {
       const statuses = (await api.connections()).map((c) => c.status);
       if (statuses.length === 0 || statuses.some((s) => s !== "removed")) {

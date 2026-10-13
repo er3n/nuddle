@@ -13,13 +13,13 @@ import {
 import type { Edge } from "../../src/domain/types";
 import { aPerson, aTask } from "../builders";
 
-const selin = aPerson("Selin");
+const sibel = aPerson("Sibel");
 const eren = aPerson("Eren");
 const now = new Date("2026-10-11T20:00:00+03:00");
 
 const invite: Invite = {
   id: "i1",
-  inviterId: "selin",
+  inviterId: "sibel",
   inviteePhone: eren.phone,
   relationship: "spouse",
   prefilledName: "Eren",
@@ -29,7 +29,7 @@ const invite: Invite = {
 
 describe("invites", () => {
   it("cannot invite yourself", () => {
-    expect(createInvite({ ...invite, inviteePhone: selin.phone }, selin)).toEqual({
+    expect(createInvite({ ...invite, inviteePhone: sibel.phone }, sibel)).toEqual({
       ok: false,
       error: "self_invite",
     });
@@ -41,7 +41,7 @@ describe("invites", () => {
     expect(r.value.invite.status).toBe("accepted");
     expect(r.value.edges).toEqual([
       {
-        fromPersonId: "selin",
+        fromPersonId: "sibel",
         toPersonId: "eren",
         type: "spouse",
         status: "active",
@@ -49,14 +49,14 @@ describe("invites", () => {
       },
       {
         fromPersonId: "eren",
-        toPersonId: "selin",
+        toPersonId: "sibel",
         type: "spouse",
         status: "active",
         notifyMe: true,
       },
     ]);
     expect(r.value.pushes).toEqual([
-      { to: "selin", hint: "sync", taskId: null, event: "invite_accepted" },
+      { to: "sibel", hint: "sync", taskId: null, event: "invite_accepted" },
     ]);
   });
 
@@ -76,13 +76,13 @@ describe("invites", () => {
 
   it("only the inviter revokes, while the invite is open to them", () => {
     expect(revokeInvite(invite, eren)).toEqual({ ok: false, error: "not_inviter" });
-    expect(revokeInvite(invite, selin)).toEqual({
+    expect(revokeInvite(invite, sibel)).toEqual({
       ok: true,
       value: { ...invite, status: "revoked" },
     });
     // A decline looks open to the inviter, so it can still be taken back.
-    expect(revokeInvite({ ...invite, status: "declined" }, selin).ok).toBe(true);
-    expect(revokeInvite({ ...invite, status: "accepted" }, selin)).toEqual({
+    expect(revokeInvite({ ...invite, status: "declined" }, sibel).ok).toBe(true);
+    expect(revokeInvite({ ...invite, status: "accepted" }, sibel)).toEqual({
       ok: false,
       error: "invite_not_open",
     });
@@ -100,7 +100,7 @@ describe("deleteAccount", () => {
   it("removes connections and cancels open tasks on both sides", () => {
     const edges: Edge[] = [
       {
-        fromPersonId: "selin",
+        fromPersonId: "sibel",
         toPersonId: "eren",
         type: "spouse",
         status: "active",
@@ -108,13 +108,13 @@ describe("deleteAccount", () => {
       },
       {
         fromPersonId: "eren",
-        toPersonId: "selin",
+        toPersonId: "sibel",
         type: "spouse",
         status: "active",
         notifyMe: true,
       },
     ];
-    const ctx = { sender: selin, recipient: eren, reachability: "NONE" as const, history: [], now };
+    const ctx = { sender: sibel, recipient: eren, reachability: "NONE" as const, history: [], now };
     const r = deleteAccount(
       eren,
       edges,
@@ -133,13 +133,13 @@ describe("deleteAccount", () => {
 describe("person detail (5b)", () => {
   const mine: Edge = {
     fromPersonId: "eren",
-    toPersonId: "selin",
+    toPersonId: "sibel",
     type: "spouse",
     status: "active",
     notifyMe: true,
   };
-  const theirs: Edge = { ...mine, fromPersonId: "selin", toPersonId: "eren", type: "other" };
-  const ctx = { sender: selin, recipient: eren, reachability: "NONE" as const, history: [], now };
+  const theirs: Edge = { ...mine, fromPersonId: "sibel", toPersonId: "eren", type: "other" };
+  const ctx = { sender: sibel, recipient: eren, reachability: "NONE" as const, history: [], now };
 
   it("changes only my own edge: relationship and the switch for their tasks", () => {
     expect(changeConnection(mine, { relationship: "roommate" })).toEqual({
@@ -164,12 +164,12 @@ describe("person detail (5b)", () => {
   });
 
   it("removing drops both edges and cancels what is not closed, in both directions", () => {
-    const toMe = { ...aTask().build(), id: "to-me", senderId: "selin", recipientId: "eren" };
+    const toMe = { ...aTask().build(), id: "to-me", senderId: "sibel", recipientId: "eren" };
     const fromMe = {
       ...aTask().withStatus("MISSED").build(),
       id: "from-me",
       senderId: "eren",
-      recipientId: "selin",
+      recipientId: "sibel",
     };
     const done = { ...aTask().withStatus("DONE").build(), id: "done" };
     const r = removeConnection(
@@ -177,7 +177,7 @@ describe("person detail (5b)", () => {
       [mine, theirs],
       [
         { task: toMe, ctx },
-        { task: fromMe, ctx: { ...ctx, sender: eren, recipient: selin } },
+        { task: fromMe, ctx: { ...ctx, sender: eren, recipient: sibel } },
         { task: done, ctx },
       ],
     );

@@ -92,12 +92,12 @@ class HomeOfflineTest {
     fun `offline, the banner shows and a text waits on the phone as Sırada, the bar empty again`() =
         runTest(main.dispatcher) {
             ready()
-            write("selin akşama kadar faturayı ödesin")
+            write("sibel akşama kadar faturayı ödesin")
 
             val state = vm.state.value!!
             assertTrue(state.offline)
             assertEquals(ComposeState.Idle, state.compose)
-            assertEquals(listOf("selin akşama kadar faturayı ödesin"), state.queued.map(QueuedUi::text))
+            assertEquals(listOf("sibel akşama kadar faturayı ödesin"), state.queued.map(QueuedUi::text))
         }
 
     @Test
@@ -114,7 +114,7 @@ class HomeOfflineTest {
     fun `back online, queued texts go out oldest first with the key they got`() =
         runTest(main.dispatcher) {
             ready()
-            write("selin akşama kadar faturayı ödesin")
+            write("sibel akşama kadar faturayı ödesin")
             clock.now += 1.minutes
             write("yarın 8de spor yap")
             val keys = queued.all.map { it.idempotencyKey }
@@ -123,7 +123,7 @@ class HomeOfflineTest {
 
             connectivity.online.value = true
 
-            assertEquals(listOf("selin akşama kadar faturayı ödesin", "yarın 8de spor yap"), tasks.written.map { it.first })
+            assertEquals(listOf("sibel akşama kadar faturayı ödesin", "yarın 8de spor yap"), tasks.written.map { it.first })
             assertEquals(keys, tasks.written.map { it.second })
             assertEquals(emptyList(), vm.state.value?.queued)
             assertEquals(false, vm.state.value?.offline)

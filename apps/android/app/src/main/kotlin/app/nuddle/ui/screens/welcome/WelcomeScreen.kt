@@ -285,5 +285,5 @@ private fun WelcomeScreenPreview() {
 @PreviewScreens
 @Composable
 private fun WelcomeInvitedScreenPreview() {
-    DurtTheme { WelcomeScreen(WelcomeUiState(inviterName = "Selin"), onStart = {}, onTerms = {}, onPrivacy = {}) }
+    DurtTheme { WelcomeScreen(WelcomeUiState(inviterName = "Sibel"), onStart = {}, onTerms = {}, onPrivacy = {}) }
 }

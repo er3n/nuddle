@@ -112,7 +112,7 @@ private fun BellRow(
     }
 }
 
-/** 7b as Selin sees it (SelinBell.png). */
+/** 7b as Sibel sees it (SibelBell.png). */
 @PreviewScreens
 @Composable
 private fun InboxScreenBellPreview() {

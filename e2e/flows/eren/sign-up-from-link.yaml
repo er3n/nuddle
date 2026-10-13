@@ -1,5 +1,5 @@
-# Eren opens Selin's invite link before he has an account (0b, ADR 0016): the welcome shows who
-# invites, and the name screen (0e) starts with the name Selin typed. The orchestrator opens the link
+# Eren opens Sibel's invite link before he has an account (0b, ADR 0016): the welcome shows who
+# invites, and the name screen (0e) starts with the name Sibel typed. The orchestrator opens the link
 # with `am start`; the app was installed with every permission and never opened, so it is signed out.
 # PHONE comes from the orchestrator.
 appId: app.nuddle.debug
@@ -10,7 +10,7 @@ env:
     visible:
       id: welcome.inviter
     timeout: 30000
-- assertVisible: "Selin seni dürt'e davet etti"
+- assertVisible: "Sibel seni dürt'e davet etti"
 - tapOn:
     id: welcome.start
 - tapOn:
@@ -33,7 +33,7 @@ env:
 - assertVisible:
     id: name.input
     text: "Eren"
-- assertVisible: 'Selin seni "Eren" diye eklemişti. Değiştirebilirsin.'
+- assertVisible: 'Sibel seni "Eren" diye eklemişti. Değiştirebilirsin.'
 # The keyboard from the code screen still covers Devam.
 - hideKeyboard
 - tapOn:

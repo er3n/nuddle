@@ -158,7 +158,7 @@ private fun InviteCard(
 @Composable
 private fun InboxScreenPreview() {
     DurtTheme {
-        InboxScreen(InboxUiState(listOf(InboxInviteUi("i1", "Selin", Ago.Hours(2)))), onBack = {}, onOpenInvite = {})
+        InboxScreen(InboxUiState(listOf(InboxInviteUi("i1", "Sibel", Ago.Hours(2)))), onBack = {}, onOpenInvite = {})
     }
 }
 

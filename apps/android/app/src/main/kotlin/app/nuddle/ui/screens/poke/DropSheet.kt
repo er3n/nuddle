@@ -129,11 +129,11 @@ private fun DropSheetPreviewOf(state: DropUi) {
 @PreviewScreens
 @Composable
 private fun DropSheetPreview() {
-    DropSheetPreviewOf(DropUi(senderName = "Selin", reason = DropReason.Tomorrow))
+    DropSheetPreviewOf(DropUi(senderName = "Sibel", reason = DropReason.Tomorrow))
 }
 
 @PreviewScreens
 @Composable
 private fun DropSheetEmptyPreview() {
-    DropSheetPreviewOf(DropUi(senderName = "Selin"))
+    DropSheetPreviewOf(DropUi(senderName = "Sibel"))
 }

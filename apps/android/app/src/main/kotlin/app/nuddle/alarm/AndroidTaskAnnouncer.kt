@@ -51,7 +51,7 @@ private const val CALL = 1
 private const val MESSAGE = 2
 
 /**
- * 4b: "Selin sana bir görev yazdı" on the `tasks` channel. It only says a task is there and that nothing is needed
+ * 4b: "Sibel sana bir görev yazdı" on the `tasks` channel. It only says a task is there and that nothing is needed
  * yet; the pokes come with the plan. Gör opens home, where the task is the next-up card (4c). For the sender, "Eren
  * fotoğraf gönderdi" with Gör opening the approval (4f), and "Eren cevap vermiyor" on `reach_out` when the human channel
  * fires (7a).

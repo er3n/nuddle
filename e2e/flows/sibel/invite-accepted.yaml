@@ -1,5 +1,5 @@
-# After Eren says İzin ver, the invite_accepted hint makes Selin's app sync and the pending invite (1g)
-# leaves home. Selin is connected now, so home shows no invite card either (open-questions#34).
+# After Eren says İzin ver, the invite_accepted hint makes Sibel's app sync and the pending invite (1g)
+# leaves home. Sibel is connected now, so home shows no invite card either (open-questions#34).
 appId: app.nuddle.debug
 ---
 - launchApp

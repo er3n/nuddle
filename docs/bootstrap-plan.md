@@ -33,10 +33,10 @@ Prompt template for each stage:
 **Read first:** `docs/domain.md` (Entities), ADRs 0002, 0007, 0010, 0011.
 
 **Tasks**
-- `supabase init`. `config.toml`: disable Studio, Realtime, analytics and edge runtime; enable phone auth; add test phone numbers with fixed OTP codes (Selin `+905320000001`, Eren `+905320000002`, more for E2E).
+- `supabase init`. `config.toml`: disable Studio, Realtime, analytics and edge runtime; enable phone auth; add test phone numbers with fixed OTP codes (Sibel `+905320000001`, Eren `+905320000002`, more for E2E).
 - Drizzle schema in `apps/web/src/infra/db/schema.ts`: `people`, `edges`, `invites`, `tasks`, `task_events`, `poke_steps`, `scheduled_actions`, `devices`, `idempotency_keys`. `drizzle-kit generate` writes into `supabase/migrations/`.
 - Hand-written SQL migration: revoke all table privileges from `anon` and `authenticated`, enable RLS with no policies (deny-all safety net).
-- `supabase/seed.sql`: Selin and Eren, connected as spouses, one scheduled task.
+- `supabase/seed.sql`: Sibel and Eren, connected as spouses, one scheduled task.
 - `squawk` on migrations in `mise run lint`.
 - `mise run dev`: `supabase start` (if not running), `supabase db reset`, then `next dev`.
 - Integration test helper: create a per-run database (`nuddle_test_<id>`) in the local Postgres, apply migrations, drop after.

@@ -22,13 +22,13 @@ const input = {
   text: "eren yarın 9dan önce temizlikçi için 1000 çeksin",
   now,
   timeZone: "Europe/Istanbul",
-  senderName: "Selin",
+  senderName: "Sibel",
   connections: [{ name: "Eren", relationship: "spouse" as const }],
 };
 
 describe("resolveExtraction", () => {
   it("creates directly when confident", () => {
-    expect(resolveExtraction(complete, { id: "selin" }, connections, now)).toEqual({
+    expect(resolveExtraction(complete, { id: "sibel" }, connections, now)).toEqual({
       kind: "create",
       recipientId: "eren",
       title: "Temizlikçi için para çek",
@@ -41,7 +41,7 @@ describe("resolveExtraction", () => {
   it("matches names with Turkish case rules", () => {
     const r = resolveExtraction(
       { ...complete, recipient: "İLKER" },
-      { id: "selin" },
+      { id: "sibel" },
       [{ personId: "ilker", name: "ilker" }],
       now,
     );
@@ -50,8 +50,8 @@ describe("resolveExtraction", () => {
 
   it("resolves self", () => {
     expect(
-      resolveExtraction({ ...complete, recipient: "self" }, { id: "selin" }, connections, now),
-    ).toMatchObject({ kind: "create", recipientId: "selin" });
+      resolveExtraction({ ...complete, recipient: "self" }, { id: "sibel" }, connections, now),
+    ).toMatchObject({ kind: "create", recipientId: "sibel" });
   });
 
   it.each<[string, Partial<Extraction>, string]>([
@@ -63,13 +63,13 @@ describe("resolveExtraction", () => {
     ["no title", { title: " " }, "title"],
   ])("asks one question: %s", (_name, change, question) => {
     expect(
-      resolveExtraction({ ...complete, ...change }, { id: "selin" }, connections, now),
+      resolveExtraction({ ...complete, ...change }, { id: "sibel" }, connections, now),
     ).toEqual({ kind: "ask", question });
   });
 
   it("asks for the recipient when two connections share the name", () => {
     const twins = [...connections, { personId: "eren-2", name: "eren" }];
-    expect(resolveExtraction(complete, { id: "selin" }, twins, now)).toEqual({
+    expect(resolveExtraction(complete, { id: "sibel" }, twins, now)).toEqual({
       kind: "ask",
       question: "recipient",
     });

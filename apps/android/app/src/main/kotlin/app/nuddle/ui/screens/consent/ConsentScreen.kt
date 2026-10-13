@@ -59,7 +59,7 @@ data class ConsentCallbacks(
     val onBack: () -> Unit = {},
 )
 
-/** "eşi", "çocuğu" ...: what I am to the inviter. Null for "Diğer", which reads "Selin seni ekledi." */
+/** "eşi", "çocuğu" ...: what I am to the inviter. Null for "Diğer", which reads "Sibel seni ekledi." */
 private val EdgeType.theirs: Int?
     get() =
         when (this) {
@@ -154,7 +154,7 @@ private fun ColumnScope.Answers(
     }
 }
 
-/** "Selin seni **eşi** olarak ekledi." with Değiştir; my own pick shows once it differs from the inviter's. */
+/** "Sibel seni **eşi** olarak ekledi." with Değiştir; my own pick shows once it differs from the inviter's. */
 @Composable
 private fun RelationshipRow(
     state: ConsentUiState,
@@ -261,7 +261,7 @@ private fun RelationshipSheet(
 
 private val previewState =
     ConsentUiState(
-        inviterName = "Selin",
+        inviterName = "Sibel",
         addedAs = EdgeType.SPOUSE,
         myPick = EdgeType.SPOUSE,
         quietStart = "23:00",

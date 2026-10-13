@@ -268,7 +268,7 @@ template = "Your code is {{ .Code }}"
 max_frequency = "5s"
 
 # Test numbers with fixed codes, local and E2E only (ADR 0011). Never enable these in the cloud
-# project: the repo is public. Selin and Eren are the cast from docs/glossary.md; the rest are for E2E.
+# project: the repo is public. Sibel and Eren are the cast from docs/glossary.md; the rest are for E2E.
 [auth.sms.test_otp]
 905320000001 = "123456"
 905320000002 = "123456"

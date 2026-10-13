@@ -219,7 +219,7 @@ private fun ColumnScope.CancelReasons(
 
 private val previewState =
     TaskDetailUiState(
-        myName = "Selin",
+        myName = "Sibel",
         title = "Temizlikçi için para çek",
         rawText = "eren yarın 9dan önce temizlikçi için 1000 tl çeksin",
         toName = "Eren",

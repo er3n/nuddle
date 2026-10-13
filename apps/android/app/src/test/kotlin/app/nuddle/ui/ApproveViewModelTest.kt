@@ -9,7 +9,7 @@ import app.nuddle.testing.InMemoryTaskDao
 import app.nuddle.testing.MainDispatcherRule
 import app.nuddle.testing.RecordingApprovals
 import app.nuddle.testing.aTask
-import app.nuddle.testing.selinConnection
+import app.nuddle.testing.sibelConnection
 import app.nuddle.ui.screens.approve.ApproveViewModel
 import app.nuddle.ui.screens.approve.PhotoView
 import kotlinx.coroutines.launch
@@ -46,15 +46,15 @@ class ApproveViewModelTest {
         )
     }
 
-    /** Selin's task to Eren, his photo came at 08:24. */
+    /** Sibel's task to Eren, his photo came at 08:24. */
     private val waiting =
         aTask(status = "AWAITING_APPROVAL")
-            .copy(senderId = Cast.SELIN_ID, recipientId = Cast.EREN_ID)
+            .copy(senderId = Cast.SIBEL_ID, recipientId = Cast.EREN_ID)
             .copy(photoSentAt = Instant.parse("2026-10-12T08:24:00+03:00").toEpochMilliseconds())
 
     private suspend fun TestScope.ready() {
         taskDao.upsert(listOf(waiting))
-        connectionDao.upsert(listOf(selinConnection().copy(personId = Cast.EREN_ID, displayName = "Eren")))
+        connectionDao.upsert(listOf(sibelConnection().copy(personId = Cast.EREN_ID, displayName = "Eren")))
         backgroundScope.launch { vm.state.collect {} }
     }
 

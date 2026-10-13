@@ -40,7 +40,7 @@ class HomeInvitesViewModelTest {
         sent: Boolean = false,
         status: String = "open",
         createdAt: Long = 1,
-    ) = InviteEntity(id, "c-$id", sent, "Selin", null, Cast.SELIN_ID, "Eren", "spouse", status, createdAt)
+    ) = InviteEntity(id, "c-$id", sent, "Sibel", null, Cast.SIBEL_ID, "Eren", "spouse", status, createdAt)
 
     @Test
     fun `the badge counts open invites to me only`() =

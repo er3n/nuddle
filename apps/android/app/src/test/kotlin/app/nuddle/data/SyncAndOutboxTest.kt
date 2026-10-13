@@ -84,10 +84,10 @@ class SyncAndOutboxTest {
             json = testJson,
         )
 
-    private val selinConnection =
+    private val sibelConnection =
         """
-        "connections":[{"personId":"${Cast.SELIN_ID}","displayName":"Selin","relationship":"spouse","status":"active",
-                        "reachability":"FULL_SCREEN","phone":"${Cast.SELIN_PHONE}"}]
+        "connections":[{"personId":"${Cast.SIBEL_ID}","displayName":"Sibel","relationship":"spouse","status":"active",
+                        "reachability":"FULL_SCREEN","phone":"${Cast.SIBEL_PHONE}"}]
         """.trimIndent()
 
     private val syncBody =
@@ -97,7 +97,7 @@ class SyncAndOutboxTest {
                "quietHours":{"start":"23:00:00","end":"07:00:00","timeZone":"Europe/Istanbul"},
                "useConnectionsForMyTasks":true,"notifyMeForOthersTasks":true},
          "connections":[],"sentInvites":[],"receivedInvites":[],"events":[],
-         "tasks":[{"id":"${Cast.TASK_ID}","senderId":"${Cast.SELIN_ID}","recipientId":"${Cast.EREN_ID}",
+         "tasks":[{"id":"${Cast.TASK_ID}","senderId":"${Cast.SIBEL_ID}","recipientId":"${Cast.EREN_ID}",
                    "title":"Temizlikçi için para çek","detail":"1.000 TL","deadline":"2026-10-12T09:00:00+03:00",
                    "finishMode":"photo","rawText":null,"status":"SCHEDULED","late":false,"planVersion":2,
                    "statusChangedAt":"2026-10-11T14:32:00+03:00","inRecipientList":true,"futureField":1}],
@@ -165,15 +165,15 @@ class SyncAndOutboxTest {
             )
         }
 
-    private fun myTaskToSelin(
+    private fun myTaskToSibel(
         status: String,
         events: String,
     ) = syncBody
         .replace(
-            """"senderId":"${Cast.SELIN_ID}","recipientId":"${Cast.EREN_ID}"""",
-            """"senderId":"${Cast.EREN_ID}","recipientId":"${Cast.SELIN_ID}"""",
+            """"senderId":"${Cast.SIBEL_ID}","recipientId":"${Cast.EREN_ID}"""",
+            """"senderId":"${Cast.EREN_ID}","recipientId":"${Cast.SIBEL_ID}"""",
         ).replace(""""status":"SCHEDULED"""", """"status":"$status"""")
-        .replace(""""connections":[]""", selinConnection)
+        .replace(""""connections":[]""", sibelConnection)
         .replace(""""events":[]""", """"events":[$events]""")
 
     private fun event(
@@ -193,11 +193,11 @@ class SyncAndOutboxTest {
                     event(3, "poke_fired", """{"level":"FULL_SCREEN"}"""),
                     event(4, "human_notified"),
                 ).joinToString(",")
-            server.enqueue(json(200, myTaskToSelin("SCHEDULED", events)))
+            server.enqueue(json(200, myTaskToSibel("SCHEDULED", events)))
 
             assertTrue(syncRepository().sync())
 
-            assertEquals(listOf(Cast.TASK_ID to Triple("Selin", 2, true)), announcer.unreached)
+            assertEquals(listOf(Cast.TASK_ID to Triple("Sibel", 2, true)), announcer.unreached)
             assertTrue(announcer.reachWithdrawn.isEmpty())
         }
 
@@ -205,11 +205,11 @@ class SyncAndOutboxTest {
     fun `a full sync tells nothing, and a closed task takes 7a away`() =
         runTest {
             sessions.cursor = null
-            server.enqueue(json(200, myTaskToSelin("SCHEDULED", event(4, "human_notified"))))
+            server.enqueue(json(200, myTaskToSibel("SCHEDULED", event(4, "human_notified"))))
             assertTrue(syncRepository().sync())
             assertTrue(announcer.unreached.isEmpty())
 
-            server.enqueue(json(200, myTaskToSelin("DONE", event(5, "done"))))
+            server.enqueue(json(200, myTaskToSibel("DONE", event(5, "done"))))
             assertTrue(syncRepository().sync())
             assertEquals(listOf(Cast.TASK_ID), announcer.reachWithdrawn)
         }
@@ -224,10 +224,10 @@ class SyncAndOutboxTest {
                         "\"sentInvites\":[],\"receivedInvites\":[]",
                         """
                         "sentInvites":[{"id":"00000000-0000-7000-8000-0000000000a1","code":"abc","inviteePhone":"+905320000002",
-                                        "prefilledName":"Selin","relationship":"spouse","status":"open",
+                                        "prefilledName":"Sibel","relationship":"spouse","status":"open",
                                         "createdAt":"2026-10-12T14:32:00+03:00"}],
                         "receivedInvites":[{"id":"00000000-0000-7000-8000-0000000000a2","code":"xyz",
-                                            "inviterId":"${Cast.SELIN_ID}","inviterName":"Defne","prefilledName":"Eren",
+                                            "inviterId":"${Cast.SIBEL_ID}","inviterName":"Defne","prefilledName":"Eren",
                                             "relationship":"sibling","status":"open","createdAt":"2026-10-12T12:00:00+03:00"}]
                         """.trimIndent(),
                     ),
@@ -251,15 +251,15 @@ class SyncAndOutboxTest {
                 json(
                     200,
                     syncBody
-                        .replace("\"connections\":[]", selinConnection)
+                        .replace("\"connections\":[]", sibelConnection)
                         .replace("\"inRecipientList\":true,", "\"inRecipientList\":true,\"createdAt\":\"2026-10-11T14:32:00+03:00\","),
                 ),
             )
 
             assertTrue(syncRepository().sync())
 
-            val selin = db.connections().get(Cast.SELIN_ID)!!
-            assertEquals("Selin" to Cast.SELIN_PHONE, selin.displayName to selin.phone)
+            val sibel = db.connections().get(Cast.SIBEL_ID)!!
+            assertEquals("Sibel" to Cast.SIBEL_PHONE, sibel.displayName to sibel.phone)
             assertEquals(Instant.parse("2026-10-11T14:32:00+03:00").toEpochMilliseconds(), db.tasks().get(Cast.TASK_ID)!!.createdAt)
         }
 
@@ -267,9 +267,9 @@ class SyncAndOutboxTest {
     fun `sync keeps since when we are connected, my switch for them and my whole profile (5a, 5b)`() =
         runTest {
             val connection =
-                selinConnection.replace(
-                    "\"phone\":\"${Cast.SELIN_PHONE}\"",
-                    "\"phone\":\"${Cast.SELIN_PHONE}\",\"connectedAt\":\"2026-07-11T14:32:00+03:00\",\"notifyMe\":false",
+                sibelConnection.replace(
+                    "\"phone\":\"${Cast.SIBEL_PHONE}\"",
+                    "\"phone\":\"${Cast.SIBEL_PHONE}\",\"connectedAt\":\"2026-07-11T14:32:00+03:00\",\"notifyMe\":false",
                 )
             server.enqueue(
                 json(
@@ -284,9 +284,9 @@ class SyncAndOutboxTest {
 
             assertTrue(syncRepository().sync())
 
-            val selin = db.connections().get(Cast.SELIN_ID)!!
-            assertEquals(Instant.parse("2026-07-11T14:32:00+03:00").toEpochMilliseconds(), selin.connectedAt)
-            assertFalse(selin.notifyMe)
+            val sibel = db.connections().get(Cast.SIBEL_ID)!!
+            assertEquals(Instant.parse("2026-07-11T14:32:00+03:00").toEpochMilliseconds(), sibel.connectedAt)
+            assertFalse(sibel.notifyMe)
             val me = sessions.profile.value!!
             assertEquals(Cast.EREN_PHONE to false, me.phone to me.useConnectionsForMyTasks)
         }
@@ -295,21 +295,21 @@ class SyncAndOutboxTest {
     fun `a task from someone else that arrives later is announced once, with the sender's name`() =
         runTest {
             sessions.cursor = "40"
-            val body = syncBody.replace("\"connections\":[]", selinConnection)
+            val body = syncBody.replace("\"connections\":[]", sibelConnection)
             server.enqueue(json(200, body))
             server.enqueue(json(200, body))
 
             assertTrue(syncRepository().sync())
             assertTrue(syncRepository().sync())
 
-            assertEquals(listOf(Cast.TASK_ID to "Selin"), announcer.announced)
+            assertEquals(listOf(Cast.TASK_ID to "Sibel"), announcer.announced)
         }
 
     @Test
     fun `a full sync announces nothing, the tasks in it are old news`() =
         runTest {
             sessions.cursor = null
-            server.enqueue(json(200, syncBody.replace("\"connections\":[]", selinConnection)))
+            server.enqueue(json(200, syncBody.replace("\"connections\":[]", sibelConnection)))
 
             assertTrue(syncRepository().sync())
 
@@ -332,13 +332,13 @@ class SyncAndOutboxTest {
     fun `my task's photo coming tells me once, and the note goes when it is answered`() =
         runTest {
             sessions.cursor = "40"
-            // Selin's phone: the task in syncBody is hers to Eren.
-            val mine = syncBody.replace("\"connections\":[]", selinConnection.replace(Cast.SELIN_ID, Cast.EREN_ID).replace("Selin", "Eren"))
-            val selinSession = InMemorySessionStore(aSession().copy(personId = Cast.SELIN_ID)).also { it.cursor = "40" }
+            // Sibel's phone: the task in syncBody is hers to Eren.
+            val mine = syncBody.replace("\"connections\":[]", sibelConnection.replace(Cast.SIBEL_ID, Cast.EREN_ID).replace("Sibel", "Eren"))
+            val sibelSession = InMemorySessionStore(aSession().copy(personId = Cast.SIBEL_ID)).also { it.cursor = "40" }
             val repo =
                 SyncRepository(
                     server.retrofit().create(SyncApi::class.java),
-                    selinSession,
+                    sibelSession,
                     db.tasks(),
                     db.invites(),
                     db.connections(),

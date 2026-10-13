@@ -1,5 +1,5 @@
 # Bitti on the full screen poke of a photo task opened the camera (4d). The e2e flavor's camera "takes" the photo
-# the orchestrator put on the phone; Gönder, and home shows the task waiting for Selin (4e).
+# the orchestrator put on the phone; Gönder, and home shows the task waiting for Sibel (4e).
 appId: app.nuddle.debug
 ---
 - extendedWaitUntil:

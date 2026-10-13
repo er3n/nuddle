@@ -452,7 +452,7 @@ private fun ComposeBarPreview() {
                 {},
                 Modifier.heightIn(min = DurtTheme.dimens.buttonLarge),
             )
-            ComposeBar(ComposeState.Failed("selin kuru temizlemeyi alsın"), {}, {}, {}, {})
+            ComposeBar(ComposeState.Failed("sibel kuru temizlemeyi alsın"), {}, {}, {}, {})
             ComposeBar(ComposeState.Sending, {}, {}, {}, {})
             ComposeBar(ComposeState.Idle, {}, {}, {}, {}, notice = VoiceNotice.NotHeard)
         }

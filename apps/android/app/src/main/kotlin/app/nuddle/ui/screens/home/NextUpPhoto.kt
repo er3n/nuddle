@@ -112,14 +112,14 @@ internal fun ColumnScope.ReRequested(task: NextUpUi) {
     Text(stringResource(R.string.rerequest_resumes), style = DurtTheme.type.captionStrong, color = colors.warning)
 }
 
-private val selinsTask =
+private val sibelsTask =
     NextUpUi(
         taskId = "task-1",
         title = "Temizlikçi için para çek",
         detail = "1.000 TL",
         deadline = DeadlineText.Today("09:00"),
         photo = true,
-        from = FromUi("Selin", WrittenText.Yesterday("14:32"), "+905320000001"),
+        from = FromUi("Sibel", WrittenText.Yesterday("14:32"), "+905320000001"),
     )
 
 @Composable
@@ -141,11 +141,11 @@ private fun HomeWith(task: NextUpUi) {
 @PreviewScreens
 @Composable
 private fun HomeScreenAwaitingApprovalPreview() {
-    HomeWith(selinsTask.copy(status = NextUpStatus.AwaitingApproval, photoSentAt = "08:24"))
+    HomeWith(sibelsTask.copy(status = NextUpStatus.AwaitingApproval, photoSentAt = "08:24"))
 }
 
 @PreviewScreens
 @Composable
 private fun HomeScreenReRequestedPreview() {
-    HomeWith(selinsTask.copy(status = NextUpStatus.ReRequested, note = "1.500 lazımdı, 500 daha çekebilir misin?"))
+    HomeWith(sibelsTask.copy(status = NextUpStatus.ReRequested, note = "1.500 lazımdı, 500 daha çekebilir misin?"))
 }

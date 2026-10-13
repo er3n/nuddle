@@ -59,7 +59,7 @@ interface AccountRepository {
         relationship: EdgeType,
     ): Boolean
 
-    /** "Selin'in işleri için bana haber verilebilir" (5b). */
+    /** "Sibel'in işleri için bana haber verilebilir" (5b). */
     suspend fun setNotifyMe(
         personId: String,
         on: Boolean,

@@ -49,7 +49,7 @@ In code and docs the domain verb is **poke** (`Poke`, `PokeLevel`, `PokeActivity
 - The relationship never grants permissions. It is an input to the AI's "whom to tell, when" decision. All channels are on by default.
 - An invite is bound to a phone number (single contact pick, no contacts permission). Even if the link is lost, the invite lands in the person's notifications when they register with that number.
 - Sharing uses the system share sheet. The UI says "shared", never "sent".
-- Consent comes after sign-in: "Selin seni dürtebilsin mi?" (Can Selin poke you?) with "İzin ver" / "Şimdi değil". Declining is never reported.
+- Consent comes after sign-in: "Sibel seni dürtebilsin mi?" (Can Sibel poke you?) with "İzin ver" / "Şimdi değil". Declining is never reported.
 - A pending (not yet joined) person cannot be given tasks.
 - MVP is 1:1. Graph logic (inference, weights, third parties) is written when a third person arrives. The data model is a graph from day one.
 
@@ -72,10 +72,10 @@ In code and docs the domain verb is **poke** (`Poke`, `PokeLevel`, `PokeActivity
 
 ### Sender side and task lifecycle
 - The sender sees an ongoing task's detail: status, reachability level, recipient, deadline, detail, how it should finish. Tapping a row edits it; the change reaches the recipient with a short note.
-- **Cancel:** the sender can cancel any time, pokes stop immediately. Reason is optional ("Ben hallettim", "Gerek kalmadı"). The recipient sees "Selin ... iptal etti" on their home screen.
+- **Cancel:** the sender can cancel any time, pokes stop immediately. Reason is optional ("Ben hallettim", "Gerek kalmadı"). The recipient sees "Sibel ... iptal etti" on their home screen.
 - **Done without photo:** no separate push to the sender, it sits as text in the bell. Photo tasks go to approval.
 - **"Bugün yapamayacağım" (Can't today):** optional note, preset choices or free text, "Notsuz kapat" (close without note) always available.
-- **Missed:** shown to the recipient as a "Kaçırıldı" card with "Sonradan yaptım" (I did it later) and "Selin'i ara" (Call Selin). Removed from the list after one day.
+- **Missed:** shown to the recipient as a "Kaçırıldı" card with "Sonradan yaptım" (I did it later) and "Sibel'i ara" (Call Sibel). Removed from the list after one day.
 - A poke notification has three actions: Done, Snooze, Not today.
 
 ### Poking
@@ -101,7 +101,7 @@ In code and docs the domain verb is **poke** (`Poke`, `PokeLevel`, `PokeActivity
 - **Missed-ring detection:** every alarm reports planned vs actual time. If no report arrives while the device is online, the poke counts as lost. On launch `ApplicationExitInfo` detects force stops. When a loss is detected the bell shows "Son dürtmen çalmadı" with brand specific steps.
 - On every launch a silent check runs. Missing permissions show in the bell, not on the home screen, and state their concrete effect.
 - Reachability is stored on the server. The sender sees it as a level, never as a setting name.
-- A disabled channel stays in the plan as "permission needed". When someone wants to poke harder, a social request goes out ("Selin'in dürtmesi tam ekran gelebilsin diye..."), at most once a week per permission.
+- A disabled channel stays in the plan as "permission needed". When someone wants to poke harder, a social request goes out ("Sibel'in dürtmesi tam ekran gelebilsin diye..."), at most once a week per permission.
 
 ### Bell and communication
 - The bell is the in-app inbox: invites, approvals, permission warnings, pokes that did not ring, finished tasks, "can't reach" news, event history.

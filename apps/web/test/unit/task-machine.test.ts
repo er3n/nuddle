@@ -11,11 +11,11 @@ import { addMs, HOUR } from "../../src/domain/time";
 import type { Edge, Task, TaskEvent, TaskStatus } from "../../src/domain/types";
 import { aPerson, aTask } from "../builders";
 
-const selin = aPerson("Selin");
+const sibel = aPerson("Sibel");
 const eren = aPerson("Eren");
 const now = new Date("2026-10-11T20:00:00+03:00");
 const edge: Edge = {
-  fromPersonId: "selin",
+  fromPersonId: "sibel",
   toPersonId: "eren",
   type: "spouse",
   status: "active",
@@ -23,7 +23,7 @@ const edge: Edge = {
 };
 
 function ctx(history: TaskEvent[] = [], at: Date = now): TaskContext {
-  return { sender: selin, recipient: eren, reachability: "FULL_SCREEN", history, now: at };
+  return { sender: sibel, recipient: eren, reachability: "FULL_SCREEN", history, now: at };
 }
 
 function apply(task: Task, cmd: Command, actor: string | null, c: TaskContext = ctx()) {
@@ -37,16 +37,16 @@ const commands: { cmd: Command; actor: string | null }[] = [
   { cmd: { type: "photo_sent", photoPath: "p.jpg" }, actor: "eren" },
   { cmd: { type: "cant_today", note: null }, actor: "eren" },
   { cmd: { type: "did_it_later" }, actor: "eren" },
-  { cmd: { type: "cancel", note: null }, actor: "selin" },
-  { cmd: { type: "edit", detail: "2.000 TL" }, actor: "selin" },
-  { cmd: { type: "approve" }, actor: "selin" },
-  { cmd: { type: "re_request", note: null }, actor: "selin" },
-  { cmd: { type: "new_deadline", deadline: addMs(now, 5 * HOUR) }, actor: "selin" },
-  { cmd: { type: "sender_handles" }, actor: "selin" },
+  { cmd: { type: "cancel", note: null }, actor: "sibel" },
+  { cmd: { type: "edit", detail: "2.000 TL" }, actor: "sibel" },
+  { cmd: { type: "approve" }, actor: "sibel" },
+  { cmd: { type: "re_request", note: null }, actor: "sibel" },
+  { cmd: { type: "new_deadline", deadline: addMs(now, 5 * HOUR) }, actor: "sibel" },
+  { cmd: { type: "sender_handles" }, actor: "sibel" },
   { cmd: { type: "deadline_passed" }, actor: null },
   { cmd: { type: "approval_timeout" }, actor: null },
   { cmd: { type: "account_deleted", personId: "eren" }, actor: null },
-  { cmd: { type: "connection_removed", personId: "selin" }, actor: null },
+  { cmd: { type: "connection_removed", personId: "sibel" }, actor: null },
   { cmd: { type: "replan" }, actor: null },
 ];
 
@@ -127,7 +127,7 @@ describe("task state machine", () => {
 
   it("checks who may act", () => {
     const task = aTask().build();
-    expect(applyCommand(task, { type: "cant_today", note: null }, "selin", ctx())).toEqual({
+    expect(applyCommand(task, { type: "cant_today", note: null }, "sibel", ctx())).toEqual({
       ok: false,
       error: "not_recipient",
     });
@@ -168,7 +168,7 @@ describe("task state machine", () => {
 
   it("closing a photo task plans a later photo cleanup (NUD-25); a Bitti task does not", () => {
     const photo = aTask().withStatus("AWAITING_APPROVAL").withFinishMode("photo").build();
-    const approved = apply(photo, { type: "approve" }, "selin");
+    const approved = apply(photo, { type: "approve" }, "sibel");
     expect(approved.deletePhotos).toBe(true);
     expect(approved.scheduledActions).toEqual([
       {
@@ -213,10 +213,10 @@ describe("task state machine", () => {
   });
 
   it("closes a photo task to self without approval", () => {
-    const task = aTask().from(selin).forRecipient(selin).build();
-    const o = apply(task, { type: "photo_sent", photoPath: "p" }, "selin", {
+    const task = aTask().from(sibel).forRecipient(sibel).build();
+    const o = apply(task, { type: "photo_sent", photoPath: "p" }, "sibel", {
       ...ctx(),
-      recipient: selin,
+      recipient: sibel,
     });
     expect(o.task.status).toBe("DONE");
     expect(o.events.map((e) => e.type)).toEqual(["photo_sent", "done"]);
@@ -236,7 +236,7 @@ describe("task state machine", () => {
     ]);
     expect(o.plan.steps).toEqual([]);
     expect(o.pushes).toEqual([
-      { to: "selin", hint: "sync", taskId: "task-1", event: "photo_sent" },
+      { to: "sibel", hint: "sync", taskId: "task-1", event: "photo_sent" },
     ]);
   });
 
@@ -246,7 +246,7 @@ describe("task state machine", () => {
   });
 
   it("closes 'Ben hallederim' as cancelled with reason sender_handles", () => {
-    const o = apply(aTask().withStatus("DROPPED").build(), { type: "sender_handles" }, "selin");
+    const o = apply(aTask().withStatus("DROPPED").build(), { type: "sender_handles" }, "sibel");
     expect(o.events[0]?.payload).toEqual({ reason: "sender_handles" });
     expect(o.pushes).toEqual([
       { to: "eren", hint: "task_cancelled", taskId: "task-1", event: "cancelled" },
@@ -263,7 +263,7 @@ describe("task state machine", () => {
     const o = apply(
       task,
       { type: "edit", deadline: new Date("2026-10-12T18:00:00+03:00") },
-      "selin",
+      "sibel",
     );
     expect(o.task.deadline).toEqual(new Date("2026-10-12T18:00:00+03:00"));
     expect(o.plan.version).toBe(2);
@@ -277,7 +277,7 @@ describe("task state machine", () => {
   it("rejects a deadline in the past", () => {
     const task = aTask().build();
     expect(
-      applyCommand(task, { type: "edit", deadline: addMs(now, -HOUR) }, "selin", ctx()),
+      applyCommand(task, { type: "edit", deadline: addMs(now, -HOUR) }, "sibel", ctx()),
     ).toEqual({ ok: false, error: "deadline_not_in_future" });
   });
 
@@ -290,7 +290,7 @@ describe("task state machine", () => {
       at: now,
     };
     const task = aTask().withStatus("AWAITING_APPROVAL").build();
-    const o = apply(task, { type: "re_request", note: "Bulanık" }, "selin", ctx([fired]));
+    const o = apply(task, { type: "re_request", note: "Bulanık" }, "sibel", ctx([fired]));
     expect(o.task.status).toBe("REJECTED");
     expect(o.plan.steps.map((s) => s.level)).toEqual(["SOUND", "FULL_SCREEN", "HUMAN"]);
     expect(o.pushes).toEqual([
@@ -303,20 +303,20 @@ describe("task state machine", () => {
     expect(o.task.status).toBe("CANCELLED");
     expect(o.events[0]).toMatchObject({ actorId: "eren", payload: { reason: "account_deleted" } });
     expect(o.pushes).toEqual([
-      { to: "selin", hint: "task_cancelled", taskId: "task-1", event: "cancelled" },
+      { to: "sibel", hint: "task_cancelled", taskId: "task-1", event: "cancelled" },
     ]);
   });
 
   it("cancels without a notification when a connection is removed (5b)", () => {
-    const o = apply(aTask().build(), { type: "connection_removed", personId: "selin" }, null);
+    const o = apply(aTask().build(), { type: "connection_removed", personId: "sibel" }, null);
     expect(o.task.status).toBe("CANCELLED");
     expect(o.events[0]).toMatchObject({
-      actorId: "selin",
+      actorId: "sibel",
       payload: { reason: "connection_removed" },
     });
     expect(o.plan.steps).toEqual([]);
     expect(o.pushes).toEqual([
-      { to: "selin", hint: "sync", taskId: "task-1", event: "cancelled" },
+      { to: "sibel", hint: "sync", taskId: "task-1", event: "cancelled" },
       { to: "eren", hint: "sync", taskId: "task-1", event: "cancelled" },
     ]);
   });
@@ -410,7 +410,7 @@ describe("snooze (open-questions#1: 2 snoozes, 15 then 10 minutes, never past th
   });
 
   it("only the recipient snoozes, and only an open task", () => {
-    expect(applyCommand(aTask().build(), { type: "snooze" }, "selin", ctx([], at))).toEqual({
+    expect(applyCommand(aTask().build(), { type: "snooze" }, "sibel", ctx([], at))).toEqual({
       ok: false,
       error: "not_recipient",
     });
@@ -432,7 +432,7 @@ describe("snooze (open-questions#1: 2 snoozes, 15 then 10 minutes, never past th
 describe("createTask", () => {
   const input = {
     id: "task-1",
-    sender: selin,
+    sender: sibel,
     recipient: eren,
     edge,
     title: "Temizlikçi için para çek",
@@ -472,7 +472,7 @@ describe("createTask", () => {
   });
 
   it("allows a task to self without a connection", () => {
-    const r = createTask({ ...input, recipient: selin, edge: null });
+    const r = createTask({ ...input, recipient: sibel, edge: null });
     expect(r.ok).toBe(true);
   });
 

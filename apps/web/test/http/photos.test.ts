@@ -6,7 +6,7 @@ import { connect, createTask, signUp, type SignedUp } from "./helpers";
 
 describe("http: photos", () => {
   let server: TestServer;
-  let selin: SignedUp;
+  let sibel: SignedUp;
   let eren: SignedUp;
 
   const syncTask = async (who: SignedUp, taskId: string) => {
@@ -25,34 +25,34 @@ describe("http: photos", () => {
 
   beforeAll(async () => {
     server = await startTestServer();
-    selin = await signUp(server, "Selin");
+    sibel = await signUp(server, "Sibel");
     eren = await signUp(server, "Eren");
-    await connect(selin, eren);
+    await connect(sibel, eren);
   });
   afterAll(async () => {
     await server.close();
   });
 
   it("the sender can look at the photo waiting for her approval, and sync says when it came", async () => {
-    const taskId = await createTask(selin, eren, { finishMode: "photo" });
+    const taskId = await createTask(sibel, eren, { finishMode: "photo" });
     const path = await sendPhoto(taskId);
     const now = server.deps.clock.now().toISOString();
 
-    const view = await selin.api.POST("/api/v1/photos/view-url", { body: { taskId } });
+    const view = await sibel.api.POST("/api/v1/photos/view-url", { body: { taskId } });
     expect(view.data).toEqual({ url: `https://storage.test/view/${path}`, sentAt: now });
-    expect((await syncTask(selin, taskId))?.photoSentAt).toBe(now);
+    expect((await syncTask(sibel, taskId))?.photoSentAt).toBe(now);
     expect((await syncTask(eren, taskId))?.photoSentAt).toBe(now);
   });
 
   it("Tekrar iste: the note reaches the recipient, and there is no photo to look at until a new one", async () => {
-    const taskId = await createTask(selin, eren, { finishMode: "photo" });
+    const taskId = await createTask(sibel, eren, { finishMode: "photo" });
     await sendPhoto(taskId);
-    await selin.api.POST("/api/v1/commands/re_request", {
+    await sibel.api.POST("/api/v1/commands/re_request", {
       body: { idempotencyKey: uuidv7(), taskId, note: "1.500 lazımdı" },
     });
 
     expect((await syncTask(eren, taskId))?.reRequestNote).toBe("1.500 lazımdı");
-    const view = await selin.api.POST("/api/v1/photos/view-url", { body: { taskId } });
+    const view = await sibel.api.POST("/api/v1/photos/view-url", { body: { taskId } });
     expect(view.error?.error.name).toBe("wrong_status");
 
     await sendPhoto(taskId);
@@ -60,7 +60,7 @@ describe("http: photos", () => {
   });
 
   it("nobody else can look at the photo", async () => {
-    const taskId = await createTask(selin, eren, { finishMode: "photo" });
+    const taskId = await createTask(sibel, eren, { finishMode: "photo" });
     await sendPhoto(taskId);
     const defne = await signUp(server, "Defne");
     const view = await defne.api.POST("/api/v1/photos/view-url", { body: { taskId } });

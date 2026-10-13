@@ -1,7 +1,7 @@
-// Smoke 4 (docs/testing.md, Smoke set), with the slice 3 screens: Selin writes a task to Eren in the
-// compose bar (4i), it is Eren's next-up card (4c) and his phone sets its poke alarms; Selin opens it
+// Smoke 4 (docs/testing.md, Smoke set), with the slice 3 screens: Sibel writes a task to Eren in the
+// compose bar (4i), it is Eren's next-up card (4c) and his phone sets its poke alarms; Sibel opens it
 // (7c) and cancels it with a reason (7d), and Eren's pending alarms are gone.
-// Runs after smoke 2: Selin and Eren are connected and signed in.
+// Runs after smoke 2: Sibel and Eren are connected and signed in.
 import postgres from "postgres";
 import { Phone, signIn } from "../api";
 import type { RunContext } from "../context";
@@ -9,10 +9,10 @@ import { devices } from "../devices";
 import { waitFor } from "../proc";
 
 const EREN_PHONE = "+905320000002";
-const SELIN_PHONE = "+905320000001";
+const SIBEL_PHONE = "+905320000001";
 /** As in smoke 1: a compressed plan opens its poke window about 30 s after creation. */
 const DEADLINE_MINUTES = 90;
-/** What Selin types; the fixture extractor answers it (docs/testing.md). */
+/** What Sibel types; the fixture extractor answers it (docs/testing.md). */
 const TASK_TEXT = "eren ekmek alsin";
 
 /** A confident task to Eren, so writing it sends it directly (undo toast, no preview). */
@@ -30,22 +30,22 @@ export function taskToOtherExtractions(now: Date): Record<string, unknown> {
 }
 
 export async function taskToOther(run: RunContext, databaseUrl: string): Promise<void> {
-  const { selin, eren } = devices;
+  const { sibel, eren } = devices;
 
   await run.step("eren-quiet-hours", async () => {
-    // As for Selin in smoke 1: default quiet hours would swallow the poke window of a run at night.
+    // As for Sibel in smoke 1: default quiet hours would swallow the poke window of a run at night.
     const db = postgres(databaseUrl, { max: 1, onnotice: () => undefined });
     try {
       await db`update people p set quiet_hours_start = s.quiet_hours_start, quiet_hours_end = s.quiet_hours_end
-               from people s where s.phone = ${SELIN_PHONE} and p.phone = ${EREN_PHONE}`;
+               from people s where s.phone = ${SIBEL_PHONE} and p.phone = ${EREN_PHONE}`;
     } finally {
       await db.end();
     }
   });
 
   await run.step("write-task-to-eren", async (dir) => {
-    await selin.wakeAndUnlock();
-    await selin.maestro("selin/write-task-to-other.yaml", dir, { TEXT: TASK_TEXT });
+    await sibel.wakeAndUnlock();
+    await sibel.maestro("sibel/write-task-to-other.yaml", dir, { TEXT: TASK_TEXT });
   });
 
   const { phone, taskId } = await run.step("task-created", async () => {
@@ -61,7 +61,7 @@ export async function taskToOther(run: RunContext, databaseUrl: string): Promise
 
   await run.step("eren-home", async (dir) => {
     await eren.wakeAndUnlock();
-    await eren.maestro("eren/home-from-selin.yaml", dir);
+    await eren.maestro("eren/home-from-sibel.yaml", dir);
   });
 
   await run.step("eren-alarms", async () => {
@@ -76,8 +76,8 @@ export async function taskToOther(run: RunContext, databaseUrl: string): Promise
     run.log(`${String(alarms)} poke alarms set`);
   });
 
-  await run.step("selin-cancels", async (dir) => {
-    await selin.maestro("selin/cancel-task.yaml", dir);
+  await run.step("sibel-cancels", async (dir) => {
+    await sibel.maestro("sibel/cancel-task.yaml", dir);
   });
 
   await run.step("cancelled", async () => {

@@ -7,7 +7,7 @@ export const TEXT = {
   trashToEren: "eren yarın akşam çöpü atsın",
   selfSport: "yarın sabah 8de spor yap",
   earlyParcelToEren: "eren yarın sabah 6ya kadar kargoyu kapıya koysun",
-  breadToSelin: "selin yarın akşam ekmek alsın",
+  breadToSibel: "sibel yarın akşam ekmek alsın",
   homeworkToDefne: "defne yarın akşam ödevini bitirsin",
 } as const;
 
@@ -44,8 +44,8 @@ const fixtures: Record<string, Extraction> = {
     finishMode: "done",
     missing: [],
   },
-  [TEXT.breadToSelin]: {
-    recipient: "Selin",
+  [TEXT.breadToSibel]: {
+    recipient: "Sibel",
     title: "Ekmek al",
     detail: null,
     deadline: "2026-10-12T19:00:00+03:00",
@@ -62,13 +62,13 @@ const fixtures: Record<string, Extraction> = {
   },
 };
 
-/** Selin and Eren, signed up and connected as spouses. */
-export async function selinAndEren(): Promise<{ world: World; selin: Client; eren: Client }> {
+/** Sibel and Eren, signed up and connected as spouses. */
+export async function sibelAndEren(): Promise<{ world: World; sibel: Client; eren: Client }> {
   const world = new World(fixtures);
-  const selin = await world.addPerson("Selin");
+  const sibel = await world.addPerson("Sibel");
   const eren = await world.addPerson("Eren");
-  await world.connect(selin, eren, "spouse", "spouse");
-  return { world, selin, eren };
+  await world.connect(sibel, eren, "spouse", "spouse");
+  return { world, sibel, eren };
 }
 
 export function emptyWorld(): World {

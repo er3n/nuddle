@@ -50,4 +50,4 @@ Code and docs are in English. The UI is Turkish first (`values/strings.xml`), En
 
 ## Example names
 
-Design and tests use the same cast: **Selin** (sender, avatar color #C83C08) and **Eren** (recipient, the user himself is always `ink`). Sample task: "Temizlikçi için para çek · 1.000 TL · yarın 09:00 · fotoğrafla". Keep using them in previews, fixtures and E2E scenarios so screenshots and tests match the design.
+Design and tests use the same cast: **Sibel** (sender, avatar color #C83C08) and **Eren** (recipient, the user himself is always `ink`). Sample task: "Temizlikçi için para çek · 1.000 TL · yarın 09:00 · fotoğrafla". Keep using them in previews, fixtures and E2E scenarios so screenshots and tests match the design.

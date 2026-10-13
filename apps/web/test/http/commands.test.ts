@@ -8,14 +8,14 @@ import { connect, createTask, signUp, type SignedUp } from "./helpers";
 
 describe("http: commands", () => {
   let server: TestServer;
-  let selin: SignedUp;
+  let sibel: SignedUp;
   let eren: SignedUp;
 
   beforeAll(async () => {
     server = await startTestServer();
-    selin = await signUp(server, "Selin");
+    sibel = await signUp(server, "Sibel");
     eren = await signUp(server, "Eren");
-    await connect(selin, eren);
+    await connect(sibel, eren);
   });
   afterAll(async () => {
     await server.close();
@@ -31,14 +31,14 @@ describe("http: commands", () => {
       finishMode: "done" as const,
       rawText: null,
     };
-    const first = await selin.api.POST("/api/v1/commands/create_task", { body });
-    const replay = await selin.api.POST("/api/v1/commands/create_task", { body });
+    const first = await sibel.api.POST("/api/v1/commands/create_task", { body });
+    const replay = await sibel.api.POST("/api/v1/commands/create_task", { body });
     expect(replay.data).toEqual(first.data);
     const rows = await server.database.db.select().from(tasks).where(eq(tasks.title, "Ekmek al"));
     expect(rows).toHaveLength(1);
 
     // The same key for another command is a client bug.
-    const reused = await selin.api.POST("/api/v1/commands/delete_account", {
+    const reused = await sibel.api.POST("/api/v1/commands/delete_account", {
       body: { idempotencyKey: body.idempotencyKey },
     });
     expect(reused.response.status).toBe(422);
@@ -70,7 +70,7 @@ describe("http: commands", () => {
       "/api/v1/commands/update_connection",
       "/api/v1/commands/remove_connection",
     ] as const) {
-      const r = await selin.api.POST(path, {
+      const r = await sibel.api.POST(path, {
         body: { idempotencyKey: uuidv7(), personId: stranger.id, notifyMe: false },
       });
       expect(r.response.status).toBe(409);
@@ -79,9 +79,9 @@ describe("http: commands", () => {
   });
 
   it("maps domain errors: wrong status 409, wrong side 403, not your task 404", async () => {
-    const taskId = await createTask(selin, eren);
+    const taskId = await createTask(sibel, eren);
 
-    const approve = await selin.api.POST("/api/v1/commands/approve", {
+    const approve = await sibel.api.POST("/api/v1/commands/approve", {
       body: { idempotencyKey: uuidv7(), taskId },
     });
     expect(approve.response.status).toBe(409);
@@ -101,7 +101,7 @@ describe("http: commands", () => {
   });
 
   it("a failed command stores nothing, so a retry with the same key runs again", async () => {
-    const taskId = await createTask(selin, eren, { finishMode: "photo" });
+    const taskId = await createTask(sibel, eren, { finishMode: "photo" });
     const key = uuidv7();
     const early = await eren.api.POST("/api/v1/commands/done", {
       body: { idempotencyKey: key, taskId },
@@ -114,8 +114,8 @@ describe("http: commands", () => {
   });
 
   it("only accepts a photo path uploaded for the same task", async () => {
-    const taskId = await createTask(selin, eren, { finishMode: "photo" });
-    const sender = await selin.api.POST("/api/v1/photos/upload-url", { body: { taskId } });
+    const taskId = await createTask(sibel, eren, { finishMode: "photo" });
+    const sender = await sibel.api.POST("/api/v1/photos/upload-url", { body: { taskId } });
     expect(sender.error?.error.code).toBe("DRT-4003");
 
     const upload = await eren.api.POST("/api/v1/photos/upload-url", { body: { taskId } });
@@ -129,7 +129,7 @@ describe("http: commands", () => {
 
   it("a task cannot go to someone who is not connected", async () => {
     const can = await signUp(server, "Can");
-    const r = await selin.api.POST("/api/v1/commands/create_task", {
+    const r = await sibel.api.POST("/api/v1/commands/create_task", {
       body: {
         idempotencyKey: uuidv7(),
         recipientId: can.id,

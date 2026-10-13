@@ -7,14 +7,14 @@ import { aPerson } from "../builders";
 describe("compressOutcome", () => {
   it("moves steps and their timers toward now, 60 times closer, and keeps the deadline", () => {
     const now = new Date("2026-10-12T17:00:00+03:00");
-    const selin = aPerson("Selin");
+    const sibel = aPerson("Sibel");
     const eren = aPerson("Eren");
     const r = createTask({
       id: "task-1",
-      sender: selin,
+      sender: sibel,
       recipient: eren,
       edge: {
-        fromPersonId: "selin",
+        fromPersonId: "sibel",
         toPersonId: "eren",
         type: "spouse",
         status: "active",

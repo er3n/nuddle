@@ -84,7 +84,7 @@ private const val PHOTO_ASPECT = 0.84f
 @PreviewScreens
 @Composable
 private fun UnsentPhotoScreenPreview() {
-    DurtTheme { UnsentPhotoScreen(UnsentPhotoUiState("Selin", ImageBitmap(PREVIEW_W, PREVIEW_H)), onBack = {}, onRetry = {}) }
+    DurtTheme { UnsentPhotoScreen(UnsentPhotoUiState("Sibel", ImageBitmap(PREVIEW_W, PREVIEW_H)), onBack = {}, onRetry = {}) }
 }
 
 private const val PREVIEW_W = 300

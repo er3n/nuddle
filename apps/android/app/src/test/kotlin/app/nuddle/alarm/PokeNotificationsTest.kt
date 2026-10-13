@@ -86,7 +86,7 @@ class PokeNotificationsTest {
 
     @Test
     fun `a poke is in a group of its own and takes the task's earlier note away`() {
-        AndroidTaskAnnouncer(app, FakeClock(), TimeZone.of("Europe/Istanbul")).announce(aTask(), "Selin")
+        AndroidTaskAnnouncer(app, FakeClock(), TimeZone.of("Europe/Istanbul")).announce(aTask(), "Sibel")
         val poke = show(seq = 1)
 
         // In the app's automatic group a poke would be silent and its full screen would never open (E2E smoke 3).

@@ -2,7 +2,7 @@
 // docs/ux/platform.md, Missed-ring detection; 2g).
 import { describe, expect, it } from "vitest";
 import type { Client, World } from "./harness";
-import { at, hhmm, selinAndEren, TEXT, writeTask } from "./fixtures";
+import { at, hhmm, sibelAndEren, TEXT, writeTask } from "./fixtures";
 
 /** The phone is in use at `time` (the app syncs), so the server sees it online after the alarm was due. */
 async function seenOnlineAt(world: World, who: Client, time: string): Promise<void> {
@@ -12,8 +12,8 @@ async function seenOnlineAt(world: World, who: Client, time: string): Promise<vo
 
 describe("scenarios: missed ring", () => {
   it("alarms killed while the phone is online: each lost poke reaches only that phone, and poking goes on", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.photoToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.photoToEren);
     eren.phone.alarmsKilled = true;
 
     for (const time of ["2026-10-12T08:01:00", "2026-10-12T08:31:00", "2026-10-12T08:46:00"])
@@ -33,16 +33,16 @@ describe("scenarios: missed ring", () => {
         .filter((e) => e.type === "poke_lost")
         .map((e) => hhmm(new Date(String(e.payload.plannedAt)))),
     ).toEqual(["08:00", "08:30", "08:45"]);
-    // Selin is not told about Eren's phone; the human channel still fires as planned.
-    expect(world.push.to("selin").map((p) => p.event)).not.toContain("poke_lost");
-    expect(world.push.to("selin").map((p) => p.event)).toContain("human_notified");
+    // Sibel is not told about Eren's phone; the human channel still fires as planned.
+    expect(world.push.to("sibel").map((p) => p.event)).not.toContain("poke_lost");
+    expect(world.push.to("sibel").map((p) => p.event)).toContain("human_notified");
     expect(world.task(taskId).status).toBe("SCHEDULED");
     expect(world.violations).toEqual([]);
   });
 
   it("an offline phone is not evidence of a lost poke", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.photoToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.photoToEren);
     eren.phone.online = false;
 
     await world.advanceTo(at("2026-10-12T08:56:00"));
@@ -51,8 +51,8 @@ describe("scenarios: missed ring", () => {
   });
 
   it("once the alarms ring again, only the poke that did not ring counts as lost", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.photoToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.photoToEren);
     eren.phone.alarmsKilled = true;
 
     await seenOnlineAt(world, eren, "2026-10-12T08:01:00");
