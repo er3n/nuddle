@@ -693,7 +693,7 @@ export async function registerDevice(
   caller: Person,
   input: {
     deviceId: string | null;
-    fcmToken: string;
+    fid: string;
     platform: "android" | "ios";
     appVersion: string;
     permissions: PermissionSummary;

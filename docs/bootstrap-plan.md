@@ -63,7 +63,7 @@ Prompt template for each stage:
 **Tasks**
 - Hono app under `/api` with `@hono/zod-openapi`. Middleware: Supabase JWT verification, request id, error mapping to `DRT-xxxx` codes.
 - Commands (`POST /api/v1/commands/<name>`) with idempotency keys for every recipient and sender action in `domain.md`. `GET /api/v1/sync?cursor=`.
-- `POST /api/v1/devices` (FCM token + permission summary) and reachability.
+- `POST /api/v1/devices` (Firebase Installation ID + permission summary, ADR 0015) and reachability.
 - Photo flow: signed upload URL from Supabase Storage, deletion when a task closes.
 - `/api/internal/tick` and `/api/internal/otp-hook` behind a shared secret. Real `OtpSender` (SMS provider first), real `PushSender` (`firebase-admin`).
 - SQL migration with the `pg_cron` + `pg_net` job calling the tick endpoint (disabled locally, documented).

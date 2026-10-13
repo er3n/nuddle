@@ -27,7 +27,7 @@ export async function signUp(
   const d = await api.POST("/api/v1/devices", {
     body: {
       deviceId: null,
-      fcmToken: `token-${id}`,
+      fid: `fid-${id}`,
       platform: "android",
       appVersion: "test",
       permissions,

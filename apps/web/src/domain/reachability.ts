@@ -20,7 +20,7 @@ export interface Device {
   id: string;
   personId: PersonId;
   /** Null after logout: the device can no longer be reached. */
-  fcmToken: string | null;
+  fid: string | null;
   permissions: PermissionSummary;
   lastSeenAt: Date;
 }
@@ -29,7 +29,7 @@ const order: readonly Reachability[] = ["NONE", "SILENT", "SOUND", "FULL_SCREEN"
 
 export function deviceReachability(device: Device): Reachability {
   const p = device.permissions;
-  if (device.fcmToken === null || !p.notifications) return "NONE";
+  if (device.fid === null || !p.notifications) return "NONE";
   if (p.channels.poke_alarm) {
     return p.fullScreen && p.exactAlarm ? "FULL_SCREEN" : "SOUND";
   }
@@ -45,7 +45,7 @@ export function deriveReachability(devices: readonly Device[]): Reachability {
   return best;
 }
 
-/** Logging out clears the push token: pokes stop ringing on that phone (docs/product.md). */
+/** Logging out clears the FID: pokes stop ringing on that phone (docs/product.md). */
 export function logOut(device: Device): Device {
-  return { ...device, fcmToken: null };
+  return { ...device, fid: null };
 }

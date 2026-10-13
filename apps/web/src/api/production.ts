@@ -8,7 +8,7 @@ import { JoseTokenVerifier } from "../infra/auth/jwt";
 import { SupabaseAuthGateway } from "../infra/auth/supabase-auth";
 import { OffsetClock, systemClock } from "../infra/clock";
 import { connectDb } from "../infra/db/client";
-import { fcmTokensOf } from "../infra/db/store";
+import { fidsOf } from "../infra/db/store";
 import { FixtureExtractor } from "../infra/llm/fixture-extractor";
 import { OpenRouterExtractor } from "../infra/llm/openrouter-extractor";
 import { TwilioOtpSender, unconfiguredOtpSender } from "../infra/otp/twilio";
@@ -85,7 +85,7 @@ export async function createProductionApp(
   const push =
     env.FIREBASE_SERVICE_ACCOUNT === null
       ? logPushSender
-      : FcmPushSender.fromServiceAccount(env.FIREBASE_SERVICE_ACCOUNT, (id) => fcmTokensOf(db, id));
+      : FcmPushSender.fromServiceAccount(env.FIREBASE_SERVICE_ACCOUNT, (id) => fidsOf(db, id));
 
   const deps: AppDeps = {
     db,

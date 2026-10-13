@@ -126,7 +126,7 @@ describe("http: sync", () => {
     const changed = await eren.api.POST("/api/v1/devices", {
       body: {
         deviceId: eren.deviceId,
-        fcmToken: `token-${eren.id}`,
+        fid: `fid-${eren.id}`,
         platform: "android",
         appVersion: "test",
         permissions: {

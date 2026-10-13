@@ -94,7 +94,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Register the device: FCM token and permission summary (source of reachability) */
+        /** Register the device: Firebase Installation ID and permission summary (source of reachability) */
         post: operations["registerDevice"];
         delete?: never;
         options?: never;
@@ -824,7 +824,7 @@ export interface components {
         RegisterDeviceRequest: {
             /** Format: uuid */
             deviceId: string | null;
-            fcmToken: string;
+            fid: string;
             /** @enum {string} */
             platform: "android" | "ios";
             appVersion: string;

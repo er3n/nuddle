@@ -20,7 +20,7 @@ const plannedAt = new Date("2026-10-12T08:30:00+03:00");
 const phone: Device = {
   id: "eren-phone",
   personId: "eren",
-  fcmToken: "t",
+  fid: "t",
   permissions: allPermissions,
   lastSeenAt: now,
 };
