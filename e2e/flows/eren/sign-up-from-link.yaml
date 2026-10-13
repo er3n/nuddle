@@ -34,6 +34,8 @@ env:
     id: name.input
     text: "Eren"
 - assertVisible: 'Selin seni "Eren" diye eklemişti. Değiştirebilirsin.'
+# The keyboard from the code screen still covers Devam.
+- hideKeyboard
 - tapOn:
     id: name.continue
 - extendedWaitUntil:
