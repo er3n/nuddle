@@ -15,9 +15,10 @@ import javax.inject.Inject
 /**
  * FCM data messages are only hints ("sync now", "plan changed", "task cancelled"); every one of them triggers a
  * sync, which is the source of truth (docs/architecture.md, Sync model).
+ *
+ * Reason for the suppression: that lint check predates FCM's installation ID API and asks for the deprecated
+ * onNewToken(); onRegistered() is its replacement (ADR 0015).
  */
-// Reason: this lint check predates FCM's installation ID API and asks for the deprecated onNewToken();
-// onRegistered() below is its replacement (ADR 0015).
 @SuppressLint("MissingFirebaseInstanceTokenRefresh")
 @AndroidEntryPoint
 class NuddleMessagingService : FirebaseMessagingService() {
