@@ -126,6 +126,8 @@
     <string name="issue_missed_to_me_moment">Zamanı geçti. %1$s haberdar, yeni bir zaman verebilir.</string>
     <string name="issue_missed_self_moment">Zamanı geçti.</string>
     <string name="issue_did_it_later">Sonradan yaptım</string>
+    <!-- The close button on a missed card: off my list only (NUD-49). -->
+    <string name="issue_remove">Kaldır</string>
     <string name="issue_cancelled_title">%1$s iptal etti: \"%2$s\"</string>
     <string name="issue_pokes_stopped">Dürtmeler durdu</string>
     <string name="issue_note">Not: %1$s</string>
