@@ -189,7 +189,12 @@ private fun ColumnScope.Tasks(
             color = DurtTheme.colors.textTertiary,
             modifier = Modifier.semantics { heading() },
         )
-        NextUpCard(nextUp, nextUpActions, state.nextUpPhoto)
+        NextUpCard(
+            nextUp,
+            nextUpActions,
+            state.nextUpPhoto,
+            onOpen = { onOpenTask(nextUp.taskId, false) }.takeIf { nextUp.from == null && nextUp.status == NextUpStatus.Scheduled },
+        )
     }
     if (issues.toMe) ToMeIssues(issues, issueActions)
     if (state.sent.isNotEmpty() || issues.sent.isNotEmpty() || state.queued.isNotEmpty()) {

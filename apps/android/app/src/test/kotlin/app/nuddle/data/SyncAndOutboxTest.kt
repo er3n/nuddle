@@ -107,6 +107,28 @@ class SyncAndOutboxTest {
         """.trimIndent()
 
     @Test
+    fun `an at task keeps its moment, a by task has none (ADR 0017)`() =
+        runTest {
+            val moment =
+                syncBody.replace(
+                    """"futureField":1""",
+                    """"futureField":1,"timing":"at","remindAt":"2026-10-12T08:30:00+03:00"""",
+                )
+            server.enqueue(json(200, moment))
+            assertTrue(syncRepository().sync())
+            assertEquals(
+                kotlin.time.Instant
+                    .parse("2026-10-12T08:30:00+03:00")
+                    .toEpochMilliseconds(),
+                db.tasks().get(Cast.TASK_ID)!!.remindAt,
+            )
+
+            server.enqueue(json(200, syncBody))
+            assertTrue(syncRepository().sync())
+            assertEquals(null, db.tasks().get(Cast.TASK_ID)!!.remindAt)
+        }
+
+    @Test
     fun `sync stores me, tasks and plans, moves the cursor and re-arms alarms`() =
         runTest {
             sessions.cursor = "40"

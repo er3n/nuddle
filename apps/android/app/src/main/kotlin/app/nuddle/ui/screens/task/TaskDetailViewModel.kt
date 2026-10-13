@@ -19,6 +19,7 @@ import app.nuddle.ui.screens.home.HOUR_MINUTE
 import app.nuddle.ui.screens.home.deadlineText
 import app.nuddle.ui.screens.home.nextOccurrence
 import app.nuddle.ui.screens.home.quickDeadlines
+import app.nuddle.ui.screens.home.timeText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -54,6 +55,8 @@ data class TaskDetailUiState(
     val rawText: String?,
     val toName: String,
     val reachability: Reachability,
+    /** A task to self, opened from the next-up card (NUD-47): no recipient to tell or reach. */
+    val self: Boolean = false,
     val deadline: DeadlineText,
     val detail: String?,
     val photo: Boolean,
@@ -122,7 +125,8 @@ class TaskDetailViewModel
                     rawText = task.rawText,
                     toName = to?.displayName.orEmpty(),
                     reachability = to?.reachability?.let { Reachability.decode(it) } ?: Reachability.NONE,
-                    deadline = deadlineText(Instant.fromEpochMilliseconds(task.deadline), clock.now(), timeZone),
+                    self = task.senderId == task.recipientId,
+                    deadline = task.timeText(clock.now(), timeZone),
                     detail = task.detail,
                     photo = task.finishMode == FinishMode.PHOTO.value,
                     cancelling = local.cancelling,

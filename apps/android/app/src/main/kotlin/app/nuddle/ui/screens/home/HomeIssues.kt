@@ -75,7 +75,7 @@ private fun MissedCard(
     callbacks: IssueCallbacks,
 ) {
     val colors = DurtTheme.colors
-    val deadline = task.deadline.inlineText()
+    val deadline = task.deadline.phrase()
     val from = task.fromName
     val phone = task.phone
     TaskActionCard(
@@ -92,7 +92,13 @@ private fun MissedCard(
                 personName = from ?: "",
                 personColor = task.fromId?.let { colors.avatarFor(it) } ?: colors.avatarSelf,
             ),
-        message = if (from == null) stringResource(R.string.issue_missed_self) else stringResource(R.string.issue_missed_to_me, from),
+        message =
+            when {
+                from == null && task.deadline.moment -> stringResource(R.string.issue_missed_self_moment)
+                from == null -> stringResource(R.string.issue_missed_self)
+                task.deadline.moment -> stringResource(R.string.issue_missed_to_me_moment, from)
+                else -> stringResource(R.string.issue_missed_to_me, from)
+            },
         primary =
             CardAction(stringResource(R.string.issue_did_it_later), {
                 callbacks.onDidItLater(task.taskId)
@@ -149,7 +155,7 @@ internal fun SentIssueCard(
         task =
             TaskUi(
                 title = task.title,
-                subtitle = stringResource(R.string.issue_sent_deadline, task.deadline.inlineText()),
+                subtitle = task.deadline.startPhrase(),
                 status = if (dropped) PillStatus.Dropped else PillStatus.Missed,
                 personName = task.toName,
                 personColor = colors.avatarFor(task.toId),
@@ -179,7 +185,8 @@ private fun SentIssueUi.message(): String {
     val first =
         when {
             issue == SentIssue.Dropped -> stringResource(R.string.issue_dropped, toName)
-            photo -> stringResource(R.string.issue_missed_photo)
+            photo -> stringResource(if (deadline.moment) R.string.issue_missed_photo_moment else R.string.issue_missed_photo)
+            deadline.moment -> stringResource(R.string.issue_missed_done_moment, toName)
             else -> stringResource(R.string.issue_missed_done, toName)
         }
     val second =

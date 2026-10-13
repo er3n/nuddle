@@ -14,6 +14,7 @@ import app.nuddle.data.sinceLastDeadline
 import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.WrittenText
 import app.nuddle.ui.screens.home.deadlineText
+import app.nuddle.ui.screens.home.timeText
 import app.nuddle.ui.screens.home.writtenText
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -108,7 +109,7 @@ private fun entry(
 ): BellEntry? =
     when (event.type) {
         EventTypes.HUMAN_NOTIFIED -> {
-            val deadline = deadlineText(Instant.fromEpochMilliseconds(task.deadline), now, timeZone)
+            val deadline = task.timeText(now, timeZone)
             val open = task.status == TaskStatus.SCHEDULED.value || task.status == TaskStatus.REJECTED.value
             BellEntry.Unreached(task.id, name, task.title, time, deadline, open)
         }

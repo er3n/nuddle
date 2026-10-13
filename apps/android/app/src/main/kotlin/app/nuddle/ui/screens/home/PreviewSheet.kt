@@ -55,6 +55,8 @@ data class PreviewCallbacks(
     val onRecipient: (RecipientChoice) -> Unit = {},
     val onPhoto: (Boolean) -> Unit = {},
     val onTimePicked: (LocalTime) -> Unit = {},
+    /** A tap on the known time: a moment ("19:48") or a deadline ("Son zaman 19:48"), open-questions#43. */
+    val onToggleMoment: () -> Unit = {},
     val onConfirm: () -> Unit = {},
     val onDismiss: () -> Unit = {},
 )
@@ -106,7 +108,7 @@ private fun ColumnScope.PreviewBody(
         }
         preview.knownDeadline?.let {
             if (preview.recipients.isEmpty()) GroupDivider()
-            LineRow(label = stringResource(R.string.home_deadline_label), value = it.text())
+            LineRow(label = it.timeLabel(), value = it.text(), onClick = callbacks.onToggleMoment)
         }
         preview.detail?.let {
             if (preview.recipients.isEmpty() || preview.knownDeadline != null) GroupDivider()

@@ -139,7 +139,7 @@ PermissionStep list: 1 Notifications (done), 2 Alarms and reminders (active, "Ge
 **Copy:** Bir kerelik kurulum | Seni zamanında dürtebilmem için 2 ayar | Bildirim iznini verdin. Kalan ikisi Android'in ayar sayfasında, her biri tek düğme. | Bildirimler | Tamam | Alarmlar ve hatırlatıcılar | Gerekli | Dürtmelerin tam saatinde çalması için. Bu olmadan telefon onları biriktirir, dakikalarca bazen saatlerce geç çalarlar. | Açılan sayfada "Alarm ve hatırlatıcı ayarlamaya izin ver"i aç, sonra geri dön. | Ayarları aç | Tam ekran dürtme | Sırada | İzinleri istediğin an Ayarlar'dan geri alabilirsin. Biri kapanırsa zilde haber veririm. | Alarmsız devam et, dürtmeler geç çalabilir
 
 ### 2f Home, task scheduled · `HomeTask.png`
-"Next up" card for a self task.
+"Next up" card for a self task. Tapping it opens 7c for the task (edit a row, "Görevi iptal et"); for a task to self 7c says "Kendine", "Zamanı gelince seni dürterim." and the cancel sheet has no reasons (NUD-47).
 **Copy:** Sıradaki | Para çek | 1.000 TL · Kendine | Kurulu | Son zaman | Yarın 09:00 | Bitince | "Bitti" demen yeter | Şimdiden bitti | Dürt iki kişiyle güzel | Birini davet et, birbirinize görev yazın | Yeni görev
 
 ### 2g Bell, permission and missed-ring warnings · `NotificationsPerm.png`

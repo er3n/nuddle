@@ -8,6 +8,7 @@ import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.NewDeadlineCommand
 import app.nuddle.api.model.SenderHandlesCommand
 import app.nuddle.api.model.TaskStatus
+import app.nuddle.api.model.Timing
 import app.nuddle.api.model.WriteTaskCommand
 import app.nuddle.api.model.WriteTaskResult
 import app.nuddle.data.api.ApiFailure
@@ -15,6 +16,7 @@ import app.nuddle.data.api.ApiResult
 import app.nuddle.data.api.apiCall
 import app.nuddle.data.db.PokeStepDao
 import app.nuddle.data.db.TaskDao
+import app.nuddle.data.db.shownTime
 import app.nuddle.data.outbox.Outbox
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.sync.SyncRepository
@@ -64,6 +66,10 @@ data class TaskDraft(
     val finishMode: FinishMode,
     val recipient: String? = null,
     val deadline: Instant? = null,
+    /** [deadline] is the moment of an `at` task ("2 dakika sonra"), not a deadline (ADR 0017). */
+    val moment: Boolean = false,
+    /** For an `at` task: how long after the moment it is missed, as the extraction judged. */
+    val missAfterMinutes: Int? = null,
 )
 
 /** Closes a task on the device at once (implemented by the alarm package, which also stops its alarms). */
@@ -104,6 +110,8 @@ interface TaskRepository {
         rawText: String,
         idempotencyKey: String,
         recipientId: String? = null,
+        moment: Boolean = false,
+        missAfterMinutes: Int? = null,
     ): WriteOutcome
 
     /** "Düzenle" on the undo toast for a task to self: a new deadline, detail and finish mode kept. */
@@ -195,6 +203,8 @@ class ApiTaskRepository
                                 finishMode = draft.finishMode,
                                 recipient = draft.recipient,
                                 deadline = draft.deadline?.let { runCatching { Instant.parse(it) }.getOrNull() },
+                                moment = draft.timing == Timing.AT,
+                                missAfterMinutes = draft.missAfterMinutes,
                             )
                         },
                     )
@@ -210,6 +220,8 @@ class ApiTaskRepository
             rawText: String,
             idempotencyKey: String,
             recipientId: String?,
+            moment: Boolean,
+            missAfterMinutes: Int?,
         ): WriteOutcome {
             val me = sessions.current()?.personId ?: return WriteOutcome.Failed
             val command =
@@ -221,6 +233,8 @@ class ApiTaskRepository
                     deadline = deadline.toString(),
                     finishMode = finishMode,
                     rawText = rawText,
+                    timing = if (moment) Timing.AT else Timing.BY,
+                    missAfterMinutes = missAfterMinutes?.takeIf { moment },
                 )
             val created =
                 when (val result = apiCall(json) { commandsApi.createTask(command) }) {
@@ -249,7 +263,7 @@ class ApiTaskRepository
                     idempotencyKey = idempotencyKey,
                     taskId = taskId,
                     // What did not change is sent as it is: the edit command replaces every field it carries.
-                    deadline = (deadline ?: Instant.fromEpochMilliseconds(task.deadline)).toString(),
+                    deadline = (deadline ?: Instant.fromEpochMilliseconds(task.shownTime)).toString(),
                     detail = task.detail,
                     finishMode = finishMode ?: FinishMode.entries.first { it.value == task.finishMode },
                 )

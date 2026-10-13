@@ -60,6 +60,14 @@ internal class PreviewHolder(
         }
     }
 
+    /** A tap on the known time switches between a moment and a deadline (open-questions#43). */
+    fun onToggleMoment() {
+        open.update { current ->
+            val known = current?.ui?.knownDeadline ?: return@update current
+            current.copy(ui = current.ui.copy(knownDeadline = known.asMoment(!known.moment)))
+        }
+    }
+
     fun onPhoto(photo: Boolean) {
         open.update { it?.copy(ui = it.ui.copy(photo = photo)) }
     }

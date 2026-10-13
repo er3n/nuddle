@@ -61,6 +61,8 @@ data class PreviewUi(
     val recipient: RecipientChoice? = RecipientChoice.Self,
     /** The deadline the text already gave, when the question was "Kime?"; then "Ne zamana kadar?" is not asked. */
     val knownDeadline: DeadlineText? = null,
+    /** For a moment ([knownDeadline] `moment`): how long after it the task is missed, from the extraction. */
+    val missAfterMinutes: Int? = null,
     /** 4a, a task to someone else: "Fotoğrafla, sen onayla" is chosen; [photoSuggested] when the text was about money. */
     val photo: Boolean = false,
     val photoSuggested: Boolean = false,
@@ -71,6 +73,14 @@ data class PreviewUi(
 
     val ready: Boolean get() = recipient != null && (knownDeadline != null || selected != null)
 }
+
+/** The same time as a moment or as a deadline: a tap on the 2b time row switches (open-questions#43). */
+fun DeadlineText.asMoment(moment: Boolean): DeadlineText =
+    when (this) {
+        is DeadlineText.Today -> copy(moment = moment)
+        is DeadlineText.Tomorrow -> copy(moment = moment)
+        is DeadlineText.OnDate -> copy(moment = moment)
+    }
 
 /** One answer to "Kime?" (4a). */
 sealed interface RecipientChoice {
@@ -158,7 +168,7 @@ fun undoFor(
         rawText = rawText,
         title = task.title,
         detail = task.detail,
-        deadline = deadlineText(Instant.fromEpochMilliseconds(task.deadline), now, timeZone),
+        deadline = task.timeText(now, timeZone),
         photo = task.finishMode == FinishMode.PHOTO.value,
         to = to,
     )
@@ -213,7 +223,8 @@ fun previewFor(
             base.copy(
                 recipients = listOf(RecipientChoice.Self) + people,
                 recipient = null,
-                knownDeadline = known?.let { deadlineText(it, now, quiet.timeZone) },
+                knownDeadline = known?.let { deadlineText(it, now, quiet.timeZone, draft.moment) },
+                missAfterMinutes = draft.missAfterMinutes,
             ) to known
         }
 
