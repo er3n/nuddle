@@ -7,12 +7,12 @@ FCM data messages carry our hints (docs/architecture.md, Push). Until now a devi
 
 ## Decision
 - A device is addressed by its **Firebase Installation ID (FID)**. `devices.fid` replaces `devices.fcm_token` (still unique: one row per install), and `POST /api/v1/devices` takes `fid` instead of `fcmToken`.
-- The app calls `FirebaseMessaging.register()`, reads the FID from `FirebaseInstallations`, and registers the device on every launch and on `onRegistered`.
+- The app turns the FID API on with the manifest flag `firebase_messaging_installation_id_enabled` (without it `register()` fails with "API disabled"), calls `FirebaseMessaging.register()`, reads the FID from `FirebaseInstallations`, and registers the device on every launch and on `onRegistered`.
 - The server sends with `sendEachForMulticast({ fids })`.
 - The migration deletes the existing device rows: their tokens are not FIDs, and every app launch registers the device again. This is fine only because there are no users before the beta (NUD-33).
 
 ## Consequences
-- No deprecated push API is left in the code, and both suppressions are gone.
+- No deprecated push API is left in the code, and both deprecation suppressions are gone. Android lint's `MissingFirebaseInstanceTokenRefresh` still asks for `onNewToken()`; it is suppressed with this reason.
 - An FID lives as long as the install. A reinstall or cleared app data gives a new FID, as a new token did before.
 - Logout still deletes the device row (NUD-8), so the server stops sending to that FID; the app does not need `unregister()`.
 

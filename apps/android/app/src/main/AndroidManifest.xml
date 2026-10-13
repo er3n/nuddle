@@ -38,6 +38,10 @@
         <meta-data
             android:name="firebase_crashlytics_collection_enabled"
             android:value="${crashlyticsEnabled}" />
+        <!-- FCM addresses this install by its Firebase Installation ID (ADR 0015); register() fails without it. -->
+        <meta-data
+            android:name="firebase_messaging_installation_id_enabled"
+            android:value="true" />
 
         <activity
             android:name=".MainActivity"
