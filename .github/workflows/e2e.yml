@@ -1,0 +1,92 @@
+name: e2e
+
+# The two-emulator smoke set (docs/testing.md, Smoke set) on a GitHub-hosted runner with KVM.
+# Manual only (NUD-30): local `mise run e2e:smoke` stays the gate before merging.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: smoke set
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    env:
+      # x86_64 image without a GPU on the runner (e2e/scripts/emulators.sh).
+      E2E_EMULATOR_GPU: swiftshader_indirect
+      E2E_BOOT_TIMEOUT_S: "600"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          install: true
+          cache: true
+
+      - name: pnpm store path
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Cache Gradle
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('apps/android/**/*.gradle*', 'apps/android/gradle/libs.versions.toml', 'apps/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Cache emulator image
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ env.ANDROID_HOME }}/emulator
+            ${{ env.ANDROID_HOME }}/system-images/android-36/google_apis_playstore/x86_64
+          key: android-36-playstore-x86_64
+
+      # The runner's user may not open /dev/kvm by default.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # Secrets stay out of the repo (CLAUDE.md, rule 11): the FCM sender key and the e2e app's
+      # google-services.json come from repository secrets.
+      - name: Firebase files
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GOOGLE_SERVICES_JSON_E2E: ${{ secrets.GOOGLE_SERVICES_JSON_E2E }}
+        run: |
+          test -n "$FIREBASE_SERVICE_ACCOUNT" || { echo "secret FIREBASE_SERVICE_ACCOUNT is missing"; exit 1; }
+          test -n "$GOOGLE_SERVICES_JSON_E2E" || { echo "secret GOOGLE_SERVICES_JSON_E2E is missing"; exit 1; }
+          umask 077
+          printf 'FIREBASE_SERVICE_ACCOUNT=%s\n' "$(jq -c . <<<"$FIREBASE_SERVICE_ACCOUNT")" > apps/web/.env.local
+          printf '%s' "$GOOGLE_SERVICES_JSON_E2E" > apps/android/app/src/e2e/google-services.json
+
+      - name: Start local Supabase
+        run: mise exec -- supabase start
+
+      - run: mise run e2e:smoke
+
+      - name: Upload run folder
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: e2e-runs
+          path: e2e-runs/
+          if-no-files-found: warn
+          retention-days: 14

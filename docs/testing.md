@@ -105,7 +105,7 @@ FCM needs Google Play system images and the dev Firebase app. Flows wait with ti
 10. Eren loses his connection: home shows the offline banner (6a) and a text he writes waits as "Sırada"; when the connection is back it goes out by itself and the task is on home.
 11. Selin holds the mic and speaks a task (4h): lifting the finger writes the transcript and the task is created.
 
-The full set runs nightly or on demand. Because the repo is public, standard GitHub-hosted Linux runners are free and have KVM, so the smoke set can also run in CI (two emulators on one runner, or one job per device role). Locally remains the default while flows are young.
+The full set runs on demand. Because the repo is public, standard GitHub-hosted Linux runners are free and have KVM, so the smoke set also runs in CI: the `e2e` workflow (`.github/workflows/e2e.yml`, started by hand from the Actions tab, decided in NUD-30) boots both emulators on one runner with the x86_64 image and uploads `e2e-runs/` as an artifact. Locally `mise run e2e:smoke` remains the gate before merging.
 
 ## Manual checklist (before each beta build, about 15 minutes)
 
