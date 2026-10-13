@@ -5,18 +5,36 @@
 #   emulators.sh boot [--cold]   create, then boot both headless and wait; --cold wipes their data
 #   emulators.sh stop            shut both down
 # Idempotent: a running emulator is reused. Needs ANDROID_HOME (mise.toml sets it).
+# The image follows the host CPU: arm64-v8a on Apple silicon, x86_64 on Linux runners with KVM (NUD-30).
+# Environment (CI sets them; local runs need none):
+#   E2E_BOOT_TIMEOUT_S   seconds to wait for each boot (default 300)
+#   E2E_EMULATOR_GPU     -gpu mode, e.g. swiftshader_indirect on a runner without a GPU
 set -euo pipefail
 
 : "${ANDROID_HOME:?ANDROID_HOME is not set; run through mise}"
-IMAGE="system-images;android-36;google_apis_playstore;arm64-v8a"
+case "$(uname -m)" in
+  arm64 | aarch64) ABI=arm64-v8a ;;
+  *) ABI=x86_64 ;;
+esac
+IMAGE="system-images;android-36;google_apis_playstore;$ABI"
 ADB="$ANDROID_HOME/platform-tools/adb"
 EMULATOR="$ANDROID_HOME/emulator/emulator"
 AVDMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager"
+SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
 AVD_HOME="${ANDROID_AVD_HOME:-$HOME/.android/avd}"
-BOOT_TIMEOUT_S=300
+BOOT_TIMEOUT_S=${E2E_BOOT_TIMEOUT_S:-300}
 
 # role:avd:port
 DEVICES=("selin:nuddle-selin:5554" "eren:nuddle-eren:5556")
+
+# A fresh runner has neither the emulator nor the image.
+install_sdk() {
+  local image_dir="$ANDROID_HOME/system-images/android-36/google_apis_playstore/$ABI"
+  if [[ -x "$EMULATOR" && -d "$image_dir" ]]; then return; fi
+  echo "installing emulator and $IMAGE"
+  yes | "$SDKMANAGER" --licenses >/dev/null || true
+  "$SDKMANAGER" --install emulator platform-tools "$IMAGE" >/dev/null
+}
 
 create_one() {
   local avd=$1
@@ -45,6 +63,7 @@ boot_one() {
     return
   fi
   local flags=(-avd "$avd" -port "$port" -no-window -no-audio -no-boot-anim -no-snapshot-save)
+  if [[ -n ${E2E_EMULATOR_GPU:-} ]]; then flags+=(-gpu "$E2E_EMULATOR_GPU"); fi
   if [[ $cold == 1 ]]; then flags+=(-wipe-data); fi
   echo "booting emulator-$port ($avd)"
   nohup "$EMULATOR" "${flags[@]}" >"${TMPDIR:-/tmp}/nuddle-$avd.log" 2>&1 &
@@ -75,9 +94,11 @@ if [[ ${2:-} == --cold ]]; then cold=1; fi
 
 case $cmd in
   create)
+    install_sdk
     for d in "${DEVICES[@]}"; do IFS=: read -r _ avd _ <<<"$d"; create_one "$avd"; done
     ;;
   boot)
+    install_sdk
     for d in "${DEVICES[@]}"; do
       IFS=: read -r _ avd port <<<"$d"
       create_one "$avd"

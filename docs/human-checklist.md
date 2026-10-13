@@ -39,6 +39,11 @@ Things only the human can do: accounts, payments, logins, secrets, production pu
 - [ ] Promote the first production deployment yourself: `vercel promote <preview URL> --scope er3ns-projects` (Vercel rebuilds it with the Production env). From then on, merging to `main` deploys production; after an env change, `vercel redeploy <production URL> --target production --scope er3ns-projects`.
 - [ ] Once `https://nuddle.app/api/v1/health` is green, switch the tick job on: `mise exec -- supabase/cloud/configure.sh tick`.
 
+## E2E in CI (NUD-30)
+
+- [ ] Add two repository secrets (Settings, Secrets and variables, Actions) so the manual `e2e` workflow can run: `FIREBASE_SERVICE_ACCOUNT` (the same one-line JSON as in `apps/web/.env.local`) and `GOOGLE_SERVICES_JSON_E2E` (the content of `apps/android/app/src/e2e/google-services.json`). From the dev machine: `gh secret set FIREBASE_SERVICE_ACCOUNT < file` and `gh secret set GOOGLE_SERVICES_JSON_E2E < apps/android/app/src/e2e/google-services.json`.
+- [ ] Start the first run: Actions, e2e, Run workflow (or `gh workflow run e2e`).
+
 ## Before the beta (about 20 families)
 
 - [ ] Register `app.nuddle` (prod) in Firebase (in `nuddle-app-er3n` or a separate project: decide then), put its `google-services.json` in `apps/android/app/src/prod/` (git-ignored), and give Vercel a service account of that project (moved from stage 7, NUD-11).

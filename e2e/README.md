@@ -30,7 +30,11 @@ Before the first run:
 | `emulator-5554` | `nuddle-selin` | Selin |
 | `emulator-5556` | `nuddle-eren` | Eren |
 
-Image `system-images;android-36;google_apis_playstore;arm64-v8a` (stock Android with Google Play, for FCM). The hardware profile matches a Galaxy S23: 1080 x 2340 px, 480 dpi, about 360 x 780 dp, 2 GB RAM. Emulators stay up after a run and are reused; `mise run e2e:emulators:stop` shuts them down. `--cold` (`pnpm --filter @nuddle/e2e smoke --cold`) wipes their data first.
+Image `system-images;android-36;google_apis_playstore;<abi>` (stock Android with Google Play, for FCM): `arm64-v8a` on Apple silicon, `x86_64` on a Linux runner. `emulators.sh` installs the emulator and the image when they are missing. The hardware profile matches a Galaxy S23: 1080 x 2340 px, 480 dpi, about 360 x 780 dp, 2 GB RAM. Emulators stay up after a run and are reused; `mise run e2e:emulators:stop` shuts them down. `--cold` (`pnpm --filter @nuddle/e2e smoke --cold`) wipes their data first.
+
+## In CI
+
+The `e2e` workflow (`.github/workflows/e2e.yml`) runs the smoke set by hand from the Actions tab (NUD-30). It enables KVM, writes `apps/web/.env.local` and the e2e `google-services.json` from the repository secrets `FIREBASE_SERVICE_ACCOUNT` and `GOOGLE_SERVICES_JSON_E2E`, starts local Supabase, runs `mise run e2e:smoke` with `E2E_EMULATOR_GPU=swiftshader_indirect` and a longer boot timeout (`E2E_BOOT_TIMEOUT_S`), and uploads `e2e-runs/` as the `e2e-runs` artifact, also when the run fails.
 
 ## Clean state
 
