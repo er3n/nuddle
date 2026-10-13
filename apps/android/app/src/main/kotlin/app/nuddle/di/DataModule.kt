@@ -8,11 +8,9 @@ import app.nuddle.alarm.AndroidTaskAnnouncer
 import app.nuddle.alarm.PokeActions
 import app.nuddle.data.AccountRepository
 import app.nuddle.data.ApiAccountRepository
-import app.nuddle.data.ApiInvitePreviews
 import app.nuddle.data.ApiInviteRepository
 import app.nuddle.data.ApiTaskRepository
 import app.nuddle.data.Approvals
-import app.nuddle.data.InvitePreviews
 import app.nuddle.data.InviteRepository
 import app.nuddle.data.LocalWipe
 import app.nuddle.data.OutboxApprovals
@@ -116,9 +114,6 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun inviteRepository(impl: ApiInviteRepository): InviteRepository
-
-    @Binds
-    abstract fun invitePreviews(impl: ApiInvitePreviews): InvitePreviews
 
     @Binds
     abstract fun accountRepository(impl: ApiAccountRepository): AccountRepository
