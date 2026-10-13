@@ -22,3 +22,4 @@ To change a decision: add a new ADR that supersedes the old one, set the old one
 | 0014 | API sign-in proxy, person id = JWT `sub`, one sync sequence, Twilio for SMS |
 | 0015 | Push reaches a device by Firebase Installation ID, not registration token |
 | 0016 | Public invite preview before sign-in |
+| 0017 | The LLM plans the pokes from the task and the recipient's history; the server enforces the rules, v0 is the fallback |

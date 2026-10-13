@@ -15,11 +15,11 @@ Why: one person reviews agent-written code. Tests are the spec and the reviewer'
 
 | Layer | Tool | Runs on | What it catches |
 |---|---|---|---|
-| Server domain unit | Vitest | Node | State machine transitions, `planPokes`, quiet hours shifting, `tick` handlers, extraction post-processing |
+| Server domain unit | Vitest | Node | State machine transitions, `planPokes`, `checkPlan`, quiet hours shifting, `tick` handlers, extraction post-processing |
 | Server integration | Vitest + real Postgres | local Supabase | Repositories, migrations, idempotency keys, `FOR UPDATE SKIP LOCKED`, sync cursor queries |
 | HTTP | Hono `app.request()` | Node + Postgres | Auth, validation, status codes, command/sync shapes |
 | **Scenario** | Vitest + two simulated clients + controllable clock | Node + Postgres | Whole task lifecycles across sender and recipient |
-| LLM eval | script over a golden set | real model | Extraction quality for Turkish free text |
+| LLM eval | script over a golden set | real model | Extraction quality for Turkish free text, and poke plans (ADR 0017) |
 | Android domain | JUnit + kotlinx-coroutines-test | JVM | Plan execution, outbox, quiet hours re-check, sync reducer |
 | Android data | Room in-memory on Robolectric, MockWebServer | JVM | DAOs, generated client wiring |
 | Web pages | Vitest + `react-dom/server` (unit project, `*.test.tsx`) | Node | Landing and invite page render per locale, dictionaries match (en has every tr entry), locale negotiation |

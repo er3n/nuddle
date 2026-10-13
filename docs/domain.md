@@ -11,7 +11,7 @@ Items marked **(proposed)** are reasonable defaults that were not explicitly dec
 | Person | `people` | id, phone (E.164, unique), display name, created/deleted timestamps, quiet hours (default 23:00-07:00, stored as local times + IANA time zone), the two human channel switches (both default `true`). The user is a person. |
 | Connection | `edges` | Directed pair (from, to) with `type` (`spouse`, `parent`, `child`, `sibling`, `roommate`, `other`) and learned statistics/weights. A 1:1 connection is two directed edges created together, because each side picks its own relationship ("Sibel senin neyin?") and weights are per direction. Status: `pending` (invite out), `active`, `removed`. `notify_me` (default `true`, **proposed**) is the from-person's switch on 5b, "Sibel'in işleri için bana haber verilebilir": the from-person may be told about the to-person's tasks. It narrows the person's own "Başkalarının işleri için bana haber verilebilir" switch for this one connection. |
 | Invite | `invites` **(proposed table)** | Inviter, invitee phone, chosen relationship, prefilled name, code for the link, status (`open`, `accepted`, `declined`, `revoked`, `expired`). Declining is stored but never shown to the inviter. |
-| Task | `tasks` | Sender, recipient (may equal sender), title, detail (e.g. amount), deadline, finish mode (`done` or `photo`), raw text the sender typed, status, plan version. |
+| Task | `tasks` | Sender, recipient (may equal sender), title, detail (e.g. amount), deadline, timing (`by`: done by the deadline; `at`: a moment, deadline is the moment plus a grace; ADR 0017), finish mode (`done` or `photo`), raw text the sender typed, status, plan version. |
 | Task event | `task_events` | Append-only log of everything that happens to a task. It is also the sync feed (see `architecture.md`). |
 | Poke step | `poke_steps` **(proposed table)** | The plan: ordered steps with planned time and level, versioned per task. Never exposed to clients except the recipient's device, which needs times and levels to set alarms. |
 | Scheduled action | `scheduled_actions` | Server-side timers: deadline check, approval timeout, human channel check, lost poke check, missed card expiry. Executed by `tick(now)`. |
@@ -95,15 +95,17 @@ If full screen is not permitted, `FULL_SCREEN` silently degrades to `SOUND` on t
 
 ## Poke plan
 
-- Generated on the server by a pure function, roughly `planPokes(task, recipient, reachability, history, now) -> PokeStep[]`.
-- Constraints: escalation is monotonic (never drops a level within a plan), no step inside quiet hours, `SILENT` is never the only step, the last device step lands before the deadline, a `HUMAN` step may follow when the deadline is close.
-- The MVP heuristic (step count, spacing, when to escalate) is designed in bootstrap stage 3 with scenario tests. Learning from history comes later; the function signature already takes history so learning does not change callers.
+- Planned by an LLM (`PokePlanner` port, ADR 0017) from the task, the people and their relationship, the recipient's connections and the recipient's history (their recent tasks: how each ended, which pokes rang, which one woke them, how fast they acted). The history is what makes the plan learn.
+- Every LLM plan passes a pure rule check (`checkPlan`) before it is stored. The rules: steps in time order, not before `now` and not after the deadline, for an `at` task not before its moment, no step inside quiet hours, escalation never drops a level, `SILENT` is never the only step, at most one `HUMAN` step and only when allowed (rule 5 below), at most 8 device steps, at least 3 minutes between two device steps. A breaking step is dropped; a plan with no valid device step is rejected.
+- **Poke plan v0** (below) is the first plan and the fallback: writing a task stores v0 at once, the planner runs after the response and its checked plan replaces v0 as the next version. Planner error, a 10 s timeout or a rejected plan keep v0. The same on every regeneration.
 - Every regeneration bumps the plan version. Devices ignore steps from older versions.
 - In E2E mode the plan is compressed to seconds (see `testing.md`).
 
 ### Poke plan v0
 
 The MVP heuristic, implemented in `apps/web/src/domain/plan-pokes.ts` (open-questions #18). It ignores history; learning replaces it later without changing callers.
+
+For an `at` task the ladder starts at the moment instead of ending at the deadline: `SOUND` at the moment, `FULL_SCREEN` 5 and 20 minutes after it, `HUMAN` 30 minutes after it when allowed, all before the deadline (open-questions #43). The rules below describe `by` tasks.
 
 1. **Window end:** the deadline, or the start of quiet hours if the deadline falls inside them.
 2. **Window:** the last 60 minutes before the end. It never starts before now. If it overlaps quiet hours it starts when they end; if less than 2 minutes would remain (a deadline at 07:00), the window moves before quiet hours instead.
@@ -138,7 +140,8 @@ Each device step also gets a `lost_poke_check` timer at planned time + 5 minutes
 
 ## LLM task extraction
 
-- One call per written text. Input: the raw text, the sender's local time and time zone, and the sender's connection subgraph (names, relationship types). Output (structured): recipient, title, detail, deadline, suggested finish mode, and a confidence or missing-field list.
+- One call per written text. Input: the raw text, the sender's local time and time zone, and the sender's connection subgraph (names, relationship types). Output (structured): recipient, title, detail, deadline, timing, suggested finish mode, and a confidence or missing-field list.
+- **Timing** (ADR 0017): `by` for "9'a kadar", "akşama kadar", "2 saat içinde", "cumaya kadar"; `at` for a moment: "2 dakika sonra", "9'da ilacını iç", "beni 8'de uyandır", "hatırlat". For `at` the extracted time is the moment, and `missAfterMinutes` says how long after it the task still makes sense (a glass of water 30, a medicine 120); the stored deadline is the moment plus that, kept between 15 minutes and 12 hours, 60 when missing (open-questions #43). The preview shows "18:42'de" or "18:42'ye kadar" and the sender can switch it.
 - Confident result: create the task directly and show the undo toast. Missing or ambiguous: open the preview and ask exactly one question.
 - Example: "eren yarın 9dan önce temizlikçi için 1000 çeksin" becomes recipient Eren, title "Temizlikçi için para çek", detail "1.000 TL", deadline tomorrow 09:00, finish mode photo (money task).
 - Provider OpenRouter, model `deepseek/deepseek-v4.1-flash` (set in `OPENROUTER_MODEL`). No model comparison in the MVP; the eval set guards prompt quality. The extractor sits behind a `TaskExtractor` interface with a fixture implementation for tests.

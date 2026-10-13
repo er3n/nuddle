@@ -19,7 +19,7 @@ Android app (Kotlin, Compose)                       Vercel
                                                          Storage (private photo bucket)
 ```
 
-- Alarms live on the device. The server owns the task lifecycle and the poke plan (ADR 0005).
+- Alarms live on the device. The server owns the task lifecycle and the poke plan (ADR 0005); an LLM proposes the plan and the server checks it against the rules (ADR 0017).
 - Android talks only to our API. It never talks to PostgREST or Supabase tables directly (ADR 0002).
 
 ## Stack
@@ -34,7 +34,7 @@ Android app (Kotlin, Compose)                       Vercel
 | Storage | Supabase Storage, private bucket, signed upload URLs. Photos deleted when the task closes, and again by a `photo_cleanup` timer 15 minutes later that keeps retrying until Storage answers (NUD-25). |
 | Scheduler | `scheduled_actions` table + pure `tick(now)`. In the cloud, `pg_cron` calls `POST /api/internal/tick` every minute via `pg_net`. Locally, `mise run tick` (ADR 0007). |
 | Push | FCM data messages, sent with `firebase-admin`. Crashlytics and App Distribution from the same Firebase project. One project, debug build registered as `app.nuddle.debug`. |
-| LLM | Behind a `TaskExtractor` interface. Default provider: OpenRouter (OpenAI-compatible API, one key, model switched by config). Env: `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`. Model: `deepseek/deepseek-v4.1-flash` (decided 2026-10-11, no model comparison in the MVP). |
+| LLM | Behind two ports: `TaskExtractor` (text to task) and `PokePlanner` (task and history to poke plan, run after the response, ADR 0017). Default provider: OpenRouter (OpenAI-compatible API, one key, model switched by config). Env: `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`. Model: `deepseek/deepseek-v4.1-flash` (decided 2026-10-11, no model comparison in the MVP). |
 | Contract | zod schemas in `apps/web` → `packages/contract/openapi.yaml` (committed) → Kotlin client generated at build time (ADR 0008). |
 | Region | Vercel functions `fra1`, Supabase `eu-central-1`. KVKK: cross-border transfer must be named in the privacy notice. |
 
@@ -54,7 +54,7 @@ nuddle/
       src/landing/          landing, invite and 404 components; colors from docs/ux/tokens.json
       src/i18n/             web locales and dictionaries (tr is the source, en must match it)
       src/api/              Hono app, routes, zod schemas
-      src/domain/           pure TS: state machine, planPokes, tick, rules. No I/O imports.
+      src/domain/           pure TS: state machine, planPokes (v0), checkPlan, tick, rules. No I/O imports.
       src/infra/            db (Drizzle), push, otp, llm, storage, clock
       test/                 unit, integration, scenario
   packages/
@@ -91,7 +91,7 @@ nuddle/
 
 ## E2E mode
 
-`E2E=1` on the web app turns on: fixture `TaskExtractor` (`e2e/fixtures/extractions.json`), fixed test OTP codes, compressed poke plans (step offsets divided by 60: minutes become seconds; deadlines unchanged), and the test endpoints `/api/test/reset`, `/api/test/seed`, `/api/test/tick`, `/api/test/advance-clock` (under `/api` because Hono is mounted there). The code lives in `src/api/e2e.ts`, loaded only with a dynamic import when `E2E=1`, and a test asserts the routes return 404 when `E2E` is not set. Details in `testing.md`.
+`E2E=1` on the web app turns on: fixture `TaskExtractor` (`e2e/fixtures/extractions.json`), no `PokePlanner` (v0 plans only), fixed test OTP codes, compressed poke plans (step offsets divided by 60: minutes become seconds; deadlines unchanged), and the test endpoints `/api/test/reset`, `/api/test/seed`, `/api/test/tick`, `/api/test/advance-clock` (under `/api` because Hono is mounted there). The code lives in `src/api/e2e.ts`, loaded only with a dynamic import when `E2E=1`, and a test asserts the routes return 404 when `E2E` is not set. Details in `testing.md`.
 
 ## API
 
