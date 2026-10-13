@@ -212,4 +212,12 @@ describe("visibleToRecipient", () => {
     expect(visibleToRecipient(task, MISSED_CARD_TTL_MS, addMs(now, DAY - MINUTE))).toBe(true);
     expect(visibleToRecipient(task, MISSED_CARD_TTL_MS, addMs(now, DAY))).toBe(false);
   });
+
+  it("drops a missed card the recipient removed, but not after the task is missed again (NUD-49)", () => {
+    const task = { ...aTask().withStatus("MISSED").build(), statusChangedAt: now };
+    const removed = { ...task, removedByRecipientAt: addMs(now, MINUTE) };
+    expect(visibleToRecipient(removed, MISSED_CARD_TTL_MS, addMs(now, 2 * MINUTE))).toBe(false);
+    const missedAgain = { ...removed, statusChangedAt: addMs(now, DAY - 2 * MINUTE) };
+    expect(visibleToRecipient(missedAgain, MISSED_CARD_TTL_MS, addMs(now, DAY))).toBe(true);
+  });
 });

@@ -34,6 +34,7 @@ import {
   createTask as createTaskDomain,
   isOpen,
   MISSED_CARD_TTL_MS,
+  removeMissedCard,
   PHOTO_CLEANUP_RETRY_MS,
   takenInTime,
   type Command,
@@ -87,6 +88,7 @@ import {
   lockOpenAction,
   markActionDone,
   markPersonDeleted,
+  markMissedCardRemoved,
   markStepFired,
   rescheduleAction,
   persistOutcome,
@@ -513,6 +515,24 @@ export async function taskCommand(
     return {
       result: { taskId: o.task.id, status: o.task.status, planVersion: o.task.planVersion },
       effects: effectsOf(o),
+    };
+  });
+}
+
+/** "Kaldır" on the recipient's missed card (NUD-49): off their list now; the task stays missed. */
+export async function removeMissed(
+  deps: AppDeps,
+  caller: Person,
+  input: { idempotencyKey: string; taskId: TaskId },
+): Promise<{ taskId: TaskId; status: TaskStatus; planVersion: number }> {
+  return runCommand(deps, caller.id, "remove_missed", input.idempotencyKey, async (tx, now) => {
+    const task = await lockTaskOf(tx, caller.id, input.taskId);
+    const r = removeMissedCard(task, caller.id, now);
+    if (!r.ok) throw new ApiError(r.error);
+    await markMissedCardRemoved(tx, r.value);
+    return {
+      result: { taskId: task.id, status: task.status, planVersion: task.planVersion },
+      effects: noEffects,
     };
   });
 }

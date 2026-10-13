@@ -182,6 +182,8 @@ export const PhotoSentCommand = taskKeyed({
 }).openapi("PhotoSentCommand");
 export const CantTodayCommand = taskKeyed({ note: Note }).openapi("CantTodayCommand");
 export const DidItLaterCommand = taskKeyed({}).openapi("DidItLaterCommand");
+/** "Kaldır" on the recipient's missed card (NUD-49). */
+export const RemoveMissedCommand = taskKeyed({}).openapi("RemoveMissedCommand");
 export const SnoozeCommand = taskKeyed({}).openapi("SnoozeCommand");
 export const CancelCommand = taskKeyed({ note: Note }).openapi("CancelCommand");
 export const EditCommand = taskKeyed({
