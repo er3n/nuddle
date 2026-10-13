@@ -185,9 +185,9 @@ Next-up card with Call and Message icons.
 **Copy:** Tekrar istendi | (Sibel's note, e.g.) 1.500 lazımdı, 500 daha çekebilir misin? | Dürtme kaldığı yerden devam ediyor · sıradaki 08:40 | Yeni fotoğraf çek | Bugün yapamayacağım
 Note: "sıradaki 08:40" reveals the next poke time. This conflicts with the hidden plan rule; see `open-questions.md`.
 
-### 4h Voice input (press and hold) · `VoiceHold.png`
-**Copy:** Dinliyorum | (live transcript) | Bırakınca gönderirim | Vazgeçmek için parmağını sola kaydır
-Slide left cancels (open-questions #6). Rules and the notes not in the design: open-questions #40.
+### 4h Voice input (tap to dictate) · `VoiceHold.png`
+**Copy:** Dinliyorum | (live transcript in the box)
+Changed in NUD-48 after the phone test: no press and hold and no panel. A tap on the mic starts listening, the transcript goes into the compose box, a second tap or silence stops, and the person sends it with the arrow. The PNG still shows the old hold-to-talk panel; `docs/ux/components.md` 3 wins. Rules and notes: open-questions #40.
 
 ### 4i Sent directly, undo · `QuickSent.png`
 Sender home with the new task marked "Yeni" and the UndoToast.

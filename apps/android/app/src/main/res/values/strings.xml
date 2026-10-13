@@ -452,13 +452,10 @@
 
     <!-- ComposeBar -->
     <string name="compose_label">Yeni görev</string>
-    <string name="compose_placeholder">Yaz ya da basılı tutup konuş…</string>
-    <string name="compose_hold_hint">Basılı tut</string>
+    <string name="compose_placeholder">Yaz ya da konuş…</string>
     <string name="compose_retry">Tekrar dene</string>
     <string name="voice_listening">Dinliyorum</string>
-    <string name="voice_release">Bırakınca gönderirim</string>
-    <string name="voice_cancel_hint">Vazgeçmek için parmağını sola kaydır</string>
-    <string name="voice_not_heard">Seni duyamadım, basılı tutup tekrar konuş.</string>
+    <string name="voice_not_heard">Seni duyamadım, mikrofona dokunup tekrar konuş.</string>
     <string name="voice_no_permission">Mikrofon izni olmadan dinleyemem. Yazarak da olur.</string>
     <string name="voice_unavailable">Bu telefonda sesle yazma yok. Yazarak da olur.</string>
     <string name="compose_failed_title">Şu an anlayamadım</string>
@@ -485,7 +482,8 @@
     </plurals>
     <string name="cd_profile">Profil</string>
     <string name="cd_back">Geri</string>
-    <string name="cd_mic">Basılı tutup konuş</string>
+    <string name="cd_mic">Konuşarak yaz</string>
+    <string name="cd_mic_stop">Dinlemeyi bitir</string>
     <string name="badge_overflow">9+</string>
 
     <!-- StatusPill (docs/ux/screens.md, Status to UI) -->

@@ -15,7 +15,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-/** 4h: hold to speak, the live transcript, release to send, slide left to cancel (open-questions#6, #17, #40). */
+/** 4h: tap to dictate, the live transcript, a second tap or silence ends it, the text goes into the box (NUD-48). */
 class VoiceViewModelTest {
     @get:Rule val main = MainDispatcherRule()
 
@@ -23,7 +23,7 @@ class VoiceViewModelTest {
     private val vm by lazy { VoiceViewModel(speech) }
 
     @Test
-    fun `while holding the transcript grows, release sends the final text`() =
+    fun `while listening the transcript grows, a second tap ends it with the final text`() =
         runTest(main.dispatcher) {
             vm.transcripts.test {
                 vm.onStart()
@@ -40,7 +40,7 @@ class VoiceViewModelTest {
         }
 
     @Test
-    fun `sliding left cancels, nothing is sent`() =
+    fun `a cancelled session gives no text`() =
         runTest(main.dispatcher) {
             vm.transcripts.test {
                 vm.onStart()
@@ -53,16 +53,13 @@ class VoiceViewModelTest {
         }
 
     @Test
-    fun `a session that ends by silence while holding is sent on release`() =
+    fun `a session that ends by silence gives its text at once, without a second tap`() =
         runTest(main.dispatcher) {
             vm.transcripts.test {
                 vm.onStart()
                 speech.hear(Heard.Final("çöpü at"))
-                assertEquals("", vm.listening.value)
-                expectNoEvents()
-
-                vm.onEnd(cancelled = false)
                 assertEquals("çöpü at", awaitItem())
+                assertNull(vm.listening.value)
                 assertEquals(0, speech.stops)
             }
         }
