@@ -46,6 +46,28 @@ describe("scenarios: task lifecycle", () => {
     expect(world.violations).toEqual([]);
   });
 
+  it("at task: nothing rings before the moment, poking follows it, missed after its grace (ADR 0017)", async () => {
+    const { world, sibel } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.waterSelfAt);
+    expect(world.task(taskId)).toMatchObject({
+      timing: "at",
+      remindAt: at("2026-10-11T20:02:00"),
+      deadline: at("2026-10-11T20:32:00"),
+    });
+
+    await world.advanceTo(at("2026-10-11T20:01:30"));
+    expect(sibel.phone.ringsFor(taskId)).toEqual([]);
+
+    await world.advanceTo(at("2026-10-11T20:33:00"));
+    expect(rings(sibel.phone.ringsFor(taskId))).toEqual([
+      "SOUND@20:02",
+      "FULL_SCREEN@20:07",
+      "FULL_SCREEN@20:22",
+    ]);
+    expect(world.task(taskId).status).toBe("MISSED");
+    expect(world.violations).toEqual([]);
+  });
+
   it("photo upload late (6e): taken before the deadline, it still counts after the task was missed", async () => {
     const { world, sibel, eren } = await sibelAndEren();
     const taskId = await writeTask(sibel, TEXT.photoToEren);

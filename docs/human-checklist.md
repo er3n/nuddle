@@ -50,7 +50,7 @@ Things only the human can do: accounts, payments, logins, secrets, production pu
 
 - [ ] Google Play Console account. Declare the app as an alarm app (`USE_EXACT_ALARM`, full screen intent). Upload an early closed test build to learn the policy outcome.
 - [ ] SMS provider account (WhatsApp Business authentication template later). Configure sender, add credentials to env (`TWILIO_*` and, with the signed prod app, `SMS_RETRIEVER_HASH` in Vercel Production).
-- [ ] Privacy notice and terms (KVKK): name the cross-border transfer (Supabase Frankfurt, Vercel, Firebase), photo retention (deleted when the task closes), account deletion.
+- [ ] Privacy notice and terms (KVKK): name the cross-border transfer (Supabase Frankfurt, Vercel, Firebase, the LLM provider via OpenRouter: written texts, and for poke planning past task titles, outcomes and connection names, ADR 0017), photo retention (deleted when the task closes), account deletion.
 - [ ] Invite links open the app (App Links): put the SHA-256 fingerprint of the release signing certificate (Play App Signing key, and the upload key if you test sideloaded builds) into Vercel Production as `ANDROID_APP_LINK_FINGERPRINTS` (comma separated), redeploy, then check `https://nuddle.app/.well-known/assetlinks.json`. Approve the `durtmobil.com` redirect to `nuddle.app` when the agent proposes it (open-questions #13).
 - [ ] Physical test phones: at least one Xiaomi and one Samsung, plus your own.
 - [ ] Run the manual checklist in `testing.md` on each beta build.

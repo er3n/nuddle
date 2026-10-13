@@ -749,6 +749,13 @@ export interface components {
              * @example 2026-10-12T09:00:00+03:00
              */
             deadline: string;
+            timing?: components["schemas"]["Timing"];
+            /**
+             * Format: date-time
+             * @description ISO 8601 with offset
+             * @example 2026-10-12T09:00:00+03:00
+             */
+            remindAt?: string | null;
             finishMode: components["schemas"]["FinishMode"];
             rawText: string | null;
             status: components["schemas"]["TaskStatus"];
@@ -776,6 +783,8 @@ export interface components {
             photoSentAt?: string | null;
             reRequestNote?: string | null;
         };
+        /** @enum {string} */
+        Timing: "at" | "by";
         /** @enum {string} */
         FinishMode: "done" | "photo";
         /** @enum {string} */
@@ -911,6 +920,8 @@ export interface components {
                 title: string | null;
                 detail: string | null;
                 deadline: string | null;
+                timing?: components["schemas"]["Timing"];
+                missAfterMinutes?: number | null;
                 finishMode: components["schemas"]["FinishMode"];
             } | null;
         };
@@ -944,6 +955,8 @@ export interface components {
              * @example 2026-10-12T09:00:00+03:00
              */
             deadline: string;
+            timing?: components["schemas"]["Timing"];
+            missAfterMinutes?: number | null;
             finishMode: components["schemas"]["FinishMode"];
             rawText: string | null;
         };

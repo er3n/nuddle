@@ -4,6 +4,7 @@
 import { planPokes } from "./plan-pokes";
 import type { Reachability } from "./reachability";
 import { DAY, HOUR, MINUTE, addMs } from "./time";
+import { reschedule, scheduleOf } from "./timing";
 import type {
   CancelReason,
   DeviceLevel,
@@ -19,6 +20,7 @@ import type {
   TaskEventType,
   TaskId,
   TaskStatus,
+  Timing,
 } from "./types";
 
 export const AUTO_APPROVE_AFTER_MS = 3 * HOUR;
@@ -45,6 +47,7 @@ export type Command =
   | { type: "snooze" }
   // Sender
   | { type: "cancel"; note: string | null }
+  /** `deadline` here and in new_deadline is the time the person picked; an `at` task keeps its grace. */
   | { type: "edit"; deadline?: Date; detail?: string | null; finishMode?: FinishMode }
   | { type: "approve" }
   | { type: "re_request"; note: string | null }
@@ -558,7 +561,7 @@ export function applyCommand(
         if (cmd.deadline.getTime() <= now.getTime()) {
           return { ok: false, error: "deadline_not_in_future" };
         }
-        next.deadline = cmd.deadline;
+        Object.assign(next, reschedule(task, cmd.deadline));
       }
       if (cmd.detail !== undefined) next.detail = cmd.detail;
       if (cmd.finishMode !== undefined) next.finishMode = cmd.finishMode;
@@ -567,7 +570,7 @@ export function applyCommand(
       if (cmd.deadline.getTime() <= now.getTime()) {
         return { ok: false, error: "deadline_not_in_future" };
       }
-      next.deadline = cmd.deadline;
+      Object.assign(next, reschedule(task, cmd.deadline));
       break;
     case "account_deleted":
     case "connection_removed":
@@ -636,7 +639,12 @@ export interface CreateTaskInput {
   edge: Edge | null;
   title: string;
   detail: string | null;
+  /** The time the person picked: the deadline of a `by` task, the moment of an `at` task. */
   deadline: Date;
+  /** Defaults to `by`. */
+  timing?: Timing;
+  /** How long after the moment an `at` task is missed (ADR 0017). */
+  missAfterMinutes?: number | null;
   finishMode: FinishMode;
   rawText: string | null;
   reachability: Reachability;
@@ -669,7 +677,8 @@ export function createTask(input: CreateTaskInput): Result<Outcome> {
     recipientId: recipient.id,
     title: input.title,
     detail: input.detail,
-    deadline: input.deadline,
+    timing: input.timing ?? "by",
+    ...scheduleOf(input.timing ?? "by", input.deadline, input.missAfterMinutes),
     finishMode: input.finishMode,
     rawText: input.rawText,
     status: "SCHEDULED",

@@ -14,6 +14,8 @@ const complete: Extraction = {
   title: "Temizlikçi için para çek",
   detail: "1.000 TL",
   deadline: "2026-10-12T09:00:00+03:00",
+  timing: "by",
+  missAfterMinutes: null,
   finishMode: "photo",
   missing: [],
 };
@@ -34,8 +36,33 @@ describe("resolveExtraction", () => {
       title: "Temizlikçi için para çek",
       detail: "1.000 TL",
       deadline: new Date("2026-10-12T06:00:00Z"),
+      timing: "by",
+      missAfterMinutes: null,
       finishMode: "photo",
     });
+  });
+
+  it("keeps the timing, and the grace only for an at task (ADR 0017)", () => {
+    const water = {
+      ...complete,
+      recipient: "self",
+      title: "Su iç",
+      detail: null,
+      deadline: "2026-10-11T20:02:00+03:00",
+      timing: "at" as const,
+      missAfterMinutes: 30,
+      finishMode: "done" as const,
+    };
+    expect(resolveExtraction(water, { id: "sibel" }, connections, now)).toMatchObject({
+      kind: "create",
+      recipientId: "sibel",
+      deadline: new Date("2026-10-11T17:02:00Z"),
+      timing: "at",
+      missAfterMinutes: 30,
+    });
+    expect(
+      resolveExtraction({ ...complete, missAfterMinutes: 30 }, { id: "sibel" }, connections, now),
+    ).toMatchObject({ timing: "by", missAfterMinutes: null });
   });
 
   it("matches names with Turkish case rules", () => {

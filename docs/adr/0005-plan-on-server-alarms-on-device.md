@@ -1,6 +1,6 @@
 # 0005 Poke plan generated on the server, executed on the device
 
-Status: Accepted (2026-10-11).
+Status: Accepted (2026-10-11). Who makes the plan (the pure `planPokes`) is superseded by ADR 0017; the rest stands.
 
 ## Context
 The plan is hidden and learned from behavior across devices and people, so it belongs on the server. But pokes must ring on time even offline, and push delivery is not reliable enough to be the alarm itself.

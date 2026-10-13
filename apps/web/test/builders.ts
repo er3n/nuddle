@@ -37,6 +37,8 @@ class TaskBuilder {
     title: "Temizlikçi için para çek",
     detail: "1.000 TL",
     deadline: new Date("2026-10-12T09:00:00+03:00"),
+    timing: "by",
+    remindAt: null,
     finishMode: "photo",
     rawText: "eren yarın 9dan önce temizlikçi için 1000 çeksin",
     status: "SCHEDULED",
@@ -57,6 +59,14 @@ class TaskBuilder {
 
   withDeadline(deadline: Date | string): this {
     this.task.deadline = new Date(deadline);
+    return this;
+  }
+
+  /** An `at` task (ADR 0017): the moment, and the deadline that many minutes after it. */
+  at(moment: Date | string, missAfterMinutes = 60): this {
+    this.task.timing = "at";
+    this.task.remindAt = new Date(moment);
+    this.task.deadline = new Date(new Date(moment).getTime() + missAfterMinutes * 60_000);
     return this;
   }
 

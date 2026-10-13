@@ -1,6 +1,6 @@
 // LLM task extraction: the provider-neutral input/output and the post-processing that decides
 // between creating the task at once and asking exactly one question (docs/domain.md).
-import type { EdgeType, FinishMode, PersonId } from "./types";
+import type { EdgeType, FinishMode, PersonId, Timing } from "./types";
 
 export interface ExtractionInput {
   text: string;
@@ -18,8 +18,12 @@ export interface Extraction {
   recipient: string | null;
   title: string | null;
   detail: string | null;
-  /** ISO 8601 with offset, or null when the text gives no time. */
+  /** ISO 8601 with offset, or null when the text gives no time. For an `at` task the moment. */
   deadline: string | null;
+  /** `at` for a moment ("2 dakika sonra", "9'da"), `by` for a deadline ("9'a kadar"). ADR 0017. */
+  timing: Timing;
+  /** For an `at` task: how long after the moment it still makes sense. Null for `by` or unknown. */
+  missAfterMinutes: number | null;
   finishMode: FinishMode;
   missing: MissingField[];
 }
@@ -30,7 +34,10 @@ export type Resolution =
       recipientId: PersonId;
       title: string;
       detail: string | null;
+      /** The picked time: the moment of an `at` task. */
       deadline: Date;
+      timing: Timing;
+      missAfterMinutes: number | null;
       finishMode: FinishMode;
     }
   | { kind: "ask"; question: MissingField };
@@ -77,6 +84,8 @@ export function resolveExtraction(
     title,
     detail: e.detail?.trim() === "" ? null : e.detail,
     deadline,
+    timing: e.timing,
+    missAfterMinutes: e.timing === "at" ? e.missAfterMinutes : null,
     finishMode: e.finishMode,
   };
 }

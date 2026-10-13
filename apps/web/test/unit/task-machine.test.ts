@@ -274,6 +274,18 @@ describe("task state machine", () => {
     );
   });
 
+  it("moves an at task's moment on a time edit and keeps its grace (ADR 0017)", () => {
+    const task = aTask().at("2026-10-12T09:00:00+03:00", 30).build();
+    const o = apply(
+      task,
+      { type: "edit", deadline: new Date("2026-10-12T18:00:00+03:00") },
+      "sibel",
+    );
+    expect(o.task.remindAt).toEqual(new Date("2026-10-12T18:00:00+03:00"));
+    expect(o.task.deadline).toEqual(new Date("2026-10-12T18:30:00+03:00"));
+    expect(o.plan.steps[0]?.plannedAt).toEqual(new Date("2026-10-12T18:00:00+03:00"));
+  });
+
   it("rejects a deadline in the past", () => {
     const task = aTask().build();
     expect(
@@ -461,6 +473,24 @@ describe("createTask", () => {
     expect(o.pushes).toEqual([
       { to: "eren", hint: "plan_changed", taskId: "task-1", event: "created" },
     ]);
+  });
+
+  it("creates an at task: the moment, the deadline after its grace, no poke before the moment", () => {
+    const r = createTask({ ...input, timing: "at", missAfterMinutes: 120 });
+    if (!r.ok) throw new Error(r.error);
+    const o = r.value;
+    expect(o.task).toMatchObject({
+      timing: "at",
+      remindAt: new Date("2026-10-12T09:00:00+03:00"),
+      deadline: new Date("2026-10-12T11:00:00+03:00"),
+    });
+    expect(o.plan.steps[0]).toMatchObject({
+      level: "SOUND",
+      plannedAt: new Date("2026-10-12T09:00:00+03:00"),
+    });
+    expect(o.scheduledActions.find((a) => a.kind === "deadline")?.dueAt).toEqual(
+      new Date("2026-10-12T11:00:00+03:00"),
+    );
   });
 
   it("refuses a recipient who is not connected (pending invite)", () => {

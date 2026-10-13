@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { expect, it } from "vitest";
 import type { Extraction } from "../../src/domain/extraction";
-import type { EdgeType, FinishMode } from "../../src/domain/types";
+import type { EdgeType, FinishMode, Timing } from "../../src/domain/types";
 import { OpenRouterExtractor } from "../../src/infra/llm/openrouter-extractor";
 
 interface GoldenCase {
@@ -21,6 +21,8 @@ interface GoldenCase {
     deadline: string | null;
     finishMode: FinishMode | null;
     question: boolean;
+    /** Scored only when given (ADR 0017). */
+    timing?: Timing;
   };
 }
 
@@ -49,6 +51,7 @@ function score(c: GoldenCase, got: Extraction): Record<string, boolean> {
       new Date(got.deadline).getTime() === new Date(c.expected.deadline).getTime();
     result.finishMode = got.finishMode === c.expected.finishMode;
     result.detail = digits(got.detail) === digits(c.expected.detail);
+    if (c.expected.timing !== undefined) result.timing = got.timing === c.expected.timing;
   }
   return result;
 }

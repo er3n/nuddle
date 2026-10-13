@@ -228,3 +228,71 @@ describe("planPokes v0 at the quiet hours boundary", () => {
     expect(steps).toHaveLength(4);
   });
 });
+
+describe("planPokes v0, an at task (ADR 0017)", () => {
+  function planAt(
+    moment: string,
+    now: string,
+    opts: { missAfterMinutes?: number; self?: boolean; floor?: "SOUND" | "FULL_SCREEN" } = {},
+  ) {
+    const recipient = opts.self ? sibel : eren;
+    return planPokes({
+      task: aTask()
+        .from(sibel)
+        .forRecipient(recipient)
+        .at(moment, opts.missAfterMinutes ?? 60)
+        .build(),
+      recipient,
+      sender: sibel,
+      reachability: "FULL_SCREEN",
+      history: [],
+      now: new Date(now),
+      ...(opts.floor ? { floor: opts.floor } : {}),
+    });
+  }
+
+  it("starts at the moment and never pokes before it", () => {
+    // "2 dakika sonra su iç" written at 18:40 Istanbul (15:40Z).
+    const steps = planAt("2026-10-13T18:42:00+03:00", "2026-10-13T18:40:00+03:00", { self: true });
+    expect(summary(steps)).toEqual(["SOUND@15:42", "FULL_SCREEN@15:47", "FULL_SCREEN@16:02"]);
+    expect(steps.every((s) => s.plannedAt >= new Date("2026-10-13T15:42:00Z"))).toBe(true);
+  });
+
+  it("adds the human step 30 minutes after the moment for someone else's task", () => {
+    const steps = planAt("2026-10-13T18:42:00+03:00", "2026-10-13T18:40:00+03:00");
+    expect(summary(steps)).toEqual([
+      "SOUND@15:42",
+      "FULL_SCREEN@15:47",
+      "FULL_SCREEN@16:02",
+      "HUMAN@16:12",
+    ]);
+  });
+
+  it("drops steps at or after the deadline", () => {
+    const steps = planAt("2026-10-13T18:42:00+03:00", "2026-10-13T18:40:00+03:00", {
+      self: true,
+      missAfterMinutes: 15,
+    });
+    expect(summary(steps)).toEqual(["SOUND@15:42", "FULL_SCREEN@15:47"]);
+  });
+
+  it("drops steps inside quiet hours", () => {
+    // 22:50 moment: 23:00 starts quiet hours, so only the first two steps remain.
+    const steps = planAt("2026-10-13T22:50:00+03:00", "2026-10-13T20:00:00+03:00", { self: true });
+    expect(summary(steps)).toEqual(["SOUND@19:50", "FULL_SCREEN@19:55"]);
+  });
+
+  it("starts from now when poking resumes after the moment, at least at the level reached", () => {
+    const steps = planAt("2026-10-13T18:42:00+03:00", "2026-10-13T18:57:00+03:00", {
+      self: true,
+      floor: "FULL_SCREEN",
+    });
+    expect(summary(steps)).toEqual(["FULL_SCREEN@15:57", "FULL_SCREEN@16:02", "FULL_SCREEN@16:17"]);
+  });
+
+  it("plans nothing when no device step fits", () => {
+    expect(
+      planAt("2026-10-13T23:30:00+03:00", "2026-10-13T20:00:00+03:00", { self: true }),
+    ).toEqual([]);
+  });
+});

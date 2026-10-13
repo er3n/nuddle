@@ -10,7 +10,8 @@ import { randomUUID } from "node:crypto";
 import { asc } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { afterEach } from "vitest";
-import type { Extraction, MissingField } from "../../src/domain/extraction";
+import type { MissingField } from "../../src/domain/extraction";
+import type { FixtureExtraction } from "../../src/infra/llm/fixture-extractor";
 import { isQuiet } from "../../src/domain/quiet-hours";
 import {
   deriveReachability,
@@ -470,7 +471,7 @@ export class World {
   private readonly names = new Map<string, PersonId>();
   private snap = emptySnapshot();
 
-  constructor(fixtures: Record<string, Extraction> = {}) {
+  constructor(fixtures: Record<string, FixtureExtraction> = {}) {
     this.extractor = new FixtureExtractor(new Map(Object.entries(fixtures)));
     this.ready = startTestServer({
       clock: this.clock,

@@ -17,7 +17,11 @@
 //    the only step.
 // 7. Reachability does not remove steps. A level the device cannot reach stays in the plan and
 //    degrades on the device ("permission needed").
-// `history` is accepted so learning can arrive without changing callers; v0 ignores it.
+// 8. An `at` task (ADR 0017) starts at its moment instead of ending at the deadline: SOUND at the
+//    moment, FULL_SCREEN 5 and 20 minutes after it, HUMAN 30 minutes after it when allowed. Steps
+//    at or after the deadline or inside quiet hours are dropped. A snooze or re-request starts the
+//    same ladder where poking resumes, at least at the level already reached.
+// `history` is accepted for callers; v0 ignores it. The LLM planner reads it (ADR 0017).
 import { latestQuietOverlap, quietIntervalAt } from "./quiet-hours";
 import type { Reachability } from "./reachability";
 import { MINUTE } from "./time";
@@ -35,8 +39,17 @@ const ladder: readonly { level: DeviceLevel; offsetMs: number }[] = [
 
 const deviceRank: Record<DeviceLevel, number> = { SILENT: 0, SOUND: 1, FULL_SCREEN: 2 };
 
+/** TODO(open-questions#43): the `at` ladder, as offsets after the moment. */
+const atLadder: readonly { level: DeviceLevel; afterMs: number }[] = [
+  { level: "SOUND", afterMs: 0 },
+  { level: "FULL_SCREEN", afterMs: 5 * MINUTE },
+  { level: "FULL_SCREEN", afterMs: 20 * MINUTE },
+];
+const AT_HUMAN_AFTER_MS = 30 * MINUTE;
+
 export interface PlanPokesInput {
-  task: Pick<Task, "deadline" | "senderId" | "recipientId">;
+  task: Pick<Task, "deadline" | "senderId" | "recipientId"> &
+    Partial<Pick<Task, "timing" | "remindAt">>;
   recipient: Pick<Person, "quietHours" | "useConnectionsForMyTasks">;
   /** The human channel in the MVP is the sender (docs/product.md, Human channel). */
   sender: Pick<Person, "notifyMeForOthersTasks">;
@@ -73,8 +86,42 @@ function pokeWindow(
   return null;
 }
 
+/** Whether the sender may be told: rule 5. */
+function humanChannelAllowed(input: PlanPokesInput): boolean {
+  const { task, recipient, sender } = input;
+  return (
+    task.senderId !== task.recipientId &&
+    recipient.useConnectionsForMyTasks &&
+    sender.notifyMeForOthersTasks &&
+    input.senderEdge?.notifyMe !== false
+  );
+}
+
+/** Rule 8: an `at` task. */
+function planAt(input: PlanPokesInput, remindAt: Date): PokeStep[] {
+  const { task, recipient, now } = input;
+  const anchor = Math.max(remindAt.getTime(), now.getTime());
+  const floorRank = deviceRank[input.floor ?? "SILENT"];
+  const planned: { level: PokeLevel; at: number }[] = atLadder.map((rung) => ({
+    level: deviceRank[rung.level] >= floorRank ? rung.level : (input.floor ?? rung.level),
+    at: anchor + rung.afterMs,
+  }));
+  if (humanChannelAllowed(input)) planned.push({ level: "HUMAN", at: anchor + AT_HUMAN_AFTER_MS });
+  const allowed = planned.filter(
+    (p) => p.at < task.deadline.getTime() && !quietIntervalAt(new Date(p.at), recipient.quietHours),
+  );
+  if (!allowed.some((p) => p.level !== "HUMAN")) return [];
+  return allowed.map((p, i) => ({
+    seq: i + 1,
+    plannedAt: new Date(p.at),
+    level: p.level,
+    firedAt: null,
+  }));
+}
+
 export function planPokes(input: PlanPokesInput): PokeStep[] {
-  const { task, recipient, sender, now } = input;
+  const { task, recipient, now } = input;
+  if (task.timing === "at" && task.remindAt) return planAt(input, task.remindAt);
   const window = pokeWindow(task.deadline, recipient, now);
   if (!window) return [];
   const { start, end } = window;
@@ -90,12 +137,8 @@ export function planPokes(input: PlanPokesInput): PokeStep[] {
     .filter((rung) => deviceRank[rung.level] >= floorRank)
     .map((rung) => ({ level: rung.level, at: end.getTime() - rung.offsetMs * scale }));
 
-  const humanChannel =
-    task.senderId !== task.recipientId &&
-    recipient.useConnectionsForMyTasks &&
-    sender.notifyMeForOthersTasks &&
-    input.senderEdge?.notifyMe !== false;
-  if (humanChannel) planned.push({ level: "HUMAN", at: end.getTime() - HUMAN_OFFSET_MS * scale });
+  if (humanChannelAllowed(input))
+    planned.push({ level: "HUMAN", at: end.getTime() - HUMAN_OFFSET_MS * scale });
 
   return planned.map((p, i) => ({
     seq: i + 1,

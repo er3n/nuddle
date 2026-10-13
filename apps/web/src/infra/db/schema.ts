@@ -49,6 +49,8 @@ export const inviteStatus = pgEnum("invite_status", [
   "expired",
 ]);
 export const finishMode = pgEnum("finish_mode", ["done", "photo"]);
+// ADR 0017: `by` is done by the deadline, `at` is a moment (remind_at) and the deadline its grace.
+export const timing = pgEnum("timing", ["at", "by"]);
 // Server statuses only. QUEUED is client-only and never stored here.
 export const taskStatus = pgEnum("task_status", [
   "SCHEDULED",
@@ -170,6 +172,9 @@ export const tasks = pgTable(
     title: text("title").notNull(),
     detail: text("detail"),
     deadline: timestamp("deadline", { withTimezone: true }).notNull(),
+    timing: timing("timing").notNull().default("by"),
+    // The moment of an `at` task; null for `by`.
+    remindAt: timestamp("remind_at", { withTimezone: true }),
     finishMode: finishMode("finish_mode").notNull(),
     rawText: text("raw_text"),
     status: taskStatus("status").notNull().default("SCHEDULED"),

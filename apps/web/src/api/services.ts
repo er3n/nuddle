@@ -49,6 +49,7 @@ import type {
   Task,
   TaskId,
   TaskStatus,
+  Timing,
 } from "../domain/types";
 import {
   activeConnections,
@@ -216,7 +217,10 @@ interface NewTask {
   recipientId: PersonId;
   title: string;
   detail: string | null;
+  /** The picked time: the moment of an `at` task. */
   deadline: Date;
+  timing?: Timing;
+  missAfterMinutes?: number | null;
   finishMode: FinishMode;
   rawText: string | null;
 }
@@ -296,12 +300,12 @@ export async function writeTask(
     now,
   );
   if (resolved.kind === "ask") {
-    const { recipient, title, detail, deadline, finishMode } = extraction;
+    const { recipient, title, detail, deadline, timing, missAfterMinutes, finishMode } = extraction;
     return {
       kind: "ask",
       taskId: null,
       question: resolved.question,
-      draft: { recipient, title, detail, deadline, finishMode },
+      draft: { recipient, title, detail, deadline, timing, missAfterMinutes, finishMode },
     };
   }
   return runCommand(deps, caller.id, "write_task", input.idempotencyKey, async (tx, txNow) => {
