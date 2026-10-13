@@ -661,6 +661,16 @@ export function adoptPlan(
   };
 }
 
+/**
+ * "Kaldır" on the recipient's missed card (NUD-49): hides it from their list at once. Not a status change, so no
+ * event, plan or timer; the sender still sees the task as missed.
+ */
+export function removeMissedCard(task: Task, actorId: PersonId, now: Date): Result<Task> {
+  if (actorId !== task.recipientId) return { ok: false, error: "not_recipient" };
+  if (task.status !== "MISSED") return { ok: false, error: "wrong_status" };
+  return { ok: true, value: { ...task, removedByRecipientAt: now } };
+}
+
 function dedupe(pushes: PushMessage[]): PushMessage[] {
   const seen = new Set<string>();
   return pushes.filter((p) => {
@@ -725,6 +735,7 @@ export function createTask(input: CreateTaskInput): Result<Outcome> {
     late: false,
     planVersion: 1,
     statusChangedAt: now,
+    removedByRecipientAt: null,
   };
   const created = event(task, sender.id, "created", {}, now);
   const effects = effectsOfStatus(

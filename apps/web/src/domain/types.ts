@@ -67,6 +67,8 @@ export interface Task {
   planVersion: number;
   /** When the status last changed. The missed card expiry counts from here. */
   statusChangedAt: Date;
+  /** When the recipient removed the missed card from their list ("Kaldır", NUD-49); null while it shows. */
+  removedByRecipientAt: Date | null;
 }
 
 export interface PokeStep {

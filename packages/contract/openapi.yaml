@@ -859,6 +859,19 @@ components:
         - deadline
         - finishMode
         - rawText
+    RemoveMissedCommand:
+      type: object
+      properties:
+        idempotencyKey:
+          type: string
+          format: uuid
+          description: Client generated UUIDv7; a replay returns the first result (ADR 0006)
+        taskId:
+          type: string
+          format: uuid
+      required:
+        - idempotencyKey
+        - taskId
     DoneCommand:
       type: object
       properties:
@@ -1780,6 +1793,63 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CreateTaskCommand"
+      responses:
+        "200":
+          description: The result; a replay with the same key returns it again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskCommandResult"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/commands/remove_missed:
+    post:
+      operationId: removeMissed
+      summary: "Recipient: Kaldır on a missed card (only off their own list)"
+      tags:
+        - commands
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoveMissedCommand"
       responses:
         "200":
           description: The result; a replay with the same key returns it again

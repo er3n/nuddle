@@ -4,6 +4,7 @@ import {
   applyCommand,
   PHOTO_CLEANUP_RETRY_MS,
   createTask,
+  removeMissedCard,
   type Command,
   type TaskContext,
 } from "../../src/domain/task-machine";
@@ -509,5 +510,18 @@ describe("createTask", () => {
   it("refuses a deleted recipient", () => {
     const r = createTask({ ...input, recipient: { ...eren, deletedAt: now } });
     expect(r).toEqual({ ok: false, error: "recipient_unavailable" });
+  });
+});
+
+describe("removeMissedCard (NUD-49)", () => {
+  it("only the recipient, only a missed task", () => {
+    const missed = aTask().withStatus("MISSED").build();
+    const r = removeMissedCard(missed, "eren", now);
+    expect(r).toEqual({ ok: true, value: { ...missed, removedByRecipientAt: now } });
+    expect(removeMissedCard(missed, "sibel", now)).toEqual({ ok: false, error: "not_recipient" });
+    expect(removeMissedCard(aTask().build(), "eren", now)).toEqual({
+      ok: false,
+      error: "wrong_status",
+    });
   });
 });

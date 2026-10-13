@@ -50,6 +50,13 @@
       "when": 1791906902893,
       "tag": "20261013155502_task_timing",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791911700030,
+      "tag": "20261013171500_missed_card_removed",
+      "breakpoints": true
     }
   ]
 }
