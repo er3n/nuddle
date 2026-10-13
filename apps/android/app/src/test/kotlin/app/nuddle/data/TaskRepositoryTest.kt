@@ -213,7 +213,7 @@ class TaskRepositoryTest {
     @Test
     fun `changing how it ends keeps the deadline and the detail`() =
         runTest {
-            db.tasks().upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SELIN_ID)))
+            db.tasks().upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SIBEL_ID)))
             server.enqueue(json(200, """{"taskId":"${Cast.TASK_ID}","status":"SCHEDULED","planVersion":2}"""))
             server.enqueue(json(200, syncBody))
 
@@ -269,7 +269,7 @@ class TaskRepositoryTest {
     @Test
     fun `Ben hallederim cancels a dropped task at once and queues sender_handles`() =
         runTest {
-            db.tasks().upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SELIN_ID, status = "DROPPED")))
+            db.tasks().upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SIBEL_ID, status = "DROPPED")))
 
             repository.senderHandles(Cast.TASK_ID)
 

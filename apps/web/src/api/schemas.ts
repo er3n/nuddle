@@ -239,7 +239,7 @@ export const UpdateConnectionCommand = keyed({
   personId: Id,
   /** What this person is to me. */
   relationship: EdgeType.optional(),
-  /** "Selin'in işleri için bana haber verilebilir" (5b). */
+  /** "Sibel'in işleri için bana haber verilebilir" (5b). */
   notifyMe: z.boolean().optional(),
 }).openapi("UpdateConnectionCommand");
 export const RemoveConnectionCommand = keyed({ personId: Id }).openapi("RemoveConnectionCommand");
@@ -359,7 +359,7 @@ const SyncTask = z
      * app reading an older server's sync treats it as 0 instead of failing the whole sync.
      */
     snoozesUsed: z.int().optional(),
-    /** When the sender wrote it: "Selin yazdı · 14:32" (4c). Optional for the same reason as snoozesUsed. */
+    /** When the sender wrote it: "Sibel yazdı · 14:32" (4c). Optional for the same reason as snoozesUsed. */
     createdAt: Instant.optional(),
     /** When the last photo was sent: "08:24'te gönderdin" (4e), "Eren fotoğraf gönderdi · 08:24" (4f). */
     photoSentAt: Instant.nullable().optional(),
@@ -410,7 +410,7 @@ export const SyncResponse = z
           phone: Phone.optional(),
           /** Since when the connection is active: "3 aydır bağlısınız" (5b). Optional like `phone`. */
           connectedAt: Instant.optional(),
-          /** My "Selin'in işleri için bana haber verilebilir" switch (5b). Optional like `phone`. */
+          /** My "Sibel'in işleri için bana haber verilebilir" switch (5b). Optional like `phone`. */
           notifyMe: z.boolean().optional(),
         })
         .openapi("SyncConnection"),

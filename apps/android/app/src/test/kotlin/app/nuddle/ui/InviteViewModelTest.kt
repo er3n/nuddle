@@ -28,8 +28,8 @@ class InviteViewModelTest {
         assertNull(vm.state.value.relationship)
         assertFalse(vm.state.value.canSend)
 
-        vm.onContactPicked("Selin", "0532 987 65 43")
-        assertEquals(Invitee("Selin", "+905329876543"), vm.state.value.contact)
+        vm.onContactPicked("Sibel", "0532 987 65 43")
+        assertEquals(Invitee("Sibel", "+905329876543"), vm.state.value.contact)
         assertFalse(vm.state.value.canSend)
 
         vm.onRelationship(EdgeType.SPOUSE)
@@ -56,20 +56,20 @@ class InviteViewModelTest {
     @Test
     fun `Daveti gönder creates the invite and hands the link to the share sheet`() =
         runTest(main.dispatcher) {
-            vm.onContactPicked("Selin", "+905329876543")
+            vm.onContactPicked("Sibel", "+905329876543")
             vm.onRelationship(EdgeType.SPOUSE)
             vm.share.test {
                 vm.onSend()
                 assertEquals("https://nuddle.app/i/abc", awaitItem())
             }
-            assertEquals(listOf("+905329876543", "Selin", EdgeType.SPOUSE), invites.created.single().take(3))
+            assertEquals(listOf("+905329876543", "Sibel", EdgeType.SPOUSE), invites.created.single().take(3))
         }
 
     @Test
     fun `a failed send says so and a retry reuses the idempotency key`() =
         runTest(main.dispatcher) {
             invites.code = null
-            vm.onContactPicked("Selin", "+905329876543")
+            vm.onContactPicked("Sibel", "+905329876543")
             vm.onRelationship(EdgeType.SPOUSE)
             vm.onSend()
             assertTrue(vm.state.value.failed)

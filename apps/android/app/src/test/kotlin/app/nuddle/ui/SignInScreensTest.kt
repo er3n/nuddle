@@ -120,14 +120,14 @@ class SignInScreensTest {
 
     @Test
     fun `invited welcome shows who invites`() {
-        content { WelcomeScreen(WelcomeUiState(inviterName = "Selin"), onStart = {}, onTerms = {}, onPrivacy = {}) }
-        compose.onNodeWithText("Selin seni dürt'e davet etti").assertExists()
+        content { WelcomeScreen(WelcomeUiState(inviterName = "Sibel"), onStart = {}, onTerms = {}, onPrivacy = {}) }
+        compose.onNodeWithText("Sibel seni dürt'e davet etti").assertExists()
     }
 
     @Test
     fun `the invited name hint keeps the name the inviter typed while the name is edited`() {
-        content { NameScreen(NameUiState(name = "Eren Can", invitedBy = "Selin", invitedAs = "Eren"), {}, {}) }
-        compose.onNodeWithText("Selin seni \"Eren\" diye eklemişti. Değiştirebilirsin.").assertExists()
+        content { NameScreen(NameUiState(name = "Eren Can", invitedBy = "Sibel", invitedAs = "Eren"), {}, {}) }
+        compose.onNodeWithText("Sibel seni \"Eren\" diye eklemişti. Değiştirebilirsin.").assertExists()
     }
 
     @Test

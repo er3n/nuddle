@@ -52,7 +52,7 @@ data class DurtColors(
     val darkText: Color = Color(0xFFFFFFFF),
     val darkTextSecondary: Color = Color(0xFFC9D0D7),
     val avatarSelf: Color = Color(0xFF11151A),
-    // TODO(open-questions#20): six colors, each 4.5:1 with white text. Only the first (Selin) is from the design.
+    // TODO(open-questions#20): six colors, each 4.5:1 with white text. Only the first (Sibel) is from the design.
     val avatarOthers: List<Color> =
         listOf(
             Color(0xFFC83C08),

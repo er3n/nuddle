@@ -64,7 +64,7 @@ Single Activity with Navigation Compose, plus `PokeActivity` for the lock screen
 
 - Every tappable element is at least 44 x 44 dp. Visually small ones (links, chevrons) use `minimumInteractiveComponentSize`.
 - Text contrast at least 4.5:1. Text on `accent` is always `ink`. `textMuted` only for decoration.
-- TalkBack: icon buttons have content descriptions ("Bildirimler, 1 okunmamış", "Profil", "Basılı tutup konuş", "Geri"). A TaskRow reads as one element: "Gelirken ekmek al, Selin, bu akşam, Kurulu". ToggleRow is `Role.Switch`, ChoiceChip is `Role.RadioButton` with selection state.
+- TalkBack: icon buttons have content descriptions ("Bildirimler, 1 okunmamış", "Profil", "Basılı tutup konuş", "Geri"). A TaskRow reads as one element: "Gelirken ekmek al, Sibel, bu akşam, Kurulu". ToggleRow is `Role.Switch`, ChoiceChip is `Role.RadioButton` with selection state.
 - Font scale up to 200%. Fixed-height boxes use `heightIn(min = ...)` so they grow.
 - Animations 150-250 ms; with system animations off, toasts and sheets appear instantly. Poke rings stay static.
 - With TalkBack on, the undo toast lasts 10 s and takes focus.

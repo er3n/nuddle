@@ -1,23 +1,23 @@
-// Smoke 2 (docs/testing.md, Smoke set): Selin invites Eren from home (1e, 1f), Eren opens the invite
+// Smoke 2 (docs/testing.md, Smoke set): Sibel invites Eren from home (1e, 1f), Eren opens the invite
 // link before he has an account: the invited welcome (0b) and the prefilled name (0e, ADR 0016). He
 // signs up with that number, the consent screen (0f) opens by itself, İzin ver, matched (0g), home. Both are
-// connected on the server and Selin's pending invite (1g) leaves her home.
-// Runs after smoke 1: Selin is signed in on her emulator.
+// connected on the server and Sibel's pending invite (1g) leaves her home.
+// Runs after smoke 1: Sibel is signed in on her emulator.
 import postgres from "postgres";
 import type { RunContext } from "../context";
 import { devices } from "../devices";
 import { waitFor } from "../proc";
 
-const SELIN_PHONE = "+905320000001";
+const SIBEL_PHONE = "+905320000001";
 const EREN_PHONE = "+905320000002";
 
 export async function invite(run: RunContext, databaseUrl: string): Promise<void> {
-  const { selin, eren } = devices;
+  const { sibel, eren } = devices;
   const db = postgres(databaseUrl, { max: 1, onnotice: () => undefined });
   try {
     await run.step("invite", async (dir) => {
-      await selin.wakeAndUnlock();
-      await selin.maestro("selin/invite.yaml", dir, {
+      await sibel.wakeAndUnlock();
+      await sibel.maestro("sibel/invite.yaml", dir, {
         NAME: "Eren",
         PHONE: EREN_PHONE.slice(3),
         RELATIONSHIP: "spouse",
@@ -26,12 +26,12 @@ export async function invite(run: RunContext, databaseUrl: string): Promise<void
 
     await run.step("invite-on-server", async () => {
       const row = await waitFor(
-        "Selin's open invite for Eren's number",
+        "Sibel's open invite for Eren's number",
         async () => {
           const rows = await db<{ status: string; relationship: string }[]>`
             select i.status, i.relationship from invites i
             join people p on p.id = i.inviter_id
-            where p.phone = ${SELIN_PHONE} and i.invitee_phone = ${EREN_PHONE}`;
+            where p.phone = ${SIBEL_PHONE} and i.invitee_phone = ${EREN_PHONE}`;
           return rows[0] ?? null;
         },
         30_000,
@@ -58,7 +58,7 @@ export async function invite(run: RunContext, databaseUrl: string): Promise<void
 
     await run.step("connected", async () => {
       const edges = await waitFor(
-        "two active edges between Selin and Eren",
+        "two active edges between Sibel and Eren",
         async () => {
           const rows = await db<{ from: string; to: string; type: string }[]>`
             select f.phone as from, t.phone as to, e.type from edges e
@@ -73,7 +73,7 @@ export async function invite(run: RunContext, databaseUrl: string): Promise<void
     });
 
     await run.step("invite-accepted", async (dir) => {
-      await selin.maestro("selin/invite-accepted.yaml", dir);
+      await sibel.maestro("sibel/invite-accepted.yaml", dir);
     });
   } finally {
     await db.end();

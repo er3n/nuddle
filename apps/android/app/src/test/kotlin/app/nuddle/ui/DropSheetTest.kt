@@ -36,7 +36,7 @@ class DropSheetTest {
 
     private fun showSheet() {
         compose.setContent {
-            var state by remember { mutableStateOf(DropUi(senderName = "Selin")) }
+            var state by remember { mutableStateOf(DropUi(senderName = "Sibel")) }
             DurtTheme {
                 DropSheet(
                     state,

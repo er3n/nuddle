@@ -39,7 +39,7 @@ export interface Accepted {
 
 /**
  * The invitee says "İzin ver". `relationship` is the invitee's own pick for the inviter
- * ("Selin senin neyin?").
+ * ("Sibel senin neyin?").
  */
 export function acceptInvite(
   invite: Invite,
@@ -137,7 +137,7 @@ export function deleteAccount(
 }
 
 /**
- * "İlişki" and "Selin'in işleri için bana haber verilebilir" on person detail (5b). Only my own
+ * "İlişki" and "Sibel'in işleri için bana haber verilebilir" on person detail (5b). Only my own
  * edge changes: each side picks its own relationship and its own switch.
  */
 export function changeConnection(
@@ -164,7 +164,7 @@ export interface Removed {
 /**
  * "Bağlantıyı kaldır" (5b): both directed edges are removed and every task between the two that
  * is not closed is cancelled with reason `connection_removed`. The other side gets no notification
- * ("Selin'e bildirim gitmez"); their lists change on the next sync.
+ * ("Sibel'e bildirim gitmez"); their lists change on the next sync.
  */
 export function removeConnection(
   me: Person,

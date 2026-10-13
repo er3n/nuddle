@@ -1,4 +1,4 @@
-# Right after sign-up the first sync brings Selin's invite and the consent screen (0f) opens by itself.
+# Right after sign-up the first sync brings Sibel's invite and the consent screen (0f) opens by itself.
 # İzin ver, the matched screen (0g), Başla: all permissions are granted on install, so setup is skipped
 # and home follows.
 appId: app.nuddle.debug

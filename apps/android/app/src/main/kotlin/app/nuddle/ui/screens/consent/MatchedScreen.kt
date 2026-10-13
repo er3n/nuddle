@@ -72,5 +72,5 @@ fun MatchedScreen(
 @PreviewScreens
 @Composable
 private fun MatchedScreenPreview() {
-    DurtTheme { MatchedScreen(inviterName = "Selin", myName = "Eren", onStart = {}) }
+    DurtTheme { MatchedScreen(inviterName = "Sibel", myName = "Eren", onStart = {}) }
 }

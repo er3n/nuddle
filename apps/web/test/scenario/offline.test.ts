@@ -1,12 +1,12 @@
 // Scenario list from docs/testing.md (Scenario tests): a phone without a connection (6a).
 import { describe, expect, it } from "vitest";
 import { v7 as uuidv7 } from "uuid";
-import { at, selinAndEren, TEXT, writeTask } from "./fixtures";
+import { at, sibelAndEren, TEXT, writeTask } from "./fixtures";
 
 describe("scenarios: offline", () => {
   it("Bitti tapped offline before the deadline counts when it reaches the server after it", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.trashToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.trashToEren);
 
     // Bitti at 18:40 with no connection: the alarms stop on the phone, the command waits in the outbox.
     await world.advanceTo(at("2026-10-12T18:40:00"));
@@ -25,8 +25,8 @@ describe("scenarios: offline", () => {
   });
 
   it("Bitti tapped after the deadline does not undo the miss", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.trashToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.trashToEren);
     await world.advanceTo(at("2026-10-12T19:30:00"));
 
     for (const doneAt of [at("2026-10-12T19:10:00"), undefined]) {
@@ -43,13 +43,13 @@ describe("scenarios: offline", () => {
   });
 
   it("a text written offline and sent twice with its key makes one task", async () => {
-    const { world, selin } = await selinAndEren();
+    const { world, sibel } = await sibelAndEren();
     const key = uuidv7();
 
-    const first = await selin.write(TEXT.trashToEren, key);
-    const again = await selin.write(TEXT.trashToEren, key);
+    const first = await sibel.write(TEXT.trashToEren, key);
+    const again = await sibel.write(TEXT.trashToEren, key);
     expect(first.kind).toBe("created");
     expect(again).toEqual(first);
-    expect(world.tasksWrittenBy("selin")).toHaveLength(1);
+    expect(world.tasksWrittenBy("sibel")).toHaveLength(1);
   });
 });

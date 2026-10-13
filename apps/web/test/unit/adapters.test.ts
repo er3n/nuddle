@@ -109,7 +109,7 @@ describe("FcmPushSender", () => {
       Promise.resolve(id === "eren" ? ["fid-a", "fid-b"] : []),
     );
     await push.send({ to: "eren", hint: "plan_changed", taskId: "task-1", event: "created" });
-    await push.send({ to: "selin", hint: "sync", taskId: null, event: "invite_accepted" });
+    await push.send({ to: "sibel", hint: "sync", taskId: null, event: "invite_accepted" });
 
     expect(sent).toEqual(
       ["fid-a", "fid-b"].map((fid) => ({

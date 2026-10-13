@@ -57,11 +57,11 @@ class ProfileScreenTest {
     @Test
     fun `rows open the person, the quiet hours sheet and log out, and a switch reports its new value`() {
         show()
-        compose.onNodeWithTag(TestTags.profilePerson("Selin")).performClick()
+        compose.onNodeWithTag(TestTags.profilePerson("Sibel")).performClick()
         compose.onNodeWithTag(TestTags.PROFILE_USE_CONNECTIONS).performClick()
         compose.onNodeWithTag(TestTags.PROFILE_QUIET).performScrollTo().performClick()
         compose.onNodeWithTag(TestTags.PROFILE_LOG_OUT).performScrollTo().performClick()
-        assertEquals(listOf("person selin", "useConnections false", "quiet", "logOut"), did)
+        assertEquals(listOf("person sibel", "useConnections false", "quiet", "logOut"), did)
     }
 
     @Test

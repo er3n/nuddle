@@ -53,7 +53,7 @@ private fun WrittenText.text(): String =
         is WrittenText.OnDate -> stringResource(R.string.deadline_on_date, day, stringArrayResource(R.array.month_names)[month - 1], time)
     }
 
-/** "**Selin** yazdı · 14:32" with Selin's avatar. */
+/** "**Sibel** yazdı · 14:32" with Sibel's avatar. */
 @Composable
 internal fun FromLine(
     from: FromUi,
@@ -133,7 +133,7 @@ private fun RoundIconButton(
 
 @PreviewScreens
 @Composable
-private fun HomeScreenTaskFromSelinPreview() {
+private fun HomeScreenTaskFromSibelPreview() {
     DurtTheme {
         HomeScreen(
             state =
@@ -148,7 +148,7 @@ private fun HomeScreenTaskFromSelinPreview() {
                             detail = "1.000 TL",
                             deadline = DeadlineText.Tomorrow("09:00"),
                             photo = true,
-                            from = FromUi("Selin", WrittenText.Today("14:32"), "+905320000001"),
+                            from = FromUi("Sibel", WrittenText.Today("14:32"), "+905320000001"),
                         ),
                 ),
             onBell = {},
@@ -164,7 +164,7 @@ private fun HomeScreenTaskFromSelinPreview() {
 
 @PreviewScreens
 @Composable
-private fun HomeScreenDoneTaskFromSelinPreview() {
+private fun HomeScreenDoneTaskFromSibelPreview() {
     DurtTheme {
         HomeScreen(
             state =
@@ -178,7 +178,7 @@ private fun HomeScreenDoneTaskFromSelinPreview() {
                             detail = null,
                             deadline = DeadlineText.Today("19:00"),
                             photo = false,
-                            from = FromUi("Selin", WrittenText.Yesterday("21:10"), "+905320000001"),
+                            from = FromUi("Sibel", WrittenText.Yesterday("21:10"), "+905320000001"),
                         ),
                 ),
             onBell = {},

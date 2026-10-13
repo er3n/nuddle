@@ -40,8 +40,8 @@ describe("http: auth and errors", () => {
   });
 
   it("validates bodies with DRT-1001: an idempotency key must be a UUIDv7", async () => {
-    const selin = await signUp(server, "Selin");
-    const r = await selin.api.POST("/api/v1/commands/delete_account", {
+    const sibel = await signUp(server, "Sibel");
+    const r = await sibel.api.POST("/api/v1/commands/delete_account", {
       body: { idempotencyKey: "00000000-0000-4000-8000-000000000001" },
     });
     expect(r.response.status).toBe(400);

@@ -17,7 +17,7 @@ import app.nuddle.testing.InMemoryConnectionDao
 import app.nuddle.testing.InMemoryTaskDao
 import app.nuddle.testing.MainDispatcherRule
 import app.nuddle.testing.aTask
-import app.nuddle.testing.selinConnection
+import app.nuddle.testing.sibelConnection
 import app.nuddle.ui.screens.photo.CameraSource
 import app.nuddle.ui.screens.photo.PhotoStage
 import app.nuddle.ui.screens.photo.PhotoViewModel
@@ -95,16 +95,16 @@ class PhotoViewModelTest {
 
     private suspend fun TestScope.ready() {
         taskDao.upsert(listOf(aTask()))
-        connectionDao.upsert(listOf(selinConnection()))
+        connectionDao.upsert(listOf(sibelConnection()))
         backgroundScope.launch { vm.state.collect {} }
     }
 
     @Test
-    fun `the photo goes to Selin with the amount she asked for`() =
+    fun `the photo goes to Sibel with the amount she asked for`() =
         runTest(main.dispatcher) {
             ready()
             val state = vm.state.value!!
-            assertEquals("Selin" to "1.000 TL", state.toName to state.detail)
+            assertEquals("Sibel" to "1.000 TL", state.toName to state.detail)
             assertEquals(PhotoStage.Camera, state.stage)
         }
 

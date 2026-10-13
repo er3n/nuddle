@@ -171,9 +171,9 @@ private fun SettingsPreview() {
         Column(verticalArrangement = Arrangement.spacedBy(DurtTheme.dimens.space16)) {
             SettingsGroup("Bizimkiler") {
                 LineRow(
-                    "Selin",
+                    "Sibel",
                     value = "Eşin",
-                    leading = { Avatar("Selin", DurtTheme.colors.avatarOthers.first(), DurtTheme.dimens.avatarInline) },
+                    leading = { Avatar("Sibel", DurtTheme.colors.avatarOthers.first(), DurtTheme.dimens.avatarInline) },
                     onClick = {},
                 )
                 GroupDivider()

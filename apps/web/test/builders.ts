@@ -1,9 +1,9 @@
-// Test data builders with the Selin and Eren cast (docs/testing.md, Ground rules 5; glossary.md).
+// Test data builders with the Sibel and Eren cast (docs/testing.md, Ground rules 5; glossary.md).
 import type { PermissionSummary } from "../src/domain/reachability";
 import type { Person, Task } from "../src/domain/types";
 
 const phones: Record<string, string> = {
-  Selin: "+905320000001",
+  Sibel: "+905320000001",
   Eren: "+905320000002",
   Defne: "+905320000003",
   Can: "+905320000004",
@@ -32,7 +32,7 @@ export const allPermissions: PermissionSummary = {
 class TaskBuilder {
   private task: Task = {
     id: "task-1",
-    senderId: "selin",
+    senderId: "sibel",
     recipientId: "eren",
     title: "Temizlikçi için para çek",
     detail: "1.000 TL",

@@ -6,18 +6,18 @@ import { signUp, type SignedUp } from "./helpers";
 
 describe("http: invite preview", () => {
   let server: TestServer;
-  let selin: SignedUp;
+  let sibel: SignedUp;
 
   beforeAll(async () => {
     server = await startTestServer();
-    selin = await signUp(server, "Selin");
+    sibel = await signUp(server, "Sibel");
   });
   afterAll(async () => {
     await server.close();
   });
 
   async function invite(prefilledName: string): Promise<{ inviteId: string; code: string }> {
-    const r = await selin.api.POST("/api/v1/commands/create_invite", {
+    const r = await sibel.api.POST("/api/v1/commands/create_invite", {
       body: {
         idempotencyKey: uuidv7(),
         phone: "+905321110099",
@@ -37,12 +37,12 @@ describe("http: invite preview", () => {
       .GET("/api/v1/invites/{code}/preview", { params: { path: { code } } });
 
     expect(r.response.status).toBe(200);
-    expect(r.data).toEqual({ inviterName: "Selin", prefilledName: "Eren" });
+    expect(r.data).toEqual({ inviterName: "Sibel", prefilledName: "Eren" });
   });
 
   it("answers not found for an unknown code and for an invite that is no longer open", async () => {
     const { inviteId, code } = await invite("Can");
-    const revoked = await selin.api.POST("/api/v1/commands/revoke_invite", {
+    const revoked = await sibel.api.POST("/api/v1/commands/revoke_invite", {
       body: { idempotencyKey: uuidv7(), inviteId },
     });
     expect(revoked.response.status).toBe(200);

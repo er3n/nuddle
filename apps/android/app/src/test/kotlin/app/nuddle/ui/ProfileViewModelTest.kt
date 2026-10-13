@@ -15,7 +15,7 @@ import app.nuddle.testing.InMemoryConnectionDao
 import app.nuddle.testing.InMemoryInviteDao
 import app.nuddle.testing.InMemorySessionStore
 import app.nuddle.testing.MainDispatcherRule
-import app.nuddle.testing.selinConnection
+import app.nuddle.testing.sibelConnection
 import app.nuddle.ui.screens.profile.PersonRowUi
 import app.nuddle.ui.screens.profile.ProfileSheet
 import app.nuddle.ui.screens.profile.ProfileViewModel
@@ -55,7 +55,7 @@ class ProfileViewModelTest {
         runTest(main.dispatcher) {
             signedIn()
             connections.upsert(
-                listOf(selinConnection(), selinConnection().copy(personId = "gone", displayName = "Ayşe", status = "removed")),
+                listOf(sibelConnection(), sibelConnection().copy(personId = "gone", displayName = "Ayşe", status = "removed")),
             )
             invites.upsert(
                 listOf(
@@ -66,7 +66,7 @@ class ProfileViewModelTest {
             watch()
             val state = vm.state.value!!
             assertEquals("Eren" to "+90 532 123 45 67", state.name to state.phone)
-            assertEquals(listOf(PersonRowUi(Cast.SELIN_ID, "Selin", EdgeType.SPOUSE)), state.people)
+            assertEquals(listOf(PersonRowUi(Cast.SIBEL_ID, "Sibel", EdgeType.SPOUSE)), state.people)
             assertEquals(listOf("Defne"), state.pending)
             assertEquals(LocalTime(23, 0) to LocalTime(7, 0), state.quietStart to state.quietEnd)
         }

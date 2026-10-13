@@ -5,7 +5,7 @@ import { MINUTE } from "../../src/domain/time";
 import type { Person, PokeLevel, PokeStep } from "../../src/domain/types";
 import { aPerson, aTask } from "../builders";
 
-const selin = aPerson("Selin");
+const sibel = aPerson("Sibel");
 const eren = aPerson("Eren");
 const rank: Record<PokeLevel, number> = { SILENT: 0, SOUND: 1, FULL_SCREEN: 2, HUMAN: 3 };
 
@@ -13,12 +13,12 @@ function plan(deadline: string, now: string, opts: { recipient?: Person; self?: 
   const recipient = opts.recipient ?? eren;
   return planPokes({
     task: aTask()
-      .from(selin)
-      .forRecipient(opts.self ? selin : recipient)
+      .from(sibel)
+      .forRecipient(opts.self ? sibel : recipient)
       .withDeadline(deadline)
       .build(),
-    recipient: opts.self ? selin : recipient,
-    sender: selin,
+    recipient: opts.self ? sibel : recipient,
+    sender: sibel,
     reachability: "FULL_SCREEN",
     history: [],
     now: new Date(now),
@@ -111,7 +111,7 @@ describe("planPokes v0", () => {
     const senderOff = planPokes({
       task: aTask().withDeadline("2026-10-12T09:00:00+03:00").build(),
       recipient: eren,
-      sender: aPerson("Selin", { notifyMeForOthersTasks: false }),
+      sender: aPerson("Sibel", { notifyMeForOthersTasks: false }),
       reachability: "FULL_SCREEN",
       history: [],
       now: new Date("2026-10-11T20:00:00+03:00"),
@@ -123,7 +123,7 @@ describe("planPokes v0", () => {
     const input = {
       task: aTask().withDeadline("2026-10-12T09:00:00+03:00").build(),
       recipient: eren,
-      sender: selin,
+      sender: sibel,
       reachability: "FULL_SCREEN" as const,
       history: [],
       now: new Date("2026-10-11T20:00:00+03:00"),
@@ -142,7 +142,7 @@ describe("planPokes v0", () => {
     const steps = planPokes({
       task: aTask().withDeadline("2026-10-12T09:00:00+03:00").build(),
       recipient: eren,
-      sender: selin,
+      sender: sibel,
       reachability: "FULL_SCREEN",
       history: [],
       now: new Date("2026-10-11T20:00:00+03:00"),
@@ -155,7 +155,7 @@ describe("planPokes v0", () => {
     const steps = planPokes({
       task: aTask().withDeadline("2026-10-12T09:00:00+03:00").build(),
       recipient: eren,
-      sender: selin,
+      sender: sibel,
       reachability: "SOUND",
       history: [],
       now: new Date("2026-10-11T20:00:00+03:00"),
@@ -180,7 +180,7 @@ describe("planPokes v0", () => {
         const steps = planPokes({
           task: aTask().withDeadline(deadline).build(),
           recipient: eren,
-          sender: selin,
+          sender: sibel,
           reachability: "FULL_SCREEN",
           history: [],
           now,
@@ -217,7 +217,7 @@ describe("planPokes v0 at the quiet hours boundary", () => {
     const steps = planPokes({
       task: aTask().withDeadline("2026-10-12T07:01:00+03:00").build(),
       recipient: aPerson("Eren"),
-      sender: aPerson("Selin"),
+      sender: aPerson("Sibel"),
       reachability: "FULL_SCREEN",
       history: [],
       now: new Date("2026-10-11T20:00:00+03:00"),

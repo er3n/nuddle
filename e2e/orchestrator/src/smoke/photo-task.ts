@@ -1,6 +1,6 @@
-// Smoke 3 (docs/testing.md, Smoke set): Selin writes a photo task to Eren, Eren gets poked, Bitti on the full
-// screen poke opens the camera (4d), he sends a photo, his pokes stop, Selin approves it (4f), the task is done.
-// Runs after smoke 4: Selin and Eren are connected and signed in, with no open task between them.
+// Smoke 3 (docs/testing.md, Smoke set): Sibel writes a photo task to Eren, Eren gets poked, Bitti on the full
+// screen poke opens the camera (4d), he sends a photo, his pokes stop, Sibel approves it (4f), the task is done.
+// Runs after smoke 4: Sibel and Eren are connected and signed in, with no open task between them.
 import { join } from "node:path";
 import { Phone, signIn } from "../api";
 import { repoRoot, type RunContext } from "../context";
@@ -10,7 +10,7 @@ import { waitFor } from "../proc";
 const EREN_PHONE = "+905320000002";
 /** As in smoke 1: the FULL_SCREEN step of a compressed plan rings about 75 s after creation. */
 const DEADLINE_MINUTES = 90;
-/** What Selin types; the fixture extractor answers it (docs/testing.md). */
+/** What Sibel types; the fixture extractor answers it (docs/testing.md). */
 const TASK_TEXT = "eren para ceksin";
 
 /** A confident money task to Eren: finish mode photo, so writing it sends it directly. */
@@ -28,15 +28,15 @@ export function photoTaskExtractions(now: Date): Record<string, unknown> {
 }
 
 export async function photoTask(run: RunContext): Promise<void> {
-  const { selin, eren } = devices;
+  const { sibel, eren } = devices;
 
   await run.step("inject-photo", async () => {
     await eren.injectPhoto(join(repoRoot, "e2e", "fixtures", "photo.jpg"));
   });
 
   await run.step("write-photo-task", async (dir) => {
-    await selin.wakeAndUnlock();
-    await selin.maestro("selin/write-task-to-other.yaml", dir, { TEXT: TASK_TEXT });
+    await sibel.wakeAndUnlock();
+    await sibel.maestro("sibel/write-task-to-other.yaml", dir, { TEXT: TASK_TEXT });
   });
 
   const { phone, taskId } = await run.step("photo-task-created", async () => {
@@ -62,11 +62,11 @@ export async function photoTask(run: RunContext): Promise<void> {
   });
 
   await run.step("eren-full-screen-poke", async (dir) => {
-    await eren.maestro("selin/wait-poke.yaml", dir);
+    await eren.maestro("sibel/wait-poke.yaml", dir);
   });
 
   await run.step("eren-bitti-opens-camera", async (dir) => {
-    await eren.maestro("selin/poke-done.yaml", dir);
+    await eren.maestro("sibel/poke-done.yaml", dir);
   });
 
   await run.step("eren-sends-photo", async (dir) => {
@@ -90,9 +90,9 @@ export async function photoTask(run: RunContext): Promise<void> {
     );
   });
 
-  await run.step("selin-approves", async (dir) => {
-    await selin.wakeAndUnlock();
-    await selin.maestro("selin/approve.yaml", dir);
+  await run.step("sibel-approves", async (dir) => {
+    await sibel.wakeAndUnlock();
+    await sibel.maestro("sibel/approve.yaml", dir);
   });
 
   await run.step("photo-task-done", async () => {

@@ -8,7 +8,7 @@ import { FakeClock } from "../fakes";
 
 describe("http: sync", () => {
   let server: TestServer;
-  let selin: SignedUp;
+  let sibel: SignedUp;
   let eren: SignedUp;
 
   const syncOf = async (who: SignedUp, cursor?: string) => {
@@ -21,27 +21,27 @@ describe("http: sync", () => {
 
   beforeAll(async () => {
     server = await startTestServer();
-    selin = await signUp(server, "Selin");
+    sibel = await signUp(server, "Sibel");
     eren = await signUp(server, "Eren");
-    await connect(selin, eren);
+    await connect(sibel, eren);
   });
   afterAll(async () => {
     await server.close();
   });
 
   it("gives the plan only to the recipient's device", async () => {
-    const taskId = await createTask(selin, eren);
+    const taskId = await createTask(sibel, eren);
     const forEren = await syncOf(eren);
-    const forSelin = await syncOf(selin);
+    const forSibel = await syncOf(sibel);
 
     expect(forEren.plans.find((p) => p.taskId === taskId)?.steps.length).toBeGreaterThan(0);
-    expect(forSelin.plans).toEqual([]);
-    expect(forSelin.events.filter((e) => e.taskId === taskId).map((e) => e.type)).toEqual([
+    expect(forSibel.plans).toEqual([]);
+    expect(forSibel.events.filter((e) => e.taskId === taskId).map((e) => e.type)).toEqual([
       "created",
     ]);
-    expect(forSelin.tasks.find((t) => t.id === taskId)).toMatchObject({
+    expect(forSibel.tasks.find((t) => t.id === taskId)).toMatchObject({
       status: "SCHEDULED",
-      senderId: selin.id,
+      senderId: sibel.id,
       recipientId: eren.id,
     });
     // The HUMAN step is server side; the device only gets what it rings.
@@ -49,16 +49,16 @@ describe("http: sync", () => {
   });
 
   it("tells when a task was written and how to reach a connection", async () => {
-    const taskId = await createTask(selin, eren);
+    const taskId = await createTask(sibel, eren);
     const forEren = await syncOf(eren);
     expect(forEren.tasks.find((t) => t.id === taskId)?.createdAt).toBe(
       server.deps.clock.now().toISOString(),
     );
-    expect(forEren.connections.find((c) => c.personId === selin.id)?.phone).toBe(selin.phone);
+    expect(forEren.connections.find((c) => c.personId === sibel.id)?.phone).toBe(sibel.phone);
   });
 
   it("stops giving the phone of someone who deleted their account", async () => {
-    // Own people: the other tests count Selin's connections.
+    // Own people: the other tests count Sibel's connections.
     const ali = await signUp(server, "Ali");
     const zeynep = await signUp(server, "Zeynep");
     await connect(ali, zeynep);
@@ -79,7 +79,7 @@ describe("http: sync", () => {
     const before = await syncOf(eren);
     expect((await syncOf(eren, before.cursor)).tasks).toEqual([]);
 
-    const taskId = await createTask(selin, eren);
+    const taskId = await createTask(sibel, eren);
     const delta = await syncOf(eren, before.cursor);
     expect(delta.tasks.map((t) => t.id)).toEqual([taskId]);
 
@@ -92,7 +92,7 @@ describe("http: sync", () => {
 
   it("a declined invite looks open to the inviter and does not even move their feed", async () => {
     const defne = await signUp(server, "Defne");
-    const invite = await selin.api.POST("/api/v1/commands/create_invite", {
+    const invite = await sibel.api.POST("/api/v1/commands/create_invite", {
       body: {
         idempotencyKey: uuidv7(),
         phone: defne.phone,
@@ -101,19 +101,19 @@ describe("http: sync", () => {
       },
     });
     const code = invite.data?.code ?? "";
-    const seen = await syncOf(selin);
+    const seen = await syncOf(sibel);
     expect(seen.sentInvites.find((i) => i.code === code)?.status).toBe("open");
-    expect((await syncOf(defne)).receivedInvites).toMatchObject([{ code, inviterName: "Selin" }]);
+    expect((await syncOf(defne)).receivedInvites).toMatchObject([{ code, inviterName: "Sibel" }]);
 
     await defne.api.POST("/api/v1/commands/decline_invite", {
       body: { idempotencyKey: uuidv7(), code },
     });
-    expect((await syncOf(selin, seen.cursor)).sentInvites).toEqual([]);
-    expect((await syncOf(selin)).sentInvites.find((i) => i.code === code)?.status).toBe("open");
+    expect((await syncOf(sibel, seen.cursor)).sentInvites).toEqual([]);
+    expect((await syncOf(sibel)).sentInvites.find((i) => i.code === code)?.status).toBe("open");
   });
 
   it("shows each connection's reachability and updates it when a device changes", async () => {
-    const r1 = await syncOf(selin);
+    const r1 = await syncOf(sibel);
     expect(r1.connections).toMatchObject([
       {
         personId: eren.id,
@@ -138,17 +138,17 @@ describe("http: sync", () => {
       },
     });
     expect(changed.data).toEqual({ deviceId: eren.deviceId, reachability: "SOUND" });
-    expect((await syncOf(selin, r1.cursor)).connections).toMatchObject([{ reachability: "SOUND" }]);
+    expect((await syncOf(sibel, r1.cursor)).connections).toMatchObject([{ reachability: "SOUND" }]);
 
     await eren.api.POST("/api/v1/commands/log_out", {
       body: { idempotencyKey: uuidv7(), deviceId: eren.deviceId },
     });
-    expect((await syncOf(selin)).connections).toMatchObject([{ reachability: "NONE" }]);
+    expect((await syncOf(sibel)).connections).toMatchObject([{ reachability: "NONE" }]);
   });
 
   it("a missed card leaves the recipient's list one day later", async () => {
     const clock = server.deps.clock as FakeClock;
-    const taskId = await createTask(selin, eren, { deadline: "2026-10-12T19:00:00+03:00" });
+    const taskId = await createTask(sibel, eren, { deadline: "2026-10-12T19:00:00+03:00" });
     const tick = () =>
       server.app.request("/api/internal/tick", {
         method: "POST",

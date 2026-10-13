@@ -3,15 +3,15 @@ import { describe, expect, it } from "vitest";
 import { MISSED_CARD_TTL_MS, PHOTO_CLEANUP_RETRY_MS } from "../../src/domain/task-machine";
 import { visibleToRecipient } from "../../src/domain/tick";
 import { MINUTE } from "../../src/domain/time";
-import { at, emptyWorld, hhmm, selinAndEren, TEXT, writeTask } from "./fixtures";
+import { at, emptyWorld, hhmm, sibelAndEren, TEXT, writeTask } from "./fixtures";
 
 const rings = (r: { rang: string; at: Date }[]) => r.map((x) => `${x.rang}@${hhmm(x.at)}`);
 
 describe("scenarios: task lifecycle", () => {
-  it("photo task: unanswered pokes reach Selin, photo stops poking, auto-approve after 3 hours", async () => {
+  it("photo task: unanswered pokes reach Sibel, photo stops poking, auto-approve after 3 hours", async () => {
     // The example in docs/testing.md.
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.photoToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.photoToEren);
 
     expect(world.task(taskId)).toMatchObject({ recipientId: "eren", finishMode: "photo" });
     expect(eren.phone.received).toContainEqual(
@@ -24,13 +24,13 @@ describe("scenarios: task lifecycle", () => {
       "SOUND@08:30",
       "FULL_SCREEN@08:45",
     ]);
-    expect(world.push.to("selin").map((p) => p.event)).toContain("human_notified");
+    expect(world.push.to("sibel").map((p) => p.event)).toContain("human_notified");
 
     await world.advanceTo(at("2026-10-12T08:58:00"));
     expect(await eren.sendPhoto(taskId)).toEqual({ ok: true });
     expect(world.task(taskId).status).toBe("AWAITING_APPROVAL");
     expect(eren.phone.pendingAlarms()).toEqual([]);
-    expect(world.push.to("selin").map((p) => p.event)).toContain("photo_sent");
+    expect(world.push.to("sibel").map((p) => p.event)).toContain("photo_sent");
 
     // The deadline applies to sending the photo, not to approval.
     await world.advanceTo(at("2026-10-12T09:30:00"));
@@ -47,8 +47,8 @@ describe("scenarios: task lifecycle", () => {
   });
 
   it("photo upload late (6e): taken before the deadline, it still counts after the task was missed", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.photoToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.photoToEren);
 
     // The phone was offline until 09:20; the deadline was 09:00, so the task is missed by then.
     await world.advanceTo(at("2026-10-12T09:20:00"));
@@ -66,8 +66,8 @@ describe("scenarios: task lifecycle", () => {
   });
 
   it("snooze: 15 minutes, then 10 as the last one, then no more (open-questions#1)", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.photoToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.photoToEren);
 
     await world.advanceTo(at("2026-10-12T08:01:00"));
     expect(rings(eren.phone.ringsFor(taskId))).toEqual(["SILENT@08:00"]);
@@ -118,8 +118,8 @@ describe("scenarios: task lifecycle", () => {
   });
 
   it("task to another person, done: poking stops, the sender gets no push", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.trashToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.trashToEren);
 
     await world.advanceTo(at("2026-10-12T18:31:00"));
     expect(rings(eren.phone.ringsFor(taskId))).toEqual(["SILENT@18:00", "SOUND@18:30"]);
@@ -128,19 +128,19 @@ describe("scenarios: task lifecycle", () => {
     await world.advanceTo(at("2026-10-12T20:00:00"));
     expect(world.task(taskId).status).toBe("DONE");
     expect(eren.phone.ringsFor(taskId)).toHaveLength(2);
-    expect(world.push.to("selin").filter((p) => p.taskId === taskId)).toEqual([]);
+    expect(world.push.to("sibel").filter((p) => p.taskId === taskId)).toEqual([]);
     expect(world.eventsOf(taskId).map((e) => e.type)).toContain("done");
     expect(world.pendingActions(taskId)).toEqual([]);
   });
 
   it("photo + approve", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.photoToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.photoToEren);
     await world.advanceTo(at("2026-10-12T08:31:00"));
     await eren.sendPhoto(taskId);
 
     await world.advanceBy(10 * MINUTE);
-    expect(await selin.command(taskId, { type: "approve" })).toEqual({ ok: true });
+    expect(await sibel.command(taskId, { type: "approve" })).toEqual({ ok: true });
     expect(world.task(taskId).status).toBe("DONE");
     expect(world.push.to("eren").at(-1)).toMatchObject({ taskId, event: "approved" });
     expect(world.photos.deleted).toContain(taskId);
@@ -151,13 +151,13 @@ describe("scenarios: task lifecycle", () => {
   });
 
   it("photo + re-request: poking resumes where it stopped, then a second photo is approved", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.photoToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.photoToEren);
     await world.advanceTo(at("2026-10-12T08:31:00"));
     await eren.sendPhoto(taskId);
 
     await world.advanceTo(at("2026-10-12T08:35:00"));
-    expect(await selin.command(taskId, { type: "re_request", note: "Fiş görünmüyor" })).toEqual({
+    expect(await sibel.command(taskId, { type: "re_request", note: "Fiş görünmüyor" })).toEqual({
       ok: true,
     });
     expect(world.task(taskId).status).toBe("REJECTED");
@@ -174,21 +174,21 @@ describe("scenarios: task lifecycle", () => {
 
     await eren.sendPhoto(taskId);
     expect(world.task(taskId).status).toBe("AWAITING_APPROVAL");
-    await selin.command(taskId, { type: "approve" });
+    await sibel.command(taskId, { type: "approve" });
     expect(world.task(taskId).status).toBe("DONE");
     expect(world.violations).toEqual([]);
   });
 
   it("can't today with a note: the sender is told and can give a new time", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.trashToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.trashToEren);
     await world.advanceTo(at("2026-10-12T18:31:00"));
 
     expect(
       await eren.command(taskId, { type: "cant_today", note: "Bugün eve geç geliyorum" }),
     ).toEqual({ ok: true });
     expect(world.task(taskId).status).toBe("DROPPED");
-    expect(world.push.to("selin").at(-1)).toMatchObject({ taskId, event: "dropped" });
+    expect(world.push.to("sibel").at(-1)).toMatchObject({ taskId, event: "dropped" });
     expect(world.eventsOf(taskId).find((e) => e.type === "dropped")?.payload).toEqual({
       note: "Bugün eve geç geliyorum",
     });
@@ -199,7 +199,7 @@ describe("scenarios: task lifecycle", () => {
 
     // "Yeni zaman ver"
     expect(
-      await selin.command(taskId, { type: "new_deadline", deadline: at("2026-10-13T19:00:00") }),
+      await sibel.command(taskId, { type: "new_deadline", deadline: at("2026-10-13T19:00:00") }),
     ).toEqual({ ok: true });
     expect(world.task(taskId).status).toBe("SCHEDULED");
     await world.advanceTo(at("2026-10-13T18:01:00"));
@@ -207,8 +207,8 @@ describe("scenarios: task lifecycle", () => {
   });
 
   it("missed, then 'Sonradan yaptım'", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.trashToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.trashToEren);
 
     await world.advanceTo(at("2026-10-12T19:01:00"));
     expect(world.task(taskId).status).toBe("MISSED");
@@ -217,7 +217,7 @@ describe("scenarios: task lifecycle", () => {
       "SOUND@18:30",
       "FULL_SCREEN@18:45",
     ]);
-    expect(world.push.to("selin").map((p) => p.event)).toEqual(
+    expect(world.push.to("sibel").map((p) => p.event)).toEqual(
       expect.arrayContaining(["human_notified", "missed"]),
     );
     expect(world.push.to("eren").at(-1)).toMatchObject({ taskId, event: "missed" });
@@ -227,18 +227,18 @@ describe("scenarios: task lifecycle", () => {
   });
 
   it("missed, then 'Süreyi uzat' (5d): poking starts again for the new deadline", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.trashToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.trashToEren);
     await world.advanceTo(at("2026-10-12T19:01:00"));
     expect(world.task(taskId).status).toBe("MISSED");
 
-    // Selin's phone has what the Kaçırıldı card says: how many pokes rang and that she was told.
-    const selinSaw = selin.phone.events.filter((e) => e.taskId === taskId).map((e) => e.type);
-    expect(selinSaw.filter((t) => t === "poke_fired")).toHaveLength(3);
-    expect(selinSaw).toEqual(expect.arrayContaining(["human_notified", "missed"]));
+    // Sibel's phone has what the Kaçırıldı card says: how many pokes rang and that she was told.
+    const sibelSaw = sibel.phone.events.filter((e) => e.taskId === taskId).map((e) => e.type);
+    expect(sibelSaw.filter((t) => t === "poke_fired")).toHaveLength(3);
+    expect(sibelSaw).toEqual(expect.arrayContaining(["human_notified", "missed"]));
 
     expect(
-      await selin.command(taskId, { type: "new_deadline", deadline: at("2026-10-13T19:00:00") }),
+      await sibel.command(taskId, { type: "new_deadline", deadline: at("2026-10-13T19:00:00") }),
     ).toEqual({ ok: true });
     expect(world.task(taskId).status).toBe("SCHEDULED");
     expect(world.push.to("eren").at(-1)).toMatchObject({ taskId, hint: "plan_changed" });
@@ -253,11 +253,11 @@ describe("scenarios: task lifecycle", () => {
   });
 
   it("missed, then cancel (5d İptal et): the card goes, nothing rings", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.trashToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.trashToEren);
     await world.advanceTo(at("2026-10-12T19:01:00"));
 
-    expect(await selin.command(taskId, { type: "cancel", note: null })).toEqual({ ok: true });
+    expect(await sibel.command(taskId, { type: "cancel", note: null })).toEqual({ ok: true });
     expect(world.task(taskId).status).toBe("CANCELLED");
     expect(world.pendingActions(taskId)).toEqual([]);
     // Too late for "Sonradan yaptım".
@@ -265,25 +265,25 @@ describe("scenarios: task lifecycle", () => {
   });
 
   it("dropped with a note, then 'Ben hallederim' (5d): closed for good (open-questions#8)", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.trashToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.trashToEren);
     await world.advanceTo(at("2026-10-12T18:46:00"));
     expect(await eren.command(taskId, { type: "cant_today", note: "Vaktim olmadı" })).toEqual({
       ok: true,
     });
-    expect(selin.phone.events).toContainEqual({
+    expect(sibel.phone.events).toContainEqual({
       taskId,
       type: "dropped",
       payload: { note: "Vaktim olmadı" },
     });
 
-    expect(await selin.command(taskId, { type: "sender_handles" })).toEqual({ ok: true });
+    expect(await sibel.command(taskId, { type: "sender_handles" })).toEqual({ ok: true });
     expect(world.task(taskId).status).toBe("CANCELLED");
     expect(world.eventsOf(taskId).at(-1)).toMatchObject({
       type: "cancelled",
       payload: { reason: "sender_handles" },
     });
-    // Eren's phone learns why, so it does not show a "Selin iptal etti" row for a task he gave up himself.
+    // Eren's phone learns why, so it does not show a "Sibel iptal etti" row for a task he gave up himself.
     expect(eren.phone.events.at(-1)).toMatchObject({
       taskId,
       type: "cancelled",
@@ -299,19 +299,19 @@ describe("scenarios: task lifecycle", () => {
   });
 
   it("human channel (7a): only while the task is open", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.trashToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.trashToEren);
     await world.advanceTo(at("2026-10-12T18:50:00"));
     expect(await eren.command(taskId, { type: "done" })).toEqual({ ok: true });
 
     await world.advanceTo(at("2026-10-12T19:30:00"));
-    expect(world.push.to("selin").map((p) => p.event)).not.toContain("human_notified");
-    expect(selin.phone.events.map((e) => e.type)).not.toContain("human_notified");
+    expect(world.push.to("sibel").map((p) => p.event)).not.toContain("human_notified");
+    expect(sibel.phone.events.map((e) => e.type)).not.toContain("human_notified");
   });
 
   it("a missed card leaves the recipient's list after one day", async () => {
-    const { world, selin } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.trashToEren);
+    const { world, sibel } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.trashToEren);
     await world.advanceTo(at("2026-10-12T19:00:00"));
     expect(world.task(taskId).status).toBe("MISSED");
 
@@ -327,11 +327,11 @@ describe("scenarios: task lifecycle", () => {
   });
 
   it("sender cancel: pokes stop, the recipient is told", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.trashToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.trashToEren);
     await world.advanceTo(at("2026-10-12T18:10:00"));
 
-    expect(await selin.command(taskId, { type: "cancel", note: "Ben hallettim" })).toEqual({
+    expect(await sibel.command(taskId, { type: "cancel", note: "Ben hallettim" })).toEqual({
       ok: true,
     });
     expect(world.task(taskId).status).toBe("CANCELLED");
@@ -344,12 +344,12 @@ describe("scenarios: task lifecycle", () => {
   });
 
   it("sender cancel with a delayed push: one late ring, then the fired report stops it", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.trashToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.trashToEren);
     await world.advanceTo(at("2026-10-12T18:10:00"));
 
     eren.phone.pushesDelayed = true;
-    await selin.command(taskId, { type: "cancel", note: null });
+    await sibel.command(taskId, { type: "cancel", note: null });
     expect(eren.phone.pendingAlarms()).not.toEqual([]);
     eren.phone.pushesDelayed = false;
 
@@ -360,8 +360,8 @@ describe("scenarios: task lifecycle", () => {
   });
 
   it("quiet hours shift: a 06:00 deadline is poked before 23:00 the evening before", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.earlyParcelToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.earlyParcelToEren);
 
     await world.advanceTo(at("2026-10-12T07:30:00"));
     expect(rings(eren.phone.ringsFor(taskId))).toEqual([
@@ -374,12 +374,12 @@ describe("scenarios: task lifecycle", () => {
   });
 
   it("deadline edit regenerates the plan; old steps never ring", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.trashToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.trashToEren);
     await world.advanceTo(at("2026-10-12T12:00:00"));
 
     expect(
-      await selin.command(taskId, { type: "edit", deadline: at("2026-10-12T21:00:00") }),
+      await sibel.command(taskId, { type: "edit", deadline: at("2026-10-12T21:00:00") }),
     ).toEqual({ ok: true });
     expect(world.currentPlan(taskId)?.version).toBe(2);
     expect(world.push.to("eren").at(-1)).toMatchObject({ hint: "plan_changed", event: "edited" });
@@ -396,17 +396,17 @@ describe("scenarios: task lifecycle", () => {
 
   it("full screen without the permission degrades to sound and is reported", async () => {
     const world = emptyWorld();
-    const selin = await world.addPerson("Selin");
+    const sibel = await world.addPerson("Sibel");
     const eren = await world.addPerson("Eren", {
       notifications: true,
       exactAlarm: true,
       fullScreen: false,
       channels: { poke_silent: true, poke_alarm: true },
     });
-    await world.connect(selin, eren, "spouse", "spouse");
+    await world.connect(sibel, eren, "spouse", "spouse");
     expect(world.reachabilityOf("eren")).toBe("SOUND");
 
-    const taskId = await writeTask(selin, TEXT.trashToEren);
+    const taskId = await writeTask(sibel, TEXT.trashToEren);
     await world.advanceTo(at("2026-10-12T18:46:00"));
     expect(eren.phone.ringsFor(taskId).at(-1)).toMatchObject({
       planned: "FULL_SCREEN",
@@ -416,13 +416,13 @@ describe("scenarios: task lifecycle", () => {
   });
 
   it("a photo delete that fails when the task closes is retried until Storage answers (NUD-25)", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.photoToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.photoToEren);
     await world.advanceTo(at("2026-10-12T08:31:00"));
     await eren.sendPhoto(taskId);
 
     world.photos.failing = true;
-    expect(await selin.command(taskId, { type: "approve" })).toEqual({ ok: true });
+    expect(await sibel.command(taskId, { type: "approve" })).toEqual({ ok: true });
     expect(world.photos.stored.has(taskId)).toBe(true);
 
     // Still down at the first retry: it is planned again.
@@ -437,8 +437,8 @@ describe("scenarios: task lifecycle", () => {
   });
 
   it("a cleanup timer leaves a late photo alone: the task opened again for approval (6e)", async () => {
-    const { world, selin, eren } = await selinAndEren();
-    const taskId = await writeTask(selin, TEXT.photoToEren);
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.photoToEren);
     await world.advanceTo(at("2026-10-12T09:01:00"));
     expect(world.task(taskId).status).toBe("MISSED");
 

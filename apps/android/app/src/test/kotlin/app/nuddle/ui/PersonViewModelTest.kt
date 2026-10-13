@@ -12,7 +12,7 @@ import app.nuddle.testing.InMemoryConnectionDao
 import app.nuddle.testing.InMemoryTaskDao
 import app.nuddle.testing.MainDispatcherRule
 import app.nuddle.testing.aTask
-import app.nuddle.testing.selinConnection
+import app.nuddle.testing.sibelConnection
 import app.nuddle.ui.screens.person.PersonSheet
 import app.nuddle.ui.screens.person.PersonViewModel
 import kotlinx.coroutines.CompletableDeferred
@@ -38,7 +38,7 @@ class PersonViewModelTest {
     private val clock = FakeClock(Instant.parse("2026-10-12T15:00:00+03:00"))
     private val vm by lazy {
         PersonViewModel(
-            SavedStateHandle(mapOf(PersonViewModel.ARG_PERSON to Cast.SELIN_ID)),
+            SavedStateHandle(mapOf(PersonViewModel.ARG_PERSON to Cast.SIBEL_ID)),
             connections,
             tasks,
             account,
@@ -50,7 +50,7 @@ class PersonViewModelTest {
 
     private suspend fun connected() =
         connections.upsert(
-            listOf(selinConnection().copy(connectedAt = Instant.parse("2026-07-11T14:32:00+03:00").toEpochMilliseconds())),
+            listOf(sibelConnection().copy(connectedAt = Instant.parse("2026-07-11T14:32:00+03:00").toEpochMilliseconds())),
         )
 
     private fun TestScope.watch() = backgroundScope.launch { vm.state.collect {} }
@@ -62,13 +62,13 @@ class PersonViewModelTest {
             tasks.upsert(
                 listOf(
                     aTask(id = "to-me"),
-                    aTask(id = "from-me").copy(senderId = Cast.EREN_ID, recipientId = Cast.SELIN_ID, status = "CANCELLED"),
+                    aTask(id = "from-me").copy(senderId = Cast.EREN_ID, recipientId = Cast.SIBEL_ID, status = "CANCELLED"),
                     aTask(id = "self").copy(senderId = Cast.EREN_ID, recipientId = Cast.EREN_ID),
                 ),
             )
             watch()
             val state = vm.state.value!!
-            assertEquals("Selin", state.name)
+            assertEquals("Sibel", state.name)
             assertEquals(EdgeType.SPOUSE, state.relationship)
             assertEquals(ConnectedFor.Months(3), state.since)
             assertTrue(state.notifyMe)
@@ -78,7 +78,7 @@ class PersonViewModelTest {
     @Test
     fun `a connection that is not active shows nothing`() =
         runTest(main.dispatcher) {
-            connections.upsert(listOf(selinConnection().copy(status = "removed")))
+            connections.upsert(listOf(sibelConnection().copy(status = "removed")))
             watch()
             assertNull(vm.state.value)
         }
@@ -95,7 +95,7 @@ class PersonViewModelTest {
             gate.complete(Unit)
             assertTrue(vm.state.value!!.notifyMe)
             assertTrue(vm.state.value!!.failed)
-            assertEquals(listOf("notifyMe ${Cast.SELIN_ID} false"), account.calls)
+            assertEquals(listOf("notifyMe ${Cast.SIBEL_ID} false"), account.calls)
         }
 
     @Test
@@ -107,7 +107,7 @@ class PersonViewModelTest {
             assertEquals(PersonSheet.Relationship(EdgeType.SPOUSE), vm.state.value!!.sheet)
             vm.onSelect(EdgeType.ROOMMATE)
             vm.onConfirm()
-            assertEquals(listOf("relationship ${Cast.SELIN_ID} roommate"), account.calls)
+            assertEquals(listOf("relationship ${Cast.SIBEL_ID} roommate"), account.calls)
             assertNull(vm.state.value!!.sheet)
         }
 
@@ -126,7 +126,7 @@ class PersonViewModelTest {
                 awaitItem()
             }
             val (first, second) = account.calls
-            assertTrue(first.startsWith("remove ${Cast.SELIN_ID} "))
+            assertTrue(first.startsWith("remove ${Cast.SIBEL_ID} "))
             assertEquals(first, second)
         }
 }

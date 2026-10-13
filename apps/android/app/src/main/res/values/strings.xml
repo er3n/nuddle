@@ -19,7 +19,7 @@
     <string name="welcome_terms_link">Kullanım Koşulları</string>
     <string name="welcome_privacy_link">Gizlilik</string>
     <string name="welcome_invite_chip">%1$s seni dürt\'e davet etti</string>
-    <!-- TODO(open-questions#21): the design says "sonra Selin'in davetine bakarız"; rephrased so the name takes no suffix. -->
+    <!-- TODO(open-questions#21): the design says "sonra Sibel'in davetine bakarız"; rephrased so the name takes no suffix. -->
     <string name="welcome_invite_body">Önce numaranla giriş yap, sonra davete bakarız.</string>
     <string name="welcome_demo_first">Ekmek al</string>
     <string name="welcome_demo_first_time">14:32</string>
@@ -178,7 +178,7 @@
     <string name="invite_relationship_question">Senin neyin?</string>
     <string name="invite_relationship_question_named">%1$s senin neyin?</string>
     <string name="invite_relationship_required">Zorunlu. Kime, ne zaman haber vereceğime buna göre karar veririm.</string>
-    <!-- open-questions#32: the design says "Selin'in eşin olduğunu bilmek"; rephrased so the name takes no suffix. -->
+    <!-- open-questions#32: the design says "Sibel'in eşin olduğunu bilmek"; rephrased so the name takes no suffix. -->
     <string name="invite_relationship_why">Birbirinize görev yazabileceksiniz. Bu ilişkiyi bilmek, kime ne zaman haber vereceğime karar verirken işime yarar.</string>
     <string name="invite_send">Daveti gönder</string>
     <string name="invite_send_hint">Kişiyi ve ilişkiyi seçince aktif olur.</string>
@@ -237,7 +237,7 @@
     <!-- 0g Matched -->
     <string name="matched_title_line1">Sen ve %1$s</string>
     <string name="matched_title_line2">eşleştiniz</string>
-    <!-- open-questions#33: the design says "Selin, Bizimkiler listende."; kept, the name is not suffixed. -->
+    <!-- open-questions#33: the design says "Sibel, Bizimkiler listende."; kept, the name is not suffixed. -->
     <string name="matched_body">Artık birbirinize görev yazabilirsiniz. %1$s, Bizimkiler listende.</string>
     <string name="matched_start">Başla</string>
 
@@ -275,8 +275,8 @@
     <string name="cancel_reason_hint">Sebep opsiyonel, seçersen nota eklenir.</string>
     <string name="cancel_confirm">İptal et</string>
 
-    <!-- 4d Take photo. open-questions#35: the design says "Selin\'e gidecek", "Selin\'le paylaşılır" and
-         "Selin\'e gönder"; rephrased so the name takes no suffix. The shutter, a task to self and no camera have no
+    <!-- 4d Take photo. open-questions#35: the design says "Sibel\'e gidecek", "Sibel\'le paylaşılır" and
+         "Sibel\'e gönder"; rephrased so the name takes no suffix. The shutter, a task to self and no camera have no
          design copy. -->
     <string name="photo_to">%1$s görecek</string>
     <string name="photo_to_detail">%1$s görecek · %2$s istendi</string>
@@ -289,7 +289,7 @@
     <string name="photo_no_camera_title">Kamera kullanılamıyor</string>
     <string name="photo_no_camera_body">Kamera izni olmadan fotoğraf çekemem. Fotoğrafsız da bitirebilirsin.</string>
     <string name="photo_done_without">Fotoğrafsız bitti</string>
-    <!-- 4e, 4g. open-questions#35: the design says "Fotoğraf Selin\'de." and "08:24\'te gönderdin"; rephrased so the
+    <!-- 4e, 4g. open-questions#35: the design says "Fotoğraf Sibel\'de." and "08:24\'te gönderdin"; rephrased so the
          name and the time take no suffix. "sıradaki 08:40" is left out: the plan is hidden (open-questions#3). -->
     <string name="home_deadline_inline">son zaman %1$s</string>
     <string name="photo_waiting">Fotoğrafı %1$s görüyor. Onaylayınca görev kapanır.</string>
@@ -327,7 +327,7 @@
     <string name="photo_arrived_title">%1$s fotoğraf gönderdi</string>
     <string name="photo_arrived_body">%1$s · onayını bekliyor.</string>
     <string name="sent_photo_arrived">fotoğraf geldi</string>
-    <!-- 6e Photo upload failed. open-questions#35: the design says "Selin\'e gönderilemedi"; rephrased so the name
+    <!-- 6e Photo upload failed. open-questions#35: the design says "Sibel\'e gönderilemedi"; rephrased so the name
          takes no suffix. -->
     <string name="photo_waiting_failed">Gönderilemedi · Dürtme durdu</string>
     <string name="unsent_title">Fotoğraf</string>
@@ -404,7 +404,7 @@
         <item quantity="other">%1$d gün önce</item>
     </plurals>
 
-    <!-- 2c, 2d, 2e Setup. The invited variants (Selin's name) come with invites (slice 2). -->
+    <!-- 2c, 2d, 2e Setup. The invited variants (Sibel's name) come with invites (slice 2). -->
     <string name="setup_eyebrow">Bir kerelik kurulum</string>
     <string name="setup_demo_title">Önce bir dene, dürtme nasıl hissettiriyor gör</string>
     <!-- TODO(open-questions#5): copy for users who write only to themselves. -->
@@ -414,7 +414,7 @@
     <string name="setup_try">Bir dene</string>
     <string name="setup_skip_demo">Denemeden kur</string>
     <string name="setup_demo_badge">DENEME · gerçek bir iş değil</string>
-    <!-- TODO(open-questions#30): the design has only "Selin'den · örnek" (invited). -->
+    <!-- TODO(open-questions#30): the design has only "Sibel'den · örnek" (invited). -->
     <string name="setup_demo_from_self">Kendine · örnek</string>
     <string name="setup_demo_message">İşte bu. Telefonun kilitliyken de ekranı açar. Gerçek bir işte buna nadiren gerek kalır, önce kibarca denerim.</string>
     <string name="setup_demo_ok">Anladım, kuralım</string>

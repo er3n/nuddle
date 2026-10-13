@@ -1,4 +1,4 @@
--- Local seed: the Selin and Eren cast from docs/glossary.md, connected as spouses, and the sample
+-- Local seed: the Sibel and Eren cast from docs/glossary.md, connected as spouses, and the sample
 -- task "Temizlikçi için para çek · 1.000 TL · yarın 09:00 · fotoğrafla". Their phones are test
 -- numbers with fixed OTP codes in config.toml. Applied by `supabase db reset`.
 
@@ -23,7 +23,7 @@ from auth.users u
 where u.id in ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000002');
 
 insert into people (id, phone, display_name) values
-  ('00000000-0000-4000-8000-000000000001', '+905320000001', 'Selin'),
+  ('00000000-0000-4000-8000-000000000001', '+905320000001', 'Sibel'),
   ('00000000-0000-4000-8000-000000000002', '+905320000002', 'Eren');
 
 -- One 1:1 connection is two directed edges created together (ADR 0010).

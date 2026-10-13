@@ -16,7 +16,7 @@ import app.nuddle.testing.InMemoryTaskDao
 import app.nuddle.testing.MainDispatcherRule
 import app.nuddle.testing.aSession
 import app.nuddle.testing.aTask
-import app.nuddle.testing.selinConnection
+import app.nuddle.testing.sibelConnection
 import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.task.CancelReason
 import app.nuddle.ui.screens.task.EditRow
@@ -55,12 +55,12 @@ class TaskDetailViewModelTest {
         )
     }
 
-    private val toSelin = aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SELIN_ID, rawText = "selin yarın 9dan önce 1000 çeksin")
+    private val toSibel = aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SIBEL_ID, rawText = "sibel yarın 9dan önce 1000 çeksin")
 
     private suspend fun TestScope.ready() {
         sessions.saveMe("Eren", QuietHours.default(istanbul))
-        connectionDao.upsert(listOf(selinConnection()))
-        taskDao.upsert(listOf(toSelin))
+        connectionDao.upsert(listOf(sibelConnection()))
+        taskDao.upsert(listOf(toSibel))
         backgroundScope.launch { vm.state.collect {} }
     }
 
@@ -70,8 +70,8 @@ class TaskDetailViewModelTest {
             ready()
             val state = vm.state.value!!
             assertEquals("Eren", state.myName)
-            assertEquals("selin yarın 9dan önce 1000 çeksin", state.rawText)
-            assertEquals("Selin", state.toName)
+            assertEquals("sibel yarın 9dan önce 1000 çeksin", state.rawText)
+            assertEquals("Sibel", state.toName)
             assertEquals(Reachability.FULL_SCREEN, state.reachability)
             assertEquals(DeadlineText.Tomorrow("09:00"), state.deadline)
             assertEquals("1.000 TL", state.detail)
@@ -91,7 +91,7 @@ class TaskDetailViewModelTest {
                 assertEquals(listOf(Cast.TASK_ID), tasks.cancelled)
                 assertEquals(listOf<String?>("Ben hallettim"), tasks.cancelNotes)
 
-                taskDao.upsert(listOf(toSelin.copy(status = "CANCELLED")))
+                taskDao.upsert(listOf(toSibel.copy(status = "CANCELLED")))
                 awaitItem()
             }
         }

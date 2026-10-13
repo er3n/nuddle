@@ -108,7 +108,7 @@ private fun EditDeadlineSheetPreview() {
     val morning = DeadlineChoice.TomorrowMorning(Instant.parse("2026-10-12T09:00:00+03:00"))
     val state =
         TaskDetailUiState(
-            myName = "Selin",
+            myName = "Sibel",
             title = "Temizlikçi için para çek",
             rawText = null,
             toName = "Eren",

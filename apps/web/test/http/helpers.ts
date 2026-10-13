@@ -37,7 +37,7 @@ export async function signUp(
   return { id, phone, api, deviceId: d.data.deviceId };
 }
 
-/** Selin invites Eren and Eren accepts: both connected as spouses. */
+/** Sibel invites Eren and Eren accepts: both connected as spouses. */
 export async function connect(a: SignedUp, b: SignedUp): Promise<void> {
   const invite = await a.api.POST("/api/v1/commands/create_invite", {
     body: {

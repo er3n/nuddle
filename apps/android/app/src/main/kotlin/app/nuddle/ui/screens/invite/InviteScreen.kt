@@ -290,7 +290,7 @@ private fun InviteScreenEmptyPreview() {
 private fun InviteScreenReadyPreview() {
     DurtTheme {
         InviteScreen(
-            InviteUiState(contact = Invitee("Selin", "+905329876543"), relationship = EdgeType.SPOUSE),
+            InviteUiState(contact = Invitee("Sibel", "+905329876543"), relationship = EdgeType.SPOUSE),
             InviteCallbacks(),
         )
     }
@@ -301,7 +301,7 @@ private fun InviteScreenReadyPreview() {
 private fun InviteScreenTypingPreview() {
     DurtTheme {
         InviteScreen(
-            InviteUiState(typing = true, typedName = "Selin", typedNumber = "53298", failed = true),
+            InviteUiState(typing = true, typedName = "Sibel", typedNumber = "53298", failed = true),
             InviteCallbacks(),
         )
     }

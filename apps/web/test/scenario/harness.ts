@@ -5,7 +5,7 @@
 //
 // Reads (`world.task`, `eventsOf`, `pendingActions`, ...) come from a snapshot of the database taken
 // after every action, so assertions stay synchronous. People are named in snapshots and pushes
-// ("selin", "eren") instead of their UUIDs, so scenarios read like the docs.
+// ("sibel", "eren") instead of their UUIDs, so scenarios read like the docs.
 import { randomUUID } from "node:crypto";
 import { asc } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";

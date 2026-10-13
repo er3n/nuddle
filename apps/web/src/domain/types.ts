@@ -39,7 +39,7 @@ export interface Edge {
   toPersonId: PersonId;
   type: EdgeType;
   status: EdgeStatus;
-  /** "Selin'in işleri için bana haber verilebilir" (5b): the from-person may be told about the to-person's tasks. */
+  /** "Sibel'in işleri için bana haber verilebilir" (5b): the from-person may be told about the to-person's tasks. */
   notifyMe: boolean;
 }
 

@@ -1,5 +1,5 @@
-# Profile (5a) from the avatar, Selin's row, person detail (5b), "Bağlantıyı kaldır", then the confirmation sheet.
-# Back on profile, Selin is no longer in "Bizimkiler".
+# Profile (5a) from the avatar, Sibel's row, person detail (5b), "Bağlantıyı kaldır", then the confirmation sheet.
+# Back on profile, Sibel is no longer in "Bizimkiler".
 appId: app.nuddle.debug
 ---
 - launchApp
@@ -11,10 +11,10 @@ appId: app.nuddle.debug
     id: bar.profile
 - extendedWaitUntil:
     visible:
-      id: profile.person.Selin
+      id: profile.person.Sibel
     timeout: 15000
 - tapOn:
-    id: profile.person.Selin
+    id: profile.person.Sibel
 - extendedWaitUntil:
     visible:
       id: person.screen
@@ -35,5 +35,5 @@ appId: app.nuddle.debug
     timeout: 30000
 - extendedWaitUntil:
     notVisible:
-      id: profile.person.Selin
+      id: profile.person.Sibel
     timeout: 30000

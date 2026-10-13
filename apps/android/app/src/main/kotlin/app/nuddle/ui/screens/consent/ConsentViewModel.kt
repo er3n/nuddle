@@ -32,7 +32,7 @@ import kotlin.time.Instant
 private const val STOP_TIMEOUT_MS = 5_000L
 
 /**
- * 0f (right after sign-in) and 1d (from the bell, [fromBell]): "Selin seni dürtebilsin mi?". [addedAs] is the
+ * 0f (right after sign-in) and 1d (from the bell, [fromBell]): "Sibel seni dürtebilsin mi?". [addedAs] is the
  * inviter's pick (what I am to them), [myPick] mine (what they are to me), which "Değiştir" changes.
  */
 @Immutable

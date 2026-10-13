@@ -34,7 +34,7 @@ function context(task: Task, overrides: Partial<ActionContext> = {}): ActionCont
   return {
     task,
     plan,
-    sender: aPerson("Selin"),
+    sender: aPerson("Sibel"),
     recipient: aPerson("Eren"),
     history: [],
     now,
@@ -77,7 +77,7 @@ describe("tick handlers", () => {
     expect(r).toMatchObject({
       kind: "notify",
       events: [{ type: "human_notified" }],
-      pushes: [{ to: "selin", event: "human_notified" }],
+      pushes: [{ to: "sibel", event: "human_notified" }],
     });
     const done = aTask().withStatus("DONE").build();
     expect(handleAction(action("human_check"), context(done))).toEqual({ kind: "noop" });

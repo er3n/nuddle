@@ -3,7 +3,7 @@ package app.nuddle.ui
 import app.nuddle.data.db.TaskEventEntity
 import app.nuddle.testing.Cast
 import app.nuddle.testing.aTask
-import app.nuddle.testing.selinConnection
+import app.nuddle.testing.sibelConnection
 import app.nuddle.ui.screens.home.CancelledUi
 import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.MissedUi
@@ -22,7 +22,7 @@ import kotlin.time.Instant
 class IssuesTest {
     private val istanbul = TimeZone.of("Europe/Istanbul")
     private val now = Instant.parse("2026-10-12T10:00:00+03:00")
-    private val selin = mapOf(Cast.SELIN_ID to selinConnection())
+    private val sibel = mapOf(Cast.SIBEL_ID to sibelConnection())
 
     private fun event(
         type: String,
@@ -44,11 +44,11 @@ class IssuesTest {
         val gone = aTask(id = "gone", status = "MISSED").copy(inRecipientList = false)
         val selfMissed = aTask(id = "self", status = "MISSED").copy(senderId = Cast.EREN_ID)
 
-        val result = issues(listOf(missed, gone, selfMissed), emptyMap(), Cast.EREN_ID, selin, now, istanbul)
+        val result = issues(listOf(missed, gone, selfMissed), emptyMap(), Cast.EREN_ID, sibel, now, istanbul)
 
         assertEquals(
             listOf(
-                MissedUi(Cast.TASK_ID, "Temizlikçi için para çek", DeadlineText.Today("09:00"), Cast.SELIN_ID, "Selin", Cast.SELIN_PHONE),
+                MissedUi(Cast.TASK_ID, "Temizlikçi için para çek", DeadlineText.Today("09:00"), Cast.SIBEL_ID, "Sibel", Cast.SIBEL_PHONE),
                 MissedUi("self", "Temizlikçi için para çek", DeadlineText.Today("09:00")),
             ),
             result.missed,
@@ -63,17 +63,17 @@ class IssuesTest {
         val takenEvent = event("cancelled", """{"reason":"sender_handles"}""", taskId = "taken")
         val events = mapOf(Cast.TASK_ID to listOf(cancelEvent), "taken" to listOf(takenEvent))
 
-        val result = issues(listOf(cancelled, taken), events, Cast.EREN_ID, selin, now, istanbul)
-        assertEquals(listOf(CancelledUi(Cast.TASK_ID, "Temizlikçi için para çek", "Selin", "Ben hallettim")), result.cancelled)
+        val result = issues(listOf(cancelled, taken), events, Cast.EREN_ID, sibel, now, istanbul)
+        assertEquals(listOf(CancelledUi(Cast.TASK_ID, "Temizlikçi için para çek", "Sibel", "Ben hallettim")), result.cancelled)
 
-        val dayLater = issues(listOf(cancelled), events, Cast.EREN_ID, selin, now + 1.hours, istanbul)
+        val dayLater = issues(listOf(cancelled), events, Cast.EREN_ID, sibel, now + 1.hours, istanbul)
         assertTrue(dayLater.cancelled.isEmpty())
     }
 
-    private fun toSelin(
+    private fun toSibel(
         id: String,
         status: String,
-    ) = aTask(id = id, status = status).copy(senderId = Cast.EREN_ID, recipientId = Cast.SELIN_ID)
+    ) = aTask(id = id, status = status).copy(senderId = Cast.EREN_ID, recipientId = Cast.SIBEL_ID)
 
     @Test
     fun `my dropped task carries the note, my missed one the pokes of its current deadline`() {
@@ -91,9 +91,9 @@ class IssuesTest {
                         event("poke_fired", """{"level":"FULL_SCREEN"}""", taskId = "missed", ago = 75.minutes),
                     ),
             )
-        val tasks = listOf(toSelin("dropped", "DROPPED"), toSelin("missed", "MISSED"), toSelin("open", "SCHEDULED"))
+        val tasks = listOf(toSibel("dropped", "DROPPED"), toSibel("missed", "MISSED"), toSibel("open", "SCHEDULED"))
 
-        val sent = issues(tasks, events, Cast.EREN_ID, selin, now, istanbul).sent
+        val sent = issues(tasks, events, Cast.EREN_ID, sibel, now, istanbul).sent
 
         assertEquals(listOf("dropped", "missed"), sent.map { it.taskId }.sorted())
         val dropped = sent.first { it.taskId == "dropped" }

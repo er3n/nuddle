@@ -9,7 +9,7 @@ import androidx.test.core.app.ApplicationProvider
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.aTask
-import app.nuddle.testing.selinConnection
+import app.nuddle.testing.sibelConnection
 import kotlinx.datetime.TimeZone
 import org.junit.Before
 import org.junit.runner.RunWith
@@ -36,11 +36,11 @@ class TaskAnnouncerTest {
 
     @Test
     fun `says who wrote what, by when, and that nothing is needed yet`() {
-        announcer.announce(aTask(), "Selin")
+        announcer.announce(aTask(), "Sibel")
 
         val notification = manager.allNotifications.single()
         assertEquals(NotificationChannels.TASKS, notification.channelId)
-        assertEquals("Selin sana bir görev yazdı", notification.extras.getString(Notification.EXTRA_TITLE))
+        assertEquals("Sibel sana bir görev yazdı", notification.extras.getString(Notification.EXTRA_TITLE))
         assertEquals(
             "Temizlikçi için para çek · son zaman bugün 09:00. Bitince fotoğrafını istiyor.",
             notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
@@ -56,7 +56,7 @@ class TaskAnnouncerTest {
 
     @Test
     fun `a task finished by Bitti does not ask for a photo`() {
-        announcer.announce(aTask().copy(finishMode = "done"), "Selin")
+        announcer.announce(aTask().copy(finishMode = "done"), "Sibel")
 
         assertEquals(
             "Temizlikçi için para çek · son zaman bugün 09:00.",
@@ -70,21 +70,21 @@ class TaskAnnouncerTest {
 
     @Test
     fun `withdraw takes the announcement away`() {
-        announcer.announce(aTask(), "Selin")
+        announcer.announce(aTask(), "Sibel")
         announcer.withdraw(Cast.TASK_ID)
 
         assertTrue(manager.allNotifications.isEmpty())
     }
 
-    private val toSelin = aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SELIN_ID)
+    private val toSibel = aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SIBEL_ID)
 
     @Test
     fun `7a says who does not answer, how hard I tried, and offers Ara, Mesaj and Gör`() {
-        announcer.cantReach(toSelin, selinConnection(), pokes = 4, fullScreen = true)
+        announcer.cantReach(toSibel, sibelConnection(), pokes = 4, fullScreen = true)
 
         val notification = manager.allNotifications.single()
         assertEquals(NotificationChannels.REACH_OUT, notification.channelId)
-        assertEquals("Selin cevap vermiyor", notification.extras.getString(Notification.EXTRA_TITLE))
+        assertEquals("Sibel cevap vermiyor", notification.extras.getString(Notification.EXTRA_TITLE))
         assertEquals(
             "Temizlikçi için para çek · son zaman bugün 09:00. 4 kez dürttüm, tam ekran dahil, cevap yok.",
             notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
@@ -101,8 +101,8 @@ class TaskAnnouncerTest {
 
     @Test
     fun `7a without a number has only Gör, and goes away on its own`() {
-        announcer.photoArrived(toSelin, "Selin")
-        announcer.cantReach(toSelin, selinConnection(phone = null), pokes = 2, fullScreen = false)
+        announcer.photoArrived(toSibel, "Sibel")
+        announcer.cantReach(toSibel, sibelConnection(phone = null), pokes = 2, fullScreen = false)
 
         val reach = manager.allNotifications.single { it.channelId == NotificationChannels.REACH_OUT }
         assertEquals(

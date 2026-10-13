@@ -178,15 +178,15 @@ class SignInViewModelTest {
     @Test
     fun `an invite link opened while signed out shows the inviter on welcome, then prefills the name`() =
         runTest(main.dispatcher) {
-            val previews = FakeInvitePreviews(mapOf("abc" to InvitePreview(inviterName = "Selin", prefilledName = "Eren")))
+            val previews = FakeInvitePreviews(mapOf("abc" to InvitePreview(inviterName = "Sibel", prefilledName = "Eren")))
             val welcome = WelcomeViewModel(previews)
             assertNull(welcome.state.value.inviterName)
 
             welcome.onInviteLink("abc")
-            assertEquals("Selin", welcome.state.value.inviterName)
+            assertEquals("Sibel", welcome.state.value.inviterName)
 
             val name = NameViewModel(auth, starter, previews)
-            assertEquals(NameUiState(name = "Eren", invitedBy = "Selin", invitedAs = "Eren"), name.state.value)
+            assertEquals(NameUiState(name = "Eren", invitedBy = "Sibel", invitedAs = "Eren"), name.state.value)
             name.onNameChange("Eren Can")
             assertEquals("Eren", name.state.value.invitedAs)
         }

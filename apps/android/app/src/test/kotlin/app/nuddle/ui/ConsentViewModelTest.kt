@@ -59,9 +59,9 @@ class ConsentViewModelTest {
                 id = "i1",
                 code = "abc",
                 sent = false,
-                name = "Selin",
+                name = "Sibel",
                 phone = null,
-                inviterId = Cast.SELIN_ID,
+                inviterId = Cast.SIBEL_ID,
                 prefilledName = "Eren",
                 relationship = relationship,
                 status = status,
@@ -79,9 +79,9 @@ class ConsentViewModelTest {
             val vm = vm()
             collect(vm)
             val state = vm.state.value!!
-            assertEquals("Selin", state.inviterName)
+            assertEquals("Sibel", state.inviterName)
             assertEquals(EdgeType.PARENT, state.addedAs)
-            assertEquals(EdgeType.CHILD, state.myPick, "I am Selin's parent, so Selin is my child")
+            assertEquals(EdgeType.CHILD, state.myPick, "I am Sibel's parent, so Sibel is my child")
             assertEquals("23:00" to "07:00", state.quietStart to state.quietEnd)
             assertEquals(Ago.Hours(2), state.ago)
 
@@ -100,7 +100,7 @@ class ConsentViewModelTest {
             collect(vm)
             vm.effects.test {
                 vm.onAllow()
-                assertEquals(ConsentEffect.Accepted("Selin", setupNeeded = true), awaitItem())
+                assertEquals(ConsentEffect.Accepted("Sibel", setupNeeded = true), awaitItem())
             }
             assertEquals(listOf("abc" to EdgeType.SPOUSE), invites.accepted)
         }

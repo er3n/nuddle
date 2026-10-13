@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The two E2E emulators (docs/testing.md, E2E): emulator-5554 is Selin, emulator-5556 is Eren.
+# The two E2E emulators (docs/testing.md, E2E): emulator-5554 is Sibel, emulator-5556 is Eren.
 # Stock Android with Google Play (FCM needs it), hardware profile of a Galaxy S23 (NUD-10).
 #   emulators.sh create          create both AVDs if missing
 #   emulators.sh boot [--cold]   create, then boot both headless and wait; --cold wipes their data
@@ -25,7 +25,7 @@ AVD_HOME="${ANDROID_AVD_HOME:-$HOME/.android/avd}"
 BOOT_TIMEOUT_S=${E2E_BOOT_TIMEOUT_S:-300}
 
 # role:avd:port
-DEVICES=("selin:nuddle-selin:5554" "eren:nuddle-eren:5556")
+DEVICES=("sibel:nuddle-sibel:5554" "eren:nuddle-eren:5556")
 
 # A fresh runner has neither the emulator nor the image.
 install_sdk() {

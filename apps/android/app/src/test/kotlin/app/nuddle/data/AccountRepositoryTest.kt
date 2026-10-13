@@ -100,10 +100,10 @@ class AccountRepositoryTest {
         runTest {
             server.enqueue(ok())
             server.enqueue(ok())
-            assertTrue(repo.setRelationship(Cast.SELIN_ID, EdgeType.ROOMMATE))
-            assertEquals("""{"personId":"${Cast.SELIN_ID}","relationship":"roommate"}""", bodyWithoutKey())
-            assertTrue(repo.setNotifyMe(Cast.SELIN_ID, false))
-            assertEquals("""{"personId":"${Cast.SELIN_ID}","notifyMe":false}""", bodyWithoutKey())
+            assertTrue(repo.setRelationship(Cast.SIBEL_ID, EdgeType.ROOMMATE))
+            assertEquals("""{"personId":"${Cast.SIBEL_ID}","relationship":"roommate"}""", bodyWithoutKey())
+            assertTrue(repo.setNotifyMe(Cast.SIBEL_ID, false))
+            assertEquals("""{"personId":"${Cast.SIBEL_ID}","notifyMe":false}""", bodyWithoutKey())
             assertEquals(2, syncs)
         }
 
@@ -111,9 +111,9 @@ class AccountRepositoryTest {
     fun `removing a connection that is already gone counts as done`() =
         runTest {
             server.enqueue(drtError(409, "DRT-4006", "not_connected"))
-            assertTrue(repo.removeConnection(Cast.SELIN_ID, "key-1"))
+            assertTrue(repo.removeConnection(Cast.SIBEL_ID, "key-1"))
             server.enqueue(drtError(500, "DRT-5001", "internal"))
-            assertFalse(repo.removeConnection(Cast.SELIN_ID, "key-1"))
+            assertFalse(repo.removeConnection(Cast.SIBEL_ID, "key-1"))
             assertEquals(1, syncs)
         }
 

@@ -197,7 +197,7 @@ run = "pnpm --filter @nuddle/e2e smoke"
 
 [tasks."e2e:emulators"]
 hide = true
-description = "Create and boot the two E2E emulators headless (emulator-5554 Selin, emulator-5556 Eren)"
+description = "Create and boot the two E2E emulators headless (emulator-5554 Sibel, emulator-5556 Eren)"
 run = "e2e/scripts/emulators.sh boot"
 
 [tasks."e2e:emulators:stop"]

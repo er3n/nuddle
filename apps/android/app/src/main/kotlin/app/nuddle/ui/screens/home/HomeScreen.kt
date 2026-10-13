@@ -415,7 +415,7 @@ private fun HomeScreenInviteSentPreview() {
                         PendingInviteUi(
                             inviteId = "i1",
                             code = "abc",
-                            name = "Selin",
+                            name = "Sibel",
                             relationship = EdgeType.SPOUSE,
                             sharedAt = DeadlineText.Today("14:32"),
                         ),

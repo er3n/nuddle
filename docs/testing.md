@@ -8,7 +8,7 @@ Why: one person reviews agent-written code. Tests are the spec and the reviewer'
 2. **External services are faked** behind interfaces: `PushSender`, `OtpSender`, `TaskExtractor`, `PhotoStorage`, `Clock` on the server; `Clock`, `AlarmScheduler` on Android. Fakes record calls; assertions read the records.
 3. **Never edit a test to make it pass.** If a test must change because behavior changed on purpose, say so in the PR description.
 4. **Every behavior change ships with a test** at the lowest layer that can catch it. No coverage percentage gate.
-5. **Test data comes from builders**: `aTask().forRecipient(eren).withDeadline(...)`, `aPerson("Selin")`. Use the Selin and Eren cast from `glossary.md`.
+5. **Test data comes from builders**: `aTask().forRecipient(eren).withDeadline(...)`, `aPerson("Sibel")`. Use the Sibel and Eren cast from `glossary.md`.
 6. Long commands (Gradle, E2E) run in the background with a timeout. Do not block waiting on them; poll the log.
 
 ## Layers
@@ -32,11 +32,11 @@ Why: one person reviews agent-written code. Tests are the spec and the reviewer'
 
 ## Scenario tests (the most valuable layer)
 
-Two simulated clients (Selin, Eren) call the API through the generated TS client (`packages/contract/openapi.d.ts` + `openapi-fetch`, in-process via `app.request()`), each scenario on a fresh copy of a migrated template database. Time moves only through the injected clock and `POST /api/internal/tick`. The fake `PushSender` records what went to whom, by name.
+Two simulated clients (Sibel, Eren) call the API through the generated TS client (`packages/contract/openapi.d.ts` + `openapi-fetch`, in-process via `app.request()`), each scenario on a fresh copy of a migrated template database. Time moves only through the injected clock and `POST /api/internal/tick`. The fake `PushSender` records what went to whom, by name.
 
 Example:
 
-> Selin writes "eren yarın 9dan önce temizlikçi için 1000 çeksin" → task created for Eren with photo mode → a plan is pushed to Eren's device → three steps fire without response → Selin gets "Eren'e ulaşamıyorum" → Eren sends a photo → status `AWAITING_APPROVAL`, poking stopped → 3 hours pass → auto-approved → Eren gets the done note.
+> Sibel writes "eren yarın 9dan önce temizlikçi için 1000 çeksin" → task created for Eren with photo mode → a plan is pushed to Eren's device → three steps fire without response → Sibel gets "Eren'e ulaşamıyorum" → Eren sends a photo → status `AWAITING_APPROVAL`, poking stopped → 3 hours pass → auto-approved → Eren gets the done note.
 
 Start the backend scenario suite with: task to self, task to other with done, photo + approve, photo + re-request, can't today with note, missed then "Sonradan yaptım", sender cancel, quiet hours shift, deadline edit regenerates plan, invite accepted / declined (declined invisible to inviter), logout makes reachability `NONE`, account deletion cancels the other side's open tasks, a quiet hours or human channel switch change replans open tasks, removing a connection cancels open tasks both ways without a notification, a poke whose alarm did not ring while the phone was seen online is lost and reaches only that phone (an offline phone is not evidence), a Bitti tapped offline before the deadline still counts when it arrives after it (and one tapped after it does not), a text queued offline and sent twice with its key makes one task.
 
@@ -73,9 +73,9 @@ Start the backend scenario suite with: task to self, task to other with done, ph
 - `adb reverse` also forwards `:54321` (local Supabase), where the signed photo upload and view URLs point.
 
 ### Orchestrator
-TypeScript runner in `e2e/orchestrator` that drives two emulators (`emulator-5554` as Selin, `emulator-5556` as Eren), runs Maestro flows on each in sequence, and calls test endpoints in between. Every run writes `e2e-runs/<timestamp>/` with per-step screenshots of both devices, logcat for both, and server logs. Agents debug from that folder.
+TypeScript runner in `e2e/orchestrator` that drives two emulators (`emulator-5554` as Sibel, `emulator-5556` as Eren), runs Maestro flows on each in sequence, and calls test endpoints in between. Every run writes `e2e-runs/<timestamp>/` with per-step screenshots of both devices, logcat for both, and server logs. Agents debug from that folder.
 
-The emulators are AVDs `nuddle-selin` and `nuddle-eren` (`e2e/scripts/emulators.sh`): stock Android with Google Play (`android-36`, `google_apis_playstore`), hardware profile of a Galaxy S23 (1080 x 2340 px, 480 dpi, about 360 x 780 dp). Each run starts from a clean state: a re-created `nuddle_e2e` database and the app reinstalled on both emulators. Prerequisites, the run folder layout and the smoke flows are in `e2e/README.md`.
+The emulators are AVDs `nuddle-sibel` and `nuddle-eren` (`e2e/scripts/emulators.sh`): stock Android with Google Play (`android-36`, `google_apis_playstore`), hardware profile of a Galaxy S23 (1080 x 2340 px, 480 dpi, about 360 x 780 dp). Each run starts from a clean state: a re-created `nuddle_e2e` database and the app reinstalled on both emulators. Prerequisites, the run folder layout and the smoke flows are in `e2e/README.md`.
 
 FCM needs Google Play system images and the dev Firebase app. Flows wait with timeouts because push can be slow.
 
@@ -94,16 +94,16 @@ FCM needs Google Play system images and the dev Firebase app. Flows wait with ti
 
 ### Smoke set (runs before a PR is merged)
 1. Sign up with a test number, write a task to self, full screen poke rings, Done.
-2. Selin invites Eren; Eren opens the link before he has an account (0b, name prefilled on 0e), signs up, consents and completes setup, both see each other.
-3. Selin writes a photo task to Eren, Eren gets poked, Bitti on the full screen poke opens the camera, he sends a photo and his pokes stop, Selin approves.
-4. Selin writes a task to Eren, it is his next-up card and his phone sets its alarms; Selin cancels it from the task detail with a reason, Eren's pending alarms are gone.
+2. Sibel invites Eren; Eren opens the link before he has an account (0b, name prefilled on 0e), signs up, consents and completes setup, both see each other.
+3. Sibel writes a photo task to Eren, Eren gets poked, Bitti on the full screen poke opens the camera, he sends a photo and his pokes stop, Sibel approves.
+4. Sibel writes a task to Eren, it is his next-up card and his phone sets its alarms; Sibel cancels it from the task detail with a reason, Eren's pending alarms are gone.
 5. Doze: a `SOUND` step still rings on time.
 6. Reboot: pending alarms are re-set.
-7. Selin writes a task to Eren, the full screen poke rings, Eren answers Bugün yapamayacağım with a ready note and his pokes stop; Selin sees it dropped with the note, gives a new time, and Eren's phone has alarms again.
-8. Eren opens profile, then Selin, and removes the connection: the task from smoke 7 is cancelled with no notification, Eren's alarms for it go, and both sides see the connection as removed.
+7. Sibel writes a task to Eren, the full screen poke rings, Eren answers Bugün yapamayacağım with a ready note and his pokes stop; Sibel sees it dropped with the note, gives a new time, and Eren's phone has alarms again.
+8. Eren opens profile, then Sibel, and removes the connection: the task from smoke 7 is cancelled with no notification, Eren's alarms for it go, and both sides see the connection as removed.
 9. Eren writes a task to himself and his app is force stopped before its pokes: the alarms are gone; on the next launch the bell shows "Son dürtmen çalmadı" and "Düzelt" opens the brand steps (2h).
 10. Eren loses his connection: home shows the offline banner (6a) and a text he writes waits as "Sırada"; when the connection is back it goes out by itself and the task is on home.
-11. Selin holds the mic and speaks a task (4h): lifting the finger writes the transcript and the task is created.
+11. Sibel holds the mic and speaks a task (4h): lifting the finger writes the transcript and the task is created.
 
 The full set runs on demand. Because the repo is public, standard GitHub-hosted Linux runners are free and have KVM, so the smoke set also runs in CI: the `e2e` workflow (`.github/workflows/e2e.yml`, started by hand from the Actions tab, decided in NUD-30) boots both emulators on one runner with the x86_64 image and uploads `e2e-runs/` as an artifact. Locally `mise run e2e:smoke` remains the gate before merging.
 

@@ -143,7 +143,7 @@ private fun NameScreenPreview() {
 @PreviewScreens
 @Composable
 private fun NameScreenInvitedPreview() {
-    DurtTheme { NameScreen(NameUiState(name = "Eren", invitedBy = "Selin", invitedAs = "Eren"), onNameChange = {}, onContinue = {}) }
+    DurtTheme { NameScreen(NameUiState(name = "Eren", invitedBy = "Sibel", invitedAs = "Eren"), onNameChange = {}, onContinue = {}) }
 }
 
 @PreviewScreens

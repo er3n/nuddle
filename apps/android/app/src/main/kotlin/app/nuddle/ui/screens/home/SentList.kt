@@ -95,7 +95,7 @@ private fun HomeScreenOfflinePreview() {
                     myName = "Eren",
                     connected = true,
                     offline = true,
-                    queued = listOf(QueuedUi("key-1", "selin akşama kadar faturayı ödesin")),
+                    queued = listOf(QueuedUi("key-1", "sibel akşama kadar faturayı ödesin")),
                 ),
             onBell = {},
             onProfile = {},
@@ -118,7 +118,7 @@ private fun HomeScreenSendFailedPreview() {
                 HomeUiState(
                     myName = "Eren",
                     connected = true,
-                    compose = ComposeState.Failed("selin cuma akşama kadar kuru temizlemeyi alsın"),
+                    compose = ComposeState.Failed("sibel cuma akşama kadar kuru temizlemeyi alsın"),
                 ),
             onBell = {},
             onProfile = {},
@@ -138,7 +138,7 @@ private fun HomeScreenQuickSentPreview() {
         HomeScreen(
             state =
                 HomeUiState(
-                    myName = "Selin",
+                    myName = "Sibel",
                     connected = true,
                     sent =
                         listOf(

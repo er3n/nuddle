@@ -195,8 +195,8 @@ private fun RelationshipChips(
 
 internal val previewPerson =
     PersonUiState(
-        personId = "selin",
-        name = "Selin",
+        personId = "sibel",
+        name = "Sibel",
         relationship = EdgeType.SPOUSE,
         since = ConnectedFor.Months(3),
         notifyMe = true,

@@ -19,7 +19,7 @@ import app.nuddle.testing.aSession
 import app.nuddle.testing.aStep
 import app.nuddle.testing.aTask
 import app.nuddle.testing.inMemoryDatabase
-import app.nuddle.testing.selinConnection
+import app.nuddle.testing.sibelConnection
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
@@ -58,7 +58,7 @@ class LocalWipeTest {
             val clock = FakeClock(Instant.parse("2026-10-12T08:00:00+03:00"))
             val alarms = PokeAlarms(db.tasks(), db.pokeSteps(), scheduler, clock)
             db.tasks().upsert(listOf(aTask()))
-            db.connections().upsert(listOf(selinConnection()))
+            db.connections().upsert(listOf(sibelConnection()))
             alarms.applyPlan(Cast.TASK_ID, 1, listOf(aStep(1, "2026-10-12T08:30:00+03:00")))
             alarms.rearm()
             val workManager = WorkManager.getInstance(context)
@@ -78,7 +78,7 @@ class LocalWipeTest {
                 workManager.getWorkInfosForUniqueWork("sync").get().map { it.state },
             )
             assertTrue(db.tasks().all().isEmpty())
-            assertNull(db.connections().get(Cast.SELIN_ID))
+            assertNull(db.connections().get(Cast.SIBEL_ID))
             assertNull(photos.pending(Cast.TASK_ID))
             assertNull(sessions.current())
         }

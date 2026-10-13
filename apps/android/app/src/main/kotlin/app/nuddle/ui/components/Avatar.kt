@@ -60,16 +60,16 @@ fun Avatar(
 private fun AvatarPreview() {
     PreviewSurface {
         val dimens = DurtTheme.dimens
-        val selin = DurtTheme.colors.avatarOthers.first()
+        val sibel = DurtTheme.colors.avatarOthers.first()
         Row(
             horizontalArrangement = Arrangement.spacedBy(dimens.space12),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Avatar("Eren", DurtTheme.colors.avatarSelf, dimens.avatarProfile)
-            Avatar("Selin", selin, dimens.avatarTopBar)
-            Avatar("Selin", selin, dimens.avatarList)
-            Avatar("Selin", selin, dimens.avatarCard)
-            Avatar("Selin", selin, dimens.avatarInline)
+            Avatar("Sibel", sibel, dimens.avatarTopBar)
+            Avatar("Sibel", sibel, dimens.avatarList)
+            Avatar("Sibel", sibel, dimens.avatarCard)
+            Avatar("Sibel", sibel, dimens.avatarInline)
             Avatar("Eren", DurtTheme.colors.avatarSelf, dimens.avatarSmall)
         }
     }

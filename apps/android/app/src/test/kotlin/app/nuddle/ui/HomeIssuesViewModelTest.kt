@@ -12,7 +12,7 @@ import app.nuddle.testing.InMemoryTaskEventDao
 import app.nuddle.testing.MainDispatcherRule
 import app.nuddle.testing.aSession
 import app.nuddle.testing.aTask
-import app.nuddle.testing.selinConnection
+import app.nuddle.testing.sibelConnection
 import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.HomeIssuesViewModel
 import kotlinx.coroutines.launch
@@ -49,8 +49,8 @@ class HomeIssuesViewModelTest {
     }
 
     private suspend fun TestScope.ready() {
-        connections.upsert(listOf(selinConnection()))
-        taskDao.upsert(listOf(aTask(status = "MISSED").copy(senderId = Cast.EREN_ID, recipientId = Cast.SELIN_ID)))
+        connections.upsert(listOf(sibelConnection()))
+        taskDao.upsert(listOf(aTask(status = "MISSED").copy(senderId = Cast.EREN_ID, recipientId = Cast.SIBEL_ID)))
         backgroundScope.launch { vm.issues.collect {} }
     }
 
@@ -62,7 +62,7 @@ class HomeIssuesViewModelTest {
 
             vm.onNewDeadline(Cast.TASK_ID)
             val sheet = vm.newDeadline.value!!
-            assertEquals("Selin", sheet.toName)
+            assertEquals("Sibel", sheet.toName)
             val evening = DeadlineChoice.TonightEvening(Instant.parse("2026-10-12T19:00:00+03:00"))
             assertTrue(evening in sheet.choices)
 

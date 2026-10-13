@@ -3,7 +3,7 @@
 Status: Accepted (2026-10-13). Refines ADR 0011 (identity) and open-questions #13 (invite links); decided by the human in NUD-38.
 
 ## Context
-An invite link (`https://nuddle.app/i/{code}`) opened while signed out should show who invites (0b, "Selin seni dürt'e davet etti") and, after sign-in, prefill the name the inviter typed (0e). Before sign-in the app has no token, so it needs an endpoint that answers without one, and anyone holding the code learns the inviter's name.
+An invite link (`https://nuddle.app/i/{code}`) opened while signed out should show who invites (0b, "Sibel seni dürt'e davet etti") and, after sign-in, prefill the name the inviter typed (0e). Before sign-in the app has no token, so it needs an endpoint that answers without one, and anyone holding the code learns the inviter's name.
 
 ## Decision
 - `GET /api/v1/invites/{code}/preview` needs no token and returns only `inviterName` (the inviter's display name) and `prefilledName` (what the inviter typed for the invitee).

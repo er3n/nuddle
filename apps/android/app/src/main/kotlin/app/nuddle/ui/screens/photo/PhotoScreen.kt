@@ -221,7 +221,7 @@ private fun NoCamera() {
     }
 }
 
-private val previewState = PhotoUiState(title = "Temizlikçi için para çek", toName = "Selin", detail = "1.000 TL")
+private val previewState = PhotoUiState(title = "Temizlikçi için para çek", toName = "Sibel", detail = "1.000 TL")
 
 @Composable
 private fun PreviewViewfinder(modifier: Modifier = Modifier) {

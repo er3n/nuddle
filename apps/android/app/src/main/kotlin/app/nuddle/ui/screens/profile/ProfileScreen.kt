@@ -231,7 +231,7 @@ internal val previewProfile =
     ProfileUiState(
         name = "Eren",
         phone = "+90 532 123 45 67",
-        people = listOf(PersonRowUi("selin", "Selin", EdgeType.SPOUSE)),
+        people = listOf(PersonRowUi("sibel", "Sibel", EdgeType.SPOUSE)),
         pending = emptyList(),
         useConnectionsForMyTasks = true,
         notifyMeForOthersTasks = true,

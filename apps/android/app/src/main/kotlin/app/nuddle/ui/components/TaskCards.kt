@@ -204,12 +204,12 @@ fun TaskActionCard(
 @Composable
 private fun TaskCardsPreview() {
     PreviewSurface {
-        val selin = DurtTheme.colors.avatarOthers.first()
+        val sibel = DurtTheme.colors.avatarOthers.first()
         Column(verticalArrangement = Arrangement.spacedBy(DurtTheme.dimens.space16)) {
-            TaskRow(TaskUi("Gelirken ekmek al", "Selin · bu akşam", PillStatus.Scheduled, "Selin", selin), onClick = {})
+            TaskRow(TaskUi("Gelirken ekmek al", "Sibel · bu akşam", PillStatus.Scheduled, "Sibel", sibel), onClick = {})
             TaskActionCard(
-                task = TaskUi("Para çek", "Selin · bugün 09:00'a kadardı", PillStatus.Missed, "Selin", selin),
-                message = "Son zaman geçti. Selin'e haber verdim.",
+                task = TaskUi("Para çek", "Sibel · bugün 09:00'a kadardı", PillStatus.Missed, "Sibel", sibel),
+                message = "Son zaman geçti. Sibel'e haber verdim.",
                 primary = CardAction("Sonradan yaptım", {}),
                 secondary = CardAction("Ara", {}),
             )

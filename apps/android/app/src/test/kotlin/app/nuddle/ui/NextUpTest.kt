@@ -2,7 +2,7 @@ package app.nuddle.ui
 
 import app.nuddle.testing.Cast
 import app.nuddle.testing.aTask
-import app.nuddle.testing.selinConnection
+import app.nuddle.testing.sibelConnection
 import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.FromUi
 import app.nuddle.ui.screens.home.NextUpStatus
@@ -53,41 +53,41 @@ class NextUpTest {
     }
 
     @Test
-    fun `a task from Selin is next up with her name, when she wrote it and her phone`() {
-        val fromSelin =
-            aTask(id = "from-selin", deadline = Instant.parse("2026-10-12T09:00:00+03:00"))
+    fun `a task from Sibel is next up with her name, when she wrote it and her phone`() {
+        val fromSibel =
+            aTask(id = "from-sibel", deadline = Instant.parse("2026-10-12T09:00:00+03:00"))
                 .copy(createdAt = Instant.parse("2026-10-11T14:32:00+03:00").toEpochMilliseconds())
         val later = selfTask("later", "2026-10-13T09:00:00+03:00")
-        val card = nextUp(listOf(later, fromSelin), Cast.EREN_ID, mapOf(Cast.SELIN_ID to selinConnection()), now, istanbul)
-        assertEquals("from-selin", card?.taskId)
-        assertEquals(FromUi("Selin", WrittenText.Today("14:32"), Cast.SELIN_PHONE), card?.from)
+        val card = nextUp(listOf(later, fromSibel), Cast.EREN_ID, mapOf(Cast.SIBEL_ID to sibelConnection()), now, istanbul)
+        assertEquals("from-sibel", card?.taskId)
+        assertEquals(FromUi("Sibel", WrittenText.Today("14:32"), Cast.SIBEL_PHONE), card?.from)
     }
 
     @Test
     fun `a task from someone sync has no connection for is left out, and a task to self has no sender`() {
         assertNull(nextUp(listOf(aTask()), Cast.EREN_ID, emptyMap(), now, istanbul))
         val self = selfTask("self", "2026-10-12T09:00:00+03:00")
-        assertNull(nextUp(listOf(self), Cast.EREN_ID, mapOf(Cast.SELIN_ID to selinConnection()), now, istanbul)?.from)
+        assertNull(nextUp(listOf(self), Cast.EREN_ID, mapOf(Cast.SIBEL_ID to sibelConnection()), now, istanbul)?.from)
     }
 
     @Test
-    fun `a task Selin wrote to herself is not on my card`() {
-        val hers = aTask().copy(recipientId = Cast.SELIN_ID)
-        assertNull(nextUp(listOf(hers), Cast.EREN_ID, mapOf(Cast.SELIN_ID to selinConnection()), now, istanbul))
+    fun `a task Sibel wrote to herself is not on my card`() {
+        val hers = aTask().copy(recipientId = Cast.SIBEL_ID)
+        assertNull(nextUp(listOf(hers), Cast.EREN_ID, mapOf(Cast.SIBEL_ID to sibelConnection()), now, istanbul))
     }
 
     @Test
-    fun `a photo waiting for Selin and a re-request are on the card, but what I still have to do comes first`() {
-        val selin = mapOf(Cast.SELIN_ID to selinConnection())
+    fun `a photo waiting for Sibel and a re-request are on the card, but what I still have to do comes first`() {
+        val sibel = mapOf(Cast.SIBEL_ID to sibelConnection())
         val waiting =
             aTask(id = "waiting", status = "AWAITING_APPROVAL", deadline = Instant.parse("2026-10-12T08:00:00+03:00"))
                 .copy(photoSentAt = Instant.parse("2026-10-11T19:24:00+03:00").toEpochMilliseconds())
         val asked = aTask(id = "asked", status = "REJECTED").copy(reRequestNote = "1.500 lazımdı")
 
-        val alone = nextUp(listOf(waiting), Cast.EREN_ID, selin, now, istanbul)
+        val alone = nextUp(listOf(waiting), Cast.EREN_ID, sibel, now, istanbul)
         assertEquals(NextUpStatus.AwaitingApproval to "19:24", alone?.status to alone?.photoSentAt)
 
-        val both = nextUp(listOf(waiting, asked), Cast.EREN_ID, selin, now, istanbul)
+        val both = nextUp(listOf(waiting, asked), Cast.EREN_ID, sibel, now, istanbul)
         assertEquals("asked", both?.taskId)
         assertEquals(NextUpStatus.ReRequested to "1.500 lazımdı", both?.status to both?.note)
     }

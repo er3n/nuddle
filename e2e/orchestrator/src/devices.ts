@@ -1,4 +1,4 @@
-// The two emulators (docs/testing.md, Orchestrator): emulator-5554 is Selin, emulator-5556 is Eren.
+// The two emulators (docs/testing.md, Orchestrator): emulator-5554 is Sibel, emulator-5556 is Eren.
 // adb for setup, system conditions and screenshots; Maestro for the flows in e2e/flows/.
 import type { ChildProcess } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -19,7 +19,7 @@ const androidHome = (): string => {
 
 const adbPath = (): string => join(androidHome(), "platform-tools", "adb");
 
-export type Role = "selin" | "eren";
+export type Role = "sibel" | "eren";
 
 export class Device {
   private logcat: ChildProcess | null = null;
@@ -175,8 +175,8 @@ export class Device {
 }
 
 export const devices = {
-  selin: new Device("selin", "emulator-5554"),
+  sibel: new Device("sibel", "emulator-5554"),
   eren: new Device("eren", "emulator-5556"),
 };
 
-export const allDevices = (): Device[] => [devices.selin, devices.eren];
+export const allDevices = (): Device[] => [devices.sibel, devices.eren];

@@ -62,7 +62,7 @@ class BellWarningsTest {
     fun `the full screen warning names my next full screen poke and its day`() {
         val money = aTask(id = "money").copy(title = "Para çek")
         val soon = aTask(id = "soon").copy(title = "Ekmek al")
-        val toSelin = aTask(id = "mine").copy(senderId = Cast.EREN_ID, recipientId = Cast.SELIN_ID)
+        val toSibel = aTask(id = "mine").copy(senderId = Cast.EREN_ID, recipientId = Cast.SIBEL_ID)
         val steps =
             listOf(
                 aStep(3, "2026-10-13T08:45:00+03:00", PokeLevel.FULL_SCREEN, taskId = "money"),
@@ -72,7 +72,7 @@ class BellWarningsTest {
             )
         assertEquals(
             NextPokeUi("Para çek", PokeDay.Tomorrow),
-            nextFullScreen(steps, listOf(money, soon, toSelin), Cast.EREN_ID, now, istanbul),
+            nextFullScreen(steps, listOf(money, soon, toSibel), Cast.EREN_ID, now, istanbul),
         )
         val today = aStep(3, "2026-10-12T20:00:00+03:00", PokeLevel.FULL_SCREEN, taskId = "soon")
         assertEquals(NextPokeUi("Ekmek al", PokeDay.Today), nextFullScreen(steps + today, listOf(money, soon), Cast.EREN_ID, now, istanbul))
@@ -88,10 +88,10 @@ class BellWarningsTest {
             val events = InMemoryTaskEventDao()
             val store = InMemoryMissedRingStore()
             val rings = MissedRings(InMemorySessionStore(aSession()), tasks, events, store)
-            tasks.upsert(listOf(aTask(id = "toMe"), aTask(id = "toSelin").copy(senderId = Cast.EREN_ID, recipientId = Cast.SELIN_ID)))
+            tasks.upsert(listOf(aTask(id = "toMe"), aTask(id = "toSibel").copy(senderId = Cast.EREN_ID, recipientId = Cast.SIBEL_ID)))
 
-            // Selin's lost poke reaches me through the sync of my task to her: not mine to fix.
-            events.upsert(listOf(lostEvent("toSelin", "2026-10-12T08:45:00+03:00")))
+            // Sibel's lost poke reaches me through the sync of my task to her: not mine to fix.
+            events.upsert(listOf(lostEvent("toSibel", "2026-10-12T08:45:00+03:00")))
             assertNull(rings.warning.first())
 
             events.upsert(listOf(lostEvent("toMe", "2026-10-12T08:15:00+03:00")))

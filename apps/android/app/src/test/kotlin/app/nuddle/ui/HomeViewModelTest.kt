@@ -31,7 +31,7 @@ import app.nuddle.testing.MainDispatcherRule
 import app.nuddle.testing.RecordingErrorReporter
 import app.nuddle.testing.aSession
 import app.nuddle.testing.aTask
-import app.nuddle.testing.selinConnection
+import app.nuddle.testing.sibelConnection
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.DeadlineText
@@ -168,7 +168,7 @@ class HomeViewModelTest {
         }
 
     @Test
-    fun `a task from Selin is next up once her connection is known`() =
+    fun `a task from Sibel is next up once her connection is known`() =
         runTest(main.dispatcher) {
             signedIn()
             taskDao.upsert(listOf(aTask().copy(finishMode = "done")))
@@ -176,9 +176,9 @@ class HomeViewModelTest {
                 val before = awaitItemWhere { it != null }
                 assertNull(before?.nextUp)
                 assertFalse(before?.connected ?: true)
-                connectionDao.upsert(listOf(selinConnection()))
+                connectionDao.upsert(listOf(sibelConnection()))
                 val after = awaitItemWhere { it?.nextUp != null }
-                assertEquals("Selin", after?.nextUp?.from?.name)
+                assertEquals("Sibel", after?.nextUp?.from?.name)
                 assertTrue(after?.connected ?: false, "no invite card once someone is connected")
                 vm.onFinishNextUp()
                 cancelAndIgnoreRemainingEvents()
@@ -187,10 +187,10 @@ class HomeViewModelTest {
         }
 
     @Test
-    fun `a photo waiting for Selin shows on the card, loaded once`() =
+    fun `a photo waiting for Sibel shows on the card, loaded once`() =
         runTest(main.dispatcher) {
             signedIn()
-            connectionDao.upsert(listOf(selinConnection()))
+            connectionDao.upsert(listOf(sibelConnection()))
             taskDao.upsert(listOf(aTask(status = "AWAITING_APPROVAL")))
             vm.state.test {
                 val state = awaitItemWhere { it?.nextUpPhoto != null }
@@ -204,7 +204,7 @@ class HomeViewModelTest {
     fun `a photo whose upload failed says so on the card (6e)`() =
         runTest(main.dispatcher) {
             signedIn()
-            connectionDao.upsert(listOf(selinConnection()))
+            connectionDao.upsert(listOf(sibelConnection()))
             taskDao.upsert(listOf(aTask(status = "AWAITING_APPROVAL")))
             uploads.failing.value = true
             vm.state.test {
@@ -229,33 +229,33 @@ class HomeViewModelTest {
         }
 
     private suspend fun TestScope.asked(ask: WriteOutcome.Ask) {
-        connectionDao.upsert(listOf(selinConnection().copy(reachability = "SOUND")))
+        connectionDao.upsert(listOf(sibelConnection().copy(reachability = "SOUND")))
         ready()
         tasks.outcome = ask
-        vm.onComposeTextChange("selin yarın 9dan önce 1000 çeksin")
+        vm.onComposeTextChange("sibel yarın 9dan önce 1000 çeksin")
         vm.onComposeSend()
     }
 
     @Test
-    fun `4a, the deadline asked for Selin shows her name, how far pokes reach her, photo preselected for money, Gönder`() =
+    fun `4a, the deadline asked for Sibel shows her name, how far pokes reach her, photo preselected for money, Gönder`() =
         runTest(main.dispatcher) {
             permissions.granted = GrantedPermissions(notifications = false, exactAlarm = true, fullScreen = true)
             vm.openSetup.test {
                 asked(
                     WriteOutcome.Ask(
                         WriteTaskResult.Question.DEADLINE,
-                        TaskDraft("Temizlikçi için para çek", "1.000 TL", FinishMode.PHOTO, recipient = "selin"),
+                        TaskDraft("Temizlikçi için para çek", "1.000 TL", FinishMode.PHOTO, recipient = "sibel"),
                     ),
                 )
                 val preview = vm.state.value?.preview!!
-                assertEquals("Selin", preview.to)
+                assertEquals("Sibel", preview.to)
                 assertEquals(Reachability.SOUND, preview.reach)
                 assertTrue(preview.photo && preview.photoSuggested && preview.toOther)
 
                 vm.previewSheet.onPhoto(false)
                 vm.previewSheet.onChoice(preview.choices.single())
                 vm.onPreviewConfirm()
-                assertEquals(listOf<String?>(Cast.SELIN_ID), tasks.createdFor)
+                assertEquals(listOf<String?>(Cast.SIBEL_ID), tasks.createdFor)
                 assertEquals(listOf(FinishMode.DONE), tasks.createdFinishModes)
                 assertNull(vm.state.value?.preview)
                 expectNoEvents()
@@ -273,11 +273,11 @@ class HomeViewModelTest {
                 ),
             )
             val preview = vm.state.value?.preview!!
-            assertEquals(listOf(RecipientChoice.Self, RecipientChoice.Person(Cast.SELIN_ID, "Selin")), preview.recipients)
+            assertEquals(listOf(RecipientChoice.Self, RecipientChoice.Person(Cast.SIBEL_ID, "Sibel")), preview.recipients)
             assertEquals(DeadlineText.Tomorrow("09:00"), preview.knownDeadline)
             assertFalse(preview.ready, "nobody chosen yet")
 
-            vm.previewSheet.onRecipient(RecipientChoice.Person(Cast.SELIN_ID, "Selin"))
+            vm.previewSheet.onRecipient(RecipientChoice.Person(Cast.SIBEL_ID, "Sibel"))
             assertEquals(
                 Reachability.SOUND,
                 vm.state.value
@@ -285,7 +285,7 @@ class HomeViewModelTest {
                     ?.reach,
             )
             vm.onPreviewConfirm()
-            assertEquals(listOf<String?>(Cast.SELIN_ID), tasks.createdFor)
+            assertEquals(listOf<String?>(Cast.SIBEL_ID), tasks.createdFor)
             assertEquals(nineTomorrow, tasks.created.single().second)
         }
 
@@ -294,7 +294,7 @@ class HomeViewModelTest {
         runTest(main.dispatcher) {
             asked(WriteOutcome.Ask(WriteTaskResult.Question.DEADLINE, TaskDraft("Para çek", null, FinishMode.DONE, recipient = "Defne")))
             assertNull(vm.state.value?.preview)
-            assertEquals(ComposeState.Typing("selin yarın 9dan önce 1000 çeksin"), vm.state.value?.compose)
+            assertEquals(ComposeState.Typing("sibel yarın 9dan önce 1000 çeksin"), vm.state.value?.compose)
         }
 
     private val askDeadline =
@@ -413,28 +413,28 @@ class HomeViewModelTest {
         }
 
     @Test
-    fun `a task that went out to Selin says Gönderildi with her name, sits in my sent list, and opens no setup`() =
+    fun `a task that went out to Sibel says Gönderildi with her name, sits in my sent list, and opens no setup`() =
         runTest(main.dispatcher) {
             permissions.granted = GrantedPermissions(notifications = false, exactAlarm = true, fullScreen = true)
-            connectionDao.upsert(listOf(selinConnection()))
+            connectionDao.upsert(listOf(sibelConnection()))
             vm.openSetup.test {
                 ready()
-                taskDao.upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SELIN_ID)))
-                vm.onComposeTextChange("selin yarın 9dan önce 1000 tl çeksin")
+                taskDao.upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SIBEL_ID)))
+                vm.onComposeTextChange("sibel yarın 9dan önce 1000 tl çeksin")
                 vm.onComposeSend()
                 assertEquals(
-                    "Selin",
+                    "Sibel",
                     vm.state.value
                         ?.undo
                         ?.to,
                 )
                 assertEquals(
-                    listOf("Selin"),
+                    listOf("Sibel"),
                     vm.state.value
                         ?.sent
                         ?.map { it.toName },
                 )
-                assertNull(vm.state.value?.nextUp, "Selin's task is not my next up")
+                assertNull(vm.state.value?.nextUp, "Sibel's task is not my next up")
 
                 vm.onUndoTimeout()
                 expectNoEvents()
@@ -442,16 +442,16 @@ class HomeViewModelTest {
         }
 
     @Test
-    fun `Düzenle on a task to Selin keeps her in the preview`() =
+    fun `Düzenle on a task to Sibel keeps her in the preview`() =
         runTest(main.dispatcher) {
-            connectionDao.upsert(listOf(selinConnection()))
+            connectionDao.upsert(listOf(sibelConnection()))
             ready()
-            taskDao.upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SELIN_ID)))
-            vm.onComposeTextChange("selin yarın 9dan önce 1000 tl çeksin")
+            taskDao.upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SIBEL_ID)))
+            vm.onComposeTextChange("sibel yarın 9dan önce 1000 tl çeksin")
             vm.onComposeSend()
             vm.onUndoEdit()
             assertEquals(
-                "Selin",
+                "Sibel",
                 vm.state.value
                     ?.preview
                     ?.to,
@@ -590,7 +590,7 @@ class HomeViewModelTest {
             ready()
             inviteDao.upsert(listOf(anInvite(status = "open")))
             assertEquals(
-                "Selin",
+                "Sibel",
                 vm.state.value
                     ?.pendingInvite
                     ?.name,
@@ -611,10 +611,10 @@ class HomeViewModelTest {
             id = "i1",
             code = "abc",
             sent = true,
-            name = "Selin",
-            phone = Cast.SELIN_PHONE,
+            name = "Sibel",
+            phone = Cast.SIBEL_PHONE,
             inviterId = null,
-            prefilledName = "Selin",
+            prefilledName = "Sibel",
             relationship = "spouse",
             status = status,
             createdAt = Instant.parse("2026-10-11T14:32:00+03:00").toEpochMilliseconds(),

@@ -104,7 +104,7 @@ private fun MissedCard(
     )
 }
 
-/** "Selin iptal etti: "Kuru temizlemeyi al"" with the note and "Dürtmeler durdu". */
+/** "Sibel iptal etti: "Kuru temizlemeyi al"" with the note and "Dürtmeler durdu". */
 @Composable
 private fun CancelledRow(task: CancelledUi) {
     val colors = DurtTheme.colors
@@ -208,7 +208,7 @@ private fun IssuesPreviewOf(state: HomeUiState) {
     }
 }
 
-/** 7e: Eren missed a task from Selin, and Selin cancelled another. */
+/** 7e: Eren missed a task from Sibel, and Sibel cancelled another. */
 @PreviewScreens
 @Composable
 private fun HomeScreenMissedPreview() {
@@ -220,21 +220,21 @@ private fun HomeScreenMissedPreview() {
                 IssuesUi(
                     missed =
                         listOf(
-                            MissedUi("t1", "Temizlikçi için para çek", DeadlineText.Today("09:00"), "selin", "Selin", "+905321234567"),
+                            MissedUi("t1", "Temizlikçi için para çek", DeadlineText.Today("09:00"), "sibel", "Sibel", "+905321234567"),
                         ),
-                    cancelled = listOf(CancelledUi("t2", "Kuru temizlemeyi al", "Selin", "Ben hallettim")),
+                    cancelled = listOf(CancelledUi("t2", "Kuru temizlemeyi al", "Sibel", "Ben hallettim")),
                 ),
         ),
     )
 }
 
-/** 5d: Selin's tasks to Eren, one dropped with a note and one missed. */
+/** 5d: Sibel's tasks to Eren, one dropped with a note and one missed. */
 @PreviewScreens
 @Composable
 private fun HomeScreenSentIssuesPreview() {
     IssuesPreviewOf(
         HomeUiState(
-            myName = "Selin",
+            myName = "Sibel",
             connected = true,
             issues =
                 IssuesUi(
