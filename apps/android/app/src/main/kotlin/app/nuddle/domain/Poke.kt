@@ -1,6 +1,7 @@
 package app.nuddle.domain
 
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 /** Device levels of a poke plan (docs/domain.md). `HUMAN` steps never reach the device. */
@@ -88,9 +89,10 @@ object PokeRules {
         }
 
     /**
-     * Steps that need an alarm: current plan version, open task, not fired yet, still in the future. Used after a
-     * sync and on boot, package replace, time and time zone changes. A step whose time passed while the device
-     * could not ring is not rung late; the server's lost poke check covers it (docs/domain.md, Lost poke).
+     * Steps that need an alarm: current plan version, open task, not fired yet, and not more than [LATE_GRACE] in
+     * the past. Used after a sync and on boot, package replace, time and time zone changes. A step that arrives a
+     * little late (the first step of a plan is planned at "now") rings at once; an older one is not rung late, and
+     * the server's lost poke check covers it (docs/domain.md, Device execution).
      */
     fun stepsToArm(
         steps: List<PokeStep>,
@@ -102,7 +104,7 @@ object PokeRules {
             .filter { step ->
                 val task = tasks[step.taskId]
                 task != null && task.open && step.planVersion == task.currentPlanVersion && step.key !in fired &&
-                    step.plannedAt > now
+                    step.plannedAt > now - LATE_GRACE
             }.sortedBy { it.plannedAt }
 
     /** Rounded time to the deadline for the poke text ("son zamana 45 dk", "1 saat"). Never negative. */
@@ -119,6 +121,9 @@ object PokeRules {
     }
 
     private const val MINUTES_PER_HOUR = 60
+
+    /** How late a step may still ring; under the server's 5 minute lost poke grace (docs/domain.md). */
+    val LATE_GRACE = 2.minutes
 }
 
 sealed interface TimeLeft {

@@ -61,22 +61,24 @@ class PokeRulesTest {
     }
 
     @Test
-    fun `only future unfired steps of current plans of open tasks are armed, in time order`() {
+    fun `only unfired steps of current plans of open tasks are armed, in time order, a slightly late one too`() {
         val later = step(seq = 2, at = now + 30.minutes)
         val sooner = step(seq = 1, at = now + 10.minutes)
-        val past = step(seq = 0, at = now - 1.minutes)
+        // The first step of a plan is planned at the moment the task is written and reaches the phone a bit later.
+        val justPassed = step(seq = 4, at = now - 1.minutes)
+        val past = step(seq = 0, at = now - 3.minutes)
         val fired = step(seq = 3, at = now + 40.minutes)
         val stale = step(seq = 0, version = 1, at = now + 5.minutes)
         val closed = step(task = "t2", at = now + 5.minutes)
         val tasks = mapOf("t1" to open, "t2" to open.copy(open = false))
         val armed =
             PokeRules.stepsToArm(
-                listOf(later, past, fired, stale, closed, sooner),
+                listOf(later, past, fired, stale, closed, sooner, justPassed),
                 tasks,
                 setOf(fired.key),
                 now,
             )
-        assertEquals(listOf(sooner, later), armed)
+        assertEquals(listOf(justPassed, sooner, later), armed)
     }
 
     @Test
