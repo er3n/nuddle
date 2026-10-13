@@ -43,6 +43,11 @@ export interface HistoryItem {
   pokes: { level: PokeLevel; plannedAt: Date; firedAt: Date }[];
   /** When the recipient acted (done, photo sent, can't today), or null. */
   actedAt: Date | null;
+  /**
+   * The last poke that rang before the recipient acted: which one (1 = first that rang), its level
+   * and how many seconds later they acted. Null when they never acted after a poke.
+   */
+  actedAfter: { poke: number; level: PokeLevel; secondsAfter: number } | null;
   snoozes: number;
   cantToday: boolean;
 }
@@ -153,6 +158,10 @@ export function historyItem(
       e.actorId === task.recipientId &&
       (e.type === "done" || e.type === "photo_sent" || e.type === "dropped"),
   );
+  const pokes = [...firedSteps].sort((a, b) => a.firedAt.getTime() - b.firedAt.getTime());
+  const actedAt = acted?.at ?? null;
+  const before = actedAt ? pokes.filter((p) => p.firedAt.getTime() <= actedAt.getTime()) : [];
+  const last = before.at(-1);
   return {
     title: task.title,
     from: self ? "self" : sender.name,
@@ -162,8 +171,16 @@ export function historyItem(
     deadline: task.deadline,
     outcome: task.status,
     late: task.late,
-    pokes: [...firedSteps].sort((a, b) => a.plannedAt.getTime() - b.plannedAt.getTime()),
-    actedAt: acted?.at ?? null,
+    pokes,
+    actedAt,
+    actedAfter:
+      actedAt && last
+        ? {
+            poke: before.length,
+            level: last.level,
+            secondsAfter: Math.round((actedAt.getTime() - last.firedAt.getTime()) / 1000),
+          }
+        : null,
     snoozes: events.filter((e) => e.type === "snoozed").length,
     cantToday: events.some((e) => e.type === "dropped"),
   };

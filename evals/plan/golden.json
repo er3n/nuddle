@@ -203,7 +203,12 @@
         ],
         "actedAt": "2026-10-01T18:33:00+03:00",
         "snoozes": 0,
-        "cantToday": false
+        "cantToday": false,
+        "actedAfter": {
+          "poke": 2,
+          "level": "SOUND",
+          "secondsAfter": 175
+        }
       },
       {
         "title": "Çöpü at",
@@ -228,7 +233,12 @@
         ],
         "actedAt": "2026-10-02T18:33:00+03:00",
         "snoozes": 0,
-        "cantToday": false
+        "cantToday": false,
+        "actedAfter": {
+          "poke": 2,
+          "level": "SOUND",
+          "secondsAfter": 175
+        }
       },
       {
         "title": "Çöpü at",
@@ -253,7 +263,12 @@
         ],
         "actedAt": "2026-10-03T18:33:00+03:00",
         "snoozes": 0,
-        "cantToday": false
+        "cantToday": false,
+        "actedAfter": {
+          "poke": 2,
+          "level": "SOUND",
+          "secondsAfter": 175
+        }
       },
       {
         "title": "Çöpü at",
@@ -278,7 +293,12 @@
         ],
         "actedAt": "2026-10-04T18:33:00+03:00",
         "snoozes": 0,
-        "cantToday": false
+        "cantToday": false,
+        "actedAfter": {
+          "poke": 2,
+          "level": "SOUND",
+          "secondsAfter": 175
+        }
       },
       {
         "title": "Çöpü at",
@@ -303,7 +323,12 @@
         ],
         "actedAt": "2026-10-05T18:33:00+03:00",
         "snoozes": 0,
-        "cantToday": false
+        "cantToday": false,
+        "actedAfter": {
+          "poke": 2,
+          "level": "SOUND",
+          "secondsAfter": 175
+        }
       },
       {
         "title": "Çöpü at",
@@ -328,7 +353,12 @@
         ],
         "actedAt": "2026-10-06T18:33:00+03:00",
         "snoozes": 0,
-        "cantToday": false
+        "cantToday": false,
+        "actedAfter": {
+          "poke": 2,
+          "level": "SOUND",
+          "secondsAfter": 175
+        }
       }
     ],
     "expect": {
@@ -406,7 +436,12 @@
         ],
         "actedAt": "2026-10-01T18:49:00+03:00",
         "snoozes": 0,
-        "cantToday": false
+        "cantToday": false,
+        "actedAfter": {
+          "poke": 3,
+          "level": "FULL_SCREEN",
+          "secondsAfter": 235
+        }
       },
       {
         "title": "Çöpü at",
@@ -436,7 +471,12 @@
         ],
         "actedAt": "2026-10-02T18:49:00+03:00",
         "snoozes": 0,
-        "cantToday": false
+        "cantToday": false,
+        "actedAfter": {
+          "poke": 3,
+          "level": "FULL_SCREEN",
+          "secondsAfter": 235
+        }
       },
       {
         "title": "Çöpü at",
@@ -466,7 +506,12 @@
         ],
         "actedAt": "2026-10-03T18:49:00+03:00",
         "snoozes": 0,
-        "cantToday": false
+        "cantToday": false,
+        "actedAfter": {
+          "poke": 3,
+          "level": "FULL_SCREEN",
+          "secondsAfter": 235
+        }
       },
       {
         "title": "Çöpü at",
@@ -496,7 +541,12 @@
         ],
         "actedAt": "2026-10-04T18:49:00+03:00",
         "snoozes": 0,
-        "cantToday": false
+        "cantToday": false,
+        "actedAfter": {
+          "poke": 3,
+          "level": "FULL_SCREEN",
+          "secondsAfter": 235
+        }
       },
       {
         "title": "Çöpü at",
@@ -526,7 +576,12 @@
         ],
         "actedAt": "2026-10-05T18:49:00+03:00",
         "snoozes": 0,
-        "cantToday": false
+        "cantToday": false,
+        "actedAfter": {
+          "poke": 3,
+          "level": "FULL_SCREEN",
+          "secondsAfter": 235
+        }
       },
       {
         "title": "Çöpü at",
@@ -556,7 +611,12 @@
         ],
         "actedAt": "2026-10-06T18:49:00+03:00",
         "snoozes": 0,
-        "cantToday": false
+        "cantToday": false,
+        "actedAfter": {
+          "poke": 3,
+          "level": "FULL_SCREEN",
+          "secondsAfter": 235
+        }
       }
     ],
     "expect": {
