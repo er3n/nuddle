@@ -9,6 +9,9 @@ export type TaskStatus =
 
 export type FinishMode = "done" | "photo";
 
+/** `by`: done by the deadline. `at`: a moment (`remindAt`); the deadline is the moment plus a grace (ADR 0017). */
+export type Timing = "at" | "by";
+
 export type PokeLevel = "SILENT" | "SOUND" | "FULL_SCREEN" | "HUMAN";
 export type DeviceLevel = Exclude<PokeLevel, "HUMAN">;
 
@@ -52,7 +55,11 @@ export interface Task {
   recipientId: PersonId;
   title: string;
   detail: string | null;
+  /** When the task becomes missed. For an `at` task the moment plus its grace. */
   deadline: Date;
+  timing: Timing;
+  /** The moment of an `at` task, null for `by`. No poke comes before it. */
+  remindAt: Date | null;
   finishMode: FinishMode;
   rawText: string | null;
   status: TaskStatus;

@@ -385,6 +385,14 @@ components:
           format: date-time
           example: 2026-10-12T09:00:00+03:00
           description: ISO 8601 with offset
+        timing:
+          $ref: "#/components/schemas/Timing"
+        remindAt:
+          type: string
+          nullable: true
+          format: date-time
+          example: 2026-10-12T09:00:00+03:00
+          description: ISO 8601 with offset
         finishMode:
           $ref: "#/components/schemas/FinishMode"
         rawText:
@@ -433,6 +441,11 @@ components:
         - planVersion
         - statusChangedAt
         - inRecipientList
+    Timing:
+      type: string
+      enum:
+        - at
+        - by
     FinishMode:
       type: string
       enum:
@@ -754,6 +767,13 @@ components:
             deadline:
               type: string
               nullable: true
+            timing:
+              $ref: "#/components/schemas/Timing"
+            missAfterMinutes:
+              type: integer
+              nullable: true
+              minimum: 1
+              maximum: 1440
             finishMode:
               $ref: "#/components/schemas/FinishMode"
           required:
@@ -818,6 +838,13 @@ components:
           format: date-time
           example: 2026-10-12T09:00:00+03:00
           description: ISO 8601 with offset
+        timing:
+          $ref: "#/components/schemas/Timing"
+        missAfterMinutes:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 1440
         finishMode:
           $ref: "#/components/schemas/FinishMode"
         rawText:

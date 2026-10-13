@@ -1,5 +1,5 @@
 // Extractor fixtures for the scenario texts. Scenarios start Sunday 2026-10-11 20:00 Istanbul.
-import type { Extraction } from "../../src/domain/extraction";
+import type { FixtureExtraction } from "../../src/infra/llm/fixture-extractor";
 import { World, type Client } from "./harness";
 
 export const TEXT = {
@@ -9,9 +9,10 @@ export const TEXT = {
   earlyParcelToEren: "eren yarın sabah 6ya kadar kargoyu kapıya koysun",
   breadToSibel: "sibel yarın akşam ekmek alsın",
   homeworkToDefne: "defne yarın akşam ödevini bitirsin",
+  waterSelfAt: "2 dakika sonra su iç",
 } as const;
 
-const fixtures: Record<string, Extraction> = {
+const fixtures: Record<string, FixtureExtraction> = {
   [TEXT.photoToEren]: {
     recipient: "Eren",
     title: "Temizlikçi için para çek",
@@ -49,6 +50,17 @@ const fixtures: Record<string, Extraction> = {
     title: "Ekmek al",
     detail: null,
     deadline: "2026-10-12T19:00:00+03:00",
+    finishMode: "done",
+    missing: [],
+  },
+  // A moment, not a deadline (ADR 0017).
+  [TEXT.waterSelfAt]: {
+    recipient: "self",
+    title: "Su iç",
+    detail: null,
+    deadline: "2026-10-11T20:02:00+03:00",
+    timing: "at",
+    missAfterMinutes: 30,
     finishMode: "done",
     missing: [],
   },

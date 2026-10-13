@@ -13,6 +13,8 @@ const extractionSchema = z.object({
   title: z.string().nullable(),
   detail: z.string().nullable(),
   deadline: z.string().nullable(),
+  timing: z.enum(["at", "by"]),
+  missAfterMinutes: z.number().nullable(),
   finishMode: z.enum(["done", "photo"]),
   missing: z.array(z.enum(["recipient", "title", "deadline"])),
 });
@@ -22,12 +24,23 @@ const nullableString = { type: ["string", "null"] };
 const jsonSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["recipient", "title", "detail", "deadline", "finishMode", "missing"],
+  required: [
+    "recipient",
+    "title",
+    "detail",
+    "deadline",
+    "timing",
+    "missAfterMinutes",
+    "finishMode",
+    "missing",
+  ],
   properties: {
     recipient: nullableString,
     title: nullableString,
     detail: nullableString,
     deadline: nullableString,
+    timing: { type: "string", enum: ["at", "by"] },
+    missAfterMinutes: { type: ["integer", "null"] },
     finishMode: { type: "string", enum: ["done", "photo"] },
     missing: { type: "array", items: { type: "string", enum: ["recipient", "title", "deadline"] } },
   },
@@ -61,6 +74,15 @@ deadline
 - Relative times ("2 saat içinde", "20 dakika sonra") count from the sender's local time.
 - A weekday means its next occurrence after today.
 - No time and no day at all: null and add "deadline" to missing.
+
+timing
+- "by" when the time is a limit the task must be done before: "9'a kadar", "9dan önce", "akşama kadar", "2 saat içinde", "cumaya kadar", "yarın" with no hour.
+- "at" when the time is the moment to do it or to be reminded: "2 dakika sonra", "9'da", "saat 8de", "beni 7de uyandır", "... hatırlat". Then deadline is that moment.
+- If unsure, "by".
+
+missAfterMinutes
+- Only for "at": how many minutes after the moment the task still makes sense, from what the task is. A glass of water or a short call: 30. A medicine: 120. Leaving the house, an appointment: 15. Paying a bill, a chore that can wait: until the end of the day, at most 720.
+- null for "by".
 
 finishMode
 - "photo" for money: withdrawing, sending, paying bills, rent, dues, taxes, or any task with a money amount. Otherwise "done".

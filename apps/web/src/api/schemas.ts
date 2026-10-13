@@ -41,6 +41,13 @@ const TaskStatus = z
   .enum(["SCHEDULED", "AWAITING_APPROVAL", "REJECTED", "DONE", "DROPPED", "MISSED", "CANCELLED"])
   .openapi("TaskStatus");
 const FinishMode = z.enum(["done", "photo"]).openapi("FinishMode");
+/** `by`: done by the deadline. `at`: a moment, the deadline is a grace after it (ADR 0017). */
+const Timing = z.enum(["at", "by"]).openapi("Timing");
+/** How long after the moment an `at` task is missed; the server keeps it between 15 and 720. */
+const MissAfterMinutes = z
+  .int()
+  .min(1)
+  .max(24 * 60);
 const EdgeType = z
   .enum(["spouse", "parent", "child", "sibling", "roommate", "other"])
   .openapi("EdgeType");
@@ -139,7 +146,11 @@ export const WriteTaskResult = z
         recipient: z.string().nullable(),
         title: z.string().nullable(),
         detail: z.string().nullable(),
+        /** For an `at` task the moment. */
         deadline: z.string().nullable(),
+        /** Always sent; optional so an app reading an older server's answer treats the draft as `by`. */
+        timing: Timing.optional(),
+        missAfterMinutes: MissAfterMinutes.nullable().optional(),
         finishMode: FinishMode,
       })
       .nullable(),
@@ -150,7 +161,11 @@ export const CreateTaskCommand = keyed({
   recipientId: Id,
   title: z.string().trim().min(1).max(200),
   detail: z.string().max(200).nullable(),
+  /** The picked time: the moment of an `at` task. */
   deadline: Instant,
+  /** Defaults to `by`. */
+  timing: Timing.optional(),
+  missAfterMinutes: MissAfterMinutes.nullable().optional(),
   finishMode: FinishMode,
   rawText: z.string().max(500).nullable(),
 }).openapi("CreateTaskCommand");
@@ -170,6 +185,7 @@ export const DidItLaterCommand = taskKeyed({}).openapi("DidItLaterCommand");
 export const SnoozeCommand = taskKeyed({}).openapi("SnoozeCommand");
 export const CancelCommand = taskKeyed({ note: Note }).openapi("CancelCommand");
 export const EditCommand = taskKeyed({
+  /** The picked time; an `at` task moves its moment and keeps its grace. Same for NewDeadlineCommand. */
   deadline: Instant.optional(),
   detail: z.string().max(200).nullable().optional(),
   finishMode: FinishMode.optional(),
@@ -344,7 +360,12 @@ const SyncTask = z
     recipientId: Id,
     title: z.string(),
     detail: z.string().nullable(),
+    /** When the task becomes missed. For an `at` task the moment plus its grace; show `remindAt` instead. */
     deadline: Instant,
+    /** Optional so an app reading an older server's sync treats a task as `by`. */
+    timing: Timing.optional(),
+    /** The moment of an `at` task. */
+    remindAt: Instant.nullable().optional(),
     finishMode: FinishMode,
     /** Only for the sender. */
     rawText: z.string().nullable(),
