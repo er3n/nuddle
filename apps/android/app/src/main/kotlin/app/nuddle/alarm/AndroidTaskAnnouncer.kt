@@ -19,11 +19,16 @@ import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.sync.TaskAnnouncer
 import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.deadlineText
+import app.nuddle.ui.screens.home.timeText
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.datetime.TimeZone
 import javax.inject.Inject
 import kotlin.time.Clock
 import kotlin.time.Instant
+
+/** "son zaman yarın 09:00", or "yarın 09:00" for the moment of an `at` task (open-questions#43). */
+internal fun Context.deadlinePhrase(deadline: DeadlineText): String =
+    if (deadline.moment) deadlineInline(deadline) else getString(R.string.home_deadline_inline, deadlineInline(deadline))
 
 /** "bugün 18:00", "yarın 09:00", "14 Ekim 09:00": the deadline inside a sentence. */
 internal fun Context.deadlineInline(deadline: DeadlineText): String =
@@ -67,7 +72,7 @@ class AndroidTaskAnnouncer
             task: TaskEntity,
             senderName: String,
         ) {
-            val deadline = context.deadlineInline(deadlineText(Instant.fromEpochMilliseconds(task.deadline), clock.now(), timeZone))
+            val deadline = context.deadlinePhrase(task.timeText(clock.now(), timeZone))
             val body =
                 if (task.finishMode == FinishMode.PHOTO.value) {
                     context.getString(R.string.task_arrived_body_photo, task.title, deadline)
@@ -131,7 +136,7 @@ class AndroidTaskAnnouncer
             fullScreen: Boolean,
         ) {
             val id = NotificationIds.reach(task.id)
-            val deadline = context.deadlineInline(deadlineText(Instant.fromEpochMilliseconds(task.deadline), clock.now(), timeZone))
+            val deadline = context.deadlinePhrase(task.timeText(clock.now(), timeZone))
             val body =
                 when {
                     pokes == 0 -> context.getString(R.string.reach_body_no_pokes, task.title, deadline)

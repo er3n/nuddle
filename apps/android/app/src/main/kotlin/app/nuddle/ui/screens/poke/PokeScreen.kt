@@ -39,7 +39,8 @@ data class PokeUiState(
     val time: String,
     val title: String,
     val detail: String?,
-    val timeLeft: TimeLeft,
+    /** Null for an `at` task: its moment has come, "Zamanı geldi." (open-questions#43). */
+    val timeLeft: TimeLeft?,
     /** A sentence for this poke; none until the server sends poke copy (feature slice 1). */
     val message: String? = null,
     /** What Ertele gives now; null hides it (no snooze left, or it would pass the deadline). */
@@ -64,7 +65,8 @@ fun PokeScreen(
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
-    val timeLeft = stringResource(R.string.poke_time_left, timeLeftText(state.timeLeft))
+    val timeLeft =
+        state.timeLeft?.let { stringResource(R.string.poke_time_left, timeLeftText(it)) } ?: stringResource(R.string.poke_moment_now)
     ScreenLayout(
         background = colors.poke,
         modifier = modifier.testTag(TestTags.POKE),
@@ -202,6 +204,27 @@ private fun PokeScreenNoSnoozePreview() {
                     detail = "1.000 TL",
                     timeLeft = TimeLeft.Minutes(20),
                     snooze = null,
+                ),
+            onDone = {},
+            onSnooze = {},
+            onCantToday = {},
+        )
+    }
+}
+
+/** An `at` task, "2 dakika sonra su iç": its moment has come (open-questions#43). */
+@PreviewScreens
+@Composable
+private fun PokeScreenMomentPreview() {
+    DurtTheme {
+        PokeScreen(
+            state =
+                PokeUiState(
+                    pokeNumber = 2,
+                    time = "19:51",
+                    title = "Su iç",
+                    detail = null,
+                    timeLeft = null,
                 ),
             onDone = {},
             onSnooze = {},

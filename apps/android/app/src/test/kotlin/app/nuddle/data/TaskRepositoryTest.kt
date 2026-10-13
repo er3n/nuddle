@@ -192,6 +192,47 @@ class TaskRepositoryTest {
         }
 
     @Test
+    fun `a moment from the preview is created as an at task with its grace (ADR 0017)`() =
+        runTest {
+            server.enqueue(json(200, """{"taskId":"${Cast.TASK_ID}","status":"SCHEDULED","planVersion":1}"""))
+            server.enqueue(json(200, syncBody))
+
+            repository.create(
+                title = "Su iç",
+                detail = null,
+                deadline = Instant.parse("2026-10-11T20:02:00+03:00"),
+                finishMode = FinishMode.DONE,
+                rawText = "2 dakika sonra su iç",
+                idempotencyKey = "key-8",
+                moment = true,
+                missAfterMinutes = 30,
+            )
+
+            val body = server.takeRequest().body?.utf8() ?: ""
+            assertTrue(""""timing":"at"""" in body, body)
+            assertTrue(""""missAfterMinutes":30""" in body, body)
+        }
+
+    @Test
+    fun `editing an at task sends its moment, so the server keeps the grace`() =
+        runTest {
+            val moment = Instant.parse("2026-10-12T09:00:00+03:00")
+            db.tasks().upsert(
+                listOf(
+                    aTask(deadline = Instant.parse("2026-10-12T09:30:00+03:00"))
+                        .copy(senderId = Cast.EREN_ID, remindAt = moment.toEpochMilliseconds()),
+                ),
+            )
+            server.enqueue(json(200, """{"taskId":"${Cast.TASK_ID}","status":"SCHEDULED","planVersion":2}"""))
+            server.enqueue(json(200, syncBody))
+
+            repository.edit(Cast.TASK_ID, null, FinishMode.DONE, "key-9")
+
+            val body = server.takeRequest().body?.utf8() ?: ""
+            assertTrue(""""deadline":"2026-10-12T06:00:00Z"""" in body, body)
+        }
+
+    @Test
     fun `Düzenle moves the deadline and keeps detail and finish mode`() =
         runTest {
             db.tasks().upsert(listOf(aTask().copy(senderId = Cast.EREN_ID)))

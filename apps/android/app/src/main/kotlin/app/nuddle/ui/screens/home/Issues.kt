@@ -81,7 +81,7 @@ fun issues(
     now: Instant,
     timeZone: TimeZone,
 ): IssuesUi {
-    fun deadline(task: TaskEntity) = deadlineText(Instant.fromEpochMilliseconds(task.deadline), now, timeZone)
+    fun deadline(task: TaskEntity) = task.timeText(now, timeZone)
     val newestFirst = tasks.sortedByDescending { it.statusChangedAt }
     val toMe = newestFirst.filter { it.recipientId == me }
     val missed =

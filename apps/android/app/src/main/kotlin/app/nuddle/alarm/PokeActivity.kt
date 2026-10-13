@@ -17,6 +17,7 @@ import app.nuddle.MainActivity
 import app.nuddle.api.model.FinishMode
 import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.TaskDao
+import app.nuddle.data.db.isMoment
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.PokeRules
 import app.nuddle.domain.SnoozeRules
@@ -113,7 +114,7 @@ class PokeActivity : ComponentActivity() {
                     time = time.format(HOUR_MINUTE),
                     title = task.title,
                     detail = task.detail,
-                    timeLeft = PokeRules.timeLeft(clock.now(), deadline),
+                    timeLeft = PokeRules.timeLeft(clock.now(), deadline).takeUnless { task.isMoment },
                     snooze = SnoozeRules.next(task.snoozesUsed, clock.now(), deadline),
                 )
         }

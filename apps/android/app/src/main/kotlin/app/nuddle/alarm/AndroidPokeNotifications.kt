@@ -13,6 +13,7 @@ import app.nuddle.MainActivity
 import app.nuddle.R
 import app.nuddle.api.model.FinishMode
 import app.nuddle.data.db.TaskEntity
+import app.nuddle.data.db.isMoment
 import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeRules
 import app.nuddle.domain.PokeStep
@@ -63,8 +64,13 @@ class AndroidPokeNotifications
                     .setSmallIcon(R.drawable.ic_notification)
                     .setColor(ContextCompat.getColor(context, R.color.poke))
                     .setContentTitle(title)
-                    .setContentText(context.getString(R.string.poke_time_left_sentence, context.timeLeftText(timeLeft)))
-                    .setSubText(context.getString(R.string.poke_count, step.number))
+                    .setContentText(
+                        if (task.isMoment) {
+                            context.getString(R.string.poke_moment_now)
+                        } else {
+                            context.getString(R.string.poke_time_left_sentence, context.timeLeftText(timeLeft))
+                        },
+                    ).setSubText(context.getString(R.string.poke_count, step.number))
                     .setCategory(if (fullScreen) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_REMINDER)
                     .setPriority(if (silent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_HIGH)
                     .setContentIntent(open)

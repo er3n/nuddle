@@ -31,7 +31,18 @@ data class TaskEntity(
     val reRequestNote: String? = null,
     /** Epoch milliseconds of the last status change: a cancelled row stays a day after it (7e). 0 before NUD-16. */
     @ColumnInfo(defaultValue = "0") val statusChangedAt: Long = 0,
+    /**
+     * Epoch milliseconds of the moment of an `at` task ("2 dakika sonra su iç"), null for a `by` task (ADR 0017). The
+     * deadline of an `at` task is when it becomes missed; screens show this moment instead.
+     */
+    val remindAt: Long? = null,
 )
+
+/** The time the sender picked and screens show: the moment of an `at` task, otherwise the deadline (ADR 0017). */
+val TaskEntity.shownTime: Long get() = remindAt ?: deadline
+
+/** A task "at" a moment rather than "by" a deadline (ADR 0017). */
+val TaskEntity.isMoment: Boolean get() = remindAt != null
 
 /** A connection from sync (SyncConnection): what [displayName] is to me, how far pokes reach them, their phone. */
 @Entity(tableName = "connections")
