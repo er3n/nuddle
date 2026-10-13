@@ -64,10 +64,8 @@ data class DurtDimens(
     val badgeSize: Dp = 18.dp,
     val unreadDot: Dp = 8.dp,
     val statusDot: Dp = 8.dp,
-    val composeMic: Dp = 52.dp,
-    // 4h: the mic while recording, and how far left the finger slides to cancel (open-questions#6).
-    val voiceMic: Dp = 112.dp,
-    val voiceCancelSlide: Dp = 80.dp,
+    // The compose bar's mic and send button: slimmer since the phone test (NUD-48).
+    val composeMic: Dp = 40.dp,
     val composeMaxLines: Int = 4,
     val codeBoxHeight: Dp = 64.dp,
     val codeBoxGap: Dp = 8.dp,

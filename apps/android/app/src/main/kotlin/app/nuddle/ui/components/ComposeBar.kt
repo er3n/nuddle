@@ -97,10 +97,11 @@ private val ComposeState.text: String
         }
 
 /**
- * Text and voice input for a new task (docs/ux/components.md, 3). Idle shows the orange mic; with text the mic
- * turns into a send arrow in the same place. Hold the mic to record (4h): [ComposeState.Listening] shows what is
- * heard, lifting the finger sends, sliding it left cancels (open-questions#6). A short tap shows the "Basılı tut" hint
- * for 2 s, [notice] a note about voice input. Callers place it above the keyboard with `imePadding()`.
+ * Text and voice input for a new task (docs/ux/components.md, 3). Idle shows the orange mic; with text the mic turns
+ * into a send arrow in the same place. A tap on the mic dictates (4h, NUD-48): [ComposeState.Listening] shows the live
+ * transcript in the box and the mic pulses as the stop button; a second tap ([onVoiceEnd]) or silence ends it, and the
+ * text stays in the box to be sent with the arrow. [notice] shows a note about voice input. Callers place it above the
+ * keyboard with `imePadding()`.
  */
 @Composable
 fun ComposeBar(
@@ -114,40 +115,18 @@ fun ComposeBar(
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
-    val mic = remember { MicPlace() }
-    val cancelSlide = with(LocalDensity.current) { dimens.voiceCancelSlide.toPx() }
     var focused by remember { mutableStateOf(false) }
-    var showHoldHint by remember { mutableStateOf(false) }
-    LaunchedEffect(showHoldHint) {
-        if (showHoldHint) {
-            delay(DurtMotion.HINT_BUBBLE_MS)
-            showHoldHint = false
-        }
-    }
-    val gestures = rememberUpdatedState(VoiceGestures(onVoiceStart, onVoiceEnd, onShortTap = { showHoldHint = true }))
+    val listening = state is ComposeState.Listening
     val text = state.text
-    val active = focused || text.isNotEmpty()
+    val active = focused || text.isNotEmpty() || listening
     val shape = RoundedCornerShape(dimens.radiusXl)
     val label = stringResource(R.string.compose_label)
-    val hint =
-        when {
-            notice != null -> stringResource(notice.text)
-            showHoldHint -> stringResource(R.string.compose_hold_hint)
-            else -> null
-        }
     Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .onGloballyPositioned { mic.root = it }
-                .holdToSpeak(mic, cancelSlide, gestures),
+        modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.End,
     ) {
-        if (hint != null) HintBubble(hint)
-        if (state is ComposeState.Listening) {
-            Listening(state.heard)
-            return@Column
-        }
+        if (notice != null) HintBubble(stringResource(notice.text))
+        if (state is ComposeState.Listening) ListeningLine()
         Row(
             modifier =
                 Modifier
@@ -158,40 +137,84 @@ fun ComposeBar(
                         if (active) dimens.borderFocused else dimens.borderCard,
                         if (active) colors.ink else colors.border,
                         shape,
-                    ).padding(start = dimens.space20, end = dimens.space6, top = dimens.space6, bottom = dimens.space6),
+                    ).padding(start = dimens.space16, end = dimens.space4, top = dimens.space4, bottom = dimens.space4),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(dimens.space8),
         ) {
-            BasicTextField(
-                value = text,
-                onValueChange = onTextChange,
-                enabled = state != ComposeState.Sending,
-                textStyle = (if (active) DurtTheme.type.input else DurtTheme.type.inputIdle).copy(color = colors.ink),
-                cursorBrush = SolidColor(colors.ink),
-                maxLines = dimens.composeMaxLines,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .padding(vertical = dimens.space8)
-                        .onFocusChanged { focused = it.isFocused }
-                        .semantics { contentDescription = label }
-                        .testTag(TestTags.COMPOSE_INPUT),
-                decorationBox = { inner ->
-                    Box {
-                        if (text.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.compose_placeholder),
-                                style = DurtTheme.type.inputIdle,
-                                color = colors.textTertiary,
-                            )
+            if (state is ComposeState.Listening) {
+                Heard(state.heard, Modifier.weight(1f))
+            } else {
+                BasicTextField(
+                    value = text,
+                    onValueChange = onTextChange,
+                    enabled = state != ComposeState.Sending,
+                    textStyle = (if (active) DurtTheme.type.input else DurtTheme.type.inputIdle).copy(color = colors.ink),
+                    cursorBrush = SolidColor(colors.ink),
+                    maxLines = dimens.composeMaxLines,
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .padding(vertical = dimens.space6)
+                            .onFocusChanged { focused = it.isFocused }
+                            .semantics { contentDescription = label }
+                            .testTag(TestTags.COMPOSE_INPUT),
+                    decorationBox = { inner ->
+                        Box {
+                            if (text.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.compose_placeholder),
+                                    style = DurtTheme.type.inputIdle,
+                                    color = colors.textTertiary,
+                                )
+                            }
+                            inner()
                         }
-                        inner()
-                    }
-                },
-            )
-            BarAction(state, hasText = text.isNotEmpty(), onSend, mic)
+                    },
+                )
+            }
+            BarAction(state, hasText = text.isNotEmpty(), onSend, onVoiceStart, onVoiceEnd)
         }
     }
+}
+
+/** "Dinliyorum" with the red dot, above the bar while dictating. */
+@Composable
+private fun ListeningLine() {
+    val colors = DurtTheme.colors
+    val dimens = DurtTheme.dimens
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = dimens.space16, bottom = dimens.space6).testTag(TestTags.VOICE_LISTENING),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(dimens.space8),
+    ) {
+        Box(Modifier.size(dimens.statusDot).background(colors.poke, CircleShape))
+        Text(stringResource(R.string.voice_listening), style = DurtTheme.type.captionStrong, color = colors.link)
+    }
+}
+
+/** The live transcript in the box, the word still being heard lighter. */
+@Composable
+private fun Heard(
+    heard: String,
+    modifier: Modifier = Modifier,
+) {
+    val colors = DurtTheme.colors
+    val settled = heard.substringBeforeLast(' ', missingDelimiterValue = "")
+    val last = heard.substringAfterLast(' ')
+    Text(
+        buildAnnotatedString {
+            if (settled.isNotEmpty()) append("$settled ")
+            withStyle(SpanStyle(color = colors.textMuted)) { append(last) }
+        },
+        style = DurtTheme.type.input,
+        color = colors.ink,
+        maxLines = DurtTheme.dimens.composeMaxLines,
+        modifier =
+            modifier
+                .padding(vertical = DurtTheme.dimens.space6)
+                .semantics { liveRegion = LiveRegionMode.Polite }
+                .testTag(TestTags.VOICE_HEARD),
+    )
 }
 
 /** "Basılı tut" or a voice note, over the mic. */
@@ -211,13 +234,14 @@ private fun HintBubble(text: String) {
     )
 }
 
-/** The button at the end of the bar: Tekrar dene, a spinner while sending, or the mic that turns into send. */
+/** The button at the end of the bar: Tekrar dene, a spinner while sending, stop while dictating, or mic / send. */
 @Composable
 private fun RowScope.BarAction(
     state: ComposeState,
     hasText: Boolean,
     onSend: () -> Unit,
-    mic: MicPlace,
+    onVoiceStart: () -> Unit,
+    onVoiceEnd: (cancelled: Boolean) -> Unit,
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
@@ -242,13 +266,17 @@ private fun RowScope.BarAction(
             }
         }
 
+        is ComposeState.Listening -> {
+            StopButton { onVoiceEnd(false) }
+        }
+
         else -> {
             Crossfade(
                 targetState = hasText,
                 animationSpec = tween(DurtMotion.SHORT_MS),
                 label = "micToSend",
             ) { showSend ->
-                if (showSend) SendButton(onSend) else MicButton(mic)
+                if (showSend) SendButton(onSend) else MicButton(onVoiceStart)
             }
         }
     }
@@ -277,136 +305,9 @@ private fun SendButton(onSend: () -> Unit) {
     }
 }
 
-/** 4h: "Dinliyorum" with the live transcript (the word still being heard lighter), the big mic and how to cancel. */
+/** The mic: a tap starts dictating (4h, NUD-48). */
 @Composable
-private fun Listening(heard: String) {
-    val colors = DurtTheme.colors
-    val dimens = DurtTheme.dimens
-    val shape = RoundedCornerShape(dimens.radiusXl)
-    Column(
-        modifier = Modifier.fillMaxWidth().testTag(TestTags.VOICE_LISTENING),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(dimens.space24),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .clip(shape)
-                    .background(colors.surface)
-                    .border(dimens.borderFocused, colors.ink, shape)
-                    .padding(horizontal = dimens.space20, vertical = dimens.space20)
-                    .semantics { liveRegion = LiveRegionMode.Polite },
-            verticalArrangement = Arrangement.spacedBy(dimens.space8),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(dimens.space8)) {
-                Box(Modifier.size(dimens.statusDot).background(colors.poke, CircleShape))
-                Text(stringResource(R.string.voice_listening), style = DurtTheme.type.captionStrong, color = colors.link)
-            }
-            if (heard.isNotEmpty()) {
-                val settled = heard.substringBeforeLast(' ', missingDelimiterValue = "")
-                val last = heard.substringAfterLast(' ')
-                Text(
-                    buildAnnotatedString {
-                        if (settled.isNotEmpty()) append("$settled ")
-                        withStyle(SpanStyle(color = colors.textMuted)) { append(last) }
-                    },
-                    style = DurtTheme.type.input,
-                    color = colors.ink,
-                    modifier = Modifier.testTag(TestTags.VOICE_HEARD),
-                )
-            }
-        }
-        VoiceMic()
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(dimens.space8)) {
-            Text(stringResource(R.string.voice_release), style = DurtTheme.type.bodyStrong, color = colors.ink)
-            Text(stringResource(R.string.voice_cancel_hint), style = DurtTheme.type.caption, color = colors.textSecondary)
-        }
-    }
-}
-
-/** The big mic of 4h with a ring that keeps pulsing out of it (tokens.json, motion.voicePulse). */
-@Composable
-private fun VoiceMic() {
-    val colors = DurtTheme.colors
-    val dimens = DurtTheme.dimens
-    val pulse = rememberInfiniteTransition(label = "voicePulse")
-    val progress by pulse.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(DurtMotion.VOICE_PULSE_MS, easing = LinearOutSlowInEasing)),
-        label = "voicePulseProgress",
-    )
-    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(dimens.voiceMic)) {
-        Box(
-            Modifier
-                .size(dimens.voiceMic)
-                .graphicsLayer {
-                    val scale = 1f + (DurtMotion.VOICE_PULSE_SCALE - 1f) * progress
-                    scaleX = scale
-                    scaleY = scale
-                    alpha = DurtMotion.VOICE_PULSE_ALPHA * (1f - progress)
-                }.background(colors.accent, CircleShape),
-        )
-        Box(
-            Modifier.size(dimens.voiceMic).background(colors.accent, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(DurtIcons.Mic, contentDescription = null, tint = colors.ink, modifier = Modifier.size(dimens.iconHero))
-        }
-    }
-}
-
-/** Where the small mic is: a hold starts only on it, and only while it is shown. */
-private class MicPlace {
-    var root: LayoutCoordinates? = null
-    var mic: LayoutCoordinates? = null
-
-    fun bounds(): Rect? {
-        val root = root?.takeIf { it.isAttached } ?: return null
-        val mic = mic?.takeIf { it.isAttached } ?: return null
-        return root.localBoundingBoxOf(mic)
-    }
-}
-
-/**
- * The hold gesture lives on the whole bar, not on the mic: while listening the mic gives way to 4h's panel, and the
- * finger that is still down must keep its gesture. A tap shows the hint; a hold starts listening until the finger is
- * lifted, or slid left by `voiceCancelSlide`, which cancels at once.
- */
-private fun Modifier.holdToSpeak(
-    mic: MicPlace,
-    cancelSlide: Float,
-    gestures: State<VoiceGestures>,
-): Modifier =
-    pointerInput(mic, cancelSlide) {
-        awaitEachGesture {
-            val down = awaitFirstDown(requireUnconsumed = false)
-            if (mic.bounds()?.contains(down.position) != true) return@awaitEachGesture
-            val early = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) { waitForUpOrCancellation() ?: down }
-            if (early != null) {
-                if (early !== down) gestures.value.onShortTap()
-                return@awaitEachGesture
-            }
-            gestures.value.onStart()
-            var cancelled: Boolean
-            do {
-                val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id }
-                cancelled = change != null && change.position.x - down.position.x < -cancelSlide
-                val holding = change != null && change.pressed && !cancelled
-            } while (holding)
-            gestures.value.onEnd(cancelled)
-        }
-    }
-
-private class VoiceGestures(
-    val onStart: () -> Unit,
-    val onEnd: (cancelled: Boolean) -> Unit,
-    val onShortTap: () -> Unit,
-)
-
-@Composable
-private fun MicButton(mic: MicPlace) {
+private fun MicButton(onVoiceStart: () -> Unit) {
     val description = stringResource(R.string.cd_mic)
     Box(
         modifier =
@@ -414,11 +315,9 @@ private fun MicButton(mic: MicPlace) {
                 .size(DurtTheme.dimens.composeMic)
                 .clip(CircleShape)
                 .background(DurtTheme.colors.accent)
-                .onGloballyPositioned { mic.mic = it }
-                .semantics {
-                    contentDescription = description
-                    role = Role.Button
-                }.testTag(TestTags.COMPOSE_MIC),
+                .clickable(role = Role.Button, onClick = onVoiceStart)
+                .semantics { contentDescription = description }
+                .testTag(TestTags.COMPOSE_MIC),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -427,6 +326,45 @@ private fun MicButton(mic: MicPlace) {
             tint = DurtTheme.colors.ink,
             modifier = Modifier.size(DurtTheme.dimens.iconLarge),
         )
+    }
+}
+
+/** While dictating the mic pulses (tokens.json, motion.voicePulse); a tap stops. */
+@Composable
+private fun StopButton(onStop: () -> Unit) {
+    val colors = DurtTheme.colors
+    val dimens = DurtTheme.dimens
+    val description = stringResource(R.string.cd_mic_stop)
+    val pulse = rememberInfiniteTransition(label = "voicePulse")
+    val progress by pulse.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(DurtMotion.VOICE_PULSE_MS, easing = LinearOutSlowInEasing)),
+        label = "voicePulseProgress",
+    )
+    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(dimens.composeMic)) {
+        Box(
+            Modifier
+                .size(dimens.composeMic)
+                .graphicsLayer {
+                    val scale = 1f + (DurtMotion.VOICE_PULSE_SCALE - 1f) * progress
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = DurtMotion.VOICE_PULSE_ALPHA * (1f - progress)
+                }.background(colors.accent, CircleShape),
+        )
+        Box(
+            Modifier
+                .size(dimens.composeMic)
+                .clip(CircleShape)
+                .background(colors.accent)
+                .clickable(role = Role.Button, onClick = onStop)
+                .semantics { contentDescription = description }
+                .testTag(TestTags.COMPOSE_MIC_STOP),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(DurtIcons.Mic, contentDescription = null, tint = colors.ink, modifier = Modifier.size(dimens.iconLarge))
+        }
     }
 }
 

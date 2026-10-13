@@ -130,6 +130,7 @@ object TestTags {
     const val COMPOSE_INPUT = "compose.input"
     const val COMPOSE_SEND = "compose.send"
     const val COMPOSE_MIC = "compose.mic"
+    const val COMPOSE_MIC_STOP = "compose.mic.stop"
     const val COMPOSE_RETRY = "compose.retry"
     const val COMPOSE_HINT = "compose.hint"
     const val VOICE_LISTENING = "voice.listening"

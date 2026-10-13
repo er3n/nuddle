@@ -39,7 +39,9 @@ import app.nuddle.ui.screens.home.PendingInviteCallbacks
 import app.nuddle.ui.screens.home.PreviewCallbacks
 import app.nuddle.ui.screens.home.UndoCallbacks
 import app.nuddle.ui.screens.home.VoiceViewModel
+import app.nuddle.ui.screens.home.afterTyped
 import app.nuddle.ui.screens.home.rememberVoiceInput
+import app.nuddle.ui.screens.home.typedText
 import app.nuddle.ui.screens.inbox.BellWarning
 import app.nuddle.ui.screens.inbox.InboxScreen
 import app.nuddle.ui.screens.inbox.InboxViewModel
@@ -204,12 +206,13 @@ fun NuddleNavHost(
                 onPauseOrDispose {}
             }
             val voice: VoiceViewModel = hiltViewModel()
+            val typed = state?.compose.typedText()
             val listening by voice.listening.collectAsStateWithLifecycle()
             val voiceNotice by voice.notice.collectAsStateWithLifecycle()
             val voiceInput =
                 rememberVoiceInput(voice) { heard ->
-                    viewModel.onComposeTextChange(heard)
-                    viewModel.onComposeSend()
+                    // Into the box after what is already typed; the person sends it (NUD-48).
+                    viewModel.onComposeTextChange(afterTyped(typed, heard))
                 }
             val unreadInvites by invites.unread.collectAsStateWithLifecycle()
             val unreached by issues.unreached.collectAsStateWithLifecycle()
@@ -232,7 +235,8 @@ fun NuddleNavHost(
                             unread = unread,
                             issues = issuesUi,
                             newDeadline = newDeadline,
-                            compose = listening?.let(ComposeState::Listening) ?: it.compose,
+                            compose =
+                                listening?.let { heard -> ComposeState.Listening(afterTyped(typed, heard)) } ?: it.compose,
                             voiceNotice = voiceNotice,
                         ),
                     onBell = { nav.navigate(Routes.INBOX) { launchSingleTop = true } },

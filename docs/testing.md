@@ -103,7 +103,7 @@ FCM needs Google Play system images and the dev Firebase app. Flows wait with ti
 8. Eren opens profile, then Sibel, and removes the connection: the task from smoke 7 is cancelled with no notification, Eren's alarms for it go, and both sides see the connection as removed.
 9. Eren writes a task to himself and his app is force stopped before its pokes: the alarms are gone; on the next launch the bell shows "Son dürtmen çalmadı" and "Düzelt" opens the brand steps (2h).
 10. Eren loses his connection: home shows the offline banner (6a) and a text he writes waits as "Sırada"; when the connection is back it goes out by itself and the task is on home.
-11. Sibel holds the mic and speaks a task (4h): lifting the finger writes the transcript and the task is created.
+11. Sibel taps the mic and speaks a task (4h): the transcript goes into the box and the send arrow creates the task.
 
 The full set runs on demand. Because the repo is public, standard GitHub-hosted Linux runners are free and have KVM, so the smoke set also runs in CI: the `e2e` workflow (`.github/workflows/e2e.yml`, started by hand from the Actions tab, decided in NUD-30) boots both emulators on one runner with the x86_64 image and uploads `e2e-runs/` as an artifact. Locally `mise run e2e:smoke` remains the gate before merging.
 
