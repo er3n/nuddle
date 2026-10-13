@@ -4,7 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.performClick
 import app.nuddle.ui.components.ComposeBar
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.components.VoiceNotice
@@ -17,7 +17,7 @@ import org.robolectric.annotation.GraphicsMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** 4h on the compose bar: hold the mic, lift to send, slide left to cancel, a tap shows the hint. */
+/** 4h on the compose bar (NUD-48): a tap on the mic dictates, the transcript shows in the box, a tap on stop ends it. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [36], qualifiers = "w390dp-h844dp-xxhdpi")
@@ -38,7 +38,7 @@ class ComposeBarVoiceTest {
                     {},
                     {},
                     onVoiceStart = { did += "start" },
-                    onVoiceEnd = { did += if (it) "cancel" else "send" },
+                    onVoiceEnd = { did += if (it) "cancel" else "stop" },
                     notice = notice,
                 )
             }
@@ -46,52 +46,19 @@ class ComposeBarVoiceTest {
     }
 
     @Test
-    fun `holding the mic listens, lifting the finger sends`() {
+    fun `a tap on the mic starts listening`() {
         bar()
-        compose.onNodeWithTag(TestTags.COMPOSE_MIC).performTouchInput {
-            down(center)
-            advanceEventTime(viewConfiguration.longPressTimeoutMillis + 100)
-            moveBy(
-                androidx.compose.ui.geometry
-                    .Offset(-10f, 0f),
-            )
-            up()
-        }
-        assertEquals(listOf("start", "send"), did)
+        compose.onNodeWithTag(TestTags.COMPOSE_MIC).performClick()
+        assertEquals(listOf("start"), did)
     }
 
     @Test
-    fun `sliding left while holding cancels`() {
-        bar()
-        compose.onNodeWithTag(TestTags.COMPOSE_MIC).performTouchInput {
-            down(center)
-            advanceEventTime(viewConfiguration.longPressTimeoutMillis + 100)
-            moveBy(
-                androidx.compose.ui.geometry
-                    .Offset(-width * 4f, 0f),
-            )
-            up()
-        }
-        assertEquals(listOf("start", "cancel"), did)
-    }
-
-    @Test
-    fun `a short tap only shows Basılı tut`() {
-        bar()
-        compose.onNodeWithTag(TestTags.COMPOSE_MIC).performTouchInput {
-            down(center)
-            up()
-        }
-        assertEquals(emptyList(), did)
-        compose.onNodeWithText("Basılı tut").assertIsDisplayed()
-    }
-
-    @Test
-    fun `while listening the panel shows what was heard and how to cancel`() {
+    fun `while listening the box shows what was heard and a tap on stop ends it`() {
         bar(ComposeState.Listening("eren yarın akşam"))
         compose.onNodeWithText("Dinliyorum").assertIsDisplayed()
         compose.onNodeWithText("eren yarın akşam").assertIsDisplayed()
-        compose.onNodeWithText("Vazgeçmek için parmağını sola kaydır").assertIsDisplayed()
+        compose.onNodeWithTag(TestTags.COMPOSE_MIC_STOP).performClick()
+        assertEquals(listOf("stop"), did)
     }
 
     @Test

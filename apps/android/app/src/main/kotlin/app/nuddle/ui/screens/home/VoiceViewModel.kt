@@ -19,9 +19,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * Hold the mic to speak (4h): the live transcript while the finger is down, then the text goes to home as if typed
- * (open-questions#17). Sliding left cancels (open-questions#6). Nothing heard, no permission or no recognizer on the
- * phone shows a short note by the mic (open-questions#40).
+ * Tap the mic to dictate (4h, NUD-48): the live transcript while listening, then the final text goes into the compose
+ * box, where the person fixes it and sends it (open-questions#17, #40). A second tap or silence ends a session. Nothing
+ * heard, no permission or no recognizer on the phone shows a short note by the mic (open-questions#40).
  */
 @HiltViewModel
 class VoiceViewModel
@@ -39,23 +39,18 @@ class VoiceViewModel
 
         private val spoken = Channel<String>(Channel.BUFFERED)
 
-        /** The final transcript of each session, for home to write. */
+        /** The final transcript of each session, for home to put into the compose box. */
         val transcripts: Flow<String> = spoken.receiveAsFlow()
 
         private var session: Job? = null
-        private var released = false
 
-        /** The session ended by itself (silence) while the finger is still down: sent on release. */
-        private var ended: String? = null
-
+        /** A tap on the mic. */
         fun onStart() {
             if (!speech.available()) {
                 show(VoiceNotice.Unavailable)
                 return
             }
             session?.cancel()
-            released = false
-            ended = null
             heard.value = ""
             session =
                 viewModelScope.launch {
@@ -67,12 +62,11 @@ class VoiceViewModel
                             Heard.Failed -> final = ""
                         }
                     }
-                    val text = (final?.takeIf { it.isNotBlank() } ?: heard.value).orEmpty().trim()
-                    if (released) finish(text) else ended = text
+                    finish((final?.takeIf { it.isNotBlank() } ?: heard.value).orEmpty().trim())
                 }
         }
 
-        /** The finger was lifted, or slid left ([cancelled]). */
+        /** The second tap stops listening; the final text follows. [cancelled] drops what was heard. */
         fun onEnd(cancelled: Boolean) {
             if (heard.value == null) return
             if (cancelled) {
@@ -80,9 +74,7 @@ class VoiceViewModel
                 heard.value = null
                 return
             }
-            released = true
-            val done = ended
-            if (done != null) finish(done) else speech.stop()
+            speech.stop()
         }
 
         /** The microphone permission was refused. */
@@ -90,7 +82,6 @@ class VoiceViewModel
 
         private fun finish(text: String) {
             heard.value = null
-            ended = null
             if (text.isBlank()) show(VoiceNotice.NotHeard) else spoken.trySend(text)
         }
 
