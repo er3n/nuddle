@@ -1,5 +1,6 @@
 package app.nuddle.push
 
+import android.annotation.SuppressLint
 import app.nuddle.data.outbox.WorkManagerScheduling
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -15,6 +16,9 @@ import javax.inject.Inject
  * FCM data messages are only hints ("sync now", "plan changed", "task cancelled"); every one of them triggers a
  * sync, which is the source of truth (docs/architecture.md, Sync model).
  */
+// Reason: this lint check predates FCM's installation ID API and asks for the deprecated onNewToken();
+// onRegistered() below is its replacement (ADR 0015).
+@SuppressLint("MissingFirebaseInstanceTokenRefresh")
 @AndroidEntryPoint
 class NuddleMessagingService : FirebaseMessagingService() {
     @Inject lateinit var work: WorkManagerScheduling
@@ -27,10 +31,9 @@ class NuddleMessagingService : FirebaseMessagingService() {
         work.syncSoon()
     }
 
-    // Reason: registration tokens are deprecated in favor of installation IDs; NUD-26 keeps tokens for now.
-    @Suppress("OVERRIDE_DEPRECATION")
-    override fun onNewToken(token: String) {
-        scope.launch { registrar.register(token) }
+    /** FCM can reach this install by [fid] now (ADR 0015). */
+    override fun onRegistered(fid: String) {
+        scope.launch { registrar.register(fid) }
     }
 
     override fun onDestroy() {

@@ -119,14 +119,14 @@ export class SimPhone {
   }
 
   async receivePush(message: PushMessage): Promise<void> {
-    if (!this.online || this.pushesDelayed || this.device.fcmToken === null) return;
+    if (!this.online || this.pushesDelayed || this.device.fid === null) return;
     this.received.push(message);
     await this.sync();
   }
 
   /** GET /api/v1/sync from the last cursor and store newer plans. */
   async sync(): Promise<void> {
-    if (!this.online || this.device.fcmToken === null) return;
+    if (!this.online || this.device.fid === null) return;
     const data = ok(
       await this.api.GET("/api/v1/sync", {
         params: { query: { cursor: this.cursor, deviceId: this.device.id } },
@@ -158,7 +158,7 @@ export class SimPhone {
 
   /** Ring every alarm due at `now`, re-checking quiet hours and permissions first. */
   async ringDue(now: Date): Promise<void> {
-    if (this.device.fcmToken === null) return;
+    if (this.device.fid === null) return;
     if (this.online) this.device = { ...this.device, lastSeenAt: now };
     const person = this.world.person(this.personId);
     for (const alarm of this.pendingAlarms()) {
@@ -206,8 +206,8 @@ export class SimPhone {
   }
 
   /** The app logged out or the account is gone: this phone can no longer be reached. */
-  forgetToken(): void {
-    this.device = { ...this.device, fcmToken: null };
+  forgetFid(): void {
+    this.device = { ...this.device, fid: null };
   }
 
   ringsFor(taskId: TaskId): Ring[] {
@@ -412,7 +412,7 @@ export class Client {
       }),
       "log_out",
     );
-    this.phone.forgetToken();
+    this.phone.forgetFid();
     await this.world.refresh();
   }
 
@@ -423,7 +423,7 @@ export class Client {
       }),
       "delete_account",
     );
-    this.phone.forgetToken();
+    this.phone.forgetFid();
     await this.world.refresh();
   }
 }
@@ -515,17 +515,17 @@ export class World {
       }),
       "register",
     );
-    const fcmToken = `token-${person.id}`;
+    const fid = `fid-${person.id}`;
     const registered = ok(
       await api.POST("/api/v1/devices", {
-        body: { deviceId: null, fcmToken, platform: "android", appVersion: "test", permissions },
+        body: { deviceId: null, fid, platform: "android", appVersion: "test", permissions },
       }),
       "devices",
     );
     const device: Device = {
       id: registered.deviceId,
       personId: person.id,
-      fcmToken,
+      fid,
       permissions,
       lastSeenAt: this.clock.now(),
     };
@@ -678,7 +678,7 @@ export class World {
     snap.devices = (await db.select().from(schema.devices)).map((d) => ({
       id: d.id,
       personId: named(d.personId),
-      fcmToken: d.fcmToken,
+      fid: d.fid,
       permissions: d.permissions,
       lastSeenAt: d.lastSeenAt,
     }));
@@ -737,7 +737,7 @@ export class World {
     const times = [
       ...this.pendingActions().map((a) => a.dueAt.getTime()),
       ...[...this.phones.values()].flatMap((p) =>
-        p.device.fcmToken === null ? [] : p.pendingAlarms().map((a) => a.at.getTime()),
+        p.device.fid === null ? [] : p.pendingAlarms().map((a) => a.at.getTime()),
       ),
     ].filter((t) => t > now);
     return times.length === 0 ? null : Math.min(...times);

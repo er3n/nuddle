@@ -239,7 +239,8 @@ export const RegisterDeviceRequest = z
   .object({
     /** Null on first launch; afterwards the id this endpoint returned. */
     deviceId: Id.nullable(),
-    fcmToken: z.string().min(1),
+    /** Firebase Installation ID of this install (ADR 0015). */
+    fid: z.string().min(1),
     platform: z.enum(["android", "ios"]),
     appVersion: z.string().min(1),
     permissions: PermissionSummary,

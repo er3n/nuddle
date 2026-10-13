@@ -125,7 +125,7 @@ function toDevice(r: DeviceRow): Device {
   return {
     id: r.id,
     personId: r.personId,
-    fcmToken: r.fcmToken,
+    fid: r.fid,
     permissions: r.permissions,
     lastSeenAt: r.lastSeenAt,
   };
@@ -323,7 +323,7 @@ export async function upsertDevice(
   d: {
     id: string | null;
     personId: PersonId;
-    fcmToken: string;
+    fid: string;
     platform: "android" | "ios";
     appVersion: string;
     permissions: PermissionSummary;
@@ -332,15 +332,15 @@ export async function upsertDevice(
 ): Promise<string> {
   const values = {
     personId: d.personId,
-    fcmToken: d.fcmToken,
+    fid: d.fid,
     platform: d.platform,
     appVersion: d.appVersion,
     permissions: d.permissions,
     lastSeenAt: d.now,
   };
   if (d.id !== null) {
-    // A known device whose FCM token rotated. Another row holding the new token is stale.
-    await tx.delete(devices).where(and(eq(devices.fcmToken, d.fcmToken), ne(devices.id, d.id)));
+    // A known device whose FID changed. Another row holding the new FID is stale.
+    await tx.delete(devices).where(and(eq(devices.fid, d.fid), ne(devices.id, d.id)));
     const [row] = await tx
       .update(devices)
       .set(values)
@@ -348,17 +348,17 @@ export async function upsertDevice(
       .returning({ id: devices.id });
     if (row) return row.id;
   }
-  // The token identifies the install; a phone that changed hands moves to the new person.
+  // The FID identifies the install; a phone that changed hands moves to the new person.
   const [row] = await tx
     .insert(devices)
     .values({ ...values, createdAt: d.now })
-    .onConflictDoUpdate({ target: devices.fcmToken, set: values })
+    .onConflictDoUpdate({ target: devices.fid, set: values })
     .returning({ id: devices.id });
   if (!row) throw new Error("device upsert returned nothing");
   return row.id;
 }
 
-/** Logout deletes the row (decided in NUD-8); `fcm_token` stays NOT NULL. */
+/** Logout deletes the row (decided in NUD-8); `fid` stays NOT NULL. */
 export async function deleteDevice(tx: Tx, personId: PersonId, deviceId: string): Promise<void> {
   await tx.delete(devices).where(and(eq(devices.id, deviceId), eq(devices.personId, personId)));
 }
@@ -380,12 +380,12 @@ export async function touchDevice(
     .where(and(eq(devices.id, deviceId), eq(devices.personId, personId)));
 }
 
-export async function fcmTokensOf(ex: Executor, personId: PersonId): Promise<string[]> {
+export async function fidsOf(ex: Executor, personId: PersonId): Promise<string[]> {
   const rows = await ex
-    .select({ token: devices.fcmToken })
+    .select({ fid: devices.fid })
     .from(devices)
     .where(eq(devices.personId, personId));
-  return rows.map((r) => r.token);
+  return rows.map((r) => r.fid);
 }
 
 // ---- tasks, events, plans, timers -------------------------------------------------------------

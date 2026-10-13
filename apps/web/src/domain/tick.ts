@@ -72,7 +72,7 @@ export function handleAction(action: ScheduledAction, ctx: ActionContext): Actio
       // Lost only if a signed-in device was seen online after the planned time; an offline phone
       // is not evidence of a lost alarm.
       const seenOnline = ctx.recipientDevices.some(
-        (d) => d.fcmToken !== null && d.lastSeenAt.getTime() >= step.plannedAt.getTime(),
+        (d) => d.fid !== null && d.lastSeenAt.getTime() >= step.plannedAt.getTime(),
       );
       if (!seenOnline) return noop;
       return {

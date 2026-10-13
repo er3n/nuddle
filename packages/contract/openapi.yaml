@@ -549,7 +549,7 @@ components:
           type: string
           nullable: true
           format: uuid
-        fcmToken:
+        fid:
           type: string
           minLength: 1
         platform:
@@ -564,7 +564,7 @@ components:
           $ref: "#/components/schemas/PermissionSummary"
       required:
         - deviceId
-        - fcmToken
+        - fid
         - platform
         - appVersion
         - permissions
@@ -1407,7 +1407,7 @@ paths:
   /api/v1/devices:
     post:
       operationId: registerDevice
-      summary: "Register the device: FCM token and permission summary (source of reachability)"
+      summary: "Register the device: Firebase Installation ID and permission summary (source of reachability)"
       tags:
         - devices
       security:

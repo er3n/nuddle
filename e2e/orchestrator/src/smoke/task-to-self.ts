@@ -66,12 +66,12 @@ export async function taskToSelf(run: RunContext, databaseUrl: string): Promise<
     const db = postgres(databaseUrl, { max: 1, onnotice: () => undefined });
     try {
       const device = await waitFor(
-        "Selin's device registration with an FCM token",
+        "Selin's device registration with a FID",
         async () => {
-          const rows = await db<{ fcm_token: string; permissions: unknown }[]>`
-            select d.fcm_token, d.permissions from devices d
+          const rows = await db<{ fid: string; permissions: unknown }[]>`
+            select d.fid, d.permissions from devices d
             join people p on p.id = d.person_id
-            where p.phone = ${SELIN_PHONE} and d.fcm_token <> ''`;
+            where p.phone = ${SELIN_PHONE} and d.fid <> ''`;
           return rows[0] ?? null;
         },
         60_000,
