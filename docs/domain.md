@@ -119,7 +119,7 @@ Each device step also gets a `lost_poke_check` timer at planned time + 5 minutes
 ## Device execution
 
 1. Server sends the plan to the recipient's device as a high priority FCM data message and also exposes it through sync.
-2. The device stores steps in Room and sets one `AlarmManager.setAlarmClock()` per step.
+2. The device stores steps in Room and sets one `AlarmManager.setAlarmClock()` per step. A step that arrives up to 2 minutes after its planned time rings at once (the first step of a plan is planned at the moment the task is written, NUD-41); an older one is not rung late, and the lost poke check covers it.
 3. On `BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`, `TIME_SET` and `TIMEZONE_CHANGED`, all pending alarms are re-set from Room.
 4. When an alarm fires, a receiver re-checks quiet hours and plan version, shows the notification for the level, and for `FULL_SCREEN` opens `PokeActivity` via `setFullScreenIntent` (`showWhenLocked`, `turnScreenOn`).
 5. Every fired step reports planned and actual time to the server.
