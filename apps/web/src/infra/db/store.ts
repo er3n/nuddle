@@ -287,6 +287,19 @@ export async function findInviteByCode(tx: Tx, code: string): Promise<Invite | n
   return row ? toInvite(row) : null;
 }
 
+/** The open invite with this code and its inviter's name, without a lock (read only, ADR 0016). */
+export async function openInvitePreview(
+  ex: Executor,
+  code: string,
+): Promise<{ inviterName: string; prefilledName: string } | null> {
+  const [row] = await ex
+    .select({ inviterName: people.displayName, prefilledName: invites.prefilledName })
+    .from(invites)
+    .innerJoin(people, eq(people.id, invites.inviterId))
+    .where(and(eq(invites.code, code), eq(invites.status, "open")));
+  return row ?? null;
+}
+
 export async function findInviteById(tx: Tx, id: string): Promise<Invite | null> {
   const [row] = await tx.select().from(invites).where(eq(invites.id, id)).for("update");
   return row ? toInvite(row) : null;

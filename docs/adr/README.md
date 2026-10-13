@@ -21,3 +21,4 @@ To change a decision: add a new ADR that supersedes the old one, set the old one
 | 0013 | No alarms in the system Clock app |
 | 0014 | API sign-in proxy, person id = JWT `sub`, one sync sequence, Twilio for SMS |
 | 0015 | Push reaches a device by Firebase Installation ID, not registration token |
+| 0016 | Public invite preview before sign-in |

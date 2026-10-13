@@ -37,11 +37,12 @@ import app.nuddle.ui.screens.ScreenLayout
 import app.nuddle.ui.screens.SignInHeader
 import app.nuddle.ui.theme.DurtTheme
 
-/** 0e. New people only. When invited, the name is prefilled with what the inviter typed (`invitedBy`). */
+/** 0e. New people only. When invited by [invitedBy], the name is prefilled with what they typed ([invitedAs]). */
 @Immutable
 data class NameUiState(
     val name: String = "",
     val invitedBy: String? = null,
+    val invitedAs: String? = null,
     val saving: Boolean = false,
     val failed: Boolean = false,
 ) {
@@ -119,9 +120,9 @@ fun NameScreen(
                 keyboardActions = KeyboardActions(onDone = { if (state.canContinue) onContinue() }),
                 modifier = Modifier.fillMaxWidth().testTag(TestTags.NAME_INPUT),
             )
-            if (state.invitedBy != null) {
+            if (state.invitedBy != null && state.invitedAs != null) {
                 Text(
-                    text = stringResource(R.string.name_invited_hint, state.invitedBy, state.name),
+                    text = stringResource(R.string.name_invited_hint, state.invitedBy, state.invitedAs),
                     style = DurtTheme.type.body,
                     color = colors.textSecondary,
                 )
@@ -142,7 +143,7 @@ private fun NameScreenPreview() {
 @PreviewScreens
 @Composable
 private fun NameScreenInvitedPreview() {
-    DurtTheme { NameScreen(NameUiState(name = "Eren", invitedBy = "Selin"), onNameChange = {}, onContinue = {}) }
+    DurtTheme { NameScreen(NameUiState(name = "Eren", invitedBy = "Selin", invitedAs = "Eren"), onNameChange = {}, onContinue = {}) }
 }
 
 @PreviewScreens

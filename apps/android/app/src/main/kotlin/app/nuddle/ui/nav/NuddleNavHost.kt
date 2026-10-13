@@ -52,7 +52,7 @@ import app.nuddle.ui.screens.photo.PhotoViewModel
 import app.nuddle.ui.screens.photo.UnsentPhotoViewModel
 import app.nuddle.ui.screens.task.TaskDetailViewModel
 import app.nuddle.ui.screens.welcome.WelcomeScreen
-import app.nuddle.ui.screens.welcome.WelcomeUiState
+import app.nuddle.ui.screens.welcome.WelcomeViewModel
 
 /** Route names from docs/ux/screens.md (Routes). */
 object Routes {
@@ -126,9 +126,13 @@ fun NuddleNavHost(
     NavHost(navController = nav, startDestination = startRoute) {
         composable(Routes.WELCOME) {
             LightSystemBarIcons()
-            // The invited variant (0b) needs an invite preview before sign-in: NUD-38.
+            val viewModel: WelcomeViewModel = hiltViewModel()
+            val state by viewModel.state.collectAsStateWithLifecycle()
+            // An invite link opened while signed out: 0b with its preview (ADR 0016). The code stays for home, which
+            // opens the consent screen after sign-in.
+            LaunchedEffect(inviteCode) { inviteCode?.let(viewModel::onInviteLink) }
             WelcomeScreen(
-                state = WelcomeUiState(),
+                state = state,
                 onStart = { nav.navigate(Routes.PHONE) },
                 // Terms and privacy texts do not exist yet (docs/human-checklist.md, Before the beta).
                 onTerms = {},

@@ -102,6 +102,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/invites/{code}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Before sign-in: who sent this open invite and the name they typed (0b, 0e) */
+        get: operations["invitePreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/brand-fix": {
         parameters: {
             query?: never;
@@ -822,6 +839,10 @@ export interface components {
                 poke_alarm: boolean;
             };
         };
+        InvitePreview: {
+            inviterName: string;
+            prefilledName: string;
+        };
         BrandFix: {
             brand: string;
             name: string | null;
@@ -1470,6 +1491,46 @@ export interface operations {
             };
             /** @description Error with a DRT code */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    invitePreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The inviter's name and the prefilled name */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitePreview"];
+                };
+            };
+            /** @description Error with a DRT code */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

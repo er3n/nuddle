@@ -8,6 +8,8 @@ import app.nuddle.api.model.FinishMode
 import app.nuddle.data.AccountRepository
 import app.nuddle.data.Approvals
 import app.nuddle.data.AuthRepository
+import app.nuddle.data.InvitePreview
+import app.nuddle.data.InvitePreviews
 import app.nuddle.data.InviteRepository
 import app.nuddle.data.SendOtpOutcome
 import app.nuddle.data.SessionStarter
@@ -600,5 +602,18 @@ class FakeBellWarnings : BellWarningSource {
 
     override fun refresh() {
         refreshes++
+    }
+}
+
+/** Answers [previews] by code; any other code has no open invite. */
+class FakeInvitePreviews(
+    private val previews: Map<String, InvitePreview> = emptyMap(),
+) : InvitePreviews {
+    override val current = MutableStateFlow<InvitePreview?>(null)
+    val loaded = mutableListOf<String>()
+
+    override suspend fun load(code: String) {
+        loaded += code
+        current.value = previews[code]
     }
 }

@@ -2,16 +2,20 @@ package app.nuddle.ui
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import app.nuddle.data.InvitePreview
 import app.nuddle.data.SendOtpOutcome
 import app.nuddle.data.VerifyOutcome
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeAuthRepository
+import app.nuddle.testing.FakeInvitePreviews
 import app.nuddle.testing.MainDispatcherRule
 import app.nuddle.testing.RecordingStarter
 import app.nuddle.ui.screens.code.CodeViewModel
 import app.nuddle.ui.screens.code.SignedInDestination
+import app.nuddle.ui.screens.name.NameUiState
 import app.nuddle.ui.screens.name.NameViewModel
 import app.nuddle.ui.screens.phone.PhoneViewModel
+import app.nuddle.ui.screens.welcome.WelcomeViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -21,6 +25,7 @@ import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
@@ -156,7 +161,7 @@ class SignInViewModelTest {
     @Test
     fun `the name screen registers the trimmed name, then the session starts`() =
         runTest(main.dispatcher) {
-            val vm = NameViewModel(auth, starter)
+            val vm = NameViewModel(auth, starter, FakeInvitePreviews())
             vm.onNameChange("   ")
             vm.onContinue()
             assertTrue(auth.registeredNames.isEmpty())
@@ -171,10 +176,37 @@ class SignInViewModelTest {
         }
 
     @Test
+    fun `an invite link opened while signed out shows the inviter on welcome, then prefills the name`() =
+        runTest(main.dispatcher) {
+            val previews = FakeInvitePreviews(mapOf("abc" to InvitePreview(inviterName = "Selin", prefilledName = "Eren")))
+            val welcome = WelcomeViewModel(previews)
+            assertNull(welcome.state.value.inviterName)
+
+            welcome.onInviteLink("abc")
+            assertEquals("Selin", welcome.state.value.inviterName)
+
+            val name = NameViewModel(auth, starter, previews)
+            assertEquals(NameUiState(name = "Eren", invitedBy = "Selin", invitedAs = "Eren"), name.state.value)
+            name.onNameChange("Eren Can")
+            assertEquals("Eren", name.state.value.invitedAs)
+        }
+
+    @Test
+    fun `a link whose invite is not open keeps the plain welcome and an empty name`() =
+        runTest(main.dispatcher) {
+            val previews = FakeInvitePreviews()
+            val welcome = WelcomeViewModel(previews)
+            welcome.onInviteLink("gone")
+            assertEquals(listOf("gone"), previews.loaded)
+            assertNull(welcome.state.value.inviterName)
+            assertEquals(NameUiState(), NameViewModel(auth, starter, previews).state.value)
+        }
+
+    @Test
     fun `a failed register keeps the name and shows the error`() =
         runTest(main.dispatcher) {
             auth.registerOk = false
-            val vm = NameViewModel(auth, starter)
+            val vm = NameViewModel(auth, starter, FakeInvitePreviews())
             vm.onNameChange("Eren")
             vm.onContinue()
             assertTrue(vm.state.value.failed)

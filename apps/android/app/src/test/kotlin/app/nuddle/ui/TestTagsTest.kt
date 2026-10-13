@@ -121,6 +121,12 @@ class TestTagsTest {
     }
 
     @Test
+    fun invitedWelcome() {
+        content { WelcomeScreen(WelcomeUiState(inviterName = "Selin"), onStart = {}, onTerms = {}, onPrivacy = {}) }
+        assertShown(TestTags.WELCOME_INVITER)
+    }
+
+    @Test
     fun phone() {
         content {
             PhoneScreen(

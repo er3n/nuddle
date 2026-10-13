@@ -64,6 +64,7 @@ import {
   findIdempotentResult,
   findOtpAttempts,
   findInviteByCode,
+  openInvitePreview,
   findInviteById,
   findPerson,
   findTask,
@@ -457,6 +458,19 @@ export async function createInviteCommand(
     await insertInvite(tx, r.value, now);
     return { result: { inviteId: r.value.id, code: r.value.code }, effects: noEffects };
   });
+}
+
+/**
+ * Public: an invite link opened before sign-in (0b, 0e; ADR 0016). Only an open invite answers;
+ * every other code is `not_found`, so a closed invite looks like one that never existed.
+ */
+export async function invitePreview(
+  deps: AppDeps,
+  code: string,
+): Promise<{ inviterName: string; prefilledName: string }> {
+  const preview = await openInvitePreview(deps.db, code);
+  if (!preview) throw new ApiError("not_found");
+  return preview;
 }
 
 export async function acceptInviteCommand(

@@ -1,5 +1,6 @@
-// Smoke 2 (docs/testing.md, Smoke set): Selin invites Eren from home (1e, 1f), Eren signs up with
-// that number, the consent screen (0f) opens by itself, İzin ver, matched (0g), home. Both are
+// Smoke 2 (docs/testing.md, Smoke set): Selin invites Eren from home (1e, 1f), Eren opens the invite
+// link before he has an account: the invited welcome (0b) and the prefilled name (0e, ADR 0016). He
+// signs up with that number, the consent screen (0f) opens by itself, İzin ver, matched (0g), home. Both are
 // connected on the server and Selin's pending invite (1g) leaves her home.
 // Runs after smoke 1: Selin is signed in on her emulator.
 import postgres from "postgres";
@@ -39,13 +40,16 @@ export async function invite(run: RunContext, databaseUrl: string): Promise<void
         throw new Error(`unexpected invite ${JSON.stringify(row)}`);
     });
 
-    await run.step("eren-sign-up", async (dir) => {
+    await run.step("eren-sign-up-from-link", async (dir) => {
+      const [row] = await db<{ code: string }[]>`
+        select i.code from invites i where i.invitee_phone = ${EREN_PHONE} and i.status = 'open'`;
+      if (!row) throw new Error("no open invite for Eren");
       await eren.wakeAndUnlock();
-      await eren.maestro("selin/sign-up.yaml", dir, {
-        PHONE: EREN_PHONE.slice(3),
-        NAME: "Eren",
-        DONE: "consent.screen",
-      });
+      // Straight to the app: App Links are verified only for the release certificate on nuddle.app.
+      await eren.shell(
+        `am start -a android.intent.action.VIEW -d https://nuddle.app/i/${row.code} -n app.nuddle.debug/app.nuddle.MainActivity`,
+      );
+      await eren.maestro("eren/sign-up-from-link.yaml", dir, { PHONE: EREN_PHONE.slice(3) });
     });
 
     await run.step("consent", async (dir) => {

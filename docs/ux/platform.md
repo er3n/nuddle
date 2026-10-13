@@ -58,7 +58,7 @@ Single Activity with Navigation Compose, plus `PokeActivity` for the lock screen
 - An existing user goes from the code screen straight to `home`. A new user without an invite goes from name to `home`; `setup` opens at their first task.
 - Back never returns to sign-in steps. `home` is the root of the back stack.
 - Error screens (6a to 6f) are states of their screen, not routes. The generic error (6f) is full screen only when nothing can be recovered.
-- Deep links: invite links are `https://nuddle.app/i/{inviteCode}` (open-questions #13), verified App Links (`/.well-known/assetlinks.json` from the web app). Signed in, the link opens `consent/{inviteId}` for an open invite to me, otherwise the invalid invite screen 6d (open-questions #39). Signed out, the app starts at `welcome` and the invite still reaches the person by their number after sign-in; the invited welcome (0b) needs an invite preview before sign-in and comes later. Without the app, the link opens a page on the web. Notifications open `task/{id}` or `inbox`.
+- Deep links: invite links are `https://nuddle.app/i/{inviteCode}` (open-questions #13), verified App Links (`/.well-known/assetlinks.json` from the web app). Signed in, the link opens `consent/{inviteId}` for an open invite to me, otherwise the invalid invite screen 6d (open-questions #39). Signed out, the app asks for the invite preview (ADR 0016) and starts at the invited welcome (0b); the name screen (0e) is prefilled with the name the inviter typed. When the preview fails (invite no longer open, offline), the plain welcome (0a) shows. After sign-in the link opens the consent screen as above. Without the app, the link opens a page on the web. Notifications open `task/{id}` or `inbox`.
 
 ## Accessibility
 

@@ -592,6 +592,16 @@ components:
         - exactAlarm
         - fullScreen
         - channels
+    InvitePreview:
+      type: object
+      properties:
+        inviterName:
+          type: string
+        prefilledName:
+          type: string
+      required:
+        - inviterName
+        - prefilledName
     BrandFix:
       type: object
       properties:
@@ -1438,6 +1448,40 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/invites/{code}/preview:
+    get:
+      operationId: invitePreview
+      summary: "Before sign-in: who sent this open invite and the name they typed (0b, 0e)"
+      tags:
+        - invites
+      security: []
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: code
+          in: path
+      responses:
+        "200":
+          description: The inviter's name and the prefilled name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvitePreview"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
           description: Error with a DRT code
           content:
             application/json:
