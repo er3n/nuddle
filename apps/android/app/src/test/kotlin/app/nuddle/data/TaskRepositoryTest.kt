@@ -308,6 +308,27 @@ class TaskRepositoryTest {
         }
 
     @Test
+    fun `Kaldır takes a missed card off my list at once and queues remove_missed (NUD-49)`() =
+        runTest {
+            db.tasks().upsert(listOf(aTask().copy(status = "MISSED")))
+
+            repository.removeMissed(Cast.TASK_ID)
+
+            val task = db.tasks().get(Cast.TASK_ID)
+            assertEquals(false, task?.inRecipientList)
+            assertEquals("MISSED", task?.status)
+            assertEquals(
+                "remove_missed",
+                db
+                    .outbox()
+                    .pending()
+                    .single()
+                    .command,
+            )
+            assertEquals(0, server.requestCount)
+        }
+
+    @Test
     fun `Ben hallederim cancels a dropped task at once and queues sender_handles`() =
         runTest {
             db.tasks().upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SIBEL_ID, status = "DROPPED")))

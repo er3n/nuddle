@@ -141,6 +141,7 @@ object TestTags {
     const val POKE_SNOOZE = "poke.snooze"
     const val POKE_CANT_TODAY = "poke.cantToday"
     const val DROP_NOTE = "drop.note"
+    const val ISSUE_REMOVE = "issue.remove"
     const val ISSUE_DID_IT_LATER = "issue.didItLater"
     const val ISSUE_CALL = "issue.call"
     const val ISSUE_NEW_TIME = "issue.newTime"

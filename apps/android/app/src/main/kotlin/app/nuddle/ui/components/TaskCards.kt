@@ -4,13 +4,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -21,10 +25,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import app.nuddle.R
+import app.nuddle.ui.TestTags
+import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewComponent
 import app.nuddle.ui.preview.PreviewSurface
 import app.nuddle.ui.theme.DurtTheme
@@ -146,6 +155,8 @@ fun TaskActionCard(
     primary: CardAction,
     modifier: Modifier = Modifier,
     secondary: CardAction? = null,
+    /** A close button (×, "Kaldır") in the top right: the recipient's missed card (NUD-49). */
+    onRemove: (() -> Unit)? = null,
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
@@ -167,6 +178,7 @@ fun TaskActionCard(
                 Text(task.subtitle, style = DurtTheme.type.caption, color = colors.textSecondary)
             }
             StatusPill(task.status)
+            if (onRemove != null) RemoveButton(onRemove)
         }
         Text(
             text = message,
@@ -197,6 +209,24 @@ fun TaskActionCard(
                 )
             }
         }
+    }
+}
+
+/** The × of a card that can be taken off the list (NUD-49). */
+@Composable
+private fun RemoveButton(onRemove: () -> Unit) {
+    val description = stringResource(R.string.issue_remove)
+    Box(
+        modifier =
+            Modifier
+                .size(DurtTheme.dimens.iconLarge)
+                .clip(CircleShape)
+                .clickable(role = Role.Button, onClick = onRemove)
+                .semantics { contentDescription = description }
+                .testTag(TestTags.ISSUE_REMOVE),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(DurtIcons.Close, contentDescription = null, tint = DurtTheme.colors.textSecondary)
     }
 }
 

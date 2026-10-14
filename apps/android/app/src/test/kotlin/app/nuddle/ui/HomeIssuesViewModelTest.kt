@@ -92,10 +92,12 @@ class HomeIssuesViewModelTest {
         runTest(main.dispatcher) {
             ready()
             vm.onDidItLater("missed-to-me")
+            vm.onRemoveMissed("missed-to-me")
             vm.onSenderHandles("dropped")
             vm.onCancel(Cast.TASK_ID)
 
             assertEquals(listOf("missed-to-me"), tasks.didItLater)
+            assertEquals(listOf("missed-to-me"), tasks.removedMissed)
             assertEquals(listOf("dropped"), tasks.senderHandled)
             assertEquals(listOf<String?>(null), tasks.cancelNotes)
         }

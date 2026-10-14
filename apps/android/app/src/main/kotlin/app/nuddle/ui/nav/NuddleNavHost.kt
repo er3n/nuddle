@@ -281,6 +281,7 @@ fun NuddleNavHost(
                     issueActions =
                         IssueCallbacks(
                             onDidItLater = issues::onDidItLater,
+                            onRemoveMissed = issues::onRemoveMissed,
                             onCall = { activity?.dial(it) },
                             onNewDeadline = issues::onNewDeadline,
                             onSenderHandles = issues::onSenderHandles,
