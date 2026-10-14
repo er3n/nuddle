@@ -204,7 +204,7 @@ Note: the canvas shows "23:00 – 07:00" with an en dash. Use "23:00-07:00" or "
 Note: "Zamanında biten %88" is a statistic shown to both people. Check against the "never a scorecard" principle (open question).
 
 ### 5c Home, full + done note · `HomeFull.png`
-Sections: Sana yazılanlar, Senin yazdıkların, Kendine. DoneNote at the bottom.
+Sections: Sana yazılanlar, Senin yazdıkların, Kendine. DoneNote at the bottom. Built in NUD-61 with the 2f/4c next-up card kept on top: every other open task to me follows as a TaskRow, from others under "Sana yazılanlar" ("Sibel · bu akşam") and to self under "Kendine", due first; then "Senin yazdıkların". A row to self opens 7c; a row from someone else opens nothing yet (its actions are on the poke and on the next-up card once it is first).
 **Copy:** Gelirken ekmek al · Sibel · bu akşam · Kurulu | Faturayı öde · Sibel'e · fotoğraf geldi · Onayını bekliyor | Kuru temizlemeyi al · Sibel'e · cuma 18:00 | Spor salonu üyeliğini yenile · Pazartesi 12:00 | "Para çek" tamamlandı | Bu sefer seni 2. dürtmede yakaladım. Sabahları daha hızlısın.
 
 ### 5d Sibel: dropped and missed · `SibelIssues.png`
