@@ -14,7 +14,6 @@ import app.nuddle.api.model.EdgeType
 import app.nuddle.api.model.Reachability
 import app.nuddle.domain.Ago
 import app.nuddle.domain.SetupStep
-import app.nuddle.domain.Snooze
 import app.nuddle.domain.TimeLeft
 import app.nuddle.testing.Cast
 import app.nuddle.ui.components.ComposeState
@@ -62,6 +61,7 @@ import app.nuddle.ui.screens.photo.UnsentPhotoUiState
 import app.nuddle.ui.screens.poke.PokeDemoScreen
 import app.nuddle.ui.screens.poke.PokeScreen
 import app.nuddle.ui.screens.poke.PokeUiState
+import app.nuddle.ui.screens.poke.SnoozeUi
 import app.nuddle.ui.screens.setup.PermissionStepUi
 import app.nuddle.ui.screens.setup.PermissionsScreen
 import app.nuddle.ui.screens.setup.SetupDemoScreen
@@ -207,7 +207,7 @@ class TestTagsTest {
                     title = "Para çek",
                     detail = null,
                     timeLeft = TimeLeft.Minutes(45),
-                    snooze = Snooze(minutes = 10, last = false),
+                    snooze = SnoozeUi(time = "08:25", last = false),
                 ),
                 onDone = { clicked += "done" },
                 onSnooze = { clicked += "snooze" },

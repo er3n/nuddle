@@ -180,8 +180,8 @@ class PokeActions
             val snooze = SnoozeRules.next(task.snoozesUsed, now, Instant.fromEpochMilliseconds(task.deadline)) ?: return
             notifications.cancel(key.taskId)
             val step = alarms.step(key) ?: return
-            scheduler.schedule(step.copy(plannedAt = now + snooze.minutes.minutes))
-            tasks.countSnooze(key.taskId)
+            scheduler.schedule(step.copy(plannedAt = snooze.until))
+            tasks.countSnooze(key.taskId, snooze.until.toEpochMilliseconds())
             val id = ids.next()
             outbox.enqueue("snooze", id, SnoozeCommand(idempotencyKey = id, taskId = key.taskId), SnoozeCommand.serializer())
         }

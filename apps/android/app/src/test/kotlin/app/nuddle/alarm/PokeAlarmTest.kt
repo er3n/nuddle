@@ -345,13 +345,25 @@ class PokeAlarmTest {
         }
 
     @Test
-    fun `no snooze that would run past the deadline`() =
+    fun `no snooze when under 10 minutes are left, 5 for the snooze and 5 for the task (NUD-63)`() =
+        runTest {
+            givenPlan()
+            // Deadline 09:00: at 08:51 a snooze would leave less than 5 minutes for the task.
+            clock.advance(51.minutes)
+            actions.snooze(key(2))
+            assertTrue(db.outbox().pending().isEmpty())
+            assertEquals(0, db.tasks().get(Cast.TASK_ID)!!.snoozesUsed)
+        }
+
+    @Test
+    fun `a snooze near the deadline is shortened and the card knows until when (NUD-63)`() =
         runTest {
             givenPlan()
             clock.advance(50.minutes)
             actions.snooze(key(2))
-            assertTrue(db.outbox().pending().isEmpty())
-            assertEquals(0, db.tasks().get(Cast.TASK_ID)!!.snoozesUsed)
+            val task = db.tasks().get(Cast.TASK_ID)!!
+            assertEquals(1, task.snoozesUsed)
+            assertEquals((clock.now() + 5.minutes).toEpochMilliseconds(), task.snoozedUntil)
         }
 
     @Test

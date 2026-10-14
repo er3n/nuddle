@@ -413,6 +413,12 @@ components:
           type: boolean
         snoozesUsed:
           type: integer
+        snoozedUntil:
+          type: string
+          nullable: true
+          format: date-time
+          example: 2026-10-12T09:00:00+03:00
+          description: ISO 8601 with offset
         createdAt:
           type: string
           format: date-time

@@ -771,6 +771,8 @@ export interface SyncRows {
   receivedInvites: (Invite & { inviterName: string; createdAt: Date })[];
   tasks: (Task & {
     snoozesUsed: number;
+    /** When the last snooze ends; null without one. The phone shows "Ertelendi" until then (NUD-63). */
+    snoozedUntil: Date | null;
     createdAt: Date;
     photoSentAt: Date | null;
     reRequestNote: string | null;
@@ -829,11 +831,18 @@ export async function syncRows(tx: Tx, me: Person, cursor: number): Promise<Sync
     taskIds.length === 0
       ? []
       : await tx
-          .select({ taskId: taskEvents.taskId, used: sql<number>`count(*)::int` })
+          .select({
+            taskId: taskEvents.taskId,
+            used: sql<number>`count(*)::int`,
+            until: sql<string | null>`max(${taskEvents.payload}->>'until')`,
+          })
           .from(taskEvents)
           .where(and(inArray(taskEvents.taskId, taskIds), eq(taskEvents.type, "snoozed")))
           .groupBy(taskEvents.taskId);
   const snoozesUsed = new Map(snoozeRows.map((r) => [r.taskId, r.used]));
+  const snoozedUntil = new Map(
+    snoozeRows.flatMap((r) => (r.until === null ? [] : [[r.taskId, new Date(r.until)] as const])),
+  );
 
   // The last photo and the last re-request note, for 4e, 4f and 4g. Events are few per task.
   const photoRows =
@@ -880,6 +889,7 @@ export async function syncRows(tx: Tx, me: Person, cursor: number): Promise<Sync
     tasks: taskRows.map((t) => ({
       ...toTask(t),
       snoozesUsed: snoozesUsed.get(t.id) ?? 0,
+      snoozedUntil: snoozedUntil.get(t.id) ?? null,
       createdAt: t.createdAt,
       photoSentAt: photoSentAt.get(t.id) ?? null,
       reRequestNote: t.status === "REJECTED" ? (reRequestNote.get(t.id) ?? null) : null,

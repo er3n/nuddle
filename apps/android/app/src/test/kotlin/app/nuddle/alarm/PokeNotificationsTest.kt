@@ -27,7 +27,7 @@ import kotlin.time.Instant
 @Config(sdk = [36])
 class PokeNotificationsTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
-    private val notifications = AndroidPokeNotifications(app, FakeClock())
+    private val notifications = AndroidPokeNotifications(app, FakeClock(), TimeZone.of("Europe/Istanbul"))
 
     @Before
     fun setUp() {
@@ -58,13 +58,14 @@ class PokeNotificationsTest {
     }
 
     @Test
-    fun `Ertele says how long, and son hakkın on the last one`() {
-        assertEquals(listOf("Bitti", "15 dk ertele", "Bugün olmaz"), show(seq = 1).actionTitles())
+    fun `Ertele says when it rings again (NUD-63), and son hakkın on the last one`() {
+        // 08:00 now, deadline 09:00: 15 minutes, then 10.
+        assertEquals(listOf("Bitti", "Ertele · 08:15", "Bugün olmaz"), show(seq = 1).actionTitles())
     }
 
     @Test
     fun `the second snooze is the last`() {
-        assertEquals(listOf("Bitti", "10 dk ertele · son hakkın", "Bugün olmaz"), show(seq = 2, snoozesUsed = 1).actionTitles())
+        assertEquals(listOf("Bitti", "Ertele · 08:10 · son hakkın", "Bugün olmaz"), show(seq = 2, snoozesUsed = 1).actionTitles())
     }
 
     @Test

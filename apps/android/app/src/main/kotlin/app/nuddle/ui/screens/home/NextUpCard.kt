@@ -41,6 +41,7 @@ import app.nuddle.ui.components.PillStatus
 import app.nuddle.ui.components.StatusPill
 import app.nuddle.ui.components.UndoToast
 import app.nuddle.ui.icons.DurtIcons
+import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.theme.DurtTheme
 
 // Parts of home once there is a task (2f). Kept next to HomeScreen.kt, used only there.
@@ -141,6 +142,15 @@ private fun ColumnScope.Heading(task: NextUpUi) {
                 }
             line?.let { Text(it, style = DurtTheme.type.bodySmall, color = colors.textSecondary) }
         }
+    }
+    // A snooze the person chose, not the plan: it says when the poke comes back (NUD-63).
+    task.snoozedUntil?.let {
+        Text(
+            stringResource(R.string.next_up_snoozed, it),
+            style = DurtTheme.type.bodySmallStrong,
+            color = colors.warning,
+            modifier = Modifier.testTag(TestTags.NEXT_UP_SNOOZED),
+        )
     }
 }
 
@@ -288,4 +298,36 @@ internal fun TaskDoneNote(
         learning = note.caughtAt?.let { stringResource(R.string.done_note_caught, it) },
         modifier = modifier.testTag(TestTags.HOME_DONE_NOTE),
     )
+}
+
+/** 4c after Ertele: the card says when the poke comes back (NUD-63). */
+@PreviewScreens
+@Composable
+private fun HomeScreenSnoozedPreview() {
+    DurtTheme {
+        HomeScreen(
+            state =
+                HomeUiState(
+                    myName = "Eren",
+                    connected = true,
+                    nextUp =
+                        NextUpUi(
+                            taskId = "task-1",
+                            title = "Çay tazele",
+                            detail = null,
+                            deadline = DeadlineText.Today("22:41", moment = true),
+                            photo = false,
+                            from = FromUi("Sibel", WrittenText.Today("22:19"), null),
+                            snoozedUntil = "22:37",
+                        ),
+                ),
+            onBell = {},
+            onProfile = {},
+            onInvite = {},
+            onComposeTextChange = {},
+            onComposeSend = {},
+            onVoiceStart = {},
+            onVoiceEnd = {},
+        )
+    }
 }

@@ -23,11 +23,13 @@ import app.nuddle.domain.PokeRules
 import app.nuddle.domain.SnoozeRules
 import app.nuddle.ui.TestTagsRoot
 import app.nuddle.ui.screens.LightSystemBarIcons
+import app.nuddle.ui.screens.hourMinute
 import app.nuddle.ui.screens.poke.DropCallbacks
 import app.nuddle.ui.screens.poke.DropSheet
 import app.nuddle.ui.screens.poke.DropUi
 import app.nuddle.ui.screens.poke.PokeScreen
 import app.nuddle.ui.screens.poke.PokeUiState
+import app.nuddle.ui.screens.poke.SnoozeUi
 import app.nuddle.ui.theme.DurtTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -115,7 +117,10 @@ class PokeActivity : ComponentActivity() {
                     title = task.title,
                     detail = task.detail,
                     timeLeft = PokeRules.timeLeft(clock.now(), deadline).takeUnless { task.isMoment },
-                    snooze = SnoozeRules.next(task.snoozesUsed, clock.now(), deadline),
+                    snooze =
+                        SnoozeRules.next(task.snoozesUsed, clock.now(), deadline)?.let {
+                            SnoozeUi(it.until.hourMinute(timeZone), it.last)
+                        },
                 )
         }
         LightSystemBarIcons()

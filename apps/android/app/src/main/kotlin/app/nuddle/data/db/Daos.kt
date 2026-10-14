@@ -32,8 +32,12 @@ interface TaskDao {
         status: String,
     )
 
-    @Query("UPDATE tasks SET snoozesUsed = snoozesUsed + 1 WHERE id = :id")
-    suspend fun countSnooze(id: String)
+    /** Ertele on this phone: one more snooze, and until when the card says "Ertelendi" (NUD-63). */
+    @Query("UPDATE tasks SET snoozesUsed = snoozesUsed + 1, snoozedUntil = :until WHERE id = :id")
+    suspend fun countSnooze(
+        id: String,
+        until: Long,
+    )
 }
 
 @Dao

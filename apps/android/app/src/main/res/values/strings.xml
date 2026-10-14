@@ -525,9 +525,10 @@
     <string name="poke_count">%1$d. dürtme</string>
     <string name="poke_count_at">%1$d. dürtme · %2$s</string>
     <string name="poke_done">Bitti</string>
-    <!-- TODO(open-questions#1): two snoozes, 15 then 10 minutes. -->
-    <string name="poke_snooze">%1$d dk ertele</string>
-    <string name="poke_snooze_last">%1$d dk ertele · son hakkın</string>
+    <!-- open-questions#1 (NUD-63): the time it rings again, no suffix after a time (#21). -->
+    <string name="poke_snooze">Ertele · %1$s</string>
+    <string name="poke_snooze_last">Ertele · %1$s · son hakkın</string>
+    <string name="next_up_snoozed">Ertelendi · tekrar %1$s</string>
     <string name="poke_cant_today_short">Bugün olmaz</string>
     <string name="poke_cant_today">Bugün yapamayacağım</string>
     <!-- 7f: the optional note after Bugün yapamayacağım (open-questions#36) -->

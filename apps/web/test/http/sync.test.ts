@@ -72,6 +72,19 @@ describe("http: sync", () => {
     }
   });
 
+  it("says until when a task is snoozed (NUD-63)", async () => {
+    const taskId = await createTask(sibel, eren);
+    expect((await syncOf(eren)).tasks.find((t) => t.id === taskId)?.snoozedUntil).toBeNull();
+    const r = await eren.api.POST("/api/v1/commands/snooze", {
+      body: { idempotencyKey: uuidv7(), taskId },
+    });
+    expect(r.response.status).toBe(200);
+    const until = new Date(server.deps.clock.now().getTime() + 15 * 60_000).toISOString();
+    for (const who of [eren, sibel]) {
+      expect((await syncOf(who)).tasks.find((t) => t.id === taskId)?.snoozedUntil).toBe(until);
+    }
+  });
+
   it("tells when a task was written and how to reach a connection", async () => {
     const taskId = await createTask(sibel, eren);
     const forEren = await syncOf(eren);

@@ -98,6 +98,8 @@ data class NextUpUi(
     val note: String? = null,
     /** The photo is still on this phone and its upload failed (6e). */
     val uploadFailed: Boolean = false,
+    /** "22:37": a snooze is on until then ("Ertelendi · tekrar 22:37", NUD-63). */
+    val snoozedUntil: String? = null,
 )
 
 private val NEXT_UP_STATUSES =
@@ -144,6 +146,13 @@ fun nextUp(
                             .format(HOUR_MINUTE)
                     },
                 note = task.reRequestNote,
+                snoozedUntil =
+                    task.snoozedUntil
+                        ?.let(Instant::fromEpochMilliseconds)
+                        ?.takeIf { it > now }
+                        ?.toLocalDateTime(timeZone)
+                        ?.time
+                        ?.format(HOUR_MINUTE),
             )
         }
 

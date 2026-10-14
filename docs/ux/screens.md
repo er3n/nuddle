@@ -153,11 +153,11 @@ Steps come from the server brand JSON (example: Xiaomi).
 
 ### 3a Poke, notification · `PokeNotif.png`
 System notification (shell is the system's, content and actions are ours).
-**Copy:** 2. dürtme | Para çek · 1.000 TL | Son zamana 1 saat var. Şimdi çıkarken uğrarsan iş biter. | Bitti | 15 dk ertele | Bugün olmaz
+**Copy:** 2. dürtme | Para çek · 1.000 TL | Son zamana 1 saat var. Şimdi çıkarken uğrarsan iş biter. | Bitti | 15 dk ertele (built as "Ertele · 08:30", open-questions #1) | Bugün olmaz
 
 ### 3b Poke, full screen · `PokeFull.png`
 `PokeActivity` on `poke` background with rings.
-**Copy:** 3. dürtme · 08:15 | Para çek | 1.000 TL · son zamana 45 dk | İki dürtmeyi geçtin. Bu sefer ciddiyim, 09:00'a az kaldı. | Bitti | 10 dk ertele · son hakkın | Bugün yapamayacağım
+**Copy:** 3. dürtme · 08:15 | Para çek | 1.000 TL · son zamana 45 dk | İki dürtmeyi geçtin. Bu sefer ciddiyim, 09:00'a az kaldı. | Bitti | 10 dk ertele · son hakkın (built as "Ertele · 08:25 · son hakkın", open-questions #1) | Bugün yapamayacağım
 
 ## 4 · A task for someone else
 

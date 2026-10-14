@@ -378,7 +378,7 @@ describe("task state machine", () => {
   });
 });
 
-describe("snooze (open-questions#1: 2 snoozes, 15 then 10 minutes, never past the deadline)", () => {
+describe("snooze (open-questions#1: 2 snoozes, 15 then 10 minutes, 5 left before the deadline)", () => {
   const at = new Date("2026-10-11T22:40:00+03:00");
   const fired: TaskEvent = {
     taskId: "task-1",
@@ -423,9 +423,17 @@ describe("snooze (open-questions#1: 2 snoozes, 15 then 10 minutes, never past th
     ).toEqual({ ok: false, error: "snooze_not_allowed" });
   });
 
-  it("is refused when it would run past the deadline", () => {
+  it("is shortened so 5 minutes remain before the deadline (NUD-63)", () => {
     const task = aTask()
-      .withDeadline(addMs(at, 10 * 60_000))
+      .withDeadline(addMs(at, 14 * 60_000 + 30_000))
+      .build();
+    const o = apply(task, { type: "snooze" }, "eren", ctx([fired], at));
+    expect(o.events[0]?.payload).toMatchObject({ count: 1, minutes: 9 });
+  });
+
+  it("is refused when less than 5 minutes would be left for it and 5 for the task", () => {
+    const task = aTask()
+      .withDeadline(addMs(at, 9 * 60_000 + 59_000))
       .build();
     expect(applyCommand(task, { type: "snooze" }, "eren", ctx([fired], at))).toEqual({
       ok: false,

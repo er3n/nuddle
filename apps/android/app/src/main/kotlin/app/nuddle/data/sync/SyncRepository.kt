@@ -205,6 +205,7 @@ internal fun SyncTask.toEntity() =
         planVersion = planVersion,
         inRecipientList = inRecipientList,
         snoozesUsed = snoozesUsed ?: 0,
+        snoozedUntil = snoozedUntil?.let { Instant.parse(it).toEpochMilliseconds() },
         createdAt = createdAt?.let { Instant.parse(it).toEpochMilliseconds() } ?: 0,
         rawText = rawText,
         photoSentAt = photoSentAt?.let { Instant.parse(it).toEpochMilliseconds() },

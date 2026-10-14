@@ -37,6 +37,7 @@ object TestTags {
     const val HOME_DONE_EARLY = "home.doneEarly"
     const val HOME_CALL = "home.call"
     const val HOME_SENT = "home.sent"
+    const val NEXT_UP_SNOOZED = "nextUp.snoozed"
     const val HOME_LATER = "home.later"
     const val HOME_QUEUED = "home.queued"
     const val HOME_OFFLINE = "home.offline"

@@ -216,16 +216,26 @@ interface Snooze {
   last: boolean;
 }
 
-/** The next snooze of a task, or null when none is left or it would run past the deadline. */
+/** Time left to do the task after a snooze ends, and the shortest snooze worth offering (NUD-63). */
+const AFTER_SNOOZE_MS = 5 * MINUTE;
+const MIN_SNOOZE_MS = 5 * MINUTE;
+
+/**
+ * The next snooze of a task, or null when none is left or too little time is: 15 then 10 minutes,
+ * shortened (whole minutes) so 5 minutes remain before the deadline, never under 5 (open-questions#1).
+ * The device applies the same rule to label Ertele (`SnoozeRules`).
+ */
 function nextSnooze(
   task: Pick<Task, "deadline">,
   ctx: Pick<TaskContext, "history" | "now">,
 ): Snooze | null {
   const used = ctx.history.filter((e) => e.type === "snoozed").length;
-  const length = SNOOZE_MS[used];
-  if (length === undefined) return null;
+  const planned = SNOOZE_MS[used];
+  if (planned === undefined) return null;
+  const room = task.deadline.getTime() - ctx.now.getTime() - AFTER_SNOOZE_MS;
+  const length = Math.min(planned, Math.floor(room / MINUTE) * MINUTE);
+  if (length < MIN_SNOOZE_MS) return null;
   const until = addMs(ctx.now, length);
-  if (until.getTime() >= task.deadline.getTime()) return null;
   return { count: used + 1, minutes: length / MINUTE, until, last: used + 1 === SNOOZE_MS.length };
 }
 

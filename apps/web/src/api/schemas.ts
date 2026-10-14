@@ -395,6 +395,8 @@ const SyncTask = z
      * app reading an older server's sync treats it as 0 instead of failing the whole sync.
      */
     snoozesUsed: z.int().optional(),
+    /** When the last snooze ends ("Ertelendi · tekrar 22:37" until then, NUD-63); null without one. */
+    snoozedUntil: Instant.nullable().optional(),
     /** When the sender wrote it: "Sibel yazdı · 14:32" (4c). Optional for the same reason as snoozesUsed. */
     createdAt: Instant.optional(),
     /** When the last photo was sent: "08:24'te gönderdin" (4e), "Eren fotoğraf gönderdi · 08:24" (4f). */

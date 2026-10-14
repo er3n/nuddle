@@ -21,6 +21,8 @@ data class TaskEntity(
     val inRecipientList: Boolean,
     /** From sync, and bumped locally on Ertele so the next one is right offline too (NUD-36). */
     @ColumnInfo(defaultValue = "0") val snoozesUsed: Int = 0,
+    /** Epoch milliseconds when the last snooze ends; null without one ("Ertelendi · tekrar 22:37", NUD-63). */
+    val snoozedUntil: Long? = null,
     /** Epoch milliseconds; "Sibel yazdı · 14:32" (4c). 0 when an older server did not send it. */
     @ColumnInfo(defaultValue = "0") val createdAt: Long = 0,
     /** What the sender typed: "Yazdığın: ..." (7c). Only the sender gets it. */
