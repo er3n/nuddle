@@ -20,7 +20,9 @@ import app.nuddle.domain.PokeStep
 import app.nuddle.domain.Snooze
 import app.nuddle.domain.SnoozeRules
 import app.nuddle.domain.TimeLeft
+import app.nuddle.ui.screens.hourMinute
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.datetime.TimeZone
 import javax.inject.Inject
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -41,6 +43,7 @@ class AndroidPokeNotifications
     constructor(
         @param:ApplicationContext private val context: Context,
         private val clock: Clock,
+        private val timeZone: TimeZone,
     ) : PokeNotifications {
         override fun show(
             task: TaskEntity,
@@ -129,7 +132,7 @@ class AndroidPokeNotifications
             addAction(0, context.getString(R.string.poke_done), done)
             if (snooze != null) {
                 val label = if (snooze.last) R.string.poke_snooze_last else R.string.poke_snooze
-                addAction(0, context.getString(label, snooze.minutes), action(PokeIntents.ACTION_SNOOZE, step))
+                addAction(0, context.getString(label, snooze.until.hourMinute(timeZone)), action(PokeIntents.ACTION_SNOOZE, step))
             }
             return addAction(0, context.getString(R.string.poke_cant_today_short), action(PokeIntents.ACTION_CANT_TODAY, step))
         }

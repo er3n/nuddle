@@ -4,7 +4,7 @@ Things not yet decided. If you hit one while building, do not decide silently: p
 
 ## Product
 
-1. **Snooze limits.** How many snoozes per task and how long? Design shows 15 min (notification) and 10 min "son hakkın" (full screen). *Default:* 2 snoozes, 15 then 10 minutes, never past the deadline.
+1. **Snooze limits.** How many snoozes per task and how long? Design shows 15 min (notification) and 10 min "son hakkın" (full screen). *Decided 2026-10-14 (NUD-63):* 2 snoozes, 15 then 10 minutes, shortened (whole minutes) so 5 minutes remain before the deadline, no snooze under 5 minutes; server and device apply the same rule. The button says when it rings again, "Ertele · 22:37" ("Ertele · 22:37 · son hakkın" for the last one), instead of "15 dk ertele", and until then the recipient's next-up card says "Ertelendi · tekrar 22:37" (a time the person chose, not the plan). The sender seeing "Sibel erteledi" comes with NUD-56.
 2. **Invite expiry and cancel rules.** *Default:* invite open until accepted, declined or revoked by the inviter; no expiry in the beta.
 3. **Plan visibility in 4g.** "Dürtme kaldığı yerden devam ediyor · sıradaki 08:40" reveals the next poke time, which contradicts the hidden plan rule. *Default:* drop the time, keep "Dürtme kaldığı yerden devam ediyor".
 4. **Statistics on person detail (5b).** "Zamanında biten %88" is a number both people see. Check against "never a scorecard". *Default:* show only "Birbirinize yazdığınız N görev", hide the percentage.

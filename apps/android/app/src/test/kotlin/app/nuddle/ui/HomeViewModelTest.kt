@@ -269,6 +269,19 @@ class HomeViewModelTest {
             }
         }
 
+    @Test
+    fun `a snoozed next-up card says when the poke comes back, and not after (NUD-63)`() =
+        runTest(main.dispatcher) {
+            signedIn()
+            connectionDao.upsert(listOf(sibelConnection()))
+            val until = Instant.parse("2026-10-12T08:30:00+03:00").toEpochMilliseconds()
+            taskDao.upsert(listOf(aTask().copy(finishMode = "done", snoozedUntil = until)))
+            vm.state.test {
+                assertEquals("08:30", awaitItemWhere { it?.nextUp != null }?.nextUp?.snoozedUntil)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
     private suspend fun TestScope.asked(ask: WriteOutcome.Ask) {
         connectionDao.upsert(listOf(sibelConnection().copy(reachability = "SOUND")))
         ready()

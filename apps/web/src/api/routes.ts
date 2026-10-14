@@ -192,6 +192,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
             statusChangedAt: iso(t.statusChangedAt),
             inRecipientList: t.inRecipientList,
             snoozesUsed: t.snoozesUsed,
+            snoozedUntil: t.snoozedUntil === null ? null : iso(t.snoozedUntil),
             createdAt: iso(t.createdAt),
             photoSentAt: t.photoSentAt === null ? null : iso(t.photoSentAt),
             reRequestNote: t.reRequestNote,

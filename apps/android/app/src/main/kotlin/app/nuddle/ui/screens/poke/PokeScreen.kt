@@ -21,7 +21,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import app.nuddle.R
-import app.nuddle.domain.Snooze
 import app.nuddle.domain.TimeLeft
 import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.DurtButton
@@ -32,6 +31,12 @@ import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.screens.ScreenLayout
 import app.nuddle.ui.theme.DurtTheme
+
+/** Ertele: when it rings again ("Ertele · 08:30", NUD-63) and whether it is the last one. */
+data class SnoozeUi(
+    val time: String,
+    val last: Boolean,
+)
 
 @Immutable
 data class PokeUiState(
@@ -44,7 +49,7 @@ data class PokeUiState(
     /** A sentence for this poke; none until the server sends poke copy (feature slice 1). */
     val message: String? = null,
     /** What Ertele gives now; null hides it (no snooze left, or it would pass the deadline). */
-    val snooze: Snooze? = Snooze(minutes = 15, last = false),
+    val snooze: SnoozeUi? = SnoozeUi(time = "08:30", last = false),
 )
 
 @Composable
@@ -85,7 +90,7 @@ fun PokeScreen(
                     text =
                         stringResource(
                             if (state.snooze.last) R.string.poke_snooze_last else R.string.poke_snooze,
-                            state.snooze.minutes,
+                            state.snooze.time,
                         ),
                     onClick = onSnooze,
                     kind = DurtButtonKind.OnPokeOutline,
@@ -182,7 +187,7 @@ private fun PokeScreenPreview() {
                     detail = "1.000 TL",
                     timeLeft = TimeLeft.Minutes(45),
                     message = "İki dürtmeyi geçtin. Bu sefer ciddiyim, 09:00'a az kaldı.",
-                    snooze = Snooze(minutes = 10, last = true),
+                    snooze = SnoozeUi(time = "08:25", last = true),
                 ),
             onDone = {},
             onSnooze = {},
