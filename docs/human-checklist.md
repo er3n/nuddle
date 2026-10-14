@@ -44,11 +44,17 @@ Things only the human can do: accounts, payments, logins, secrets, production pu
 - [ ] Add two repository secrets (Settings, Secrets and variables, Actions) so the manual `e2e` workflow can run: `FIREBASE_SERVICE_ACCOUNT` (the same one-line JSON as in `apps/web/.env.local`) and `GOOGLE_SERVICES_JSON_E2E` (the content of `apps/android/app/src/e2e/google-services.json`). From the dev machine: `gh secret set FIREBASE_SERVICE_ACCOUNT < file` and `gh secret set GOOGLE_SERVICES_JSON_E2E < apps/android/app/src/e2e/google-services.json`.
 - [ ] Start the first run: Actions, e2e, Run workflow (or `gh workflow run e2e`).
 
+## Home test on production (NUD-57)
+
+- [ ] Write the two numbers that sign in without an SMS, one per line with the country code and no `+` (e.g. `905321234567`): `nano ~/.nuddle/prod/TEST_PHONES`, then `chmod 600 ~/.nuddle/prod/TEST_PHONES`. They sign in with the fixed code 123456 until 2026-12-01; every other number still needs a real SMS.
+- [ ] Apply it: `mise exec -- supabase/cloud/configure.sh auth`. The read back shows `test_numbers: 2`.
+
 ## Before the beta (about 20 families)
 
 - [ ] Register `app.nuddle` (prod) in Firebase (in `nuddle-app-er3n` or a separate project: decide then), put its `google-services.json` in `apps/android/app/src/prod/` (git-ignored), and give Vercel a service account of that project (moved from stage 7, NUD-11).
 
 - [ ] Google Play Console account. Declare the app as an alarm app (`USE_EXACT_ALARM`, full screen intent). Upload an early closed test build to learn the policy outcome.
+- [ ] Remove the home test numbers: delete `~/.nuddle/prod/TEST_PHONES` and run `configure.sh auth` again with `sms_test_otp` empty (NUD-57).
 - [ ] SMS provider account (WhatsApp Business authentication template later). Configure sender, add credentials to env (`TWILIO_*` and, with the signed prod app, `SMS_RETRIEVER_HASH` in Vercel Production).
 - [ ] Privacy notice and terms (KVKK): name the cross-border transfer (Supabase Frankfurt, Vercel, Firebase, the LLM provider via OpenRouter: written texts, and for poke planning past task titles, outcomes and connection names, ADR 0017), photo retention (deleted when the task closes), account deletion.
 - [ ] Invite links open the app (App Links): put the SHA-256 fingerprint of the release signing certificate (Play App Signing key, and the upload key if you test sideloaded builds) into Vercel Production as `ANDROID_APP_LINK_FINGERPRINTS` (comma separated), redeploy, then check `https://nuddle.app/.well-known/assetlinks.json`. Approve the `durtmobil.com` redirect to `nuddle.app` when the agent proposes it (open-questions #13).

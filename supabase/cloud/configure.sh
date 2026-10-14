@@ -5,7 +5,8 @@
 # file per value, and never printed.
 #
 #   secrets  generate TICK_SECRET and SEND_SMS_HOOK_SECRET (only the missing ones)
-#   auth     apply auth.json plus the Send SMS hook secret through the Management API
+#   auth     apply auth.json plus the Send SMS hook secret through the Management API, and the
+#            home test numbers of ~/.nuddle/prod/TEST_PHONES if that file exists (NUD-57)
 #            (needs ~/.nuddle/prod/SUPABASE_ACCESS_TOKEN). Never `supabase config push`: it would
 #            enable the local test numbers in the cloud (ADR 0011).
 #   tick     store tick_url and tick_secret in Vault, which switches the nuddle-tick job on
@@ -19,6 +20,9 @@ umask 077
 ref=hksqgdkbxalaixjghlvi
 host=https://nuddle.app
 dir="${NUDDLE_PROD_DIR:-$HOME/.nuddle/prod}"
+# The fixed code and its end date for the home test (NUD-57); removed before the beta.
+HOME_TEST_CODE=123456
+HOME_TEST_UNTIL=2026-12-01T00:00:00Z
 here="$(cd "$(dirname "$0")" && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
@@ -53,7 +57,17 @@ case "${1:-}" in
   auth)
     need SUPABASE_ACCESS_TOKEN
     need SEND_SMS_HOOK_SECRET
-    jq --rawfile secret "$dir/SEND_SMS_HOOK_SECRET" '. + {hook_send_sms_secrets: $secret}' \
+    # Home test before the beta (NUD-57): the numbers in TEST_PHONES (one per line, digits with
+    # the country code, e.g. 905321234567; never in the repo) sign in with HOME_TEST_CODE without an
+    # SMS, until HOME_TEST_UNTIL. No file: no test numbers, as auth.json says.
+    test_otp=""
+    if [[ -f "$dir/TEST_PHONES" ]]; then
+      test_otp="$(tr -d ' +\r' <"$dir/TEST_PHONES" | grep -E '^[0-9]{10,15}$' |
+        sed "s/\$/=$HOME_TEST_CODE/" | paste -sd, -)"
+    fi
+    jq --rawfile secret "$dir/SEND_SMS_HOOK_SECRET" --arg otp "$test_otp" --arg until "$HOME_TEST_UNTIL" \
+      '. + {hook_send_sms_secrets: $secret}
+         + (if $otp == "" then {} else {sms_test_otp: $otp, sms_test_otp_valid_until: $until} end)' \
       "$here/auth.json" >"$tmp/body"
     status="$(management_api PATCH /config/auth "$tmp/body")"
     if [[ "$status" != 2* ]]; then
@@ -64,7 +78,8 @@ case "${1:-}" in
     status="$(management_api GET /config/auth)"
     echo "auth config applied (HTTP $status). Read back:"
     jq '{site_url, disable_signup, external_phone_enabled, external_email_enabled,
-      sms_test_otp, hook_send_sms_enabled, hook_send_sms_uri,
+      test_numbers: ((.sms_test_otp // "") | split(",") | map(select(. != "")) | length),
+      sms_test_otp_valid_until, hook_send_sms_enabled, hook_send_sms_uri,
       hook_send_sms_secret_set: ((.hook_send_sms_secrets // "") != "")}' "$tmp/response"
     ;;
 
