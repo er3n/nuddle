@@ -248,6 +248,27 @@ class HomeViewModelTest {
             assertEquals(listOf(Cast.TASK_ID), tasks.done)
         }
 
+    @Test
+    fun `every other task to me is listed after the next-up card, from others first, then to self (NUD-61)`() =
+        runTest(main.dispatcher) {
+            signedIn()
+            connectionDao.upsert(listOf(sibelConnection()))
+            val due = aTask().deadline
+            taskDao.upsert(
+                listOf(
+                    aTask().copy(id = "first", finishMode = "done", deadline = due),
+                    aTask().copy(id = "wake", title = "Beni uyandır", finishMode = "done", deadline = due + 60_000),
+                    aTask().copy(id = "gym", senderId = Cast.EREN_ID, title = "Spor yap", deadline = due + 120_000),
+                ),
+            )
+            vm.state.test {
+                val home = awaitItemWhere { it?.later?.size == 2 }
+                assertEquals("first", home?.nextUp?.taskId)
+                assertEquals(listOf("wake" to "Sibel", "gym" to null), home?.later?.map { it.taskId to it.fromName })
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
     private suspend fun TestScope.asked(ask: WriteOutcome.Ask) {
         connectionDao.upsert(listOf(sibelConnection().copy(reachability = "SOUND")))
         ready()

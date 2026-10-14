@@ -77,6 +77,8 @@ data class HomeUiState(
     val doneNote: DoneNoteUi? = null,
     /** 4i: my open tasks to other people. */
     val sent: List<SentUi> = emptyList(),
+    /** 5c: every other open task to me, after the next-up card (NUD-61). */
+    val later: List<LaterUi> = emptyList(),
     /** Someone to write to: no invite card then (open-questions#34). */
     val connected: Boolean = false,
     /** 1g: shown instead of the invite card while my invite waits. */
@@ -99,7 +101,7 @@ data class HomeUiState(
 
 /** Anything to list: next up, an issue, a task I wrote, a text waiting for the connection. */
 private val HomeUiState.hasTasks: Boolean
-    get() = nextUp != null || sent.isNotEmpty() || queued.isNotEmpty() || !issues.isEmpty
+    get() = nextUp != null || later.isNotEmpty() || sent.isNotEmpty() || queued.isNotEmpty() || !issues.isEmpty
 
 /** A text written offline (6a): only the server can tell whom it is for, so the row shows the text as written. */
 @Immutable
@@ -176,7 +178,7 @@ fun HomeScreen(
     state.newDeadline?.let { NewDeadlineSheet(it, newDeadline) }
 }
 
-/** Sıradaki, then what waits for an answer (7e), then my tasks to others with 5d on top. */
+/** Sıradaki and the rest to me (5c), then what waits for an answer (7e), then my tasks to others with 5d on top. */
 @Composable
 private fun ColumnScope.Tasks(
     state: HomeUiState,
@@ -200,6 +202,7 @@ private fun ColumnScope.Tasks(
             onOpen = { onOpenTask(nextUp.taskId, false) }.takeIf { nextUp.from == null && nextUp.status == NextUpStatus.Scheduled },
         )
     }
+    if (state.later.isNotEmpty()) LaterSection(state.later, state.myName) { onOpenTask(it, false) }
     if (issues.toMe) ToMeIssues(issues, issueActions)
     if (state.sent.isNotEmpty() || issues.sent.isNotEmpty() || state.queued.isNotEmpty()) {
         SentSection(
