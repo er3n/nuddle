@@ -27,6 +27,8 @@ import app.nuddle.data.session.SessionStore
 import app.nuddle.data.sinceLastDeadline
 import app.nuddle.data.toProfile
 import app.nuddle.domain.PokeLevel
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import kotlin.time.Instant
@@ -79,6 +81,8 @@ interface TaskAnnouncer {
     fun withdrawCantReach(taskId: String)
 }
 
+private val SYNC_LOCK = Mutex()
+
 /**
  * `GET /api/v1/sync?cursor=&deviceId=` (ADR 0006, 0014): stores `me`, connections, tasks, their events, invites and
  * received plans, moves the cursor, then re-arms alarms. The server is the source of truth; FCM only says when to call this.
@@ -98,7 +102,13 @@ class SyncRepository
         private val announcer: TaskAnnouncer,
         private val json: Json,
     ) : Syncer {
-        override suspend fun sync(): Boolean {
+        /**
+         * One sync at a time in the process: a push, the app coming to the front and a write can ask at once (NUD-59),
+         * and the second one then starts from the cursor the first one saved.
+         */
+        override suspend fun sync(): Boolean = SYNC_LOCK.withLock { syncOnce() }
+
+        private suspend fun syncOnce(): Boolean {
             val session = sessions.current()
             if (session?.registered != true) return true
             val cursor = sessions.syncCursor()

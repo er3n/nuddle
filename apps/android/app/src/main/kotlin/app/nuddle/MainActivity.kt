@@ -10,7 +10,9 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import app.nuddle.data.InviteLinks
+import app.nuddle.data.sync.Syncer
 import app.nuddle.ui.TestTagsRoot
 import app.nuddle.ui.nav.NuddleNavHost
 import app.nuddle.ui.nav.Routes
@@ -18,11 +20,15 @@ import app.nuddle.ui.nav.StartViewModel
 import app.nuddle.ui.theme.DurtTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /** The single activity (docs/ux/platform.md, Navigation). `PokeActivity` is the only other one. */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val start: StartViewModel by viewModels()
+
+    @Inject lateinit var syncer: Syncer
 
     /** The code of an invite link that opened the app, until home has acted on it. */
     private val inviteCode = MutableStateFlow<String?>(null)
@@ -55,6 +61,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /** Back in front: what the other phone changed meanwhile shows at once, even if its push was lost (NUD-59). */
+    override fun onStart() {
+        super.onStart()
+        lifecycleScope.launch { syncer.sync() }
     }
 
     /** singleTop: a link opened while the app runs arrives here. */

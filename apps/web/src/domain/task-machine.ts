@@ -374,11 +374,31 @@ function push(
   return { to, hint, taskId: task.id, event: e };
 }
 
+/** Events the other phone shows nothing for: the plan is hidden, and a ring is the recipient's own. */
+const UNSEEN: ReadonlySet<TaskEventType> = new Set([
+  "plan_generated",
+  "poke_fired",
+  "permission_missing",
+]);
+
 /**
- * Who is told about an event. Pushes are hints; the bell and lists come from sync.
- * Done without a photo sits in the bell with no push to the sender (docs/product.md).
+ * Who is told about an event. Pushes are hints, never notifications by themselves: the phone syncs,
+ * and the bell, lists and notifications come from sync (docs/architecture.md, Push). Every event
+ * either person sees reaches both of them, so both lists follow at once (NUD-59); which hint a
+ * person gets first comes from `hintsFor`.
  */
 function pushesFor(task: Task, e: TaskEvent): PushMessage[] {
+  const first = hintsFor(task, e);
+  if (UNSEEN.has(e.type)) return first;
+  const told = new Set(first.map((p) => p.to));
+  const rest = [task.senderId, task.recipientId]
+    .filter((to, i, all) => all.indexOf(to) === i && !told.has(to))
+    .map((to) => push(to, "sync", task, e.type));
+  return [...first, ...rest];
+}
+
+/** The hint that matters for an event: a new plan for the recipient, or a sync for whoever must see it. */
+function hintsFor(task: Task, e: TaskEvent): PushMessage[] {
   const { senderId, recipientId } = task;
   const self = senderId === recipientId;
   switch (e.type) {
@@ -671,14 +691,18 @@ export function removeMissedCard(task: Task, actorId: PersonId, now: Date): Resu
   return { ok: true, value: { ...task, removedByRecipientAt: now } };
 }
 
+/**
+ * One hint per person and task: any hint makes the phone sync, so a second one only costs a push. A
+ * named hint (`plan_changed`, `task_cancelled`) wins over a plain `sync`.
+ */
 function dedupe(pushes: PushMessage[]): PushMessage[] {
-  const seen = new Set<string>();
-  return pushes.filter((p) => {
-    const key = `${p.to}|${p.hint}|${String(p.taskId)}|${p.event}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  const kept = new Map<string, PushMessage>();
+  for (const p of pushes) {
+    const key = `${p.to}|${String(p.taskId)}`;
+    const before = kept.get(key);
+    if (!before || (before.hint === "sync" && p.hint !== "sync")) kept.set(key, p);
+  }
+  return [...kept.values()];
 }
 
 export interface CreateTaskInput {

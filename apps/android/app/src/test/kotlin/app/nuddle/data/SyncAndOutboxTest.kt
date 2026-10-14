@@ -22,6 +22,8 @@ import app.nuddle.testing.inMemoryDatabase
 import app.nuddle.testing.json
 import app.nuddle.testing.retrofit
 import app.nuddle.testing.testJson
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockWebServer
@@ -126,6 +128,21 @@ class SyncAndOutboxTest {
             server.enqueue(json(200, syncBody))
             assertTrue(syncRepository().sync())
             assertEquals(null, db.tasks().get(Cast.TASK_ID)!!.remindAt)
+        }
+
+    @Test
+    fun `two syncs asked at once run one after the other, the second from the first one's cursor (NUD-59)`() =
+        runTest {
+            sessions.cursor = "40"
+            server.enqueue(json(200, syncBody))
+            server.enqueue(json(200, syncBody.replace("""{"cursor":"42",""", """{"cursor":"43",""")))
+
+            val both = listOf(async { syncRepository().sync() }, async { syncRepository().sync() }).awaitAll()
+
+            assertEquals(listOf(true, true), both)
+            assertEquals("40", server.takeRequest().url.queryParameter("cursor"))
+            assertEquals("42", server.takeRequest().url.queryParameter("cursor"))
+            assertEquals("43", sessions.cursor)
         }
 
     @Test

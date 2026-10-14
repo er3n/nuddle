@@ -83,7 +83,7 @@ nuddle/
 - **Hidden plan in sync:** plan steps and `plan_generated` events go only to the recipient; `HUMAN` steps never leave the server. A declined invite does not move the inviter's cursor.
 - **Writes:** commands, `POST /api/v1/commands/<name>` with a client generated UUIDv7 idempotency key. Replaying a command is safe.
 - **Android:** an outbox table in Room. WorkManager drains it with backoff. Local effects are applied immediately (`QUEUED` tasks, stopped alarms).
-- **Push:** FCM data messages are only hints ("sync now", "plan changed", "task cancelled"). The sync endpoint is the source of truth.
+- **Push:** FCM data messages are only hints ("sync now", "plan changed", "task cancelled"). The sync endpoint is the source of truth. Every task event either person can see sends a hint to both people (NUD-59; the plan and rings stay with the recipient), so both lists follow within seconds; a hint never shows anything by itself, notifications come from what sync brings. The phone syncs right inside the push (high priority keeps it awake), and again whenever the app comes to the front; syncs run one at a time.
 
 ## Server timers (ADR 0007)
 

@@ -2,6 +2,7 @@ package app.nuddle.push
 
 import android.annotation.SuppressLint
 import app.nuddle.data.outbox.WorkManagerScheduling
+import app.nuddle.data.sync.Syncer
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
@@ -26,10 +27,16 @@ class NuddleMessagingService : FirebaseMessagingService() {
 
     @Inject lateinit var registrar: DeviceRegistrar
 
+    @Inject lateinit var syncer: Syncer
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    /**
+     * Syncs at once, inside the few seconds a high priority message keeps the process awake: queued work can wait
+     * minutes on some phones, and the other phone's list would lag behind (NUD-59). A failed sync is queued.
+     */
     override fun onMessageReceived(message: RemoteMessage) {
-        work.syncSoon()
+        scope.launch { if (!syncer.sync()) work.syncSoon() }
     }
 
     /** FCM can reach this install by [fid] now (ADR 0015). */
