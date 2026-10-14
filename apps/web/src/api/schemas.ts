@@ -32,6 +32,14 @@ const Phone = z
   .string()
   .regex(/^\+[1-9]\d{7,14}$/)
   .openapi({ example: "+905320000002", description: "E.164" });
+/**
+ * Codes go only to Turkish mobile numbers until the global launch: every code is a paid SMS, and an
+ * open list invites SMS pumping to expensive countries (open-questions#45, NUD-58).
+ */
+const SignInPhone = z
+  .string()
+  .regex(/^\+905\d{9}$/)
+  .openapi({ example: "+905320000002", description: "A Turkish mobile number, E.164" });
 const IdempotencyKey = z.uuid({ version: "v7" }).openapi({
   description: "Client generated UUIDv7; a replay returns the first result (ADR 0006)",
 });
@@ -84,9 +92,9 @@ const PermissionSummary = z
 
 // ---- auth -----------------------------------------------------------------------------------
 
-export const SendOtpRequest = z.object({ phone: Phone }).openapi("SendOtpRequest");
+export const SendOtpRequest = z.object({ phone: SignInPhone }).openapi("SendOtpRequest");
 export const VerifyOtpRequest = z
-  .object({ phone: Phone, code: z.string().regex(/^\d{6}$/) })
+  .object({ phone: SignInPhone, code: z.string().regex(/^\d{6}$/) })
   .openapi("VerifyOtpRequest");
 export const RefreshRequest = z
   .object({ refreshToken: z.string().min(1) })

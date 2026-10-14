@@ -632,7 +632,7 @@ export interface components {
         };
         SendOtpRequest: {
             /**
-             * @description E.164
+             * @description A Turkish mobile number, E.164
              * @example +905320000002
              */
             phone: string;
@@ -652,7 +652,7 @@ export interface components {
         };
         VerifyOtpRequest: {
             /**
-             * @description E.164
+             * @description A Turkish mobile number, E.164
              * @example +905320000002
              */
             phone: string;

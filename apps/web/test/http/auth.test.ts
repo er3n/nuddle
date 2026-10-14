@@ -48,6 +48,18 @@ describe("http: auth and errors", () => {
     expect(r.error?.error).toMatchObject({ code: "DRT-1001", name: "validation_failed" });
   });
 
+  it("sends codes only to Turkish mobile numbers (NUD-58)", async () => {
+    for (const phone of ["+12025550123", "+442071838750", "+902125550123"]) {
+      const r = await server.app.request("/api/v1/auth/otp", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      expect(r.status).toBe(400);
+      expect(((await r.json()) as { error: { code: string } }).error.code).toBe("DRT-1001");
+    }
+  });
+
   it("unknown routes are DRT-1004", async () => {
     const res = await server.app.request("/api/v1/nope");
     expect(res.status).toBe(401);
