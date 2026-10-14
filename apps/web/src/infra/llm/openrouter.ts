@@ -8,6 +8,11 @@ export interface OpenRouterOptions {
   apiKey: string;
   model: string;
   fetch?: typeof fetch;
+  /**
+   * False turns a reasoning model's thinking off. The extractor does: the sender waits for it, and
+   * thinking took a write from about 1.5 s to 7-10 s (NUD-52). Default: the model decides.
+   */
+  reasoning?: boolean;
 }
 
 const completionSchema = z.object({
@@ -38,6 +43,7 @@ export async function completeJson(
         type: "json_schema",
         json_schema: { name: request.name, strict: true, schema: request.schema },
       },
+      ...(options.reasoning === false ? { reasoning: { enabled: false } } : {}),
     }),
     ...(request.signal ? { signal: request.signal } : {}),
   });

@@ -23,6 +23,8 @@ interface GoldenCase {
     question: boolean;
     /** Scored only when given (ADR 0017). */
     timing?: Timing;
+    /** Not a task: a reply and nothing else (NUD-52). Every other case must have no reply. */
+    chat?: boolean;
   };
 }
 
@@ -39,10 +41,13 @@ function setting(name: string): string | undefined {
 const digits = (s: string | null): string => (s ?? "").replace(/\D/g, "");
 
 function score(c: GoldenCase, got: Extraction): Record<string, boolean> {
+  const replied = (got.reply ?? "").trim() !== "";
+  if (c.expected.chat === true) return { chat: replied };
   const question = got.recipient === null || got.missing.length > 0 || got.deadline === null;
   const result: Record<string, boolean> = {
     recipient: (got.recipient ?? null) === c.expected.recipient,
     question: question === c.expected.question,
+    chat: !replied,
   };
   if (!c.expected.question) {
     result.deadline =
@@ -98,7 +103,9 @@ it("extraction golden set", { timeout: 30 * 60_000 }, async () => {
         `${c.id}: wrong ${wrong.map(([f]) => f).join(", ")}\n    text: ${c.text}\n    got:  ${JSON.stringify(got)}`,
       );
     }
-    console.log(`${wrong.length === 0 ? "ok  " : "FAIL"} ${c.id}  title: ${String(got.title)}`);
+    console.log(
+      `${wrong.length === 0 ? "ok  " : "FAIL"} ${c.id}  ${got.reply ? `reply: ${got.reply}` : `title: ${String(got.title)}`}`,
+    );
   }
 
   const lines = [

@@ -272,6 +272,7 @@ fun NuddleNavHost(
                             onUndo = viewModel::onUndo,
                             onEdit = viewModel::onUndoEdit,
                             onTimeout = viewModel::onUndoTimeout,
+                            onReplyTimeout = viewModel::onReplyTimeout,
                         ),
                     pendingInvite =
                         PendingInviteCallbacks(

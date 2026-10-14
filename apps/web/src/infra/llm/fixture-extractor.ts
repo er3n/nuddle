@@ -4,7 +4,8 @@
 import type { Extraction, ExtractionInput } from "../../domain/extraction";
 import type { TaskExtractor } from "../../domain/ports";
 
-export type FixtureExtraction = Omit<Extraction, "timing" | "missAfterMinutes"> &
+export type FixtureExtraction = Omit<Extraction, "timing" | "missAfterMinutes" | "reply"> &
+  Partial<Pick<Extraction, "reply">> &
   Partial<Pick<Extraction, "timing" | "missAfterMinutes">>;
 
 export class FixtureExtractor implements TaskExtractor {

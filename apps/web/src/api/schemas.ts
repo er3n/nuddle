@@ -137,8 +137,11 @@ export const WriteTaskCommand = keyed({ text: z.string().trim().min(1).max(500) 
 );
 export const WriteTaskResult = z
   .object({
-    /** created: the undo toast shows; ask: the preview (2b) asks exactly one question. */
-    kind: z.enum(["created", "ask"]),
+    /**
+     * created: the undo toast shows; ask: the preview (2b) asks exactly one question; chat: the text
+     * is not a task, `reply` is shown above the compose bar and nothing is created (NUD-52).
+     */
+    kind: z.enum(["created", "ask", "chat"]),
     taskId: Id.nullable(),
     question: z.enum(["recipient", "title", "deadline"]).nullable(),
     draft: z
@@ -154,6 +157,8 @@ export const WriteTaskResult = z
         finishMode: FinishMode,
       })
       .nullable(),
+    /** Only for `chat`. */
+    reply: z.string().nullable().optional(),
   })
   .openapi("WriteTaskResult");
 

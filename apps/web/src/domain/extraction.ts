@@ -26,6 +26,11 @@ export interface Extraction {
   missAfterMinutes: number | null;
   finishMode: FinishMode;
   missing: MissingField[];
+  /**
+   * One short sentence when the text is not a reminder task at all (a greeting, small talk, a
+   * question about the app); null for a task. Optional so fixtures written before NUD-52 stay tasks.
+   */
+  reply?: string | null;
 }
 
 export type Resolution =
@@ -40,20 +45,46 @@ export type Resolution =
       missAfterMinutes: number | null;
       finishMode: FinishMode;
     }
-  | { kind: "ask"; question: MissingField };
+  | { kind: "ask"; question: MissingField }
+  | { kind: "chat"; reply: string };
 
 const normalize = (s: string): string => s.trim().toLocaleLowerCase("tr");
 
 /**
- * Confident result: create the task directly (undo toast). Anything missing, ambiguous or in the
- * past: ask one question, in the order recipient, deadline, title.
+ * The one connection whose name is a whole word of the text ("can yarın okula gitsin"), or null.
+ * A word with a suffix ("eren'i ara", "erene yaz") is not the name, so an object is never taken
+ * for the recipient. Used only when the model found no recipient (NUD-52: without reasoning it
+ * sometimes misses a lowercase name).
+ */
+function namedInText(
+  text: string,
+  connections: readonly { personId: PersonId; name: string }[],
+): PersonId | null {
+  const words = new Set(
+    text
+      .split(/\s+/)
+      .map((w) => normalize(w.replace(/^[.,!?;:"]+|[.,!?;:"]+$/g, "")))
+      .filter((w) => w !== ""),
+  );
+  const named = connections.filter((c) => words.has(normalize(c.name)));
+  return named.length === 1 && named[0] ? named[0].personId : null;
+}
+
+/**
+ * Not a task: answer with the model's one sentence and create nothing. Confident result: create the
+ * task directly (undo toast). Anything missing, ambiguous or in the past: ask one question, in the
+ * order recipient, deadline, title.
  */
 export function resolveExtraction(
   e: Extraction,
   sender: { id: PersonId },
   connections: readonly { personId: PersonId; name: string }[],
   now: Date,
+  /** The written text, to find a recipient the model missed. */
+  text?: string,
 ): Resolution {
+  const reply = e.reply?.trim() ?? "";
+  if (reply !== "") return { kind: "chat", reply };
   let recipientId: PersonId | null = null;
   if (e.recipient !== null && !e.missing.includes("recipient")) {
     if (normalize(e.recipient) === "self") {
@@ -62,6 +93,9 @@ export function resolveExtraction(
       const matches = connections.filter((c) => normalize(c.name) === normalize(e.recipient ?? ""));
       if (matches.length === 1 && matches[0]) recipientId = matches[0].personId;
     }
+  }
+  if (recipientId === null && e.recipient === null && text !== undefined) {
+    recipientId = namedInText(text, connections);
   }
   if (recipientId === null) return { kind: "ask", question: "recipient" };
 

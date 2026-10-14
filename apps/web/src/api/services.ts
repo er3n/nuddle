@@ -416,10 +416,17 @@ async function createTaskTx(
 
 export type WriteTaskResult =
   | { kind: "created"; taskId: TaskId; question: null; draft: null }
-  | { kind: "ask"; taskId: null; question: MissingField; draft: Omit<Extraction, "missing"> };
+  | {
+      kind: "ask";
+      taskId: null;
+      question: MissingField;
+      draft: Omit<Extraction, "missing" | "reply">;
+    }
+  | { kind: "chat"; taskId: null; question: null; draft: null; reply: string };
 
 /**
- * Free text in the one input box: extract, then create the task (undo toast) or ask one question
+ * Free text in the one input box: extract, then create the task (undo toast), ask one question, or
+ * answer text that is not a task with one sentence
  * (docs/domain.md, LLM task extraction). The LLM call runs outside the write transaction.
  */
 export async function writeTask(
@@ -455,7 +462,11 @@ export async function writeTask(
     caller,
     connections.map((c) => ({ personId: c.person.id, name: c.person.displayName })),
     now,
+    input.text,
   );
+  if (resolved.kind === "chat") {
+    return { kind: "chat", taskId: null, question: null, draft: null, reply: resolved.reply };
+  }
   if (resolved.kind === "ask") {
     const { recipient, title, detail, deadline, timing, missAfterMinutes, finishMode } = extraction;
     return {

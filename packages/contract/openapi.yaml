@@ -739,6 +739,7 @@ components:
           enum:
             - created
             - ask
+            - chat
         taskId:
           type: string
           nullable: true
@@ -782,6 +783,9 @@ components:
             - detail
             - deadline
             - finishMode
+        reply:
+          type: string
+          nullable: true
       required:
         - kind
         - taskId

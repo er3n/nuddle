@@ -40,6 +40,7 @@ object TestTags {
     const val HOME_QUEUED = "home.queued"
     const val HOME_OFFLINE = "home.offline"
     const val HOME_SEND_FAILED = "home.sendFailed"
+    const val HOME_REPLY = "home.reply"
     const val INVALID_INVITE = "invalidInvite.screen"
     const val INVALID_INVITE_HOME = "invalidInvite.home"
     const val GENERIC_ERROR = "genericError.screen"

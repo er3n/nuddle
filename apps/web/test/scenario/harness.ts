@@ -229,6 +229,7 @@ function alarmKey(taskId: TaskId, version: number, seq: number): string {
 type WriteResult =
   | { kind: "created"; taskId: TaskId }
   | { kind: "ask"; question: MissingField }
+  | { kind: "chat"; reply: string }
   | { kind: "rejected"; error: DomainError };
 
 type CommandResult = { ok: true } | { ok: false; error: DomainError };
@@ -272,6 +273,7 @@ export class Client {
     }
     if (data.kind === "ask" && data.question !== null)
       return { kind: "ask", question: data.question };
+    if (data.kind === "chat" && data.reply) return { kind: "chat", reply: data.reply };
     throw new Error(`unexpected write_task result ${JSON.stringify(data)}`);
   }
 

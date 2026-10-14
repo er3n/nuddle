@@ -122,6 +122,18 @@ describe("scenarios: task lifecycle", () => {
     expect(world.violations).toEqual([]);
   });
 
+  it("a greeting gets a one-line reply and creates nothing for anyone (NUD-52)", async () => {
+    const { world, sibel, eren } = await sibelAndEren();
+    const pushesBefore = world.push.sent.length;
+    expect(await sibel.write(TEXT.hello)).toEqual({
+      kind: "chat",
+      reply: "Merhaba! Kime ne hatırlatayım?",
+    });
+    expect(world.tasksWrittenBy("sibel")).toEqual([]);
+    expect(eren.phone.pendingAlarms()).toEqual([]);
+    expect(world.push.sent).toHaveLength(pushesBefore);
+  });
+
   it("task to self: rings, done, nobody else is told", async () => {
     const world = emptyWorld();
     const eren = await world.addPerson("Eren");

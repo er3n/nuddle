@@ -103,6 +103,60 @@ describe("resolveExtraction", () => {
   });
 });
 
+describe("resolveExtraction, a name the model missed (NUD-52)", () => {
+  const noRecipient: Extraction = { ...complete, recipient: null, missing: ["recipient"] };
+  const resolve = (text: string, e: Extraction = noRecipient) =>
+    resolveExtraction(e, { id: "sibel" }, connections, now, text);
+
+  it("takes the one connection named as a whole word", () => {
+    expect(resolve("eren yarın 9dan önce 1000 çeksin")).toMatchObject({
+      kind: "create",
+      recipientId: "eren",
+    });
+    expect(resolve("Yarın, Eren! 9dan önce çeksin")).toMatchObject({ recipientId: "eren" });
+  });
+
+  it("does not take a name with a suffix, two names, or override the model's choice", () => {
+    expect(resolve("eren'i yarın ara")).toEqual({ kind: "ask", question: "recipient" });
+    expect(resolve("erene yarın yaz")).toEqual({ kind: "ask", question: "recipient" });
+    expect(resolve("eren ve defne yarın gitsin")).toEqual({ kind: "ask", question: "recipient" });
+    expect(resolve("eren yarın gitsin", { ...complete, recipient: "Mehmet" })).toEqual({
+      kind: "ask",
+      question: "recipient",
+    });
+  });
+});
+
+describe("resolveExtraction, not a task (NUD-52)", () => {
+  const hello: Extraction = {
+    recipient: null,
+    title: null,
+    detail: null,
+    deadline: null,
+    timing: "by",
+    missAfterMinutes: null,
+    finishMode: "done",
+    missing: [],
+    reply: " Merhaba! Kime ne hatırlatayım? ",
+  };
+
+  it("answers with the reply and creates nothing", () => {
+    expect(resolveExtraction(hello, { id: "sibel" }, connections, now)).toEqual({
+      kind: "chat",
+      reply: "Merhaba! Kime ne hatırlatayım?",
+    });
+  });
+
+  it("treats an empty reply as a task", () => {
+    expect(
+      resolveExtraction({ ...complete, reply: "  " }, { id: "sibel" }, connections, now),
+    ).toMatchObject({ kind: "create", recipientId: "eren" });
+    expect(
+      resolveExtraction({ ...complete, reply: null }, { id: "sibel" }, connections, now),
+    ).toMatchObject({ kind: "create" });
+  });
+});
+
 describe("FixtureExtractor", () => {
   it("returns the fixture for the exact text and everything missing otherwise", async () => {
     const e = new FixtureExtractor(new Map([[input.text, complete]]));
@@ -141,6 +195,21 @@ describe("OpenRouterExtractor", () => {
     expect(body.response_format.type).toBe("json_schema");
     expect(body.response_format.json_schema.strict).toBe(true);
     expect(body.messages[1]?.content).toContain("2026-10-11T20:00:00+03:00 (Sunday)");
+  });
+
+  it("turns the model's thinking off, since the sender waits for the answer (NUD-52)", async () => {
+    const bodies: string[] = [];
+    const fakeFetch: typeof fetch = (_url, init) => {
+      bodies.push(init?.body as string);
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({ choices: [{ message: { content: JSON.stringify(complete) } }] }),
+          { status: 200 },
+        ),
+      );
+    };
+    await new OpenRouterExtractor({ apiKey: "k", model: "m", fetch: fakeFetch }).extract(input);
+    expect(JSON.parse(bodies[0] ?? "{}")).toMatchObject({ reasoning: { enabled: false } });
   });
 
   it("accepts JSON wrapped in a code fence", async () => {

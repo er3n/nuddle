@@ -11,9 +11,11 @@ import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.ComposeBar
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.components.InlineAlert
+import app.nuddle.ui.components.ReplyNote
+import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.theme.DurtTheme
 
-/** The undo toast or the done note, 6b's alert while a send failed, and the compose bar. */
+/** The undo toast, the done note or the reply note, 6b's alert while a send failed, and the compose bar. */
 @Composable
 internal fun ColumnScope.HomeBottom(
     state: HomeUiState,
@@ -26,6 +28,9 @@ internal fun ColumnScope.HomeBottom(
     val dimens = DurtTheme.dimens
     state.undo?.let { TaskUndoToast(it, undo, Modifier.padding(bottom = dimens.space10)) }
     state.doneNote?.let { TaskDoneNote(it, Modifier.padding(bottom = dimens.space10)) }
+    state.reply?.let {
+        ReplyNote(it, undo.onReplyTimeout, Modifier.padding(bottom = dimens.space10).testTag(TestTags.HOME_REPLY))
+    }
     if (state.compose is ComposeState.Failed) {
         InlineAlert(
             stringResource(R.string.compose_failed_title),
@@ -34,4 +39,25 @@ internal fun ColumnScope.HomeBottom(
         )
     }
     ComposeBar(state.compose, onComposeTextChange, onComposeSend, onVoiceStart, onVoiceEnd, notice = state.voiceNotice)
+}
+
+@PreviewScreens
+@Composable
+private fun HomeScreenReplyPreview() {
+    DurtTheme {
+        HomeScreen(
+            state =
+                HomeUiState(
+                    myName = "Eren",
+                    reply = "Merhaba! Kime ne hatırlatayım? Mesela: Eren yarın 9'dan önce ekmek alsın.",
+                ),
+            onBell = {},
+            onProfile = {},
+            onInvite = {},
+            onComposeTextChange = {},
+            onComposeSend = {},
+            onVoiceStart = {},
+            onVoiceEnd = {},
+        )
+    }
 }
