@@ -69,7 +69,7 @@ Start the backend scenario suite with: task to self, task to other with done, ph
 - Base URL points at the host (`adb reverse tcp:3000 tcp:3000`).
 - `testTagsAsResourceId = true` (only in this flavor); every interactive element has a `testTag` from `ui/TestTags.kt`, and flows find elements only by tag.
 - CameraX replaced by injecting an image file from the test: the orchestrator copies `e2e/fixtures/photo.jpg` into the app's `files/e2e-photo.jpg` (`run-as`), and the camera of this flavor (`InjectedPhotoSource`, `BuildConfig.INJECTED_PHOTO`) returns it as the shot.
-- Speech recognition replaced the same way: the orchestrator writes the text to `files/e2e-speech.txt`, and the speech input of this flavor (`InjectedSpeechInput`, `BuildConfig.INJECTED_SPEECH`) "hears" it until the finger is lifted.
+- Speech recognition replaced the same way: the orchestrator writes the text to `files/e2e-speech.txt`, and the speech input of this flavor (`InjectedSpeechInput`, `BuildConfig.INJECTED_SPEECH`) "hears" it and ends by itself 1.5 s later, like the real recognizer after silence (NUD-60), or at once on a tap on stop.
 - `adb reverse` also forwards `:54321` (local Supabase), where the signed photo upload and view URLs point.
 
 ### Orchestrator
