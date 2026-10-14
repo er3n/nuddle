@@ -148,10 +148,12 @@ describe("scenarios: task lifecycle", () => {
     expect(world.task(taskId).status).toBe("DONE");
     expect(eren.phone.ringsFor(taskId)).toHaveLength(1);
     expect(world.eventsOf(taskId).map((e) => e.type)).not.toContain("human_notified");
-    expect(world.push.sent.every((p) => p.to === "eren" && p.hint === "plan_changed")).toBe(true);
+    expect(world.push.sent.every((p) => p.to === "eren")).toBe(true);
+    // Done reaches Eren's other phones as a silent sync (NUD-59).
+    expect(world.push.sent.filter((p) => p.event === "done").map((p) => p.hint)).toEqual(["sync"]);
   });
 
-  it("task to another person, done: poking stops, the sender gets no push", async () => {
+  it("task to another person, done: poking stops, the sender's phone only syncs (NUD-59)", async () => {
     const { world, sibel, eren } = await sibelAndEren();
     const taskId = await writeTask(sibel, TEXT.trashToEren);
 
@@ -162,7 +164,13 @@ describe("scenarios: task lifecycle", () => {
     await world.advanceTo(at("2026-10-12T20:00:00"));
     expect(world.task(taskId).status).toBe("DONE");
     expect(eren.phone.ringsFor(taskId)).toHaveLength(2);
-    expect(world.push.to("sibel").filter((p) => p.taskId === taskId)).toEqual([]);
+    // Silent syncs keep Sibel's list current; nothing tells her with a notification.
+    expect(
+      world.push
+        .to("sibel")
+        .filter((p) => p.taskId === taskId)
+        .map((p) => `${p.hint}:${p.event}`),
+    ).toEqual(["sync:created", "sync:done"]);
     expect(world.eventsOf(taskId).map((e) => e.type)).toContain("done");
     expect(world.pendingActions(taskId)).toEqual([]);
   });

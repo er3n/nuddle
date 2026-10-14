@@ -222,7 +222,10 @@ describe("task state machine", () => {
     expect(o.task.status).toBe("DONE");
     expect(o.events.map((e) => e.type)).toEqual(["photo_sent", "done"]);
     expect(o.deletePhotos).toBe(true);
-    expect(o.pushes).toEqual([]);
+    // A silent sync for the person's other phones (NUD-59).
+    expect(o.pushes).toEqual([
+      { to: "sibel", hint: "sync", taskId: "task-1", event: "photo_sent" },
+    ]);
   });
 
   it("schedules auto-approve three hours after the photo", () => {
@@ -238,6 +241,7 @@ describe("task state machine", () => {
     expect(o.plan.steps).toEqual([]);
     expect(o.pushes).toEqual([
       { to: "sibel", hint: "sync", taskId: "task-1", event: "photo_sent" },
+      { to: "eren", hint: "sync", taskId: "task-1", event: "photo_sent" },
     ]);
   });
 
@@ -251,12 +255,16 @@ describe("task state machine", () => {
     expect(o.events[0]?.payload).toEqual({ reason: "sender_handles" });
     expect(o.pushes).toEqual([
       { to: "eren", hint: "task_cancelled", taskId: "task-1", event: "cancelled" },
+      { to: "sibel", hint: "sync", taskId: "task-1", event: "cancelled" },
     ]);
   });
 
-  it("does not push the sender when a task is done without a photo", () => {
+  it("tells both phones to sync when a task is done without a photo, with no notification (NUD-59)", () => {
     const task = aTask().withFinishMode("done").build();
-    expect(apply(task, { type: "done" }, "eren").pushes).toEqual([]);
+    expect(apply(task, { type: "done" }, "eren").pushes).toEqual([
+      { to: "sibel", hint: "sync", taskId: "task-1", event: "done" },
+      { to: "eren", hint: "sync", taskId: "task-1", event: "done" },
+    ]);
   });
 
   it("regenerates the plan on a deadline edit", () => {
@@ -308,6 +316,7 @@ describe("task state machine", () => {
     expect(o.plan.steps.map((s) => s.level)).toEqual(["SOUND", "FULL_SCREEN", "HUMAN"]);
     expect(o.pushes).toEqual([
       { to: "eren", hint: "plan_changed", taskId: "task-1", event: "re_requested" },
+      { to: "sibel", hint: "sync", taskId: "task-1", event: "re_requested" },
     ]);
   });
 
@@ -317,6 +326,7 @@ describe("task state machine", () => {
     expect(o.events[0]).toMatchObject({ actorId: "eren", payload: { reason: "account_deleted" } });
     expect(o.pushes).toEqual([
       { to: "sibel", hint: "task_cancelled", taskId: "task-1", event: "cancelled" },
+      { to: "eren", hint: "sync", taskId: "task-1", event: "cancelled" },
     ]);
   });
 
@@ -400,6 +410,7 @@ describe("snooze (open-questions#1: 2 snoozes, 15 then 10 minutes, never past th
     expect(o.plan.steps[0]?.level).toBe("SOUND");
     expect(o.pushes).toEqual([
       { to: "eren", hint: "plan_changed", taskId: "task-1", event: "snoozed" },
+      { to: "sibel", hint: "sync", taskId: "task-1", event: "snoozed" },
     ]);
   });
 
@@ -473,6 +484,7 @@ describe("createTask", () => {
     ]);
     expect(o.pushes).toEqual([
       { to: "eren", hint: "plan_changed", taskId: "task-1", event: "created" },
+      { to: "sibel", hint: "sync", taskId: "task-1", event: "created" },
     ]);
   });
 
