@@ -126,8 +126,10 @@ class HomeViewModel
                 taskDao.observeAll(),
                 connectionDao.observeAll().map { all -> all.filter { it.status == ACTIVE }.associateBy { it.personId } },
             ) { me, all, connections ->
+                val next = nextUp(all, me, connections, clock.now(), timeZone)
                 TasksPart(
-                    nextUp = nextUp(all, me, connections, clock.now(), timeZone),
+                    nextUp = next,
+                    later = laterTasks(all, me, connections, next?.taskId, clock.now(), timeZone),
                     sent = sentTasks(all, me, connections, clock.now(), timeZone),
                     connected = connections.isNotEmpty(),
                 )
@@ -135,6 +137,7 @@ class HomeViewModel
 
         private data class TasksPart(
             val nextUp: NextUpUi?,
+            val later: List<LaterUi>,
             val sent: List<SentUi>,
             val connected: Boolean,
             val photo: ImageBitmap? = null,
@@ -186,6 +189,7 @@ class HomeViewModel
                     compose = compose,
                     nextUp = tasksPart.nextUp,
                     nextUpPhoto = tasksPart.photo,
+                    later = tasksPart.later,
                     sent = tasksPart.sent,
                     connected = tasksPart.connected,
                     preview = preview?.ui,
