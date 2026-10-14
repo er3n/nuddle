@@ -182,6 +182,8 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
             title: t.title,
             detail: t.detail,
             deadline: iso(t.deadline),
+            timing: t.timing,
+            remindAt: t.remindAt === null ? null : iso(t.remindAt),
             finishMode: t.finishMode,
             rawText: t.rawText,
             status: t.status,

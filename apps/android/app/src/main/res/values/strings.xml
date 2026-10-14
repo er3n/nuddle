@@ -96,8 +96,9 @@
     <string name="preview_to">Kime</string>
     <string name="preview_detail">Detay</string>
     <string name="preview_question_deadline">Ne zamana kadar?</string>
-    <string name="preview_tonight">Bugün akşam</string>
-    <string name="preview_tomorrow_morning">Yarın sabah</string>
+    <!-- The times are EVENING and MORNING in Preview.kt (open-questions#28); "Bugün akşam" was too vague (NUD-55). -->
+    <string name="preview_tonight">Bugün 19:00</string>
+    <string name="preview_tomorrow_morning">Yarın 09:00</string>
     <string name="preview_pick_time">Saat seç</string>
     <string name="preview_quiet_hint">Zamanı gelince seni dürterim. Gece %1$s ile %2$s arası asla.</string>
     <string name="preview_confirm">Kur</string>

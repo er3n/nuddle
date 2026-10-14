@@ -21,7 +21,7 @@ import kotlinx.datetime.LocalTime
 import kotlin.time.Instant
 
 /**
- * The 2b deadline picks (open-questions#28): "Bugün akşam" while it is ahead, "Yarın sabah", and "Saat seç" with
+ * The 2b deadline picks (open-questions#28): "Bugün 19:00" while it is ahead, "Yarın 09:00", and "Saat seç" with
  * the time picker. Shared by the 7c row edit and the new deadline of 5d.
  */
 @OptIn(ExperimentalLayoutApi::class) // Reason: FlowRow is the layout for wrapping chips; no stable alternative.

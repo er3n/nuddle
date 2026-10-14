@@ -48,6 +48,30 @@ describe("http: sync", () => {
     expect(forEren.plans.flatMap((p) => p.steps.map((s) => s.level))).not.toContain("HUMAN");
   });
 
+  it("gives an at task's moment and timing to both sides (NUD-55)", async () => {
+    const r = await sibel.api.POST("/api/v1/commands/create_task", {
+      body: {
+        idempotencyKey: uuidv7(),
+        recipientId: eren.id,
+        title: "Ekmek al",
+        detail: null,
+        deadline: "2026-10-12T09:00:00+03:00",
+        timing: "at",
+        missAfterMinutes: 720,
+        finishMode: "done",
+        rawText: "yarın sabah 9 eren ekmek alsın",
+      },
+    });
+    const taskId = r.data?.taskId;
+    for (const who of [sibel, eren]) {
+      expect((await syncOf(who)).tasks.find((t) => t.id === taskId)).toMatchObject({
+        timing: "at",
+        remindAt: "2026-10-12T06:00:00.000Z",
+        deadline: "2026-10-12T18:00:00.000Z",
+      });
+    }
+  });
+
   it("tells when a task was written and how to reach a connection", async () => {
     const taskId = await createTask(sibel, eren);
     const forEren = await syncOf(eren);

@@ -335,7 +335,7 @@ class HomeViewModelTest {
             assertEquals("1000 tl çek", preview?.rawText)
             assertEquals("Para çek", preview?.title)
             assertEquals("1.000 TL", preview?.detail)
-            // 20:00 now: this evening is gone, so only "Yarın sabah".
+            // 20:00 now: this evening is gone, so only "Yarın 09:00".
             assertEquals(listOf(DeadlineChoice.TomorrowMorning(Instant.parse("2026-10-12T09:00:00+03:00"))), preview?.choices)
             assertNull(preview?.selected)
             assertEquals("23:00" to "07:00", preview?.quietStart to preview?.quietEnd)
