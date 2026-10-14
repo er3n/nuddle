@@ -24,7 +24,9 @@ import app.nuddle.testing.json
 import app.nuddle.testing.retrofit
 import app.nuddle.testing.testJson
 import kotlinx.coroutines.test.runTest
+import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
+import mockwebserver3.SocketEffect
 import org.junit.After
 import org.junit.Before
 import org.junit.runner.RunWith
@@ -271,6 +273,32 @@ class TaskRepositoryTest {
         runTest {
             assertEquals(WriteOutcome.Failed, repository.editDeadline(Cast.TASK_ID, Instant.parse("2026-10-12T19:00:00+03:00"), "key-6"))
             assertEquals(0, server.requestCount)
+        }
+
+    @Test
+    fun `text that is not a task comes back as the reply, without a sync (NUD-52)`() =
+        runTest {
+            server.enqueue(
+                json(200, """{"kind":"chat","taskId":null,"question":null,"draft":null,"reply":"Merhaba! Kime ne hatırlatayım?"}"""),
+            )
+
+            assertEquals(WriteOutcome.Chat("Merhaba! Kime ne hatırlatayım?"), repository.write("merhaba", "key-4"))
+            assertEquals(1, server.requestCount)
+        }
+
+    @Test
+    fun `a write that got no answer is sent again with the same key and finds the task the server made (NUD-53)`() =
+        runTest {
+            // The server got the text and made the task, but the answer never reached the phone.
+            server.enqueue(MockResponse.Builder().onResponseStart(SocketEffect.ShutdownConnection).build())
+            server.enqueue(json(200, """{"kind":"created","taskId":"${Cast.TASK_ID}","question":null,"draft":null}"""))
+            server.enqueue(json(200, syncBody))
+
+            assertEquals(WriteOutcome.Created(Cast.TASK_ID), repository.write("1000 tl çek yarın 9da", "key-5"))
+            val first = server.takeRequest().body?.utf8() ?: ""
+            val second = server.takeRequest().body?.utf8() ?: ""
+            assertTrue(""""idempotencyKey":"key-5"""" in first, first)
+            assertTrue(""""idempotencyKey":"key-5"""" in second, second)
         }
 
     @Test

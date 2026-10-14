@@ -136,6 +136,36 @@ fun UndoToast(
     LaunchedEffect(Unit) { if (window > durationMs) focus.requestFocus() }
 }
 
+/**
+ * The one-line answer to a text that is not a task (components.md, 6; NUD-52). Stays 8 s, longer with TalkBack, which
+ * also gets focus; the caller removes it sooner when the bar changes.
+ */
+@Composable
+fun ReplyNote(
+    text: String,
+    onTimeout: () -> Unit,
+    modifier: Modifier = Modifier,
+    durationMs: Long = DurtMotion.REPLY_NOTE_MS,
+) {
+    val accessibility = LocalAccessibilityManager.current
+    val window = accessibility?.calculateRecommendedTimeoutMillis(durationMs, containsText = true) ?: durationMs
+    val currentTimeout = rememberUpdatedState(onTimeout)
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(text, window) {
+        delay(window)
+        currentTimeout.value()
+    }
+    ToastBox(modifier.focusRequester(focus).focusable()) {
+        Text(
+            text,
+            style = DurtTheme.type.body,
+            color = DurtTheme.colors.surface,
+            modifier = Modifier.padding(DurtTheme.dimens.space14),
+        )
+    }
+    LaunchedEffect(text) { if (window > durationMs) focus.requestFocus() }
+}
+
 /** Shown for 4 s after a task completes, with an optional learning line (components.md, 6). */
 @Composable
 fun DoneNote(
@@ -231,6 +261,7 @@ private fun FeedbackPreview() {
         Column(verticalArrangement = Arrangement.spacedBy(DurtTheme.dimens.space16)) {
             UndoToast("Eren'e gitti", "Para çek · yarın 09:00", onUndo = {}, onEdit = {}, onTimeout = {})
             DoneNote("\"Para çek\" tamamlandı", "Bu sefer seni 2. dürtmede yakaladım.")
+            ReplyNote("Merhaba! Kime ne hatırlatayım? Mesela: Eren yarın 9'dan önce ekmek alsın.", onTimeout = {})
             InlineAlert("Şu an anlayamadım", "Yazdığın duruyor, tekrar dene.")
             StatusBanner("İnternet yok. Dürtmeler yine zamanında çalar.")
         }

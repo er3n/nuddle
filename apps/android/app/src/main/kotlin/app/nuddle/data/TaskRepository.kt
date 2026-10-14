@@ -21,8 +21,10 @@ import app.nuddle.data.outbox.Outbox
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.sync.SyncRepository
 import app.nuddle.domain.IdGenerator
+import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 sealed interface WriteOutcome {
@@ -37,6 +39,11 @@ sealed interface WriteOutcome {
         val draft: TaskDraft?,
     ) : WriteOutcome
 
+    /** The text is not a task ("merhaba"): [reply] shows above the bar and nothing was created (NUD-52). */
+    data class Chat(
+        val reply: String,
+    ) : WriteOutcome
+
     /** No answer or an error answer. The text stays in the bar for "Tekrar dene" (6b). */
     data object Failed : WriteOutcome
 
@@ -47,6 +54,9 @@ sealed interface WriteOutcome {
 }
 
 private const val HTTP_SERVER_MIN = 500
+
+/** Waits before sending a write again after no answer (NUD-53). */
+private val WRITE_RETRY_WAITS = listOf(1.seconds, 3.seconds)
 private const val UPSTREAM_FAILED = "DRT-5002"
 
 /** 6f for a server error with a code, except the LLM or SMS provider failing (6b); anything else is 6b. */
@@ -176,12 +186,7 @@ class ApiTaskRepository
             idempotencyKey: String,
         ): WriteOutcome {
             val written =
-                when (
-                    val result =
-                        apiCall(
-                            json,
-                        ) { commandsApi.writeTask(WriteTaskCommand(idempotencyKey = idempotencyKey, text = text)) }
-                ) {
+                when (val result = writeWithRetry(text, idempotencyKey)) {
                     is ApiResult.Success -> result.value
                     is ApiResult.Failure -> return result.toOutcome()
                 }
@@ -192,6 +197,8 @@ class ApiTaskRepository
                     sync.sync()
                     WriteOutcome.Created(taskId)
                 }
+
+                WriteTaskResult.Kind.CHAT -> written.reply?.let(WriteOutcome::Chat) ?: WriteOutcome.Failed
 
                 WriteTaskResult.Kind.ASK -> {
                     WriteOutcome.Ask(
@@ -210,6 +217,23 @@ class ApiTaskRepository
                     )
                 }
             }
+        }
+
+        /**
+         * A write that got no answer (timeout, or the connection cut when the app went to the background) is sent again
+         * with the same key: the server returns the task it already made instead of a second one (NUD-53).
+         */
+        private suspend fun writeWithRetry(
+            text: String,
+            idempotencyKey: String,
+        ): ApiResult<WriteTaskResult> {
+            var result = apiCall(json) { commandsApi.writeTask(WriteTaskCommand(idempotencyKey = idempotencyKey, text = text)) }
+            for (wait in WRITE_RETRY_WAITS) {
+                if (result !is ApiResult.Failure || result.failure != ApiFailure.Network) break
+                delay(wait)
+                result = apiCall(json) { commandsApi.writeTask(WriteTaskCommand(idempotencyKey = idempotencyKey, text = text)) }
+            }
+            return result
         }
 
         override suspend fun create(

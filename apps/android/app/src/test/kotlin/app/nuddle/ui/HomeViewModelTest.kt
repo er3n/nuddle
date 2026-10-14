@@ -159,6 +159,26 @@ class HomeViewModelTest {
         }
 
     @Test
+    fun `text that is not a task shows the reply above an empty bar until it times out or the bar changes (NUD-52)`() =
+        runTest(main.dispatcher) {
+            ready()
+            tasks.outcome = WriteOutcome.Chat("Merhaba! Kime ne hatırlatayım?")
+            vm.onComposeTextChange("merhaba")
+            vm.onComposeSend()
+            assertEquals(ComposeState.Idle, vm.state.value?.compose)
+            assertEquals("Merhaba! Kime ne hatırlatayım?", vm.state.value?.reply)
+            assertNull(vm.state.value?.undo)
+
+            vm.onReplyTimeout()
+            assertNull(vm.state.value?.reply)
+
+            vm.onComposeTextChange("merhaba")
+            vm.onComposeSend()
+            vm.onComposeTextChange("e")
+            assertNull(vm.state.value?.reply)
+        }
+
+    @Test
     fun `a blank text is not sent`() =
         runTest(main.dispatcher) {
             ready()

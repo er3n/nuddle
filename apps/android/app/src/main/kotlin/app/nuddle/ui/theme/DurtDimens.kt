@@ -114,6 +114,7 @@ object DurtMotion {
     const val UNDO_TOAST_MS = 5_000L
     const val UNDO_TOAST_TALKBACK_MS = 10_000L
     const val DONE_NOTE_MS = 4_000L
+    const val REPLY_NOTE_MS = 8_000L
     const val PRESSED_DARKEN = 0.08f
     const val HINT_BUBBLE_MS = 2_000L
     const val VOICE_PULSE_MS = 1_600

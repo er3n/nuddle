@@ -91,6 +91,9 @@ class HomeViewModel
         internal val previewSheet = PreviewHolder(clock, timeZone)
         private val preview = previewSheet.open
         private val undo = MutableStateFlow<UndoUi?>(null)
+
+        /** The one-line answer to a text that is not a task, above the bar (NUD-52). */
+        private val reply = MutableStateFlow<String?>(null)
         private val setup = Channel<Unit>(Channel.CONFLATED)
 
         /**
@@ -174,6 +177,7 @@ class HomeViewModel
                     connectivity.online,
                     queuedWrites.observeAll().map { all -> all.map { QueuedUi(it.idempotencyKey, it.text) } },
                     unrecoverable,
+                    reply,
                     ::Extras,
                 ),
             ) { (name, compose, tasksPart), preview, undo, doneNote, extras ->
@@ -191,6 +195,7 @@ class HomeViewModel
                     offline = !extras.online,
                     queued = extras.queued,
                     unrecoverable = extras.unrecoverable,
+                    reply = extras.reply,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
@@ -199,6 +204,7 @@ class HomeViewModel
             val online: Boolean,
             val queued: List<QueuedUi>,
             val unrecoverable: String?,
+            val reply: String?,
         )
 
         init {
@@ -214,6 +220,7 @@ class HomeViewModel
 
         fun onComposeTextChange(text: String) {
             pendingKey = null
+            reply.value = null
             compose.update { if (text.isEmpty()) ComposeState.Idle else ComposeState.Typing(text) }
         }
 
@@ -225,6 +232,7 @@ class HomeViewModel
                     ComposeState.Idle, ComposeState.Sending, is ComposeState.Listening -> return
                 }.trim()
             if (text.isEmpty()) return
+            reply.value = null
             val key = pendingKey ?: ids.next().also { pendingKey = it }
             compose.value = ComposeState.Sending
             viewModelScope.launch {
@@ -240,6 +248,13 @@ class HomeViewModel
                                 val to = if (task.recipientId == task.senderId) null else connectionDao.get(task.recipientId)?.displayName
                                 undoFor(task, text, to, clock.now(), timeZone)
                             }
+                    }
+
+                    // Not a task: the answer replaces the text, nothing was created (NUD-52).
+                    is WriteOutcome.Chat -> {
+                        pendingKey = null
+                        compose.value = ComposeState.Idle
+                        reply.value = outcome.reply
                     }
 
                     // The text stays under the preview, so Vazgeç goes back to it.
@@ -357,6 +372,11 @@ class HomeViewModel
                     queuedWrites.remove(entry.idempotencyKey)
                 }
 
+                is WriteOutcome.Chat -> {
+                    queuedWrites.remove(entry.idempotencyKey)
+                    reply.value = outcome.reply
+                }
+
                 is WriteOutcome.Ask -> {
                     queuedWrites.remove(entry.idempotencyKey)
                     compose.value = ComposeState.Typing(entry.text)
@@ -366,6 +386,11 @@ class HomeViewModel
                 // Not understood or the server failed: it waits for the next connection.
                 WriteOutcome.Failed, is WriteOutcome.Broken -> {}
             }
+        }
+
+        /** The reply note's time is up. */
+        fun onReplyTimeout() {
+            reply.value = null
         }
 
         fun onUndo() {

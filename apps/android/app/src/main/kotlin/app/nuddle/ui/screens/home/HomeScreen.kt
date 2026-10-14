@@ -93,6 +93,8 @@ data class HomeUiState(
     val unrecoverable: String? = null,
     /** A short note by the mic about voice input (4h). */
     val voiceNotice: VoiceNotice? = null,
+    /** The answer to a text that is not a task, above the bar (NUD-52). */
+    val reply: String? = null,
 )
 
 /** Anything to list: next up, an issue, a task I wrote, a text waiting for the connection. */
@@ -117,6 +119,8 @@ data class UndoCallbacks(
     val onUndo: () -> Unit = {},
     val onEdit: () -> Unit = {},
     val onTimeout: () -> Unit = {},
+    /** The reply note above the bar (NUD-52) is gone. */
+    val onReplyTimeout: () -> Unit = {},
 )
 
 internal const val DASH = 6f
