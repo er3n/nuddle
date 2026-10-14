@@ -124,7 +124,7 @@ ComposeBar focused with keyboard. Text that is not a task ("merhaba") gets the e
 
 ### 2b Preview, only when info is missing · `TaskPreview.png`
 Bottom sheet. Shows what was understood and asks exactly one question (here: the deadline).
-**Copy:** Yazdığın: "1000 tl çek" | Para çek | Kime | Kendine | Detay | 1.000 TL | Ne zamana kadar? | Bugün akşam | Yarın sabah | Saat seç | Zamanı gelince seni dürterim. Gece 23:00 ile 07:00 arası asla. | Kur | Vazgeç
+**Copy:** Yazdığın: "1000 tl çek" | Para çek | Kime | Kendine | Detay | 1.000 TL | Ne zamana kadar? | Bugün 19:00 | Yarın 09:00 (the canvas says "Bugün akşam" and "Yarın sabah"; open-questions #28) | Saat seç | Zamanı gelince seni dürterim. Gece 23:00 ile 07:00 arası asla. | Kur | Vazgeç
 
 ### 2c Setup: try first · `SetupDemo.png`
 **Copy:** Bir kerelik kurulum | Önce bir dene, dürtme nasıl hissettiriyor gör | Sibel'in işlerini kaçırmaya başlarsan böyle dürterim. 3 saniye sonra çalar, sonra birlikte kuralım. | Ekranı kaplar, sesi susturana kadar çalar | Bir dene | Denemeden kur

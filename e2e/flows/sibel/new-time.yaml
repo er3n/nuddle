@@ -1,5 +1,5 @@
 # Eren dropped the task with a note: it sits on top of "Senin yazdıkların" as "Bırakıldı" with the note (5d).
-# "Yeni zaman ver", "Yarın sabah", Kaydet; the card leaves her home.
+# "Yeni zaman ver", "Yarın 09:00", Kaydet; the card leaves her home.
 appId: app.nuddle.debug
 ---
 - launchApp

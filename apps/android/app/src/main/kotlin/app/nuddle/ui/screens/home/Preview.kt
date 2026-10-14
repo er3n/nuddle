@@ -20,7 +20,7 @@ import java.util.Locale
 import kotlin.time.Instant
 
 // Parts of the day as the extraction prompt reads them (apps/web/src/infra/llm): akşam 19:00, sabah 09:00.
-// The times behind "Bugün akşam" and "Yarın sabah": open-questions#28.
+// The times behind "Bugün 19:00" and "Yarın 09:00": open-questions#28.
 private val EVENING = LocalTime(19, 0)
 private val MORNING = LocalTime(9, 0)
 
@@ -112,7 +112,7 @@ data class DoneNoteUi(
     val caughtAt: Int?,
 )
 
-/** "Bugün akşam" only while this evening is still ahead, then "Yarın sabah". */
+/** "Bugün 19:00" only while this evening is still ahead, then "Yarın 09:00". */
 fun quickDeadlines(
     now: Instant,
     timeZone: TimeZone,
