@@ -108,9 +108,9 @@ components:
       properties:
         phone:
           type: string
-          pattern: ^\+[1-9]\d{7,14}$
+          pattern: ^\+905\d{9}$
           example: "+905320000002"
-          description: E.164
+          description: A Turkish mobile number, E.164
       required:
         - phone
     Session:
@@ -141,9 +141,9 @@ components:
       properties:
         phone:
           type: string
-          pattern: ^\+[1-9]\d{7,14}$
+          pattern: ^\+905\d{9}$
           example: "+905320000002"
-          description: E.164
+          description: A Turkish mobile number, E.164
         code:
           type: string
           pattern: ^\d{6}$

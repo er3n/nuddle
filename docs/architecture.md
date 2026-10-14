@@ -95,7 +95,7 @@ nuddle/
 
 ## API
 
-- Public routes under `/api/v1` are defined with `@hono/zod-openapi` (ADR 0003, 0008): `auth/otp`, `auth/verify`, `auth/refresh`, `health` (no token), `sync`, `devices`, `photos/upload-url`, `photos/view-url` (a short-lived signed URL to the photo awaiting approval, for the two people on the task), and one `commands/<name>` per action in `domain.md`. Every command body carries a UUIDv7 `idempotencyKey`; a replay returns the stored result, a failed command stores nothing.
+- Public routes under `/api/v1` are defined with `@hono/zod-openapi` (ADR 0003, 0008): `auth/otp`, `auth/verify` (Turkish mobile numbers only until the global launch, open-questions #45), `auth/refresh`, `health` (no token), `sync`, `devices`, `photos/upload-url`, `photos/view-url` (a short-lived signed URL to the photo awaiting approval, for the two people on the task), and one `commands/<name>` per action in `domain.md`. Every command body carries a UUIDv7 `idempotencyKey`; a replay returns the stored result, a failed command stores nothing.
 - Internal routes: `POST /api/internal/tick` (bearer `TICK_SECRET`), `POST /api/internal/otp-hook` (Supabase Send SMS hook, Standard Webhooks signature with `SEND_SMS_HOOK_SECRET`). Not in the contract.
 - Every response carries `X-Request-Id`. Errors have the shape `{ "error": { "code", "name", "message", "requestId" } }`.
 
