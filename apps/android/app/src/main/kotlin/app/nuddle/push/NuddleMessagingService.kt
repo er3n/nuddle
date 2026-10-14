@@ -11,6 +11,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 /**
@@ -33,10 +35,12 @@ class NuddleMessagingService : FirebaseMessagingService() {
 
     /**
      * Syncs at once, inside the few seconds a high priority message keeps the process awake: queued work can wait
-     * minutes on some phones, and the other phone's list would lag behind (NUD-59). A failed sync is queued.
+     * minutes on some phones (NUD-59). It blocks this call (FCM runs it on a background thread) because the service is
+     * destroyed as soon as it returns, which cancelled a launched sync and left a closed app with no task and no
+     * alarms (NUD-62). A sync that fails or runs out of time is queued.
      */
     override fun onMessageReceived(message: RemoteMessage) {
-        scope.launch { if (!syncer.sync()) work.syncSoon() }
+        runBlocking { syncOnPush(syncer, PUSH_SYNC_MS) { work.syncSoon() } }
     }
 
     /** FCM can reach this install by [fid] now (ADR 0015). */
@@ -48,4 +52,17 @@ class NuddleMessagingService : FirebaseMessagingService() {
         scope.cancel()
         super.onDestroy()
     }
+}
+
+/** Within the ~10 s a high priority FCM message keeps the process alive, with room to spare. */
+private const val PUSH_SYNC_MS = 8_000L
+
+/** Syncs within [timeoutMs]; a failed or too slow sync goes to [queue] so it still happens (NUD-62). */
+internal suspend fun syncOnPush(
+    syncer: Syncer,
+    timeoutMs: Long,
+    queue: () -> Unit,
+) {
+    val synced = withTimeoutOrNull(timeoutMs) { syncer.sync() } ?: false
+    if (!synced) queue()
 }
