@@ -37,7 +37,7 @@ enum class DurtButtonSize(val height: Dp) { Poke(62.dp), Large(56.dp), Medium(52
 ## 3. ComposeBar
 
 ```kotlin
-sealed interface ComposeState { data object Idle; data class Typing(val text: String); data class Failed(val text: String); data object Sending; data class Listening(val heard: String) }
+sealed interface ComposeState { data object Idle; data class Typing(val text: String); data class Failed(val text: String); data class Sending(val text: String); data class Listening(val heard: String) }
 @Composable fun ComposeBar(state: ComposeState, onTextChange: (String) -> Unit, onSend: () -> Unit,
     onVoiceStart: () -> Unit, onVoiceEnd: (cancelled: Boolean) -> Unit, notice: VoiceNotice? = null)
 ```
@@ -45,6 +45,7 @@ sealed interface ComposeState { data object Idle; data class Typing(val text: St
 - Focused: 2 dp `ink` border, radius 20, text 15 sp, grows to at most 4 lines. With text the mic turns into a send arrow (same place and size, 150 ms crossfade).
 - Mic: **tap to dictate** (screen 4h, NUD-48): the transcript is written live into the box, a second tap or silence stops, and the text stays in the box to be fixed and sent with the arrow; nothing is sent by itself. `notice` shows a voice note in a bubble over the mic for 2 s (open-questions #40).
 - Listening: the bar stays a bar: a "Dinliyorum" line above it, the transcript in the box with the word still being heard lighter, and the mic button pulses (`voicePulse`) as the stop button.
+- Sending: the text stays in the box in `textTertiary`, not editable, and a 20 dp spinner takes the button's place. An empty box while sending looked as if the text was lost, and people sent it again (NUD-54).
 - Failed: text is kept, the button becomes "Tekrar dene", an InlineAlert shows above.
 - Sits above the keyboard with `imePadding()`.
 
