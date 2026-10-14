@@ -927,7 +927,7 @@ export interface components {
         };
         WriteTaskResult: {
             /** @enum {string} */
-            kind: "created" | "ask";
+            kind: "created" | "ask" | "chat";
             /** Format: uuid */
             taskId: string | null;
             /** @enum {string|null} */
@@ -941,6 +941,7 @@ export interface components {
                 missAfterMinutes?: number | null;
                 finishMode: components["schemas"]["FinishMode"];
             } | null;
+            reply?: string | null;
         };
         WriteTaskCommand: {
             /**

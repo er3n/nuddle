@@ -12,9 +12,19 @@ export const TEXT = {
   homeworkToDefne: "defne yarın akşam ödevini bitirsin",
   waterSelfAt: "2 dakika sonra su iç",
   dishesToEren: "eren yarın gece 10a kadar bulaşıkları yıkasın",
+  hello: "merhaba",
 } as const;
 
 const fixtures: Record<string, FixtureExtraction> = {
+  [TEXT.hello]: {
+    recipient: null,
+    title: null,
+    detail: null,
+    deadline: null,
+    finishMode: "done",
+    missing: [],
+    reply: "Merhaba! Kime ne hatırlatayım?",
+  },
   [TEXT.photoToEren]: {
     recipient: "Eren",
     title: "Temizlikçi için para çek",

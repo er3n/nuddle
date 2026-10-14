@@ -80,12 +80,14 @@ sealed interface ComposeState { data object Idle; data class Typing(val text: St
 
 ```kotlin
 @Composable fun UndoToast(title: String, subtitle: String, durationMs: Long = 5_000, onUndo: () -> Unit, onEdit: () -> Unit, onTimeout: () -> Unit)
+@Composable fun ReplyNote(text: String, onTimeout: () -> Unit)
 @Composable fun DoneNote(title: String, learning: String?)
 @Composable fun InlineAlert(title: String, body: String, icon: ImageVector = DurtIcons.Warning)
 @Composable fun StatusBanner(text: String)
 ```
 - Toasts: `ink` background, radius 18, 10 dp above the compose box, slide up in 200 ms. No Material Snackbar.
 - UndoToast: 3 dp orange progress line filling over 5 s. Timeout confirms the task. Undo and Edit 40 dp, background #2C333B, tick #7FD8C3. 10 s and focus moves to it when TalkBack is on.
+- ReplyNote: the UndoToast's box and place without buttons or progress, the reply in 15 sp white. Stays 8 s (16 s with TalkBack, and focus moves to it), or until the bar is focused or a new text is sent. Announced as a polite live region (NUD-52).
 - DoneNote: 4 s after a task completes, optional second line with the learning ("Bu sefer seni 2. dürtmede yakaladım").
 - InlineAlert: `warningSoft` background, `warningBorder` border, radius 16. Stays inside the screen, never auto-dismisses.
 - StatusBanner: ongoing states such as offline, right below the TopBar.
