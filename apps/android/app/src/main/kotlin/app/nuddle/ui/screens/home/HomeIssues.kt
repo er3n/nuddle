@@ -38,6 +38,7 @@ import app.nuddle.ui.uppercaseForUi
 
 data class IssueCallbacks(
     val onDidItLater: (taskId: String) -> Unit = {},
+    val onRemoveMissed: (taskId: String) -> Unit = {},
     val onCall: (phone: String) -> Unit = {},
     val onNewDeadline: (taskId: String) -> Unit = {},
     val onSenderHandles: (taskId: String) -> Unit = {},
@@ -92,6 +93,7 @@ private fun MissedCard(
                 personName = from ?: "",
                 personColor = task.fromId?.let { colors.avatarFor(it) } ?: colors.avatarSelf,
             ),
+        onRemove = { callbacks.onRemoveMissed(task.taskId) },
         message =
             when {
                 from == null && task.deadline.moment -> stringResource(R.string.issue_missed_self_moment)

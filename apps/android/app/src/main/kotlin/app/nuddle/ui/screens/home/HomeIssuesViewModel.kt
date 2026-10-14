@@ -76,6 +76,10 @@ class HomeIssuesViewModel
             viewModelScope.launch { tasks.didItLater(taskId) }
         }
 
+        fun onRemoveMissed(taskId: String) {
+            viewModelScope.launch { tasks.removeMissed(taskId) }
+        }
+
         fun onSenderHandles(taskId: String) {
             viewModelScope.launch { tasks.senderHandles(taskId) }
         }

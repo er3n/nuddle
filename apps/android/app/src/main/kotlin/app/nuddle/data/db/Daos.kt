@@ -22,6 +22,10 @@ interface TaskDao {
     @Query("SELECT * FROM tasks")
     fun observeAll(): Flow<List<TaskEntity>>
 
+    /** "Kaldır" on a missed card (NUD-49): off my list at once, before the server knows. */
+    @Query("UPDATE tasks SET inRecipientList = 0 WHERE id = :id")
+    suspend fun hideFromMyList(id: String)
+
     @Query("UPDATE tasks SET status = :status WHERE id = :id")
     suspend fun setStatus(
         id: String,

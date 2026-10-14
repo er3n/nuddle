@@ -6,6 +6,7 @@ import app.nuddle.api.model.DidItLaterCommand
 import app.nuddle.api.model.EditCommand
 import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.NewDeadlineCommand
+import app.nuddle.api.model.RemoveMissedCommand
 import app.nuddle.api.model.SenderHandlesCommand
 import app.nuddle.api.model.TaskStatus
 import app.nuddle.api.model.Timing
@@ -156,6 +157,9 @@ interface TaskRepository {
 
     /** "Sonradan yaptım" on a missed task (7e): done, late (open-questions#9). Local first, then the outbox. */
     suspend fun didItLater(taskId: String)
+
+    /** "Kaldır" on my missed card (NUD-49): off my list only; the task stays missed for the sender. Local first. */
+    suspend fun removeMissed(taskId: String)
 
     /** "Ben hallederim" on a dropped task (5d): the sender takes it over (open-questions#8). Local first. */
     suspend fun senderHandles(taskId: String)
@@ -321,6 +325,12 @@ class ApiTaskRepository
             tasks.setStatus(taskId, TaskStatus.DONE.value)
             val id = ids.next()
             outbox.enqueue("did_it_later", id, DidItLaterCommand(idempotencyKey = id, taskId = taskId), DidItLaterCommand.serializer())
+        }
+
+        override suspend fun removeMissed(taskId: String) {
+            tasks.hideFromMyList(taskId)
+            val id = ids.next()
+            outbox.enqueue("remove_missed", id, RemoveMissedCommand(idempotencyKey = id, taskId = taskId), RemoveMissedCommand.serializer())
         }
 
         override suspend fun senderHandles(taskId: String) {

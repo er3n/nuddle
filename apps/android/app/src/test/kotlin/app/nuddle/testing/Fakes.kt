@@ -324,6 +324,13 @@ class FakeTaskRepository : TaskRepository {
         didItLater += taskId
     }
 
+    /** Every "Kaldır" on a missed card (NUD-49). */
+    val removedMissed = mutableListOf<String>()
+
+    override suspend fun removeMissed(taskId: String) {
+        removedMissed += taskId
+    }
+
     override suspend fun senderHandles(taskId: String) {
         senderHandled += taskId
     }
@@ -366,6 +373,10 @@ class InMemoryTaskDao : TaskDao {
     override suspend fun all(): List<TaskEntity> = tasks.value.values.toList()
 
     override fun observeAll(): Flow<List<TaskEntity>> = tasks.map { it.values.toList() }
+
+    override suspend fun hideFromMyList(id: String) {
+        tasks.value[id]?.let { tasks.value += id to it.copy(inRecipientList = false) }
+    }
 
     override suspend fun setStatus(
         id: String,
