@@ -224,14 +224,17 @@ class HomeViewModel
             compose.update { if (text.isEmpty()) ComposeState.Idle else ComposeState.Typing(text) }
         }
 
-        fun onComposeSend() {
-            val text =
+        /** The text the bar would send: typed, or kept after a failure; null while there is none to send. */
+        private val sendable: String?
+            get() =
                 when (val current = compose.value) {
                     is ComposeState.Typing -> current.text
                     is ComposeState.Failed -> current.text
-                    ComposeState.Idle, ComposeState.Sending, is ComposeState.Listening -> return
-                }.trim()
-            if (text.isEmpty()) return
+                    ComposeState.Idle, ComposeState.Sending, is ComposeState.Listening -> null
+                }?.trim()?.takeIf { it.isNotEmpty() }
+
+        fun onComposeSend() {
+            val text = sendable ?: return
             reply.value = null
             val key = pendingKey ?: ids.next().also { pendingKey = it }
             compose.value = ComposeState.Sending

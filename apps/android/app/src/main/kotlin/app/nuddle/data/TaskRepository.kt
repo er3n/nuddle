@@ -202,7 +202,9 @@ class ApiTaskRepository
                     WriteOutcome.Created(taskId)
                 }
 
-                WriteTaskResult.Kind.CHAT -> written.reply?.let(WriteOutcome::Chat) ?: WriteOutcome.Failed
+                WriteTaskResult.Kind.CHAT -> {
+                    written.reply?.let(WriteOutcome::Chat) ?: WriteOutcome.Failed
+                }
 
                 WriteTaskResult.Kind.ASK -> {
                     WriteOutcome.Ask(
