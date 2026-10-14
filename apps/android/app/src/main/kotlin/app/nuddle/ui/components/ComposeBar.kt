@@ -77,7 +77,10 @@ sealed interface ComposeState {
         val text: String,
     ) : ComposeState
 
-    data object Sending : ComposeState
+    /** On its way: [text] stays in the box, dimmed and not editable, so it does not look lost (NUD-54). */
+    data class Sending(
+        val text: String,
+    ) : ComposeState
 
     /** Holding the mic (4h): [heard] is the live transcript. */
     data class Listening(
@@ -93,7 +96,8 @@ private val ComposeState.text: String
         when (this) {
             is ComposeState.Typing -> text
             is ComposeState.Failed -> text
-            ComposeState.Idle, ComposeState.Sending, is ComposeState.Listening -> ""
+            is ComposeState.Sending -> text
+            ComposeState.Idle, is ComposeState.Listening -> ""
         }
 
 /**
@@ -147,8 +151,11 @@ fun ComposeBar(
                 BasicTextField(
                     value = text,
                     onValueChange = onTextChange,
-                    enabled = state != ComposeState.Sending,
-                    textStyle = (if (active) DurtTheme.type.input else DurtTheme.type.inputIdle).copy(color = colors.ink),
+                    enabled = state !is ComposeState.Sending,
+                    textStyle =
+                        (if (active) DurtTheme.type.input else DurtTheme.type.inputIdle).copy(
+                            color = if (state is ComposeState.Sending) colors.textTertiary else colors.ink,
+                        ),
                     cursorBrush = SolidColor(colors.ink),
                     maxLines = dimens.composeMaxLines,
                     modifier =
@@ -256,7 +263,7 @@ private fun RowScope.BarAction(
             )
         }
 
-        ComposeState.Sending -> {
+        is ComposeState.Sending -> {
             Box(Modifier.size(dimens.composeMic), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(
                     Modifier.size(dimens.spinner),
@@ -391,7 +398,7 @@ private fun ComposeBarPreview() {
                 Modifier.heightIn(min = DurtTheme.dimens.buttonLarge),
             )
             ComposeBar(ComposeState.Failed("sibel kuru temizlemeyi alsın"), {}, {}, {}, {})
-            ComposeBar(ComposeState.Sending, {}, {}, {}, {})
+            ComposeBar(ComposeState.Sending("1000 tl çek yarın 9da"), {}, {}, {}, {})
             ComposeBar(ComposeState.Idle, {}, {}, {}, {}, notice = VoiceNotice.NotHeard)
         }
     }

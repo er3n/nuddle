@@ -230,14 +230,14 @@ class HomeViewModel
                 when (val current = compose.value) {
                     is ComposeState.Typing -> current.text
                     is ComposeState.Failed -> current.text
-                    ComposeState.Idle, ComposeState.Sending, is ComposeState.Listening -> null
+                    ComposeState.Idle, is ComposeState.Sending, is ComposeState.Listening -> null
                 }?.trim()?.takeIf { it.isNotEmpty() }
 
         fun onComposeSend() {
             val text = sendable ?: return
             reply.value = null
             val key = pendingKey ?: ids.next().also { pendingKey = it }
-            compose.value = ComposeState.Sending
+            compose.value = ComposeState.Sending(text)
             viewModelScope.launch {
                 when (val outcome = tasks.write(text, key)) {
                     is WriteOutcome.Created -> {
