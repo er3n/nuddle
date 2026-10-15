@@ -78,6 +78,8 @@ export const taskEventType = pgEnum("task_event_type", [
   "cancelled",
   "human_notified",
   "permission_missing",
+  "delivered",
+  "seen",
 ]);
 export const pokeLevel = pgEnum("poke_level", ["SILENT", "SOUND", "FULL_SCREEN", "HUMAN"]);
 export const scheduledActionKind = pgEnum("scheduled_action_kind", [

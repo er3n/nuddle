@@ -30,6 +30,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import app.nuddle.R
 import app.nuddle.api.model.Reachability
+import app.nuddle.data.Delivery
 import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.BackBar
 import app.nuddle.ui.components.ChoiceChip
@@ -173,11 +174,32 @@ internal fun StatusCard(state: TaskDetailUiState) {
             )
         }
         Text(statusSentence(state), style = DurtTheme.type.body, color = colors.ink)
+        state.pokeStartsAt?.let {
+            Text(stringResource(R.string.task_poke_starts, it), style = DurtTheme.type.bodySmall, color = colors.textSecondary)
+        }
+        // Nothing while only sent: the phone may be fine and the server just has not said so yet.
+        state.delivery
+            ?.takeIf { it != Delivery.Sent && (state.status == DetailStatus.Scheduled || state.status == DetailStatus.ReRequested) }
+            ?.let {
+                Text(
+                    stringResource(it.sentence()),
+                    style = DurtTheme.type.bodySmallStrong,
+                    color = if (it == Delivery.Seen) colors.success else colors.textSecondary,
+                    modifier = Modifier.testTag(TestTags.TASK_DELIVERY),
+                )
+            }
         state.snoozedUntil?.takeIf { state.status == DetailStatus.Scheduled }?.let {
             Text(stringResource(R.string.next_up_snoozed, it), style = DurtTheme.type.bodySmallStrong, color = colors.warning)
         }
     }
 }
+
+/** The sender's tick in words (NUD-68); only sent has no line. */
+private fun Delivery.sentence(): Int =
+    when (this) {
+        Delivery.Sent, Delivery.Reached -> R.string.task_delivery_reached
+        Delivery.Seen -> R.string.task_delivery_seen
+    }
 
 @Composable
 private fun statusSentence(state: TaskDetailUiState): AnnotatedString {

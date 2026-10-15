@@ -10,6 +10,7 @@ import app.nuddle.api.model.Reachability
 import app.nuddle.api.model.SyncConnection
 import app.nuddle.api.model.WriteTaskResult
 import app.nuddle.data.DoneNotes
+import app.nuddle.data.MinuteTicks
 import app.nuddle.data.SetupGate
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.WriteOutcome
@@ -18,11 +19,14 @@ import app.nuddle.data.db.InviteDao
 import app.nuddle.data.db.QueuedWriteDao
 import app.nuddle.data.db.QueuedWriteEntity
 import app.nuddle.data.db.TaskDao
+import app.nuddle.data.db.TaskEventDao
+import app.nuddle.data.delivery
 import app.nuddle.data.network.Connectivity
 import app.nuddle.data.network.ErrorReporter
 import app.nuddle.data.photo.PhotoLoader
 import app.nuddle.data.photo.PhotoUploads
 import app.nuddle.data.session.SessionStore
+import app.nuddle.data.session.TaskAcks
 import app.nuddle.domain.IdGenerator
 import app.nuddle.domain.QuietHours
 import app.nuddle.ui.components.ComposeState
@@ -45,6 +49,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -80,6 +85,9 @@ class HomeViewModel
         private val errors: ErrorReporter,
         private val clock: Clock,
         private val timeZone: TimeZone,
+        eventDao: TaskEventDao,
+        ticks: MinuteTicks,
+        private val acks: TaskAcks,
     ) : ViewModel() {
         private val compose = MutableStateFlow<ComposeState>(ComposeState.Idle)
 
@@ -127,12 +135,16 @@ class HomeViewModel
                 sessions.session.map { it?.personId }.filterNotNull(),
                 taskDao.observeAll(),
                 connectionDao.observeAll().map { all -> all.filter { it.status == ACTIVE }.associateBy { it.personId } },
-            ) { me, all, connections ->
-                val next = nextUp(all, me, connections, clock.now(), timeZone)
+                eventDao.observeAll().map { all -> all.groupBy { it.taskId }.mapValues { (_, events) -> events.delivery() } },
+                // Read again every minute, so the last hour counts down (NUD-68).
+                ticks.ticks(),
+            ) { me, all, connections, deliveries, _ ->
+                val now = clock.now()
+                val next = nextUp(all, me, connections, now, timeZone)
                 TasksPart(
                     nextUp = next,
-                    later = laterTasks(all, me, connections, next?.taskId, clock.now(), timeZone),
-                    sent = sentTasks(all, me, connections, clock.now(), timeZone),
+                    later = laterTasks(all, me, connections, next?.taskId, now, timeZone),
+                    sent = sentTasks(all, me, connections, now, timeZone, deliveries),
                     connected = connections.isNotEmpty(),
                 )
             }
@@ -203,6 +215,9 @@ class HomeViewModel
                     reply = extras.notes.reply,
                     tab = extras.notes.tab,
                 )
+            }.onEach { home ->
+                // Tasks from others on Bana while home is on screen: their senders see "gördü" (NUD-68).
+                seenOnBana(home).takeIf { it.isNotEmpty() }?.let { viewModelScope.launch { acks.seen(it) } }
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
         private data class Extras(
@@ -443,4 +458,15 @@ class HomeViewModel
         fun onTab(tab: HomeTab) {
             this.tab.value = tab
         }
+    }
+
+/**
+ * The tasks from others that the Bana tab shows (NUD-68). Home's state is only collected while home is started, so a task
+ * is never told as seen from the background.
+ */
+private fun seenOnBana(state: HomeUiState): List<String> =
+    if (state.tab != HomeTab.Mine) {
+        emptyList()
+    } else {
+        listOfNotNull(state.nextUp?.takeIf { it.from != null }?.taskId) + state.later.filter { it.fromId != null }.map { it.taskId }
     }

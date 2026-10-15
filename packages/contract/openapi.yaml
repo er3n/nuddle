@@ -514,6 +514,8 @@ components:
         - cancelled
         - human_notified
         - permission_missing
+        - delivered
+        - seen
     SyncPlan:
       type: object
       properties:
@@ -882,6 +884,22 @@ components:
       required:
         - idempotencyKey
         - taskId
+    AcknowledgeCommand:
+      type: object
+      properties:
+        idempotencyKey:
+          type: string
+          format: uuid
+          description: Client generated UUIDv7; a replay returns the first result (ADR 0006)
+        taskId:
+          type: string
+          format: uuid
+        seen:
+          type: boolean
+      required:
+        - idempotencyKey
+        - taskId
+        - seen
     DoneCommand:
       type: object
       properties:
@@ -1860,6 +1878,63 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/RemoveMissedCommand"
+      responses:
+        "200":
+          description: The result; a replay with the same key returns it again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskCommandResult"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/commands/acknowledge:
+    post:
+      operationId: acknowledge
+      summary: "Recipient's phone: the task reached it, or the recipient has seen it"
+      tags:
+        - commands
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcknowledgeCommand"
       responses:
         "200":
           description: The result; a replay with the same key returns it again

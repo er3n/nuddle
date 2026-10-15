@@ -314,6 +314,19 @@
     <!-- 4e, 4g. open-questions#35: the design says "Fotoğraf Sibel\'de." and "08:24\'te gönderdin"; rephrased so the
          name and the time take no suffix. "sıradaki 08:40" is left out: the plan is hidden (open-questions#3). -->
     <string name="home_deadline_inline">son zaman %1$s</string>
+    <!-- NUD-68: the last hour counts down on home; %1$s is the time as the row says it. -->
+    <string name="home_minutes_left">%1$s, %2$d dk kaldı</string>
+    <string name="home_minutes_until">%1$s, %2$d dk sonra</string>
+    <string name="home_countdown_left">%1$d dk kaldı</string>
+    <string name="home_countdown_until">%1$d dk sonra</string>
+    <!-- NUD-68: the sender's tick after the recipient's name on a sent row. -->
+    <string name="sent_reached">ulaştı</string>
+    <string name="sent_seen">gördü</string>
+    <!-- NUD-68: the tick in the detail of my task; no name, so no suffix to get wrong. -->
+    <string name="task_delivery_reached">✓ Telefonuna ulaştı, henüz bakmadı.</string>
+    <string name="task_delivery_seen">✓✓ Gördü.</string>
+    <!-- NUD-68: when poking starts on a task to me; the ladder after it stays hidden. -->
+    <string name="task_poke_starts">Saat %1$s olunca hatırlatırım, yapmazsan biraz ısrar ederim.</string>
     <string name="photo_waiting">Fotoğrafı %1$s görüyor. Onaylayınca görev kapanır.</string>
     <string name="photo_waiting_sent">Gönderildi · %1$s · Dürtme durdu</string>
     <string name="photo_waiting_sending">Gönderiliyor · Dürtme durdu</string>

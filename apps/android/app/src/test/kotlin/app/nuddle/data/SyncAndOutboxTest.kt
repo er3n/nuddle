@@ -1,6 +1,8 @@
 package app.nuddle.data
 
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import app.nuddle.api.SyncApi
+import app.nuddle.api.model.AcknowledgeCommand
 import app.nuddle.api.model.DoneCommand
 import app.nuddle.data.api.RawCommandApi
 import app.nuddle.data.db.NuddleDatabase
@@ -10,6 +12,7 @@ import app.nuddle.data.outbox.Outbox
 import app.nuddle.data.outbox.OutboxSender
 import app.nuddle.data.photo.PendingPhoto
 import app.nuddle.data.photo.PhotoFiles
+import app.nuddle.data.session.OutboxTaskAcks
 import app.nuddle.data.sync.AlarmRearmer
 import app.nuddle.data.sync.LocalPendingChanges
 import app.nuddle.data.sync.SyncRepository
@@ -19,6 +22,7 @@ import app.nuddle.testing.FakeClock
 import app.nuddle.testing.InMemorySessionStore
 import app.nuddle.testing.RecordingAnnouncer
 import app.nuddle.testing.RecordingDrainer
+import app.nuddle.testing.RecordingTaskAcks
 import app.nuddle.testing.aSession
 import app.nuddle.testing.aTask
 import app.nuddle.testing.drtError
@@ -77,6 +81,7 @@ class SyncAndOutboxTest {
     }
 
     private val announcer = RecordingAnnouncer()
+    private val acks = RecordingTaskAcks()
 
     /** Tasks with a change this phone has not sent yet. */
     private var unsent = emptySet<String>()
@@ -93,6 +98,7 @@ class SyncAndOutboxTest {
             announcer = announcer,
             json = testJson,
             pending = { unsent },
+            acks = acks,
         )
 
     private val sibelConnection =
@@ -137,6 +143,40 @@ class SyncAndOutboxTest {
             server.enqueue(json(200, syncBody))
             assertTrue(syncRepository().sync())
             assertEquals(null, db.tasks().get(Cast.TASK_ID)!!.remindAt)
+        }
+
+    @Test
+    fun `an open task to me that sync stored is told as reached, a closed one is not (NUD-68)`() =
+        runTest {
+            server.enqueue(json(200, syncBody))
+            assertTrue(syncRepository().sync())
+            assertEquals(listOf(Cast.TASK_ID), acks.reached)
+
+            acks.reached.clear()
+            server.enqueue(json(200, syncBody.replace("\"status\":\"SCHEDULED\"", "\"status\":\"DONE\"")))
+            assertTrue(syncRepository().sync())
+            assertEquals(emptyList(), acks.reached)
+        }
+
+    @Test
+    fun `reached and seen go out once each, seen first covers reached (NUD-68)`() =
+        runTest {
+            val store = PreferenceDataStoreFactory.create(produceFile = { createTempDirectory().resolve("s.preferences_pb").toFile() })
+            val outbox = Outbox(db.outbox(), testJson, FakeClock(), RecordingDrainer())
+            val acks = OutboxTaskAcks(store, outbox, IdGenerator(FakeClock()))
+
+            acks.reached(listOf("a", "a", "b"))
+            acks.reached(listOf("a"))
+            acks.seen(listOf("a", "c"))
+            acks.seen(listOf("a"))
+            acks.reached(listOf("c"))
+
+            val sent = db.outbox().pending().map { testJson.decodeFromString(AcknowledgeCommand.serializer(), it.body) }
+            // Same fake time for all, so the outbox order is by key: compare without order.
+            assertEquals(
+                listOf("a" to false, "a" to true, "b" to false, "c" to true),
+                sent.map { it.taskId to it.seen }.sortedBy { "${it.first}${it.second}" },
+            )
         }
 
     @Test
@@ -440,6 +480,7 @@ class SyncAndOutboxTest {
                     announcer,
                     testJson,
                     { emptySet() },
+                    RecordingTaskAcks(),
                 )
             val waiting = mine.replace("\"status\":\"SCHEDULED\"", "\"status\":\"AWAITING_APPROVAL\"")
             server.enqueue(json(200, mine))

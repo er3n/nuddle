@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.Reachability
+import app.nuddle.data.Delivery
 import app.nuddle.data.DoneNote
 import app.nuddle.data.DoneNotes
 import app.nuddle.data.WriteOutcome
@@ -16,11 +17,14 @@ import app.nuddle.testing.FakeClock
 import app.nuddle.testing.FakeTaskCloser
 import app.nuddle.testing.FakeTaskRepository
 import app.nuddle.testing.InMemoryConnectionDao
+import app.nuddle.testing.InMemoryPokeStepDao
 import app.nuddle.testing.InMemorySessionStore
 import app.nuddle.testing.InMemoryTaskDao
 import app.nuddle.testing.InMemoryTaskEventDao
 import app.nuddle.testing.MainDispatcherRule
+import app.nuddle.testing.RecordingTaskAcks
 import app.nuddle.testing.aSession
+import app.nuddle.testing.aStep
 import app.nuddle.testing.aTask
 import app.nuddle.testing.sibelConnection
 import app.nuddle.ui.screens.home.DeadlineText
@@ -56,13 +60,17 @@ class TaskDetailViewModelTest {
     private val events = InMemoryTaskEventDao()
     private val doneNotes = DoneNotes()
     private val closer = FakeTaskCloser()
+    private val steps = InMemoryPokeStepDao()
+    private val acks = RecordingTaskAcks()
     private val vm by lazy {
         TaskDetailViewModel(
             SavedStateHandle(mapOf(TaskDetailViewModel.ARG_TASK to Cast.TASK_ID)),
             taskDao,
             connectionDao,
             events,
+            steps,
             sessions,
+            acks,
             doneNotes,
             closer,
             tasks,
@@ -93,6 +101,36 @@ class TaskDetailViewModelTest {
             assertEquals(DeadlineText.Tomorrow("09:00"), state.deadline)
             assertEquals("1.000 TL", state.detail)
             assertTrue(state.photo)
+        }
+
+    @Test
+    fun `my task to Sibel says how far it got, the recipient's side is not told seen by it (NUD-68)`() =
+        runTest(main.dispatcher) {
+            ready()
+            assertEquals(Delivery.Sent, vm.state.value?.delivery)
+            events.upsert(listOf(TaskEventEntity("e1", Cast.TASK_ID, Cast.SIBEL_ID, "delivered", "{}", 1)))
+            assertEquals(Delivery.Reached, vm.state.value?.delivery)
+            events.upsert(listOf(TaskEventEntity("e2", Cast.TASK_ID, Cast.SIBEL_ID, "seen", "{}", 2)))
+            assertEquals(Delivery.Seen, vm.state.value?.delivery)
+            assertNull(vm.state.value?.pokeStartsAt, "no start time on my side")
+            assertEquals(emptyList(), acks.seen)
+        }
+
+    @Test
+    fun `Sibel's task to me is told seen and says when poking starts, until a step rang (NUD-68)`() =
+        runTest(main.dispatcher) {
+            sessions.saveMe("Eren", QuietHours.default(istanbul))
+            connectionDao.upsert(listOf(sibelConnection()))
+            taskDao.upsert(listOf(aTask().copy(finishMode = "done")))
+            steps.insertIgnoringExisting(listOf(aStep(0, "2026-10-12T08:00:00+03:00"), aStep(1, "2026-10-12T08:30:00+03:00")))
+            backgroundScope.launch { vm.state.collect {} }
+
+            assertEquals("08:00", vm.state.value?.pokeStartsAt)
+            assertNull(vm.state.value?.delivery)
+            assertEquals(listOf(Cast.TASK_ID), acks.seen)
+            steps.markFired(Cast.TASK_ID, 1, 0, 1)
+            assertNull(vm.state.value?.pokeStartsAt, "once it rang, the start is old news")
+            assertEquals(listOf(Cast.TASK_ID), acks.seen, "told once")
         }
 
     @Test

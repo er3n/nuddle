@@ -25,6 +25,7 @@ Min SDK 26, target the current SDK (35+). The app is declared to Play as an alar
 - Bitti, Ertele and Bugün olmaz apply locally first (remaining alarms cancelled), then go to the server via the WorkManager outbox. Poking stops immediately even offline.
 - A task that closes elsewhere (the sender cancels, it is missed, the connection is removed) loses its alarms and its poke at the next sync: a poke notification that is up goes, and an open full screen poke closes. A snoozed ring survives a sync until the server's shifted plan replaces it (NUD-64).
 - Quiet hours are checked when the server plans and again on the device before ringing.
+- **Alarm volume (NUD-68).** A poke rings on the alarm stream, whose level the person sets apart from the ringer, and a low one made pokes nearly silent in the phone test. When a `SOUND` or `FULL_SCREEN` poke rings and the alarm stream is below 70% of its range, the app raises it to 70% and keeps the person's level; once no poke notification is left (answered here, closed by sync, or swiped away and the app opened) it puts that level back. A phone that refuses the change (some do in Do Not Disturb) rings at the person's own level. A gradual rise like an alarm clock needs the app to play the sound itself instead of the channel, which is not done yet.
 
 ## Notification channels
 

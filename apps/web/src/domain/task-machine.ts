@@ -445,6 +445,9 @@ function hintsFor(task: Task, e: TaskEvent): PushMessage[] {
     }
     case "human_notified":
       return [push(senderId, "sync", task, e.type)];
+    case "delivered":
+    case "seen":
+      return self ? [] : [push(senderId, "sync", task, e.type)];
     case "poke_lost":
       return [push(recipientId, "sync", task, e.type)];
     case "done":
@@ -699,6 +702,36 @@ export function removeMissedCard(task: Task, actorId: PersonId, now: Date): Resu
   if (actorId !== task.recipientId) return { ok: false, error: "not_recipient" };
   if (task.status !== "MISSED") return { ok: false, error: "wrong_status" };
   return { ok: true, value: { ...task, removedByRecipientAt: now } };
+}
+
+/**
+ * The recipient's phone says the task reached it, or that the recipient has seen it (NUD-68): the sender's tick.
+ * Each is logged once; seen implies delivered. Nothing for a task to self or a closed task. [logged] are the event
+ * types the task already has.
+ */
+export function acknowledge(
+  task: Task,
+  actorId: PersonId,
+  seen: boolean,
+  logged: ReadonlySet<TaskEventType>,
+  now: Date,
+): Result<{ events: TaskEvent[]; pushes: PushMessage[] }> {
+  if (actorId !== task.recipientId) return { ok: false, error: "not_recipient" };
+  if (task.senderId === task.recipientId || !isOpen(task.status)) {
+    return { ok: true, value: { events: [], pushes: [] } };
+  }
+  const wanted: TaskEventType[] = seen ? ["delivered", "seen"] : ["delivered"];
+  const events = wanted
+    .filter((type) => !logged.has(type))
+    .map((type): TaskEvent => ({ taskId: task.id, actorId, type, payload: {}, at: now }));
+  const last = events.at(-1);
+  return {
+    ok: true,
+    value: {
+      events,
+      pushes: last ? hintsFor(task, last) : [],
+    },
+  };
 }
 
 /**

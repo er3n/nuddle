@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import app.nuddle.R
+import app.nuddle.data.Delivery
 import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.components.PillStatus
@@ -27,7 +28,12 @@ internal fun SentRow(
         if (task.awaitingApproval) {
             listOfNotNull(task.toName, stringResource(R.string.sent_photo_arrived))
         } else {
-            listOfNotNull(task.toName, task.deadline.inlineText(), if (task.photo) stringResource(R.string.sent_photo) else null)
+            listOfNotNull(
+                task.toName,
+                task.delivery.word(),
+                task.deadline.counting(task.deadline.inlineText()),
+                if (task.photo) stringResource(R.string.sent_photo) else null,
+            )
         }
     TaskRow(
         task =
@@ -50,6 +56,15 @@ internal fun SentRow(
     )
 }
 
+/** "ulaştı" or "gördü" after the name; nothing while it is only sent (NUD-68). */
+@Composable
+internal fun Delivery.word(): String? =
+    when (this) {
+        Delivery.Sent -> null
+        Delivery.Reached -> stringResource(R.string.sent_reached)
+        Delivery.Seen -> stringResource(R.string.sent_seen)
+    }
+
 /** Written offline: not on the server yet, so there is nothing to open (6a). */
 @Composable
 internal fun QueuedRow(
@@ -68,6 +83,53 @@ internal fun QueuedRow(
         onClick = null,
         modifier = Modifier.testTag(TestTags.HOME_QUEUED),
     )
+}
+
+/** NUD-68: the sender's tick after the name and the last hour counting down. */
+@PreviewScreens
+@Composable
+private fun HomeScreenSentTickPreview() {
+    DurtTheme {
+        HomeScreen(
+            state =
+                HomeUiState(
+                    myName = "Sibel",
+                    connected = true,
+                    tab = HomeTab.Sent,
+                    sent =
+                        listOf(
+                            SentUi(
+                                "task-1",
+                                "Çayı demle",
+                                null,
+                                DeadlineText.Today("19:00", minutesLeft = 35),
+                                false,
+                                "eren",
+                                "Eren",
+                                delivery = Delivery.Seen,
+                            ),
+                            SentUi(
+                                "task-2",
+                                "Temizlikçi için para çek",
+                                "1.000 TL",
+                                DeadlineText.Tomorrow("09:00"),
+                                true,
+                                "eren",
+                                "Eren",
+                                delivery = Delivery.Reached,
+                            ),
+                            SentUi("task-3", "Faturayı öde", null, DeadlineText.Tomorrow("19:00"), true, "eren", "Eren"),
+                        ),
+                ),
+            onBell = {},
+            onProfile = {},
+            onInvite = {},
+            onComposeTextChange = {},
+            onComposeSend = {},
+            onVoiceStart = {},
+            onVoiceEnd = {},
+        )
+    }
 }
 
 /** ErrOffline.png */

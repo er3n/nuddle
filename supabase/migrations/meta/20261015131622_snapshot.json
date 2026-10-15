@@ -1,5 +1,5 @@
 {
-  "id": "3b0b4762-792c-4595-aa79-61350162e063",
+  "id": "adc93e99-470d-4db6-bef2-136a8c16a13b",
   "prevId": "044f65b7-59a6-45f3-94bb-646fc417efe8",
   "version": "7",
   "dialect": "postgresql",
@@ -428,175 +428,6 @@
           ]
         }
       },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.llm_calls": {
-      "name": "llm_calls",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "kind": {
-          "name": "kind",
-          "type": "llm_call_kind",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "person_id": {
-          "name": "person_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "task_id": {
-          "name": "task_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "write_key": {
-          "name": "write_key",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "plan_version": {
-          "name": "plan_version",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "adopted_version": {
-          "name": "adopted_version",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "input": {
-          "name": "input",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "model": {
-          "name": "model",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "system": {
-          "name": "system",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "prompt": {
-          "name": "prompt",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "output": {
-          "name": "output",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "outcome": {
-          "name": "outcome",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "error": {
-          "name": "error",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "latency_ms": {
-          "name": "latency_ms",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "llm_calls_task_idx": {
-          "name": "llm_calls_task_idx",
-          "columns": [
-            {
-              "expression": "task_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "llm_calls_person_idx": {
-          "name": "llm_calls_person_idx",
-          "columns": [
-            {
-              "expression": "person_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "llm_calls_person_id_people_id_fk": {
-          "name": "llm_calls_person_id_people_id_fk",
-          "tableFrom": "llm_calls",
-          "tableTo": "people",
-          "columnsFrom": [
-            "person_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "llm_calls_task_id_tasks_id_fk": {
-          "name": "llm_calls_task_id_tasks_id_fk",
-          "tableFrom": "llm_calls",
-          "tableTo": "tasks",
-          "columnsFrom": [
-            "task_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -1277,14 +1108,6 @@
         "expired"
       ]
     },
-    "public.llm_call_kind": {
-      "name": "llm_call_kind",
-      "schema": "public",
-      "values": [
-        "extraction",
-        "plan"
-      ]
-    },
     "public.poke_level": {
       "name": "poke_level",
       "schema": "public",
@@ -1326,7 +1149,9 @@
         "missed",
         "cancelled",
         "human_notified",
-        "permission_missing"
+        "permission_missing",
+        "delivered",
+        "seen"
       ]
     },
     "public.task_status": {

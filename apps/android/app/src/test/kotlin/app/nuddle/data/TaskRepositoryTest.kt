@@ -15,6 +15,7 @@ import app.nuddle.testing.FakeClock
 import app.nuddle.testing.InMemorySessionStore
 import app.nuddle.testing.RecordingAnnouncer
 import app.nuddle.testing.RecordingDrainer
+import app.nuddle.testing.RecordingTaskAcks
 import app.nuddle.testing.aSession
 import app.nuddle.testing.aStep
 import app.nuddle.testing.aTask
@@ -79,6 +80,7 @@ class TaskRepositoryTest {
                         RecordingAnnouncer(),
                         testJson,
                         { emptySet() },
+                        RecordingTaskAcks(),
                     ),
                 closer =
                     object : TaskCloser {

@@ -24,6 +24,7 @@ import app.nuddle.data.db.TaskEventDao
 import app.nuddle.data.db.TaskEventEntity
 import app.nuddle.data.level
 import app.nuddle.data.session.SessionStore
+import app.nuddle.data.session.TaskAcks
 import app.nuddle.data.sinceLastDeadline
 import app.nuddle.data.toProfile
 import app.nuddle.domain.PokeLevel
@@ -102,6 +103,7 @@ class SyncRepository
         private val announcer: TaskAnnouncer,
         private val json: Json,
         private val pending: PendingChanges,
+        private val acks: TaskAcks,
     ) : Syncer {
         /**
          * One sync at a time in the process: a push, the app coming to the front and a write can ask at once (NUD-59),
@@ -136,6 +138,12 @@ class SyncRepository
             response.plans.forEach { plan -> alarms.applyPlan(plan.taskId, plan.version, plan.toEntities()) }
             sessions.saveSyncCursor(response.cursor)
             alarms.rearm()
+            // The sender's tick (NUD-68): tasks to me are on this phone now.
+            acks.reached(
+                response.tasks
+                    .filter { it.recipientId == session.personId && it.senderId != session.personId && it.status.value in OPEN_STATUSES }
+                    .map { it.id },
+            )
             tell(news, response.tasks, session.personId)
             tellUnreached(unreached, response.tasks, session.personId)
             return true

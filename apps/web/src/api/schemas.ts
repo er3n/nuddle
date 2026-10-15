@@ -78,6 +78,8 @@ const TaskEventType = z
     "cancelled",
     "human_notified",
     "permission_missing",
+    "delivered",
+    "seen",
   ])
   .openapi("TaskEventType");
 
@@ -197,6 +199,8 @@ export const CantTodayCommand = taskKeyed({ note: Note }).openapi("CantTodayComm
 export const DidItLaterCommand = taskKeyed({}).openapi("DidItLaterCommand");
 /** "Kaldır" on the recipient's missed card (NUD-49). */
 export const RemoveMissedCommand = taskKeyed({}).openapi("RemoveMissedCommand");
+/** The recipient's phone: the task reached it, or (seen) the recipient has seen it (NUD-68). */
+export const AcknowledgeCommand = taskKeyed({ seen: z.boolean() }).openapi("AcknowledgeCommand");
 export const SnoozeCommand = taskKeyed({}).openapi("SnoozeCommand");
 export const CancelCommand = taskKeyed({ note: Note }).openapi("CancelCommand");
 export const EditCommand = taskKeyed({

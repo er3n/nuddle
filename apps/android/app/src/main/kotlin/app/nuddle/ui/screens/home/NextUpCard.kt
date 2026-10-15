@@ -114,7 +114,7 @@ private fun ColumnScope.Heading(task: NextUpUi) {
         Column {
             Text(task.title, style = DurtTheme.type.brand, color = colors.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
             // Once the photo is involved the tiles go and the deadline joins the line (4e, 4g).
-            val deadline = task.deadline.phrase()
+            val deadline = task.deadline.counting(task.deadline.phrase())
             val line =
                 when {
                     task.status == NextUpStatus.Scheduled -> task.detail
@@ -142,7 +142,7 @@ private fun ToDo(task: NextUpUi) {
     val from = task.from
     // Both tiles as tall as the taller one when a value wraps at large font scales.
     Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(dimens.space10)) {
-        InfoTile(task.deadline.timeLabel(), task.deadline.text(), Modifier.weight(1f))
+        InfoTile(task.deadline.timeLabel(), task.deadline.text(), Modifier.weight(1f), note = task.deadline.countdown())
         InfoTile(
             label = stringResource(R.string.home_finish_label),
             value =
@@ -161,6 +161,8 @@ private fun InfoTile(
     label: String,
     value: String,
     modifier: Modifier = Modifier,
+    /** "35 dk kaldı" under the time in its last hour (NUD-68). */
+    note: String? = null,
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
@@ -173,6 +175,7 @@ private fun InfoTile(
     ) {
         Text(label, style = DurtTheme.type.caption, color = colors.textTertiary)
         Text(value, style = DurtTheme.type.bodySmallStrong, color = colors.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        note?.let { Text(it, style = DurtTheme.type.caption, color = colors.link, maxLines = 1) }
     }
 }
 
@@ -227,7 +230,7 @@ internal fun TaskUndoToast(
     modifier: Modifier = Modifier,
 ) {
     val parts =
-        listOfNotNull(task.to, task.title, task.deadline.inlineText(), if (task.photo) stringResource(R.string.undo_finish_photo) else null)
+        listOfNotNull(task.to, task.title, task.deadline.phrase(), if (task.photo) stringResource(R.string.undo_finish_photo) else null)
     UndoToast(
         title = stringResource(if (task.to == null) R.string.undo_self_title else R.string.undo_sent_title),
         subtitle = parts.reduce { line, part -> stringResource(R.string.separator_dot, line, part) },
