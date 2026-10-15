@@ -63,10 +63,11 @@ Start the backend scenario suite with: task to self, task to other with done, ph
 - Fixture `TaskExtractor` keyed by input text.
 - Fixed OTP codes for test numbers.
 - Compressed plans: steps seconds apart instead of minutes.
-- `/api/test/reset`, `/api/test/seed`, `/api/test/tick`, `/api/test/advance-clock` (under `/api`, where Hono is mounted).
+- `/api/test/reset`, `/api/test/reset-tasks` (tasks only, people and connections stay), `/api/test/seed`, `/api/test/tick`, `/api/test/advance-clock` (under `/api`, where Hono is mounted).
 
 ### Android `e2e` flavor
 - Base URL points at the host (`adb reverse tcp:3000 tcp:3000`).
+- Fake time (`BuildConfig.FAKE_TIME`, NUD-65): the app's injected `Clock` is the phone's clock plus an offset (`di/TestTime.kt`), and alarms are set that much earlier on the phone's clock. The orchestrator moves it with `am broadcast -n app.nuddle.debug/app.nuddle.e2e.E2eReceiver -a app.nuddle.e2e.ADVANCE --el ms <n>`: the app re-arms, so a step that came due rings at once through `AlarmManager`. `app.nuddle.e2e.RESET` empties the app's tables, sets the offset back to 0 and syncs in full. The receiver is declared only in this flavor's manifest; other builds have neither (verified by a test).
 - `testTagsAsResourceId = true` (only in this flavor); every interactive element has a `testTag` from `ui/TestTags.kt`, and flows find elements only by tag.
 - CameraX replaced by injecting an image file from the test: the orchestrator copies `e2e/fixtures/photo.jpg` into the app's `files/e2e-photo.jpg` (`run-as`), and the camera of this flavor (`InjectedPhotoSource`, `BuildConfig.INJECTED_PHOTO`) returns it as the shot.
 - Speech recognition replaced the same way: the orchestrator writes the text to `files/e2e-speech.txt`, and the speech input of this flavor (`InjectedSpeechInput`, `BuildConfig.INJECTED_SPEECH`) "hears" it and ends by itself 1.5 s later, like the real recognizer after silence (NUD-60), or at once on a tap on stop.
@@ -75,7 +76,7 @@ Start the backend scenario suite with: task to self, task to other with done, ph
 ### Orchestrator
 TypeScript runner in `e2e/orchestrator` that drives two emulators (`emulator-5554` as Sibel, `emulator-5556` as Eren), runs Maestro flows on each in sequence, and calls test endpoints in between. Every run writes `e2e-runs/<timestamp>/` with per-step screenshots of both devices, logcat for both, and server logs. Agents debug from that folder.
 
-The emulators are AVDs `nuddle-sibel` and `nuddle-eren` (`e2e/scripts/emulators.sh`): stock Android with Google Play (`android-36`, `google_apis_playstore`), hardware profile of a Galaxy S23 (1080 x 2340 px, 480 dpi, about 360 x 780 dp). Each run starts from a clean state: a re-created `nuddle_e2e` database and the app reinstalled on both emulators. Prerequisites, the run folder layout and the smoke flows are in `e2e/README.md`.
+The emulators are AVDs `nuddle-sibel` and `nuddle-eren` (`e2e/scripts/emulators.sh`): stock Android with Google Play (`android-36`, `google_apis_playstore`), hardware profile of a Galaxy S23 (1080 x 2340 px, 480 dpi, about 360 x 780 dp). A run of the smoke set starts from a clean state: a re-created `nuddle_e2e` database and the app reinstalled on both emulators. The two-person set starts warm when it can (below). Prerequisites, the run folder layout and the smoke flows are in `e2e/README.md`.
 
 FCM needs Google Play system images and the dev Firebase app. Flows wait with timeouts because push can be slow.
 
@@ -106,14 +107,18 @@ FCM needs Google Play system images and the dev Firebase app. Flows wait with ti
 11. Sibel taps the mic and speaks a task (4h): the transcript goes into the box and the send arrow creates the task.
 
 ### Two-person set (`mise run e2e:sync`, NUD-64)
-Each case is one thing that happens between a sender and a recipient, checked on both phones: what home shows (test tags from a UI Automator dump), the pending poke alarms and the notifications that are up, and the task on the server. The step a person takes is done in their app; the other phone is only watched. Every case ends with no open task between them.
+Each case is one thing that happens between a sender and a recipient, checked on both phones: what home shows (test tags from a UI Automator dump), the pending poke alarms and the notifications that are up, and the task on the server. The step a person takes is done in their app (a tap found by its tag in the same dump); the other phone is only watched. Before every case the tasks are wiped on the server (`reset-tasks`) and on both phones (`RESET`).
+
+**Fake time.** No case waits for a poke or a deadline. The orchestrator moves the server's clock and both phones' clocks by the same amount, to just after the next step of the task's current plan (read from `poke_steps`) or past its deadline, then runs the server's timers (`tick`).
+
+**Warm start.** A run reuses the `nuddle_e2e` database and the installed, signed-in apps of the last one when the database was made from today's migrations, Sibel and Eren are connected in it and both apps have a session; the APK is replaced with `install -r` (data kept) only when it changed. Otherwise, or with `--fresh`, it starts clean and signs both up in the app. A warm run takes about 3 minutes.
 1. Sibel writes a task while Eren's app is in the background: his alarms and the arrival note, her row; he opens the app and it is next up.
 2. Eren taps Şimdiden bitti: done on the server, his card, alarms and notifications go, her row goes.
 3. A poke is up on Eren's phone (app in the background) and Sibel cancels the task in the app: the poke and the alarms go from his phone, her row goes, his home says she cancelled it.
 4. The full screen poke rings and Eren taps Ertele: counted on the server, his card says when it rings again, his alarms stay, her row stays; Bitti then closes it on both.
 5. Eren answers Bugün yapamayacağım: his pokes stop, Sibel's home has the dropped card; Ben hallederim closes it on her side and nothing comes back on his.
 6. Nobody answers until the deadline: missed on the server, the poke goes from his phone, both homes have the missed card; Sonradan yaptım closes it on both.
-7. Sibel moves a far deadline close: Eren's phone takes the new plan and rings within two minutes; her cancel then leaves nothing on his phone.
+7. Sibel moves a far deadline close: Eren's phone takes the new plan and rings its first step; her cancel then leaves nothing on his phone.
 
 It runs on demand and before merging a change to sync, the outbox, alarms or notifications.
 

@@ -50,6 +50,34 @@ const withDatabase = (url: string, name: string): string => {
   return u.toString();
 };
 
+/** The migrations a database was made from, so a warm start knows when it must start fresh (NUD-65). */
+function migrationFiles(): string[] {
+  return readdirSync(join(repoRoot, "supabase", "migrations"))
+    .filter((f) => /^\d+_.+\.sql$/.test(f))
+    .sort();
+}
+
+/**
+ * `nuddle_e2e` as the last run left it, when it was made from today's migrations and Sibel and Eren are connected in
+ * it; null otherwise (docs/testing.md, Warm start).
+ */
+export async function warmDatabase(adminUrl: string): Promise<string | null> {
+  const url = withDatabase(adminUrl, E2E_DATABASE);
+  const db = postgres(url, { max: 1, onnotice: () => undefined, connect_timeout: 5 });
+  try {
+    const [made] = await db<{ migrations: string }[]>`select migrations from e2e_run`;
+    if (made?.migrations !== migrationFiles().join(",")) return null;
+    const [edges] = await db<
+      { n: number }[]
+    >`select count(*)::int as n from edges where status = 'active'`;
+    return edges?.n === 2 ? url : null;
+  } catch {
+    return null;
+  } finally {
+    await db.end();
+  }
+}
+
 /** Drops and re-creates `nuddle_e2e` from supabase/migrations (no seed: /api/test/seed covers it). */
 export async function recreateDatabase(adminUrl: string): Promise<string> {
   const admin = postgres(adminUrl, { max: 1, onnotice: () => undefined });
@@ -63,10 +91,11 @@ export async function recreateDatabase(adminUrl: string): Promise<string> {
   const db = postgres(url, { max: 1, onnotice: () => undefined });
   try {
     const dir = join(repoRoot, "supabase", "migrations");
-    const files = readdirSync(dir)
-      .filter((f) => /^\d+_.+\.sql$/.test(f))
-      .sort();
+    const files = migrationFiles();
     for (const file of files) await db.unsafe(readFileSync(join(dir, file), "utf8"));
+    // Not part of the schema: only says what this test database was made from.
+    await db`create table e2e_run (migrations text not null)`;
+    await db`insert into e2e_run values (${files.join(",")})`;
   } finally {
     await db.end();
   }

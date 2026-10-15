@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- E2E only (docs/testing.md, Fake time and Warm start): the orchestrator moves the app's clock and resets its tasks. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <receiver
+            android:name="app.nuddle.e2e.E2eReceiver"
+            android:exported="true" />
+    </application>
+</manifest>

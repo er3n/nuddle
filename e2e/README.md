@@ -13,7 +13,8 @@ Real flows on two emulators against the local backend in E2E mode (`docs/testing
 
 ```
 mise run e2e:smoke            # the smoke set; prints the run folder first and last
-mise run e2e:sync             # the two-person set (docs/testing.md, Two-person set), 45 minute hard timeout
+mise run e2e:sync             # the two-person set (docs/testing.md, Two-person set): ~3 minutes warm
+pnpm --filter @nuddle/e2e sync --cases 3,4   # some of its cases;  --fresh  starts clean
 ```
 
 It runs in the foreground with a 20 minute hard timeout and exits non-zero on failure. It takes several minutes (first Gradle build, emulator boot), so agents start it in the background and poll `<run folder>/orchestrator.log` (CLAUDE.md, long-running commands).
@@ -39,7 +40,7 @@ The `e2e` workflow (`.github/workflows/e2e.yml`) runs the smoke set by hand from
 
 ## Clean state
 
-Every run:
+Every smoke run, and a two-person run that cannot start warm (see Two-person set):
 - drops and re-creates the `nuddle_e2e` database from `supabase/migrations/` (same local Supabase stack, separate database; no seed),
 - starts `next dev` with `E2E=1` against it,
 - builds `assembleE2eDebug`, uninstalls and reinstalls `app.nuddle.debug` on both emulators with runtime permissions granted (`-g`) and `USE_FULL_SCREEN_INTENT` allowed (the setup screens 2c to 2e arrive in slice 1),
@@ -78,7 +79,11 @@ Auth users live in the stack's Auth service and are not deleted; the app sees a 
 
 ## Two-person set
 
-`orchestrator/src/sync/two-person.ts`: Sibel signs up, invites Eren (smoke 2), then the seven cases of `docs/testing.md`, Two-person set, one step each (`sync-1-...` to `sync-7-...`). Besides Maestro flows it reads both phones directly: `Device.screenTags()` (the test tags on screen, from `uiautomator dump`), `Device.notificationChannels()` (the app's notifications that are up) and `Device.pendingPokeAlarms()`. A one-tap step uses `flows/common/tap.yaml` with the tag as `ID`. A failed check names what was on screen.
+`orchestrator/src/sync/two-person.ts`: the seven cases of `docs/testing.md`, Two-person set, one step each (`sync-1-...` to `sync-7-...`), each after a reset of the tasks on the server and both phones. It drives and reads both phones without Maestro: `Device.tap()` and `typeText()` (an element found by its tag in a `uiautomator dump`), `screenTags()`, `notificationChannels()` and `pendingPokeAlarms()`. A failed check names what was on screen.
+
+Time is fake (`sync/time.ts`): `toStep(taskId, level?)` and `pastDeadline(taskId)` move the server clock (`/api/test/advance-clock`) and both phones (`Device.advance()`, the e2e flavor's `E2eReceiver`) together, then tick.
+
+Warm start: the `warm-check` step looks for a `nuddle_e2e` made from today's migrations (its `e2e_run` table lists them) with Sibel and Eren connected, and both apps signed in. Then it skips the database, the clean install and the sign-up; `install -r` replaces the APK only when its SHA-256 differs from the one stored in `/data/local/tmp/nuddle-e2e-apk.sha`. `--fresh` always starts clean: sign-up (smoke 1's first steps) and invite (smoke 2).
 
 Smokes run in the order of the table: each one starts from the state the one before left.
 

@@ -5,7 +5,7 @@
 //   3. the e2e build installed clean on both emulators, logcat streaming
 //   4. the smoke flows, screenshots of both devices after every step
 // Prints the run folder first, stops itself after a hard timeout, exits non-zero on failure.
-// Usage: tsx src/run.ts --set smoke|sync [--cold] [--cases 3,4]
+// Usage: tsx src/run.ts --set smoke|sync [--cold] [--cases 3,4] [--fresh]
 import type { ChildProcess } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -14,6 +14,7 @@ import { testApi } from "./api";
 import {
   localSupabase,
   recreateDatabase,
+  warmDatabase,
   requireFirebaseServiceAccount,
   startBackend,
   stopBackend,
@@ -23,7 +24,7 @@ import { allDevices } from "./devices";
 import { run, waitFor } from "./proc";
 import { invite } from "./smoke/invite";
 import { signUpSibel, smokeExtractions, taskToSelf } from "./smoke/task-to-self";
-import { erenQuietHours, taskToOther, taskToOtherExtractions } from "./smoke/task-to-other";
+import { taskToOther, taskToOtherExtractions } from "./smoke/task-to-other";
 import { photoTask, photoTaskExtractions } from "./smoke/photo-task";
 import { dropTask, dropTaskExtractions } from "./smoke/drop-task";
 import { missedRing } from "./smoke/missed-ring";
@@ -53,6 +54,8 @@ const { values } = parseArgs({
     cold: { type: "boolean", default: false },
     /** The two-person cases to run, e.g. "3,4" (sync set only). */
     cases: { type: "string" },
+    /** The two-person set without a warm start: new database, clean install, sign-up in the app. */
+    fresh: { type: "boolean", default: false },
   },
 });
 function chosenSet(name: string | undefined): SetName {
@@ -62,7 +65,7 @@ function chosenSet(name: string | undefined): SetName {
   process.exit(2);
 }
 const set = chosenSet(values.set);
-const TIMEOUT_MS: Record<SetName, number> = { smoke: 30 * 60_000, sync: 45 * 60_000 };
+const TIMEOUT_MS: Record<SetName, number> = { smoke: 30 * 60_000, sync: 20 * 60_000 };
 
 const ctx = new RunContext(new Date());
 console.log(`run folder: ${ctx.dir}`);
@@ -123,7 +126,21 @@ async function main(): Promise<void> {
     ),
   );
 
-  const databaseUrl = await ctx.step("database", () => recreateDatabase(supabase.dbUrl));
+  // Warm start (docs/testing.md, Warm start): the two-person set reuses the database and the signed-in apps of the
+  // last run when it can; --fresh, or anything missing, starts clean.
+  const warmUrl =
+    set === "sync" && !values.fresh
+      ? await ctx.step("warm-check", async () => {
+          const url = await warmDatabase(supabase.dbUrl);
+          const apps = await Promise.all(allDevices().map((d) => d.signedIn()));
+          const warm = url !== null && apps.every(Boolean) ? url : null;
+          ctx.log(warm === null ? "starting fresh" : "warm start");
+          return warm;
+        })
+      : null;
+
+  const databaseUrl =
+    warmUrl ?? (await ctx.step("database", () => recreateDatabase(supabase.dbUrl)));
 
   await ctx.step("backend", async () => {
     const extractions = ctx.path("extractions.json");
@@ -145,7 +162,8 @@ async function main(): Promise<void> {
     // The first request compiles the route; a 404 here means the server is not in E2E mode.
     await waitFor(
       "the backend in E2E mode (POST /api/test/reset)",
-      () => testApi.reset(),
+      // A warm start keeps the people of the last run.
+      () => (warmUrl === null ? testApi.reset() : testApi.resetTasks()),
       180_000,
       2000,
     );
@@ -161,17 +179,19 @@ async function main(): Promise<void> {
 
   await ctx.step("install", async () => {
     for (const d of allDevices()) {
-      await d.installClean(APK);
+      await (warmUrl === null ? d.installClean(APK) : d.installKeepingData(APK));
       d.startLogcat(ctx.path(`logcat-${d.role}.txt`));
     }
   });
 
   if (set === "sync") {
-    await signUpSibel(ctx, databaseUrl);
-    await invite(ctx, databaseUrl);
-    await erenQuietHours(ctx, databaseUrl);
+    if (warmUrl === null) {
+      await signUpSibel(ctx, databaseUrl);
+      await invite(ctx, databaseUrl);
+    }
     await twoPerson(
       ctx,
+      databaseUrl,
       values.cases === undefined ? undefined : new Set(values.cases.split(",").map(Number)),
     );
     return;

@@ -33,13 +33,20 @@ class PokeAlarms
         private val clock: Clock,
         private val notifications: PokeNotifications,
     ) : AlarmRearmer {
-        override suspend fun rearm() {
+        /** The steps that should have an alarm now. */
+        private suspend fun toArm(): List<PokeStep> {
             val all = steps.all()
             val taskList = tasks.all()
             val states = taskList.associate { it.id to it.toLocalState() }
             val fired = all.filter { it.firedAt != null }.map { it.toStep().key }.toSet()
             val now = clock.now()
-            val toArm = PokeRules.stepsToArm(all.map { it.toStep() }, states, fired, now) + snoozedRings(taskList, all, now)
+            return PokeRules.stepsToArm(all.map { it.toStep() }, states, fired, now) + snoozedRings(taskList, all, now)
+        }
+
+        override suspend fun rearm() {
+            val all = steps.all()
+            val states = tasks.all().associate { it.id to it.toLocalState() }
+            val toArm = toArm()
             val armed = toArm.map { it.key }.toSet()
             all.map { it.toStep().key }.filterNot { it in armed }.forEach(scheduler::cancel)
             toArm.forEach(scheduler::schedule)

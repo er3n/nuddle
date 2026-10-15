@@ -197,7 +197,7 @@ run = "pnpm --filter @nuddle/e2e smoke"
 
 [tasks."e2e:sync"]
 description = "Two-emulator set of the sender and recipient cases (NUD-64)"
-# Like e2e:smoke, with a 45 minute hard timeout: background it and poll <run folder>/orchestrator.log.
+# About 3 minutes on a warm start, 6 fresh (docs/testing.md, Two-person set); 20 minute hard timeout.
 depends = ["_install"]
 run = "pnpm --filter @nuddle/e2e sync"
 

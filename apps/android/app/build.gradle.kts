@@ -37,6 +37,7 @@ android {
             buildConfigField("boolean", "EXPOSE_TEST_TAGS", "false")
             buildConfigField("boolean", "INJECTED_PHOTO", "false")
             buildConfigField("boolean", "INJECTED_SPEECH", "false")
+            buildConfigField("boolean", "FAKE_TIME", "false")
             manifestPlaceholders["crashlyticsEnabled"] = "true"
         }
         create("e2e") {
@@ -49,6 +50,8 @@ android {
             buildConfigField("boolean", "INJECTED_PHOTO", "true")
             // Voice input "hears" the text the orchestrator put on the phone (docs/testing.md, Android `e2e` flavor).
             buildConfigField("boolean", "INJECTED_SPEECH", "true")
+            // Time is the orchestrator's to move, on the phone as on the server (docs/testing.md, Fake time).
+            buildConfigField("boolean", "FAKE_TIME", "true")
             // Smoke runs are not crashes worth a report (NUD-39).
             manifestPlaceholders["crashlyticsEnabled"] = "false"
         }
@@ -59,6 +62,7 @@ android {
             buildConfigField("boolean", "EXPOSE_TEST_TAGS", "false")
             buildConfigField("boolean", "INJECTED_PHOTO", "false")
             buildConfigField("boolean", "INJECTED_SPEECH", "false")
+            buildConfigField("boolean", "FAKE_TIME", "false")
             manifestPlaceholders["crashlyticsEnabled"] = "true"
         }
     }

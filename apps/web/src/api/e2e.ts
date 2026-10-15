@@ -64,6 +64,18 @@ export function e2eRoutes(deps: AppDeps, e2e: { clock: OffsetClock }): Hono<AppE
     return c.json({ ok: true });
   });
 
+  /**
+   * Between runs and cases of the warm two-person set (docs/testing.md, Warm start): no task left, the clock back to
+   * real time; people, their devices, connections and invites stay, so the signed-in apps keep working.
+   */
+  r.post("/reset-tasks", async (c) => {
+    await deps.db.execute(
+      sql`truncate idempotency_keys, scheduled_actions, poke_steps, task_events, tasks`,
+    );
+    e2e.clock.reset();
+    return c.json({ ok: true });
+  });
+
   /** People (as Supabase Auth users, so test numbers sign in as them) and connections. */
   r.post("/seed", async (c) => {
     const parsed = SeedBody.safeParse(await c.req.json());
