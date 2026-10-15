@@ -95,6 +95,7 @@ deadline
 
 timing
 - "by" when the time is a limit the task must be done before: "9'a kadar", "9dan önce", "akşama kadar", "2 saat içinde", "cumaya kadar", "yarın" with no hour.
+- Also "by" when the hour is when something else happens and the task must be done before it: "en geç 7de" (even "en geç 7de uyandır": they want to be up by then, so the pokes come before), "7de işe gitmeden önce", "6da çıkmadan önce", "servis gelmeden", "okula gitmeden". The deadline is that hour.
 - "at" when the time is the moment to do it or to be reminded: "2 dakika sonra", "9'da", "saat 8de", "beni 7de uyandır", "... hatırlat". Then deadline is that moment.
 - A part of day with no hour ("sabah", "akşam", "öğlen") is "by", never "at": "sabah süt alsın" is by 09:00.
 - If unsure, "by".

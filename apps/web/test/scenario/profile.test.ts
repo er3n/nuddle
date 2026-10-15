@@ -27,17 +27,20 @@ describe("scenarios: person profile", () => {
     expect(planner.calls.at(-1)?.history).toHaveLength(8);
 
     await closeOne(sibel, eren);
-    // The 11th task is the first planned with 10 closed: the profile is written first.
+    // The 11th task is the first planned with 10 closed: it is planned with no profile, and the
+    // profile is written right after it, for the next plan (never before, a slow profiler must not
+    // delay the pokes).
     await writeTask(sibel, TEXT.dishesToEren);
+    expect(planner.calls.at(-1)?.profile).toBeNull();
     expect(profiler.calls).toHaveLength(1);
     expect(profiler.calls[0]).toMatchObject({ previous: null, recipient: { name: "Eren" } });
     expect(profiler.calls[0]?.history).toHaveLength(10);
-    expect(planner.calls.at(-1)?.profile).toBe("Eren acts on the first SOUND; 10 tasks seen.");
-    expect(planner.calls.at(-1)?.history).toHaveLength(RECENT_TASKS);
     expect(world.person("eren").pokeProfile).toMatchObject({ tasksSeen: 10 });
 
-    // Not again until 10 more closed; the profile is in the call log.
+    // The next plan reads it; not written again until 10 more closed; it is in the call log.
     await writeTask(sibel, TEXT.photoToEren);
+    expect(planner.calls.at(-1)?.profile).toBe("Eren acts on the first SOUND; 10 tasks seen.");
+    expect(planner.calls.at(-1)?.history).toHaveLength(RECENT_TASKS);
     expect(profiler.calls).toHaveLength(1);
     const logged = (await world.llmCalls()).filter((c) => c.kind === "profile");
     expect(logged.map((c) => [c.outcome, c.personId])).toEqual([["written", "eren"]]);
