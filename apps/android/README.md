@@ -27,7 +27,7 @@ Independent Gradle build (Kotlin, Compose), `applicationId app.nuddle`, flavors 
 
 ## E2E
 
-The `e2e` flavor is `devDebug` plus test tags exposed as resource ids (`BuildConfig.EXPOSE_TEST_TAGS`, `ui/TestTags.kt`), so the Maestro flows in `e2e/flows` find elements by tag. Every interactive element gets a tag; `TestTagsTest` checks them. Run with `mise run e2e:smoke` (`e2e/README.md`).
+The `e2e` flavor is `devDebug` plus test tags exposed as resource ids (`BuildConfig.EXPOSE_TEST_TAGS`, `ui/TestTags.kt`), so the E2E flows (`e2e/orchestrator/src/flows.ts`) find elements by tag. Every interactive element gets a tag; `TestTagsTest` checks them. Run with `mise run e2e:smoke` (`e2e/README.md`).
 
 ## Screenshots
 

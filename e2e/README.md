@@ -1,12 +1,11 @@
 # e2e
 
-Real flows on two emulators against the local backend in E2E mode (`docs/testing.md`, E2E; ADR 0012).
+Real flows on two emulators against the local backend in E2E mode (`docs/testing.md`, E2E; ADR 0012, 0018).
 
 | Folder | What |
 |---|---|
 | `scripts/emulators.sh` | Creates and boots the two AVDs headless (`create`, `boot [--cold]`, `stop`) |
-| `orchestrator/` | TypeScript runner: backend, database, build, install, Maestro flows, test endpoints, run folder |
-| `flows/` | Maestro YAML per device role |
+| `orchestrator/` | TypeScript runner: backend, database, build, install, the flows over adb (`src/flows.ts`), fake time, test endpoints, run folder |
 | `fixtures/` | What the fixture `TaskExtractor` returns in E2E mode |
 
 ## Run
@@ -60,7 +59,7 @@ Auth users live in the stack's Auth service and are not deleted; the app sees a 
 | `server.log` | The backend's output |
 | `logcat-sibel.txt`, `logcat-eren.txt` | Logcat of both devices from install on |
 | `gradle.log`, `emulators.log` | Build and emulator boot |
-| `steps/NN-<step>/` | `sibel.png` and `eren.png` after the step (passed or failed); Maestro's `maestro.log`, screenshots and hierarchy for flow steps |
+| `steps/NN-<step>/` | `sibel.png`, `eren.png` and their UI dumps `sibel.xml`, `eren.xml` after the step (passed or failed) |
 
 ## Smoke set
 
@@ -79,7 +78,7 @@ Auth users live in the stack's Auth service and are not deleted; the app sees a 
 
 ## Two-person set
 
-`orchestrator/src/sync/two-person.ts`: the seven cases of `docs/testing.md`, Two-person set, one step each (`sync-1-...` to `sync-7-...`), each after a reset of the tasks on the server and both phones. It drives and reads both phones without Maestro: `Device.tap()` and `typeText()` (an element found by its tag in a `uiautomator dump`), `screenTags()`, `notificationChannels()` and `pendingPokeAlarms()`. A failed check names what was on screen.
+`orchestrator/src/sync/two-person.ts`: the seven cases of `docs/testing.md`, Two-person set, one step each (`sync-1-...` to `sync-7-...`), each after a reset of the tasks on the server and both phones. It drives and reads both phones over adb, like every flow: `Device.tap()` and `type()` (an element found by its tag in a `uiautomator dump`), `screenTags()`, `notificationChannels()` and `pendingPokeAlarms()`. A failed check names what was on screen.
 
 Time is fake (`sync/time.ts`): `toStep(taskId, level?)` and `pastDeadline(taskId)` move the server clock (`/api/test/advance-clock`) and both phones (`Device.advance()`, the e2e flavor's `E2eReceiver`) together, then tick.
 
@@ -89,4 +88,4 @@ Smokes run in the order of the table: each one starts from the state the one bef
 
 Smoke 1 until slice 1: the task is created through the API (`create_task`), not in the app (NUD-10), and "the task leaves the list" is checked on the server (status `DONE`, no open task in sync) and on the device (no pending poke alarm), because home has no task list yet.
 
-Plans are compressed (offsets divided by 60), so a deadline 90 minutes away rings the `FULL_SCREEN` step about 75 s after the task is created. Quiet hours still apply: Sibel's default is 23:00 to 07:00 Istanbul time, so a run whose poke window falls into it gets no plan and fails at `plan-on-device`.
+Plans are compressed (offsets divided by 60), and time is fake (ADR 0018): a smoke that needs a poke moves the server and both phones to its step (`FakeTime.toStep`), so it rings at once. Quiet hours still apply: Sibel's default is 23:00 to 07:00 Istanbul time, so a run whose poke window falls into it gets no plan and fails at `plan-on-device`.

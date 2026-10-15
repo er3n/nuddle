@@ -99,7 +99,7 @@ export function stop(child: ChildProcess): void {
   }
 }
 
-const sleep = (ms: number): Promise<void> =>
+export const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
     setTimeout(resolve, ms);
   });

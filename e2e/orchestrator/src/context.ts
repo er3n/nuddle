@@ -44,7 +44,7 @@ export class RunContext {
     writeFileSync(this.path(name), `${JSON.stringify(value, null, 2)}\n`);
   }
 
-  /** Runs one named step; its folder `steps/NN-name/` gets the Maestro output and the screenshots. */
+  /** Runs one named step; its folder `steps/NN-name/` gets the screenshots and UI dumps. */
   async step<T>(name: string, fn: (stepDir: string) => Promise<T>): Promise<T> {
     this.stepCount += 1;
     const stepDir = this.path("steps", `${String(this.stepCount).padStart(2, "0")}-${name}`);

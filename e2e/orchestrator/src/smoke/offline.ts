@@ -3,6 +3,7 @@
 // the task is on home. Runs after smoke 9: Eren is signed in on his device.
 import type { RunContext } from "../context";
 import { devices } from "../devices";
+import * as flows from "../flows";
 
 /** A confident task to self in the run's extraction fixtures (smoke 1). */
 const TASK_TEXT = "para cek";
@@ -10,11 +11,11 @@ const TASK_TEXT = "para cek";
 export async function offline(run: RunContext): Promise<void> {
   const { eren } = devices;
 
-  await run.step("eren-offline-write", async (dir) => {
+  await run.step("eren-offline-write", async () => {
     await eren.wakeAndUnlock();
     await eren.offline();
     try {
-      await eren.maestro("eren/offline-write.yaml", dir, { TEXT: TASK_TEXT });
+      await flows.offlineWrite(eren, TASK_TEXT);
     } catch (error) {
       // The emulator keeps airplane mode across runs: give the network back before failing.
       await eren.online();
@@ -22,8 +23,8 @@ export async function offline(run: RunContext): Promise<void> {
     }
   });
 
-  await run.step("eren-back-online", async (dir) => {
+  await run.step("eren-back-online", async () => {
     await eren.online();
-    await eren.maestro("eren/offline-sent.yaml", dir);
+    await flows.offlineSent(eren, "Para çek");
   });
 }

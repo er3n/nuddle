@@ -6,12 +6,14 @@ import { join } from "node:path";
 import postgres from "postgres";
 import { Phone, signIn, testApi } from "../api";
 import type { RunContext } from "../context";
+import type { FakeTime } from "../sync/time";
 import { devices } from "../devices";
+import * as flows from "../flows";
 import { waitFor } from "../proc";
 
 const SIBEL_PHONE = "+905320000001";
 /** Compressed plans divide offsets by 60 (docs/architecture.md, E2E mode): with a deadline 90 minutes
- * away, the poke window opens in about 30 s and the FULL_SCREEN step rings about 75 s after creation. */
+ * away, the FULL_SCREEN step is about 75 s after creation; fake time moves straight to it. */
 const DEADLINE_MINUTES = 90;
 /** What the flow types into the compose bar; the fixture extractor answers it (docs/testing.md). */
 const TASK_TEXT = "para cek";
@@ -54,13 +56,9 @@ export async function signUpSibel(run: RunContext, databaseUrl: string): Promise
     await testApi.reset();
   });
 
-  await run.step("sign-up", async (dir) => {
+  await run.step("sign-up", async () => {
     await sibel.wakeAndUnlock();
-    await sibel.maestro("sibel/sign-up.yaml", dir, {
-      PHONE: SIBEL_PHONE.slice(3),
-      NAME: "Sibel",
-      DONE: "home.screen",
-    });
+    await flows.signUp(sibel, SIBEL_PHONE.slice(3), "Sibel", "home.screen");
   });
 
   await run.step("device-registered", async (dir) => {
@@ -90,12 +88,16 @@ export async function signUpSibel(run: RunContext, databaseUrl: string): Promise
   });
 }
 
-export async function taskToSelf(run: RunContext, databaseUrl: string): Promise<void> {
+export async function taskToSelf(
+  run: RunContext,
+  databaseUrl: string,
+  time: FakeTime,
+): Promise<void> {
   const sibel = devices.sibel;
   await signUpSibel(run, databaseUrl);
 
-  await run.step("write-task", async (dir) => {
-    await sibel.maestro("sibel/write-task.yaml", dir, { TEXT: TASK_TEXT });
+  await run.step("write-task", async () => {
+    await flows.writeTask(sibel, TASK_TEXT);
   });
 
   const { phone, taskId } = await run.step("task-created", async () => {
@@ -124,16 +126,18 @@ export async function taskToSelf(run: RunContext, databaseUrl: string): Promise<
     await sibel.screenOff();
   });
 
-  await run.step("full-screen-poke", async (dir) => {
-    await sibel.maestro("sibel/wait-poke.yaml", dir);
+  await run.step("full-screen-poke", async () => {
+    // Fake time (docs/testing.md): straight to the full screen step instead of waiting for it.
+    await time.toStep(taskId, "FULL_SCREEN");
+    await flows.waitPoke(sibel);
   });
 
-  await run.step("tap-done", async (dir) => {
-    await sibel.maestro("sibel/poke-done.yaml", dir);
+  await run.step("tap-done", async () => {
+    await flows.pokeDone(sibel);
   });
 
-  await run.step("home-after-done", async (dir) => {
-    await sibel.maestro("sibel/home-done.yaml", dir);
+  await run.step("home-after-done", async () => {
+    await flows.homeDone(sibel);
   });
 
   await run.step("task-done", async () => {

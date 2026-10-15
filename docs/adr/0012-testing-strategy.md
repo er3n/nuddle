@@ -1,6 +1,6 @@
 # 0012 Testing strategy with E2E mode and Maestro
 
-Status: Accepted (2026-10-11).
+Status: Accepted (2026-10-11). The E2E driver (Maestro) and its real-time waiting are superseded by 0018.
 
 ## Context
 One person reviews agent-written code. Manual validation is the bottleneck. Agents must be able to verify their own work, including real device behavior, and debug failures from artifacts.

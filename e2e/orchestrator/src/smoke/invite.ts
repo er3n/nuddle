@@ -6,6 +6,7 @@
 import postgres from "postgres";
 import type { RunContext } from "../context";
 import { devices } from "../devices";
+import * as flows from "../flows";
 import { waitFor } from "../proc";
 
 const SIBEL_PHONE = "+905320000001";
@@ -15,13 +16,9 @@ export async function invite(run: RunContext, databaseUrl: string): Promise<void
   const { sibel, eren } = devices;
   const db = postgres(databaseUrl, { max: 1, onnotice: () => undefined });
   try {
-    await run.step("invite", async (dir) => {
+    await run.step("invite", async () => {
       await sibel.wakeAndUnlock();
-      await sibel.maestro("sibel/invite.yaml", dir, {
-        NAME: "Eren",
-        PHONE: EREN_PHONE.slice(3),
-        RELATIONSHIP: "spouse",
-      });
+      await flows.invite(sibel, "Eren", EREN_PHONE.slice(3), "spouse");
     });
 
     await run.step("invite-on-server", async () => {
@@ -40,7 +37,7 @@ export async function invite(run: RunContext, databaseUrl: string): Promise<void
         throw new Error(`unexpected invite ${JSON.stringify(row)}`);
     });
 
-    await run.step("eren-sign-up-from-link", async (dir) => {
+    await run.step("eren-sign-up-from-link", async () => {
       const [row] = await db<{ code: string }[]>`
         select i.code from invites i where i.invitee_phone = ${EREN_PHONE} and i.status = 'open'`;
       if (!row) throw new Error("no open invite for Eren");
@@ -49,11 +46,11 @@ export async function invite(run: RunContext, databaseUrl: string): Promise<void
       await eren.shell(
         `am start -a android.intent.action.VIEW -d https://nuddle.app/i/${row.code} -n app.nuddle.debug/app.nuddle.MainActivity`,
       );
-      await eren.maestro("eren/sign-up-from-link.yaml", dir, { PHONE: EREN_PHONE.slice(3) });
+      await flows.signUpFromLink(eren, EREN_PHONE.slice(3));
     });
 
-    await run.step("consent", async (dir) => {
-      await eren.maestro("eren/consent.yaml", dir);
+    await run.step("consent", async () => {
+      await flows.consent(eren);
     });
 
     await run.step("connected", async () => {
@@ -72,8 +69,8 @@ export async function invite(run: RunContext, databaseUrl: string): Promise<void
       run.log(edges.map((e) => `${e.from} -> ${e.to} ${e.type}`).join(", "));
     });
 
-    await run.step("invite-accepted", async (dir) => {
-      await sibel.maestro("sibel/invite-accepted.yaml", dir);
+    await run.step("invite-accepted", async () => {
+      await flows.inviteAccepted(sibel);
     });
   } finally {
     await db.end();

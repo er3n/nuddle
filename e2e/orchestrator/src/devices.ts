@@ -1,11 +1,12 @@
 // The two emulators (docs/testing.md, Orchestrator): emulator-5554 is Sibel, emulator-5556 is Eren.
-// adb for setup, system conditions and screenshots; Maestro for the flows in e2e/flows/.
+// adb for everything (ADR 0018): setup, system conditions, screenshots, the screen and fake time.
 import type { ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { repoRoot } from "./context";
-import { run, spawnLogged, stop } from "./proc";
+import { run, sleep, spawnLogged, stop } from "./proc";
+import { describe, matches, parseDump, type Target, type UiNode } from "./ui";
 
 const APP_ID = "app.nuddle.debug";
 /** Where a warm start remembers which APK it installed (docs/testing.md, Warm start). */
@@ -48,6 +49,7 @@ export class Device {
     // -g grants runtime permissions (POST_NOTIFICATIONS); setup screens 2c to 2e arrive in slice 1.
     await this.adb(["install", "-r", "-g", apk], 180_000);
     await this.shell(`appops set ${APP_ID} USE_FULL_SCREEN_INTENT allow`);
+    await this.noKeyboard();
     await this.reversePorts();
   }
 
@@ -63,6 +65,7 @@ export class Device {
       await this.shell(`echo ${sha} > ${APK_SHA}`);
     }
     await this.shell(`appops set ${APP_ID} USE_FULL_SCREEN_INTENT allow`);
+    await this.noKeyboard();
     await this.reversePorts();
   }
 
@@ -95,6 +98,23 @@ export class Device {
   /** The app's clock moves on by [ms]; steps that came due ring at once (fake time). */
   async advance(ms: number): Promise<void> {
     await this.e2e("ADVANCE", ["--el", "ms", String(ms)]);
+  }
+
+  /**
+   * As [advance], for an app that is force stopped: the offset is written where the app keeps it
+   * (`shared_prefs/e2e_time.xml`, apps/android di/TestTime.kt) and nothing starts the app.
+   */
+  async advanceStopped(ms: number): Promise<void> {
+    const file = "shared_prefs/e2e_time.xml";
+    const now = await this.shell(`run-as ${APP_ID} cat ${file} 2>/dev/null; true`);
+    const offset = Number(/name="offsetMs" value="(-?\d+)"/.exec(now)?.[1] ?? "0") + ms;
+    const xml = `<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n<map>\n    <long name="offsetMs" value="${String(offset)}" />\n</map>\n`;
+    const local = join(tmpdir(), `nuddle-e2e-time-${this.role}.xml`);
+    writeFileSync(local, xml);
+    await this.adb(["push", local, "/data/local/tmp/e2e_time.xml"]);
+    await this.shell(
+      `run-as ${APP_ID} sh -c 'mkdir -p shared_prefs && cp /data/local/tmp/e2e_time.xml ${file}'`,
+    );
   }
 
   /** No task on the phone, real time again, a full sync (between cases of a warm run). */
@@ -195,39 +215,113 @@ export class Device {
     await this.shell("input keyevent KEYCODE_HOME");
   }
 
+  /** Starts the app anew, on its start screen, as Maestro's `launchApp` did (it stops the app first). */
+  async relaunch(): Promise<void> {
+    await this.forceStop();
+    await this.openApp();
+  }
+
   /** Brings the app to the front (a running activity is reused, as a tap on the launcher icon does). */
   async openApp(): Promise<void> {
     await this.shell(`monkey -p ${APP_ID} -c android.intent.category.LAUNCHER 1`);
   }
 
-  /**
-   * The test tags on screen right now (resource ids in the `e2e` flavor), from a UI Automator dump. A dump taken
-   * while the screen animates can fail; it is tried again.
-   */
+  /** The screen now, from a UI Automator dump; a dump taken while the screen animates can fail and is tried again. */
+  async screen(): Promise<UiNode[]> {
+    for (let attempt = 0; ; attempt += 1) {
+      const out = await this.shell(
+        "uiautomator dump /data/local/tmp/ui.xml >/dev/null 2>&1; cat /data/local/tmp/ui.xml",
+      );
+      if (out.includes("<hierarchy")) {
+        this.lastDump = out;
+        return parseDump(out);
+      }
+      if (attempt >= 4) throw new Error(`no UI dump from ${this.role}`);
+      await sleep(1000);
+    }
+  }
+
+  /** The last dump taken. */
+  lastDump = "";
+
+  /** The screen's hierarchy into [file], for the step's folder (what a flow could see). */
+  async dumpTo(file: string): Promise<void> {
+    await this.screen();
+    writeFileSync(file, this.lastDump);
+  }
+
+  /** The test tags on screen now. */
   async screenTags(): Promise<Set<string>> {
-    return new Set(await this.screenTagList());
+    return new Set((await this.screen()).map((n) => n.tag).filter((t) => t !== ""));
+  }
+
+  /** Waits until [target] is on screen; returns its node. */
+  async see(target: Target, timeoutMs = 30_000): Promise<UiNode> {
+    const until = Date.now() + timeoutMs;
+    for (;;) {
+      const node = (await this.screen()).find((n) => matches(n, target));
+      if (node) return node;
+      if (Date.now() > until) throw new Error(`${this.role}: ${describe(target)} not on screen`);
+      await sleep(500);
+    }
+  }
+
+  /** Waits until [target] is no longer on screen. */
+  async gone(target: Target, timeoutMs = 30_000): Promise<void> {
+    const until = Date.now() + timeoutMs;
+    while ((await this.screen()).some((n) => matches(n, target))) {
+      if (Date.now() > until) throw new Error(`${this.role}: ${describe(target)} still on screen`);
+      await sleep(500);
+    }
+  }
+
+  /** Fails at once when [target] is on screen. */
+  async notThere(target: Target): Promise<void> {
+    if ((await this.screen()).some((n) => matches(n, target)))
+      throw new Error(`${this.role}: ${describe(target)} on screen`);
+  }
+
+  /** Taps [target] once it is on screen. */
+  async tap(target: Target, timeoutMs = 30_000): Promise<void> {
+    const node = await this.see(target, timeoutMs);
+    await this.shell(`input tap ${String(node.x)} ${String(node.y)}`);
+  }
+
+  /** Taps [targets] one after the other, each once it is on screen. */
+  async taps(...targets: Target[]): Promise<void> {
+    for (const target of targets) await this.tap(target);
   }
 
   /**
-   * Taps the element tagged [tag] once it is on screen, without starting Maestro (several seconds per flow): for the
-   * one-tap steps of the two-person set.
+   * Taps the field [tag] and types ASCII [text] into it. There is no on-screen keyboard (see [noKeyboard]), so the
+   * keys go straight into the field. What landed in it is checked ([check]: off for a field that submits itself
+   * when full); a wrong one is typed again. The field is emptied first.
    */
-  async tap(tag: string, timeoutMs = 30_000): Promise<void> {
-    const until = Date.now() + timeoutMs;
-    for (;;) {
-      const node = (await this.screenDump()).match(
-        new RegExp(
-          `resource-id="${tag.replaceAll(".", "\\.")}"[^>]*bounds="\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]"`,
-        ),
-      );
-      if (node) {
-        const [x1, y1, x2, y2] = node.slice(1, 5).map(Number) as [number, number, number, number];
-        await this.shell(`input tap ${String((x1 + x2) >> 1)} ${String((y1 + y2) >> 1)}`);
-        return;
-      }
-      if (Date.now() > until) throw new Error(`${this.role}: no ${tag} on screen to tap`);
-      await new Promise((resolve) => setTimeout(resolve, 700));
+  async type(tag: string, text: string, check = true): Promise<void> {
+    await this.tap(tag);
+    for (let attempt = 1; ; attempt += 1) {
+      await sleep(300);
+      // Whatever the field holds goes first: select all, delete.
+      await this.shell("input keycombination KEYCODE_CTRL_LEFT KEYCODE_A");
+      await this.shell("input keyevent KEYCODE_DEL");
+      await this.typeText(text);
+      if (!check) return;
+      const field = (await this.screen()).find((n) => n.tag === tag)?.text ?? "";
+      // Fields may format what is typed (the phone number gets spaces).
+      const bare = (v: string) => v.replace(/[^\p{L}\p{N}]/gu, "");
+      if (bare(field) === bare(text)) return;
+      if (attempt >= 3)
+        throw new Error(`${this.role}: ${tag} says "${field}" after typing "${text}"`);
     }
+  }
+
+  /**
+   * Turns the on-screen keyboards off (ADR 0019): Gboard autocorrects what `input text` types and covers half the
+   * screen; without a keyboard, Compose fields take the keys as from a hardware keyboard. Kept across runs.
+   */
+  async noKeyboard(): Promise<void> {
+    const enabled = (await this.shell("ime list -s")).split("\n").filter((l) => l.trim() !== "");
+    for (const ime of enabled) await this.shell(`ime disable ${ime.trim()}`);
   }
 
   /** Types ASCII [text] into the focused field. */
@@ -235,24 +329,22 @@ export class Device {
     await this.shell(`input text '${text.replace(/[^A-Za-z0-9 ]/g, "").replaceAll(" ", "%s")}'`);
   }
 
-  /** Taps [tags] one after the other, each once it is on screen. */
-  async taps(...tags: string[]): Promise<void> {
-    for (const tag of tags) await this.tap(tag);
+  /** Closes the keyboard when it is open (Back would leave the screen otherwise). */
+  async hideKeyboard(): Promise<void> {
+    if ((await this.shell("dumpsys input_method")).includes("mInputShown=true")) await this.back();
   }
 
-  private async screenTagList(): Promise<string[]> {
-    return [...(await this.screenDump()).matchAll(/resource-id="([^"]+)"/g)].map((m) => m[1] ?? "");
+  async back(): Promise<void> {
+    await this.shell("input keyevent KEYCODE_BACK");
   }
 
-  private async screenDump(): Promise<string> {
-    for (let attempt = 0; ; attempt += 1) {
-      const out = await this.shell(
-        "uiautomator dump /data/local/tmp/ui.xml >/dev/null 2>&1; cat /data/local/tmp/ui.xml",
-      );
-      if (out.includes("<hierarchy")) return out;
-      if (attempt >= 4) throw new Error(`no UI dump from ${this.role}`);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+  /** Scrolls the screen up until [tag] is on it. */
+  async scrollTo(tag: string): Promise<void> {
+    for (let i = 0; i < 8; i += 1) {
+      if ((await this.screen()).some((n) => n.tag === tag)) return;
+      await this.shell("input swipe 540 1800 540 700 300");
     }
+    await this.see(tag, 1000);
   }
 
   /** The app's notifications that are up now, by channel (`poke_alarm`, `poke_silent`, `tasks`, ...). */
@@ -267,67 +359,6 @@ export class Device {
   /** Whether a poke notification (3a) or the full screen poke (3b) of the app is up. */
   async pokeShowing(): Promise<boolean> {
     return (await this.notificationChannels()).some((c) => c.startsWith("poke_"));
-  }
-
-  /** Runs a Maestro flow from e2e/flows on this device; its debug output goes to `outDir`. */
-  async maestro(
-    flow: string,
-    outDir: string,
-    env: Record<string, string> = {},
-    timeoutMs = 300_000,
-  ): Promise<void> {
-    mkdirSync(outDir, { recursive: true });
-    await this.reversePorts();
-    const envArgs = Object.entries(env).flatMap(([k, v]) => ["-e", `${k}=${v}`]);
-    const cliLog = join(outDir, "maestro-cli.log");
-    // Maestro sometimes does not find a connected emulator ("was requested, but it is not connected") when adb lists
-    // other devices going offline; nothing ran on the device then, so the flow is started again.
-    for (let attempt = 1; ; attempt += 1) {
-      try {
-        await this.runMaestro(flow, outDir, envArgs, timeoutMs, cliLog);
-        return;
-      } catch (error) {
-        const notFound =
-          existsSync(cliLog) && readFileSync(cliLog, "utf8").includes("but it is not connected");
-        if (!notFound || attempt >= 3) throw error;
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-      }
-    }
-  }
-
-  private async runMaestro(
-    flow: string,
-    outDir: string,
-    envArgs: string[],
-    timeoutMs: number,
-    cliLog: string,
-  ): Promise<void> {
-    await run(
-      "maestro",
-      [
-        // Without a platform Maestro also lists iOS simulators, which can hang on a Mac.
-        "--platform",
-        "android",
-        "--device",
-        this.serial,
-        "test",
-        join(repoRoot, "e2e", "flows", flow),
-        "--debug-output",
-        outDir,
-        "--flatten-debug-output",
-        ...envArgs,
-      ],
-      {
-        timeoutMs,
-        // Maestro writes its own maestro.log into outDir.
-        logFile: cliLog,
-        env: {
-          ...process.env,
-          MAESTRO_CLI_NO_ANALYTICS: "1",
-          MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED: "true",
-        },
-      },
-    );
   }
 }
 

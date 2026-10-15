@@ -4,24 +4,31 @@
 // Runs after smoke 8: Eren is signed in on his device, with quiet hours away from now (smoke 4).
 import { Phone, signIn } from "../api";
 import type { RunContext } from "../context";
+import type { FakeTime } from "../sync/time";
 import { devices } from "../devices";
+import * as flows from "../flows";
 import { waitFor } from "../proc";
 
 const EREN_PHONE = "+905320000002";
-/** As in smoke 1: compressed, the first poke is due about 30 s after the task is written and the second 30 s later. */
+/** As in smoke 1. */
 const DEADLINE_MINUTES = 90;
-/** Long enough after the force stop for the first two pokes to come due. */
-const WAIT_FOR_POKES_MS = 70_000;
+/**
+ * Fake time moves to this long before the first poke; the force stop follows at once and the poke comes due in real
+ * time while the app is stopped. The force stop's time is the phone's real one, so time cannot move while stopped.
+ */
+const BEFORE_POKE_MS = 6_000;
+/** Past the app's 2 minute grace for a late step (domain Poke.kt, LATE_GRACE). */
+const PAST_GRACE_MS = 150_000;
 
-export async function missedRing(run: RunContext): Promise<void> {
+export async function missedRing(run: RunContext, time: FakeTime): Promise<void> {
   const { eren } = devices;
   const erenApi = new Phone(await signIn(EREN_PHONE));
 
-  await run.step("eren-task-to-self", async () => {
+  const taskId = await run.step("eren-task-to-self", async () => {
     await eren.wakeAndUnlock();
     const taskId = await erenApi.createTaskToSelf(
       "Ekmek al",
-      new Date(Date.now() + DEADLINE_MINUTES * 60_000),
+      new Date((await time.now()).getTime() + DEADLINE_MINUTES * 60_000),
     );
     run.log(`task ${taskId}`);
     const alarms = await waitFor(
@@ -33,20 +40,25 @@ export async function missedRing(run: RunContext): Promise<void> {
       30_000,
     );
     run.log(`${String(alarms)} poke alarms set`);
+    return taskId;
   });
 
   await run.step("force-stop", async () => {
+    await time.toJustBefore(taskId, BEFORE_POKE_MS);
     const stoppedAt = Date.now();
     await eren.forceStop();
     if ((await eren.pendingPokeAlarms()) !== 0)
       throw new Error("a force stop should take the app's alarms");
     await new Promise((resolve) =>
-      setTimeout(resolve, Math.max(0, stoppedAt + WAIT_FOR_POKES_MS - Date.now())),
+      setTimeout(resolve, Math.max(0, stoppedAt + BEFORE_POKE_MS + 3_000 - Date.now())),
     );
+    // On launch the app rings again what is under 2 minutes late, and a ring clears the warning: time moves past every
+    // step by more than that, without starting the app.
+    await time.pastLastStep(taskId, PAST_GRACE_MS, eren);
   });
 
-  await run.step("eren-sees-missed-ring", async (dir) => {
+  await run.step("eren-sees-missed-ring", async () => {
     await eren.wakeAndUnlock();
-    await eren.maestro("eren/missed-ring.yaml", dir);
+    await flows.missedRing(eren);
   });
 }

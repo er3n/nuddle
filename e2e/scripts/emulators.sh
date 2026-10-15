@@ -83,13 +83,13 @@ wait_one() {
       exit 1
     fi
   done
-  # Animations make Maestro slower and flakier.
+  # Animations make the flows slower and flakier.
   for s in window_animation_scale transition_animation_scale animator_duration_scale; do
     "$ADB" -s "$serial" shell settings put global "$s" 0
   done
   "$ADB" -s "$serial" shell svc power stayon true
   # A slow emulator (software GPU on a CI runner) shows "System UI isn't responding" over the app, which hides
-  # every element from Maestro. The app under test is still checked by its own flows.
+  # every element from the flows. The app under test is still checked by its own flows.
   "$ADB" -s "$serial" shell settings put global hide_error_dialogs 1
   echo "$serial booted"
 }

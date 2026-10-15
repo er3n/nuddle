@@ -5,6 +5,7 @@
 import { Phone, signIn } from "../api";
 import type { RunContext } from "../context";
 import { devices } from "../devices";
+import * as flows from "../flows";
 import { waitFor } from "../proc";
 
 const EREN_PHONE = "+905320000002";
@@ -21,9 +22,9 @@ export async function removeConnection(run: RunContext): Promise<void> {
     return task.id;
   });
 
-  await run.step("eren-removes-sibel", async (dir) => {
+  await run.step("eren-removes-sibel", async () => {
     await eren.wakeAndUnlock();
-    await eren.maestro("eren/remove-connection.yaml", dir);
+    await flows.removeConnection(eren);
   });
 
   await run.step("connection-removed", async () => {
