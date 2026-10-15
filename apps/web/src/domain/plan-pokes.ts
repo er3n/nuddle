@@ -23,6 +23,7 @@
 //    same ladder where poking resumes, at least at the level already reached.
 // `history` is accepted for callers; v0 ignores it. The LLM planner reads it (ADR 0017).
 import { latestQuietOverlap, quietIntervalAt } from "./quiet-hours";
+import { pokeStartOf } from "./timing";
 import type { Reachability } from "./reachability";
 import { MINUTE } from "./time";
 import type { DeviceLevel, Edge, Person, PokeLevel, PokeStep, Task, TaskEvent } from "./types";
@@ -49,7 +50,7 @@ const AT_HUMAN_AFTER_MS = 30 * MINUTE;
 
 export interface PlanPokesInput {
   task: Pick<Task, "deadline" | "senderId" | "recipientId"> &
-    Partial<Pick<Task, "timing" | "remindAt">>;
+    Partial<Pick<Task, "timing" | "remindAt" | "leadMinutes">>;
   recipient: Pick<Person, "quietHours" | "useConnectionsForMyTasks">;
   /** The human channel in the MVP is the sender (docs/product.md, Human channel). */
   sender: Pick<Person, "notifyMeForOthersTasks">;
@@ -99,19 +100,28 @@ export function humanChannelAllowed(
   );
 }
 
-/** Rule 8: an `at` task. */
+/**
+ * Rule 8: an `at` task. The ladder starts at the moment minus the lead (NUD-70). The sender asked
+ * for that time, so quiet hours do not hold inside the task's own window. HUMAN comes 30 minutes
+ * after the start, or 5 minutes before the deadline when that is sooner.
+ */
 function planAt(input: PlanPokesInput, remindAt: Date): PokeStep[] {
-  const { task, recipient, now } = input;
-  const anchor = Math.max(remindAt.getTime(), now.getTime());
+  const { task, now } = input;
+  const start = pokeStartOf({ remindAt, leadMinutes: task.leadMinutes ?? 0 }) ?? remindAt;
+  const anchor = Math.max(start.getTime(), now.getTime());
+  const deadline = task.deadline.getTime();
   const floorRank = deviceRank[input.floor ?? "SILENT"];
   const planned: { level: PokeLevel; at: number }[] = atLadder.map((rung) => ({
     level: deviceRank[rung.level] >= floorRank ? rung.level : (input.floor ?? rung.level),
     at: anchor + rung.afterMs,
   }));
-  if (humanChannelAllowed(input)) planned.push({ level: "HUMAN", at: anchor + AT_HUMAN_AFTER_MS });
-  const allowed = planned.filter(
-    (p) => p.at < task.deadline.getTime() && !quietIntervalAt(new Date(p.at), recipient.quietHours),
-  );
+  const device = planned.filter((p) => p.at < deadline);
+  if (humanChannelAllowed(input)) {
+    const human = Math.min(anchor + AT_HUMAN_AFTER_MS, deadline - HUMAN_OFFSET_MS);
+    const lastDevice = device.at(-1)?.at ?? -Infinity;
+    if (human > lastDevice && human < deadline) device.push({ level: "HUMAN", at: human });
+  }
+  const allowed = device;
   if (!allowed.some((p) => p.level !== "HUMAN")) return [];
   return allowed.map((p, i) => ({
     seq: i + 1,

@@ -4,7 +4,7 @@
 import { planPokes } from "./plan-pokes";
 import type { Reachability } from "./reachability";
 import { DAY, HOUR, MINUTE, addMs } from "./time";
-import { reschedule, scheduleOf } from "./timing";
+import { leadMinutesOf, reschedule, scheduleOf } from "./timing";
 import type {
   CancelReason,
   DeviceLevel,
@@ -762,6 +762,8 @@ export interface CreateTaskInput {
   timing?: Timing;
   /** How long after the moment an `at` task is missed (ADR 0017). */
   missAfterMinutes?: number | null;
+  /** How long before the moment the person must start (NUD-70); ignored for `by`. */
+  leadMinutes?: number | null;
   finishMode: FinishMode;
   rawText: string | null;
   reachability: Reachability;
@@ -796,6 +798,7 @@ export function createTask(input: CreateTaskInput): Result<Outcome> {
     detail: input.detail,
     timing: input.timing ?? "by",
     ...scheduleOf(input.timing ?? "by", input.deadline, input.missAfterMinutes),
+    leadMinutes: leadMinutesOf(input.timing ?? "by", input.leadMinutes),
     finishMode: input.finishMode,
     rawText: input.rawText,
     status: "SCHEDULED",

@@ -17,7 +17,8 @@ interface GoldenCase {
   id: string;
   now: string;
   timeZone: string;
-  task: Json<PlannerInput["task"]>;
+  task: Omit<Json<PlannerInput["task"]>, "startAt" | "leadMinutes"> &
+    Partial<Pick<Json<PlannerInput["task"]>, "startAt" | "leadMinutes">>;
   sender: PlannerInput["sender"];
   recipient: PlannerInput["recipient"];
   relationship: PlannerInput["relationship"];
@@ -60,6 +61,8 @@ function toInput(c: GoldenCase): PlannerInput {
     timeZone: c.timeZone,
     task: {
       ...c.task,
+      startAt: new Date(c.task.startAt ?? c.task.time),
+      leadMinutes: c.task.leadMinutes ?? 0,
       time: new Date(c.task.time),
       deadline: new Date(c.task.deadline),
       notBefore: new Date(c.task.notBefore),

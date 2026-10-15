@@ -71,7 +71,8 @@ All of these live in pure functions that receive `now` from an injected `Clock` 
 | Rule | Value |
 |---|---|
 | "Yarın" after midnight | Between 00:00 and 05:00 in the sender's time zone, "yarın" means the day that starts when they wake up, which is today's date (NUD-68). The extractor applies it; the 2b chips and the detail keep calendar days. |
-| Quiet hours | Default 23:00-07:00 in the recipient's time zone, editable. No channel fires inside the window, full screen included. Checked when planning on the server and again on the device right before ringing. |
+| Quiet hours | Default 23:00-07:00 in the recipient's time zone, editable. No channel fires inside the window, full screen included, for a `by` task. An `at` task's own window (from its start to its deadline) is exempt: the sender asked for that time, so a 06:30 wake-up rings at 06:30 (NUD-70, open-questions #47). Checked when planning on the server and again on the device right before ringing. |
+| Lead | An `at` task may carry a lead (`lead_minutes`, 0 to 6 hours): how long before the moment the person must start getting ready or travelling. The extractor reads it from the task ("diş randevusu" about 45, "uçak" about 150, "yürüyüş 20 dakika sürüyor" 20; 0 for something done on the spot). Poking starts at the moment minus the lead; the moment and the deadline stay what the person sees (NUD-70). |
 | Deadline inside quiet hours | The plan moves pokes earlier so the last one lands before quiet hours start. |
 | Auto-approve | 3 hours after the photo is sent. |
 | Missed card | Removed from the recipient's list 1 day after `MISSED`, or at once when the recipient taps "Kaldır" on it (NUD-49). Removing only hides it on the recipient's side: the task stays `MISSED`, the sender still sees it. |
@@ -98,7 +99,7 @@ If full screen is not permitted, `FULL_SCREEN` silently degrades to `SOUND` on t
 ## Poke plan
 
 - Planned by an LLM (`PokePlanner` port, ADR 0017) from the task, the people and their relationship, the recipient's connections, the recipient's **profile** (a rolling LLM-written summary of how they respond to pokes, ADR 0020) and their last 8 closed tasks (how each ended, which pokes rang, which one woke them, how fast they acted). The profile and the history are what make the plan learn.
-- Every LLM plan passes a pure rule check (`checkPlan`) before it is stored. The rules: steps in time order, not before `now` and not after the deadline, for an `at` task not before its moment, no step inside quiet hours, escalation never drops a level, `SILENT` is never the only step, at most one `HUMAN` step and only when allowed (rule 5 below), at most 8 device steps, at least 3 minutes between two device steps. A breaking step is dropped; a plan with no valid device step is rejected.
+- Every LLM plan passes a pure rule check (`checkPlan`) before it is stored. The rules: steps in time order, not before `now` and not after the deadline, for an `at` task not before its start (the moment minus the lead), no step inside quiet hours except inside an `at` task's own window, escalation never drops a level, `SILENT` is never the only step, at most 8 device steps, at least 3 minutes between two device steps. At most one `HUMAN` step, only when allowed (rule 5 below), after the last device step and within the last hour before the deadline: one the model puts earlier is moved there, so the sender is told late rather than not at all (NUD-70). Any other breaking step is dropped; a plan with no valid device step is rejected.
 - **Poke plan v0** (below) is the first plan and the fallback: writing a task stores v0 at once, the planner runs after the response and its checked plan replaces v0 as the next version. Planner error, a 10 s timeout or a rejected plan keep v0. The same on every regeneration.
 - Every regeneration bumps the plan version. Devices ignore steps from older versions.
 - In E2E mode the plan is compressed to seconds (see `testing.md`).
@@ -107,7 +108,7 @@ If full screen is not permitted, `FULL_SCREEN` silently degrades to `SOUND` on t
 
 The MVP heuristic, implemented in `apps/web/src/domain/plan-pokes.ts` (open-questions #18). It ignores history; learning replaces it later without changing callers.
 
-For an `at` task the ladder starts at the moment instead of ending at the deadline: `SOUND` at the moment, `FULL_SCREEN` 5 and 20 minutes after it, `HUMAN` 30 minutes after it when allowed, all before the deadline (open-questions #43). The rules below describe `by` tasks.
+For an `at` task the ladder starts at the task's start (the moment minus the lead) instead of ending at the deadline: `SOUND` at the start, `FULL_SCREEN` 5 and 20 minutes after it, `HUMAN` 30 minutes after it or 5 minutes before the deadline when that is sooner, all before the deadline and regardless of quiet hours (open-questions #43, #47). The rules below describe `by` tasks.
 
 1. **Window end:** the deadline, or the start of quiet hours if the deadline falls inside them.
 2. **Window:** the last 60 minutes before the end. It never starts before now. If it overlaps quiet hours it starts when they end; if less than 2 minutes would remain (a deadline at 07:00), the window moves before quiet hours instead.

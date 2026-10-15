@@ -9,7 +9,7 @@ import { parseEnv } from "node:util";
 import { resolveExtraction, type Extraction, type ExtractionInput } from "../src/domain/extraction";
 import { checkPlan, type PlannerInput } from "../src/domain/planner";
 import { planPokes } from "../src/domain/plan-pokes";
-import { scheduleOf } from "../src/domain/timing";
+import { leadMinutesOf, pokeStartOf, scheduleOf } from "../src/domain/timing";
 import type { EdgeType, PokeStep, QuietHours } from "../src/domain/types";
 import { OpenRouterExtractor } from "../src/infra/llm/openrouter-extractor";
 import { OpenRouterPlanner } from "../src/infra/llm/openrouter-planner";
@@ -128,6 +128,7 @@ async function runOne(s: Sentence): Promise<Record<string, unknown>> {
   const self = resolved.recipientId === s.sender;
   const recipient = resolved.recipientId;
   const schedule = scheduleOf(resolved.timing, resolved.deadline, resolved.missAfterMinutes);
+  const lead = leadMinutesOf(resolved.timing, resolved.leadMinutes);
   const task = {
     rawText: s.text,
     title: resolved.title,
@@ -135,6 +136,8 @@ async function runOne(s: Sentence): Promise<Record<string, unknown>> {
     finishMode: resolved.finishMode,
     timing: resolved.timing,
     time: resolved.deadline,
+    startAt: pokeStartOf({ remindAt: schedule.remindAt, leadMinutes: lead }) ?? schedule.deadline,
+    leadMinutes: lead,
     deadline: schedule.deadline,
     notBefore: now,
     floor: "SILENT" as const,
@@ -150,6 +153,8 @@ async function runOne(s: Sentence): Promise<Record<string, unknown>> {
     time: fmt(task.time),
     deadline: fmt(task.deadline),
     missAfterMinutes: resolved.missAfterMinutes,
+    leadMinutes: lead,
+    startAt: fmt(task.startAt),
   };
   const senderEdge = cast[s.sender]?.find((c) => c.name === recipient) ?? null;
   const rules = {
@@ -157,6 +162,7 @@ async function runOne(s: Sentence): Promise<Record<string, unknown>> {
       deadline: task.deadline,
       timing: task.timing,
       remindAt: schedule.remindAt,
+      leadMinutes: lead,
       senderId: s.sender,
       recipientId: recipient,
     },

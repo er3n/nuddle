@@ -402,6 +402,10 @@ components:
           $ref: "#/components/schemas/TaskStatus"
         late:
           type: boolean
+        leadMinutes:
+          type: integer
+          minimum: 0
+          maximum: 360
         planVersion:
           type: integer
         statusChangedAt:
@@ -783,6 +787,11 @@ components:
               nullable: true
               minimum: 1
               maximum: 1440
+            leadMinutes:
+              type: integer
+              nullable: true
+              minimum: 0
+              maximum: 360
             finishMode:
               $ref: "#/components/schemas/FinishMode"
           required:
@@ -857,6 +866,11 @@ components:
           nullable: true
           minimum: 1
           maximum: 1440
+        leadMinutes:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 360
         finishMode:
           $ref: "#/components/schemas/FinishMode"
         rawText:

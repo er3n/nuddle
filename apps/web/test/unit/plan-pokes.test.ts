@@ -276,10 +276,43 @@ describe("planPokes v0, an at task (ADR 0017)", () => {
     expect(summary(steps)).toEqual(["SOUND@15:42", "FULL_SCREEN@15:47"]);
   });
 
-  it("drops steps inside quiet hours", () => {
-    // 22:50 moment: 23:00 starts quiet hours, so only the first two steps remain.
+  it("rings inside quiet hours: the sender asked for that time (NUD-70, open-questions#47)", () => {
+    // 22:50 moment, 23:00 starts quiet hours: the ladder goes on through them.
     const steps = planAt("2026-10-13T22:50:00+03:00", "2026-10-13T20:00:00+03:00", { self: true });
-    expect(summary(steps)).toEqual(["SOUND@19:50", "FULL_SCREEN@19:55"]);
+    expect(summary(steps)).toEqual(["SOUND@19:50", "FULL_SCREEN@19:55", "FULL_SCREEN@20:10"]);
+    // A 06:30 wake-up rings at 06:30.
+    const wake = planAt("2026-10-14T06:30:00+03:00", "2026-10-13T22:00:00+03:00", {
+      self: true,
+      missAfterMinutes: 15,
+    });
+    expect(summary(wake)).toEqual(["SOUND@03:30", "FULL_SCREEN@03:35"]);
+  });
+
+  it("starts the ladder at the moment minus the lead (NUD-70)", () => {
+    // Pick the kids up at 17:30, a 20 minute walk: poking starts at 17:10.
+    const task = aTask().from(sibel).forRecipient(eren).at("2026-10-13T17:30:00+03:00", 15).build();
+    const steps = planPokes({
+      task: { ...task, leadMinutes: 20 },
+      recipient: eren,
+      sender: sibel,
+      reachability: "FULL_SCREEN",
+      history: [],
+      now: new Date("2026-10-13T14:00:00+03:00"),
+    });
+    expect(summary(steps)).toEqual([
+      "SOUND@14:10",
+      "FULL_SCREEN@14:15",
+      "FULL_SCREEN@14:30",
+      "HUMAN@14:40",
+    ]);
+  });
+
+  it("tells the sender 5 minutes before the deadline when 30 minutes after the start is too late", () => {
+    // A wake-up with a 15 minute grace: HUMAN at the moment plus 10, after the last device step.
+    const steps = planAt("2026-10-13T07:00:00+03:00", "2026-10-12T22:00:00+03:00", {
+      missAfterMinutes: 15,
+    });
+    expect(summary(steps)).toEqual(["SOUND@04:00", "FULL_SCREEN@04:05", "HUMAN@04:10"]);
   });
 
   it("starts from now when poking resumes after the moment, at least at the level reached", () => {
@@ -290,9 +323,12 @@ describe("planPokes v0, an at task (ADR 0017)", () => {
     expect(summary(steps)).toEqual(["FULL_SCREEN@15:57", "FULL_SCREEN@16:02", "FULL_SCREEN@16:17"]);
   });
 
-  it("plans nothing when no device step fits", () => {
+  it("plans nothing when the deadline has passed", () => {
     expect(
-      planAt("2026-10-13T23:30:00+03:00", "2026-10-13T20:00:00+03:00", { self: true }),
+      planAt("2026-10-13T18:00:00+03:00", "2026-10-13T19:30:00+03:00", {
+        self: true,
+        missAfterMinutes: 60,
+      }),
     ).toEqual([]);
   });
 });

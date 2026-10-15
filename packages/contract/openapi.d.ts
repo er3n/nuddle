@@ -794,6 +794,7 @@ export interface components {
             rawText: string | null;
             status: components["schemas"]["TaskStatus"];
             late: boolean;
+            leadMinutes?: number;
             planVersion: number;
             /**
              * Format: date-time
@@ -962,6 +963,7 @@ export interface components {
                 deadline: string | null;
                 timing?: components["schemas"]["Timing"];
                 missAfterMinutes?: number | null;
+                leadMinutes?: number | null;
                 finishMode: components["schemas"]["FinishMode"];
             } | null;
             reply?: string | null;
@@ -998,6 +1000,7 @@ export interface components {
             deadline: string;
             timing?: components["schemas"]["Timing"];
             missAfterMinutes?: number | null;
+            leadMinutes?: number | null;
             finishMode: components["schemas"]["FinishMode"];
             rawText: string | null;
         };

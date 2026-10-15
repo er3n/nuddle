@@ -12,6 +12,7 @@ export const TEXT = {
   homeworkToDefne: "defne yarın akşam ödevini bitirsin",
   waterSelfAt: "2 dakika sonra su iç",
   dishesToEren: "eren yarın gece 10a kadar bulaşıkları yıkasın",
+  pickupKidsAt: "eren saat 5.30da çocukları okuldan alsın, yürüyüş 20 dakika sürüyor",
   hello: "merhaba",
 } as const;
 
@@ -66,6 +67,17 @@ const fixtures: Record<string, FixtureExtraction> = {
     missing: [],
   },
   // A moment, not a deadline (ADR 0017).
+  [TEXT.pickupKidsAt]: {
+    recipient: "Eren",
+    title: "Çocukları okuldan al",
+    detail: null,
+    deadline: "2026-10-12T17:30:00+03:00",
+    finishMode: "done",
+    missing: [],
+    timing: "at",
+    missAfterMinutes: 15,
+    leadMinutes: 20,
+  },
   [TEXT.waterSelfAt]: {
     recipient: "self",
     title: "Su iç",

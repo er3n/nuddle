@@ -39,6 +39,7 @@ describe("resolveExtraction", () => {
       deadline: new Date("2026-10-12T06:00:00Z"),
       timing: "by",
       missAfterMinutes: null,
+      leadMinutes: null,
       finishMode: "photo",
     });
   });
@@ -52,6 +53,7 @@ describe("resolveExtraction", () => {
       deadline: "2026-10-11T20:02:00+03:00",
       timing: "at" as const,
       missAfterMinutes: 30,
+      leadMinutes: null,
       finishMode: "done" as const,
     };
     expect(resolveExtraction(water, { id: "sibel" }, connections, now)).toMatchObject({

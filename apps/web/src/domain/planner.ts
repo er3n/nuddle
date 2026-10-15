@@ -5,6 +5,7 @@ import { humanChannelAllowed, type PlanPokesInput } from "./plan-pokes";
 import { isQuiet } from "./quiet-hours";
 import type { Reachability } from "./reachability";
 import { MINUTE } from "./time";
+import { pokeStartOf } from "./timing";
 import type {
   DeviceLevel,
   EdgeType,
@@ -64,6 +65,9 @@ export interface PlannerInput {
     timing: Timing;
     /** The picked time (moment or deadline). */
     time: Date;
+    /** For an `at` task: when poking may start, the moment minus the lead (NUD-70). Equals `time` for `by`. */
+    startAt: Date;
+    leadMinutes: number;
     /** When the task becomes missed. */
     deadline: Date;
     /** Earliest allowed poke: now, or the end of a snooze. */
@@ -98,10 +102,14 @@ export interface PlanProposal {
 const rank: Record<DeviceLevel, number> = { SILENT: 0, SOUND: 1, FULL_SCREEN: 2 };
 
 export interface CheckInput extends Pick<PlanPokesInput, "recipient" | "sender" | "senderEdge"> {
-  task: Pick<Task, "deadline" | "senderId" | "recipientId" | "timing" | "remindAt">;
+  task: Pick<Task, "deadline" | "senderId" | "recipientId" | "timing" | "remindAt"> &
+    Partial<Pick<Task, "leadMinutes">>;
   notBefore: Date;
   floor: DeviceLevel;
 }
+
+/** A HUMAN step comes no earlier than this before the deadline (NUD-70). */
+export const HUMAN_LAST_MS = 60 * MINUTE;
 
 /**
  * The rules every LLM plan must follow (docs/domain.md, Poke plan). A step that breaks one is
@@ -110,30 +118,26 @@ export interface CheckInput extends Pick<PlanPokesInput, "recipient" | "sender" 
  */
 export function checkPlan(proposal: PlanProposal, input: CheckInput): PokeStep[] | null {
   const { task, recipient } = input;
-  const earliest = Math.max(
-    input.notBefore.getTime(),
-    task.timing === "at" && task.remindAt ? task.remindAt.getTime() : 0,
-  );
-  const human = humanChannelAllowed(input);
+  const deadline = task.deadline.getTime();
+  // An `at` task's own window: from its start (the moment minus the lead) to its deadline. The
+  // sender asked for that time, so quiet hours do not apply inside it (NUD-70).
+  const start =
+    task.timing === "at" && task.remindAt
+      ? pokeStartOf({ remindAt: task.remindAt, leadMinutes: task.leadMinutes ?? 0 })
+      : null;
+  const earliest = Math.max(input.notBefore.getTime(), start?.getTime() ?? 0);
+  const quietApplies = (at: number) => start === null || at < start.getTime();
   const kept: { at: Date; level: PokeLevel }[] = [];
   let devices = 0;
   let lastRank = rank[input.floor];
   let lastDeviceAt = -Infinity;
-  let humanKept = false;
 
   const sorted = [...proposal.steps].sort((a, b) => a.at.getTime() - b.at.getTime());
   for (const step of sorted) {
+    if (step.level === "HUMAN") continue;
     const at = step.at.getTime();
-    if (Number.isNaN(at) || at < earliest || at >= task.deadline.getTime()) continue;
-    if (isQuiet(step.at, recipient.quietHours)) continue;
-    if (step.level === "HUMAN") {
-      if (!human || humanKept) continue;
-      kept.push(step);
-      humanKept = true;
-      continue;
-    }
-    // HUMAN is always the last step.
-    if (humanKept) continue;
+    if (Number.isNaN(at) || at < earliest || at >= deadline) continue;
+    if (quietApplies(at) && isQuiet(step.at, recipient.quietHours)) continue;
     if (rank[step.level] < lastRank) continue;
     if (at - lastDeviceAt < MIN_STEP_GAP_MS) continue;
     if (devices >= MAX_DEVICE_STEPS) continue;
@@ -142,9 +146,22 @@ export function checkPlan(proposal: PlanProposal, input: CheckInput): PokeStep[]
     lastRank = rank[step.level];
     lastDeviceAt = at;
   }
+  if (devices === 0 || kept.every((s) => s.level === "SILENT")) return null;
 
-  const deviceSteps = kept.filter((s) => s.level !== "HUMAN");
-  if (deviceSteps.length === 0 || deviceSteps.every((s) => s.level === "SILENT")) return null;
+  // One HUMAN step, after the last device step, and within the last hour before the deadline: the
+  // model's earlier one is moved there, so the sender is told late rather than not at all.
+  const proposed = sorted.find((s) => s.level === "HUMAN");
+  if (proposed && humanChannelAllowed(input) && !Number.isNaN(proposed.at.getTime())) {
+    const at = Math.max(
+      proposed.at.getTime(),
+      deadline - HUMAN_LAST_MS,
+      lastDeviceAt + MIN_STEP_GAP_MS,
+      earliest,
+    );
+    if (at < deadline && (!quietApplies(at) || !isQuiet(new Date(at), recipient.quietHours))) {
+      kept.push({ at: new Date(at), level: "HUMAN" });
+    }
+  }
   return kept.map((s, i) => ({ seq: i + 1, plannedAt: s.at, level: s.level, firedAt: null }));
 }
 

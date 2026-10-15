@@ -18,6 +18,7 @@ import { humanChannelAllowed } from "../domain/plan-pokes";
 import { profileIsStale, RECENT_TASKS, type ProfileInput } from "../domain/profile";
 import type { PersonProfiler } from "../domain/ports";
 import { addMs, DAY, HOUR } from "../domain/time";
+import { pokeStartOf } from "../domain/timing";
 import {
   checkPlan,
   HISTORY_DAYS,
@@ -244,6 +245,8 @@ async function refinePlan(deps: AppDeps, taskId: TaskId, version: number): Promi
         finishMode: task.finishMode,
         timing: task.timing,
         time: task.remindAt ?? task.deadline,
+        startAt: pokeStartOf(task) ?? task.deadline,
+        leadMinutes: task.leadMinutes,
         deadline: task.deadline,
         notBefore,
         floor: v0.steps.length > 0 ? floor : "SILENT",
@@ -447,6 +450,7 @@ interface NewTask {
   deadline: Date;
   timing?: Timing;
   missAfterMinutes?: number | null;
+  leadMinutes?: number | null;
   finishMode: FinishMode;
   rawText: string | null;
 }
@@ -548,11 +552,21 @@ export async function writeTask(
   if (resolved.kind === "ask") {
     await call.record("ask", { error: `asked ${resolved.question}` });
     const { recipient, title, detail, deadline, timing, missAfterMinutes, finishMode } = extraction;
+    const leadMinutes = extraction.leadMinutes ?? null;
     return {
       kind: "ask",
       taskId: null,
       question: resolved.question,
-      draft: { recipient, title, detail, deadline, timing, missAfterMinutes, finishMode },
+      draft: {
+        recipient,
+        title,
+        detail,
+        deadline,
+        timing,
+        missAfterMinutes,
+        leadMinutes,
+        finishMode,
+      },
     };
   }
   const written = await runCommand(

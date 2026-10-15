@@ -182,6 +182,8 @@ export const tasks = pgTable(
     timing: timing("timing").notNull().default("by"),
     // The moment of an `at` task; null for `by`.
     remindAt: timestamp("remind_at", { withTimezone: true }),
+    // Minutes before the moment the person must start (NUD-70); 0 for `by`.
+    leadMinutes: bigint("lead_minutes", { mode: "number" }).notNull().default(0),
     // "Kaldır" on the recipient's missed card (NUD-49): hidden from their list from then on.
     removedByRecipientAt: timestamp("removed_by_recipient_at", { withTimezone: true }),
     finishMode: finishMode("finish_mode").notNull(),

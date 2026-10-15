@@ -624,5 +624,157 @@
       "reachesLevel": "FULL_SCREEN",
       "fullScreenAtLeastMinutesBeforeDeadline": 10
     }
+  },
+  {
+    "timeZone": "Europe/Istanbul",
+    "quietHours": {
+      "start": "23:00",
+      "end": "07:00",
+      "timeZone": "Europe/Istanbul"
+    },
+    "reachability": "FULL_SCREEN",
+    "history": [],
+    "id": "at-pickup-with-lead",
+    "now": "2026-10-11T13:50:00+03:00",
+    "task": {
+      "rawText": "eren saat 5.30da çocukları okuldan alsın, yürüyüş 20 dakika sürüyor",
+      "title": "Çocukları okuldan al",
+      "detail": null,
+      "finishMode": "done",
+      "timing": "at",
+      "time": "2026-10-11T17:30:00+03:00",
+      "startAt": "2026-10-11T17:10:00+03:00",
+      "leadMinutes": 20,
+      "deadline": "2026-10-11T17:45:00+03:00",
+      "notBefore": "2026-10-11T13:50:00+03:00",
+      "floor": "SILENT",
+      "snoozesSoFar": 0
+    },
+    "sender": {
+      "name": "Sibel",
+      "self": false
+    },
+    "recipient": {
+      "name": "Eren"
+    },
+    "relationship": {
+      "recipientIsToSender": "spouse",
+      "senderIsToRecipient": "spouse"
+    },
+    "recipientConnections": [
+      {
+        "name": "Sibel",
+        "relationship": "spouse"
+      }
+    ],
+    "humanAllowed": true,
+    "profile": null,
+    "expect": {
+      "valid": true,
+      "nothingBeforeTime": false,
+      "firstWithinMinutesOfTime": 25,
+      "firstLevelAtLeast": "SOUND",
+      "reachesLevel": "FULL_SCREEN"
+    }
+  },
+  {
+    "timeZone": "Europe/Istanbul",
+    "quietHours": {
+      "start": "23:00",
+      "end": "07:00",
+      "timeZone": "Europe/Istanbul"
+    },
+    "reachability": "FULL_SCREEN",
+    "history": [],
+    "id": "at-wake-inside-quiet-hours",
+    "now": "2026-10-11T22:10:00+03:00",
+    "task": {
+      "rawText": "beni yarın 6.30da uyandır",
+      "title": "Uyan",
+      "detail": null,
+      "finishMode": "done",
+      "timing": "at",
+      "time": "2026-10-12T06:30:00+03:00",
+      "startAt": "2026-10-12T06:30:00+03:00",
+      "leadMinutes": 0,
+      "deadline": "2026-10-12T07:00:00+03:00",
+      "notBefore": "2026-10-11T22:10:00+03:00",
+      "floor": "SILENT",
+      "snoozesSoFar": 0
+    },
+    "sender": {
+      "name": "Eren",
+      "self": true
+    },
+    "recipient": {
+      "name": "Eren"
+    },
+    "relationship": null,
+    "recipientConnections": [
+      {
+        "name": "Sibel",
+        "relationship": "spouse"
+      }
+    ],
+    "humanAllowed": false,
+    "profile": null,
+    "expect": {
+      "valid": true,
+      "nothingBeforeTime": true,
+      "firstWithinMinutesOfTime": 1,
+      "firstLevelAtLeast": "SOUND",
+      "reachesLevel": "FULL_SCREEN"
+    }
+  },
+  {
+    "timeZone": "Europe/Istanbul",
+    "quietHours": {
+      "start": "23:00",
+      "end": "07:00",
+      "timeZone": "Europe/Istanbul"
+    },
+    "reachability": "FULL_SCREEN",
+    "history": [],
+    "id": "by-long-window-gentle",
+    "now": "2026-10-11T20:00:00+03:00",
+    "task": {
+      "rawText": "eren cumaya kadar kirayı yatırsın",
+      "title": "Kirayı yatır",
+      "detail": null,
+      "finishMode": "photo",
+      "timing": "by",
+      "time": "2026-10-16T19:00:00+03:00",
+      "startAt": "2026-10-16T19:00:00+03:00",
+      "leadMinutes": 0,
+      "deadline": "2026-10-16T19:00:00+03:00",
+      "notBefore": "2026-10-11T20:00:00+03:00",
+      "floor": "SILENT",
+      "snoozesSoFar": 0
+    },
+    "sender": {
+      "name": "Sibel",
+      "self": false
+    },
+    "recipient": {
+      "name": "Eren"
+    },
+    "relationship": {
+      "recipientIsToSender": "spouse",
+      "senderIsToRecipient": "spouse"
+    },
+    "recipientConnections": [
+      {
+        "name": "Sibel",
+        "relationship": "spouse"
+      }
+    ],
+    "humanAllowed": true,
+    "profile": null,
+    "expect": {
+      "valid": true,
+      "maxDeviceSteps": 6,
+      "reachesLevel": "FULL_SCREEN",
+      "fullScreenAtLeastMinutesBeforeDeadline": 30
+    }
   }
 ]

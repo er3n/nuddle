@@ -24,6 +24,8 @@ export interface Extraction {
   timing: Timing;
   /** For an `at` task: how long after the moment it still makes sense. Null for `by` or unknown. */
   missAfterMinutes: number | null;
+  /** For an `at` task: how long before the moment the person must start. Null for `by` or unknown. */
+  leadMinutes?: number | null;
   finishMode: FinishMode;
   missing: MissingField[];
   /**
@@ -43,6 +45,7 @@ export type Resolution =
       deadline: Date;
       timing: Timing;
       missAfterMinutes: number | null;
+      leadMinutes: number | null;
       finishMode: FinishMode;
     }
   | { kind: "ask"; question: MissingField }
@@ -120,6 +123,7 @@ export function resolveExtraction(
     deadline,
     timing: e.timing,
     missAfterMinutes: e.timing === "at" ? e.missAfterMinutes : null,
+    leadMinutes: e.timing === "at" ? (e.leadMinutes ?? null) : null,
     finishMode: e.finishMode,
   };
 }

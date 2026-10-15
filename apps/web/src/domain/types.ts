@@ -67,8 +67,14 @@ export interface Task {
   /** When the task becomes missed. For an `at` task the moment plus its grace. */
   deadline: Date;
   timing: Timing;
-  /** The moment of an `at` task, null for `by`. No poke comes before it. */
+  /** The moment of an `at` task, null for `by`. */
   remindAt: Date | null;
+  /**
+   * How many minutes before the moment the person must start (getting ready, travelling), so the
+   * first poke of an `at` task comes that much earlier (NUD-70). 0 for `by` and for things done on
+   * the spot.
+   */
+  leadMinutes: number;
   finishMode: FinishMode;
   rawText: string | null;
   status: TaskStatus;
