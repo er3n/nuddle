@@ -53,7 +53,7 @@ fun bellWarnings(
     nextFullScreen: NextPokeUi?,
 ): List<BellWarning> =
     listOfNotNull(missedRing?.let { BellWarning.MissedRing }) +
-        SetupStep.entries
+        granted.steps
             .filterNot(granted::has)
             .map { step -> BellWarning.PermissionOff(step, if (step == SetupStep.FULL_SCREEN) nextFullScreen else null) }
 

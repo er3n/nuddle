@@ -98,7 +98,8 @@ private fun body(state: SetupUiState.Steps): String? =
         !state.notificationsGranted && state.settingsCount > 0 -> stringResource(R.string.setup_steps_body_notifications)
         !state.notificationsGranted -> null
         state.settingsCount == 1 -> stringResource(R.string.setup_steps_body_one)
-        else -> stringResource(R.string.setup_steps_body_two)
+        state.settingsCount == 2 -> stringResource(R.string.setup_steps_body_two)
+        else -> stringResource(R.string.setup_steps_body_three)
     }
 
 @Composable
@@ -107,6 +108,7 @@ private fun skipText(active: SetupStep): String? =
         SetupStep.NOTIFICATIONS -> null
         SetupStep.EXACT_ALARM -> stringResource(R.string.setup_skip_alarm)
         SetupStep.FULL_SCREEN -> stringResource(R.string.setup_skip_full_screen)
+        SetupStep.BATTERY -> stringResource(R.string.setup_skip_battery)
     }
 
 @Composable
@@ -157,7 +159,12 @@ private fun StepRow(
         badge = badge,
         description = stringResource(step.step.body),
         hint = step.step.hint?.let { hint(stringResource(it)) },
-        action = if (step.step == SetupStep.NOTIFICATIONS) stringResource(R.string.setup_step_notifications_action) else null,
+        action =
+            when (step.step) {
+                SetupStep.NOTIFICATIONS -> stringResource(R.string.setup_step_notifications_action)
+                SetupStep.BATTERY -> stringResource(R.string.setup_step_battery_action)
+                else -> null
+            },
         onOpenSettings = onOpenActive,
         actionModifier = Modifier.testTag(TestTags.SETUP_OPEN_ACTIVE),
     )
@@ -180,6 +187,7 @@ private val SetupStep.title: Int
             SetupStep.NOTIFICATIONS -> R.string.setup_step_notifications
             SetupStep.EXACT_ALARM -> R.string.setup_step_alarm
             SetupStep.FULL_SCREEN -> R.string.setup_step_full_screen
+            SetupStep.BATTERY -> R.string.setup_step_battery
         }
 
 private val SetupStep.body: Int
@@ -188,6 +196,7 @@ private val SetupStep.body: Int
             SetupStep.NOTIFICATIONS -> R.string.setup_step_notifications_body
             SetupStep.EXACT_ALARM -> R.string.setup_step_alarm_body
             SetupStep.FULL_SCREEN -> R.string.setup_step_full_screen_body
+            SetupStep.BATTERY -> R.string.setup_step_battery_body
         }
 
 /** The system dialog needs no instructions; the settings pages do. */
@@ -197,6 +206,7 @@ private val SetupStep.hint: Int?
             SetupStep.NOTIFICATIONS -> null
             SetupStep.EXACT_ALARM -> R.string.setup_step_alarm_hint
             SetupStep.FULL_SCREEN -> R.string.setup_step_full_screen_hint
+            SetupStep.BATTERY -> null
         }
 
 private fun previewSteps(

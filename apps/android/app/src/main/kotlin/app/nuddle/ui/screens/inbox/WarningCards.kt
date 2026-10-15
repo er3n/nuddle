@@ -42,6 +42,7 @@ private fun BellWarning.title(): String =
                     SetupStep.NOTIFICATIONS -> R.string.bell_notifications_off_title
                     SetupStep.EXACT_ALARM -> R.string.bell_alarms_off_title
                     SetupStep.FULL_SCREEN -> R.string.bell_full_screen_off_title
+                    SetupStep.BATTERY -> R.string.bell_battery_on_title
                 }
             }
         },
@@ -62,6 +63,10 @@ private fun BellWarning.body(): String =
 
                 SetupStep.EXACT_ALARM -> {
                     stringResource(R.string.bell_alarms_off_body)
+                }
+
+                SetupStep.BATTERY -> {
+                    stringResource(R.string.bell_battery_on_body)
                 }
 
                 SetupStep.FULL_SCREEN -> {

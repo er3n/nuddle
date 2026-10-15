@@ -37,4 +37,29 @@ class SetupRulesTest {
         assertEquals(1, SetupRules.settingsLeft(none.copy(exactAlarm = true)))
         assertEquals(0, SetupRules.settingsLeft(none.copy(exactAlarm = true, fullScreen = true)))
     }
+
+    @Test
+    fun `the battery step exists only on phones that put apps to sleep`() {
+        assertEquals(listOf(SetupStep.NOTIFICATIONS, SetupStep.EXACT_ALARM, SetupStep.FULL_SCREEN), none.steps)
+        val samsung = none.copy(battery = false)
+        assertEquals(SetupStep.entries, samsung.steps)
+        assertEquals(3, SetupRules.settingsLeft(samsung))
+        assertEquals(
+            SetupStep.BATTERY,
+            SetupRules.active(samsung.copy(notifications = true, exactAlarm = true, fullScreen = true), emptySet()),
+        )
+        assertNull(SetupRules.active(samsung.copy(notifications = true, exactAlarm = true, fullScreen = true, battery = true), emptySet()))
+        assertNull(
+            SetupRules.active(samsung.copy(notifications = true, exactAlarm = true, fullScreen = true), setOf(SetupStep.BATTERY)),
+        )
+    }
+
+    @Test
+    fun `the brands that put apps to sleep, in any case`() {
+        assertEquals(true, SetupRules.needsBatteryStep("samsung"))
+        assertEquals(true, SetupRules.needsBatteryStep("Xiaomi"))
+        assertEquals(true, SetupRules.needsBatteryStep("OnePlus"))
+        assertEquals(false, SetupRules.needsBatteryStep("Google"))
+        assertEquals(false, SetupRules.needsBatteryStep(""))
+    }
 }

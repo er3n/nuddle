@@ -173,7 +173,7 @@ Full screen poke labeled as a demo.
 **Copy:** DENEME · gerçek bir iş değil | Ekmek al | Sibel'den · örnek | İşte bu. Telefonun kilitliyken de ekranı açar. Gerçek bir işte buna nadiren gerek kalır, önce kibarca denerim. | Anladım, kuralım | Bu ekranın her seferinde çıkabilmesi için 2 ayar gerekiyor.
 
 ### 2e Two settings (alarm required) · `Permissions.png`
-PermissionStep list: 1 Notifications (done), 2 Alarms and reminders (active, "Gerekli"), 3 Full screen (next). Progress bar.
+PermissionStep list: 1 Notifications (done), 2 Alarms and reminders (active, "Gerekli"), 3 Full screen (next). Progress bar. On Samsung, Xiaomi, Huawei, Oppo and Vivo phones a 4th step "Pil kısıtlaması" with "İzin ver" opens the one-tap system dialog (NUD-75, open-questions #49); the title then counts 3 settings.
 **Copy:** Bir kerelik kurulum | Seni zamanında dürtebilmem için 2 ayar | Bildirim iznini verdin. Kalan ikisi Android'in ayar sayfasında, her biri tek düğme. | Bildirimler | Tamam | Alarmlar ve hatırlatıcılar | Gerekli | Dürtmelerin tam saatinde çalması için. Bu olmadan telefon onları biriktirir, dakikalarca bazen saatlerce geç çalarlar. | Açılan sayfada "Alarm ve hatırlatıcı ayarlamaya izin ver"i aç, sonra geri dön. | Ayarları aç | Tam ekran dürtme | Sırada | İzinleri istediğin an Ayarlar'dan geri alabilirsin. Biri kapanırsa zilde haber veririm. | Alarmsız devam et, dürtmeler geç çalabilir
 
 ### 2f Home, task scheduled · `HomeTask.png`

@@ -11,6 +11,12 @@
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Setup step 4 on phones that put apps to sleep (docs/ux/platform.md, Permissions; NUD-75): an alarm app
+         whose core function is to ring on time, which is the case Play allows this for. The lint rule warns about
+         the Play policy, not about a defect. -->
+    <uses-permission
+        android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+        tools:ignore="BatteryLife" />
     <!-- 4d: the in-app camera for photo tasks; without it a photo task falls back to plain Bitti. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- Voice input (4h): on-device speech recognition, open-questions#17. -->

@@ -116,4 +116,34 @@ class SetupViewModelTest {
                 assertEquals(SetupEffect.Finished, awaitItem())
             }
         }
+
+    @Test
+    fun `on a phone that puts apps to sleep the battery step comes last, one tap, skippable`() =
+        runTest(main.dispatcher) {
+            permissions.granted = GrantedPermissions(notifications = true, exactAlarm = true, fullScreen = true, battery = false)
+            vm.effects.test {
+                vm.onStartSteps()
+                assertEquals(SetupStep.BATTERY, steps().active)
+                assertEquals(1, steps().settingsCount)
+                assertEquals(4, steps().steps.size)
+                vm.onOpenActive()
+                assertEquals(SetupEffect.OpenSettings(SetupStep.BATTERY), awaitItem())
+
+                grant { copy(battery = true) }
+                assertEquals(SetupEffect.Finished, awaitItem())
+            }
+            assertTrue(setup.done)
+        }
+
+    @Test
+    fun `stock Android never sees the battery step`() =
+        runTest(main.dispatcher) {
+            permissions.granted = GrantedPermissions(notifications = true, exactAlarm = true, fullScreen = false)
+            vm.effects.test {
+                vm.onStartSteps()
+                assertEquals(3, steps().steps.size)
+                vm.onSkipActive()
+                assertEquals(SetupEffect.Finished, awaitItem())
+            }
+        }
 }
