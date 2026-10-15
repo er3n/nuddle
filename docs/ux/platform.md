@@ -49,7 +49,7 @@ A channel disabled in system settings is treated like a missing permission: reac
 ## Other
 
 - Phone sign-in: SMS Retriever API reads the code without any SMS permission.
-- Photo: CameraX, in-app camera only, no gallery. Upload to a Supabase Storage signed URL through WorkManager with retries. (The handoff said R2; replaced by ADR 0002.)
+- Photo: CameraX in the app (back or front lens, "Kamerayı çevir"), or the system photo picker (`PickVisualMedia`, no storage permission) for "Galeriden seç" (open-questions #48). Upload to a Supabase Storage signed URL through WorkManager with retries. (The handoff said R2; replaced by ADR 0002.)
 - Voice: press and hold to record, release to send. Recognition runs on the phone (`SpeechRecognizer`, Turkish) and the transcript is written like typed text (open-questions #17, #40). `RECORD_AUDIO` is asked on the first hold.
 - Share: `Intent.ACTION_SEND` system sheet. Call: `ACTION_DIAL`. Message: `ACTION_SENDTO` with `smsto:` through the system chooser.
 

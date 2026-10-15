@@ -3,6 +3,7 @@ package app.nuddle.ui.nav
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,7 +22,8 @@ import app.nuddle.ui.screens.photo.PhotoViewModel
 
 /**
  * The `photo/{taskId}` route (4d). Asks for the camera the first time (docs/ux/platform.md, Permissions); a refusal
- * or a phone without a camera turns the screen into the plain Bitti fallback.
+ * or a phone without a camera turns the screen into the plain Bitti fallback. Galeriden seç opens the system photo
+ * picker, which works without the camera too.
  */
 @Composable
 fun PhotoRoute(
@@ -46,6 +48,8 @@ fun PhotoRoute(
             !granted -> ask.launch(Manifest.permission.CAMERA)
         }
     }
+    // The system photo picker needs no storage permission (NUD-73, open-questions#48).
+    val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia(), viewModel::onPicked)
     val current = state ?: return
     PhotoScreen(
         state = current,
@@ -53,6 +57,8 @@ fun PhotoRoute(
             PhotoCallbacks(
                 onClose = onClose,
                 onShoot = viewModel::onShoot,
+                onPick = { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                onFlip = viewModel::onFlip,
                 onRetake = viewModel::onRetake,
                 onSend = viewModel::onSend,
                 onDoneWithoutPhoto = viewModel::onDoneWithoutPhoto,

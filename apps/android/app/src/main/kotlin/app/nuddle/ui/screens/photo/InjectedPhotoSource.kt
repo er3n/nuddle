@@ -8,6 +8,10 @@ import androidx.compose.ui.Modifier
 import app.nuddle.ui.theme.DurtTheme
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
@@ -22,6 +26,13 @@ class InjectedPhotoSource
     constructor(
         @param:ApplicationContext private val context: Context,
     ) : CameraSource {
+        private val current = MutableStateFlow(Lens.BACK)
+        override val lens: StateFlow<Lens> = current.asStateFlow()
+
+        override fun flip() {
+            current.update { if (it == Lens.BACK) Lens.FRONT else Lens.BACK }
+        }
+
         @Composable
         override fun Viewfinder(modifier: Modifier) {
             Box(modifier.background(DurtTheme.colors.darkBorder))

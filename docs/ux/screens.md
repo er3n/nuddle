@@ -212,6 +212,7 @@ Next-up card with Call and Message icons.
 
 ### 4d Take photo (Eren) · `PhotoCapture.png`
 **Copy:** Temizlikçi için para çek | Sibel'e gidecek · 1.000 TL istendi | Fotoğraf sadece Sibel'le paylaşılır, görev kapanınca silinir. Kart numarası ya da bakiye görünüyorsa kapatarak çekebilirsin. | Sibel'e gönder | Tekrar çek
+Since NUD-73 the shutter has "Galeriden seç" on its left and "Kamerayı çevir" on its right (44 dp dark round buttons); a picked picture goes to the same review as a shot (open-questions #48).
 
 ### 4e Awaiting approval (Eren) · `OtherWaiting.png`
 **Copy:** Sibel yazdı · dün 14:32 | Onay bekleniyor | Temizlikçi için para çek | 1.000 TL · son zaman 09:00 | Fotoğraf Sibel'de. Onaylayınca görev kapanır. | 08:24'te gönderdin · Dürtme durdu | Sibel bakmazsa 3 saat sonra kendiliğinden kapanır.

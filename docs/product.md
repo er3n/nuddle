@@ -87,7 +87,7 @@ In code and docs the domain verb is **poke** (`Poke`, `PokeLevel`, `PokeActivity
 - Full screen actions: Done (closes directly), Snooze (limited, the consequence is stated), Can't today (closes directly, reason optional, recorded as "dropped", not counted as a failure).
 
 ### Photo and approval
-- Photos only from the in-app camera. They stay between the two people and are deleted when the task closes.
+- Photos from the in-app camera (either lens) or picked from the gallery (decided 2026-10-15, open-questions #48). They stay between the two people and are deleted when the task closes.
 - Sending a photo stops poking, the task becomes "awaiting approval".
 - The sender approves. They can ask again with a note. After a re-request, poking resumes where it stopped.
 - If approval is forgotten, the task auto-approves after 3 hours. The deadline applies to sending the photo, not to the approval.

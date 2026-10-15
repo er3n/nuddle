@@ -1,8 +1,6 @@
 package app.nuddle.ui.screens.photo
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Matrix
 import androidx.camera.compose.CameraXViewfinder
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -14,6 +12,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.lifecycle.awaitInstance
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,26 +20,33 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import app.nuddle.data.photo.toJpeg
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.suspendCancellableCoroutine
-import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 import kotlin.coroutines.resume
-import kotlin.math.max
 
-/** The in-app camera (docs/ux/platform.md: CameraX, no gallery): a live viewfinder and one shot as JPEG. */
+/** Which camera the viewfinder shows (4d, "Kamerayı çevir"). */
+enum class Lens { BACK, FRONT }
+
+/** The in-app camera (docs/ux/platform.md): a live viewfinder, one shot as JPEG, and the lens to flip (NUD-73). */
 interface CameraSource {
     @Composable
     fun Viewfinder(modifier: Modifier)
 
     /** Null when the shot failed; the person can try again. */
     suspend fun capture(): ByteArray?
-}
 
-/** Longest side of a sent photo: enough to read a receipt, small enough for a slow connection. */
-private const val MAX_SIDE = 1600
-private const val JPEG_QUALITY = 85
+    val lens: StateFlow<Lens>
+
+    /** The other camera, when the phone has one. */
+    fun flip()
+}
 
 class CameraXSource
     @Inject
@@ -48,16 +54,26 @@ class CameraXSource
         @param:ApplicationContext private val context: Context,
     ) : CameraSource {
         private val imageCapture = ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY).build()
+        private val current = MutableStateFlow(Lens.BACK)
+        override val lens: StateFlow<Lens> = current.asStateFlow()
+
+        override fun flip() {
+            current.update { if (it == Lens.BACK) Lens.FRONT else Lens.BACK }
+        }
 
         @Composable
         override fun Viewfinder(modifier: Modifier) {
             val lifecycle = LocalLifecycleOwner.current
+            val lens by current.collectAsState()
             var request by remember { mutableStateOf<SurfaceRequest?>(null) }
-            LaunchedEffect(lifecycle) {
+            // Re-bound on every flip; a lens the phone lacks falls back to the other one.
+            LaunchedEffect(lifecycle, lens) {
                 val provider = ProcessCameraProvider.awaitInstance(context)
                 val preview = Preview.Builder().build().also { it.setSurfaceProvider { r -> request = r } }
+                val wanted = if (lens == Lens.FRONT) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
+                val selector = if (provider.hasCamera(wanted)) wanted else CameraSelector.DEFAULT_BACK_CAMERA
                 provider.unbindAll()
-                provider.bindToLifecycle(lifecycle, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageCapture)
+                provider.bindToLifecycle(lifecycle, selector, preview, imageCapture)
                 try {
                     awaitCancellation()
                 } finally {
@@ -73,7 +89,7 @@ class CameraXSource
                     ContextCompat.getMainExecutor(context),
                     object : ImageCapture.OnImageCapturedCallback() {
                         override fun onCaptureSuccess(image: ImageProxy) {
-                            val jpeg = image.use { it.toUprightJpeg() }
+                            val jpeg = image.use { it.toBitmap().toJpeg(rotationDegrees = it.imageInfo.rotationDegrees) }
                             continuation.resume(jpeg)
                         }
 
@@ -84,18 +100,3 @@ class CameraXSource
                 )
             }
     }
-
-private fun ImageProxy.toUprightJpeg(): ByteArray {
-    val source = toBitmap()
-    val scale = minOf(1f, MAX_SIDE.toFloat() / max(source.width, source.height))
-    val matrix =
-        Matrix().apply {
-            postScale(scale, scale)
-            postRotate(imageInfo.rotationDegrees.toFloat())
-        }
-    val upright = Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
-    return ByteArrayOutputStream().use { out ->
-        upright.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
-        out.toByteArray()
-    }
-}
