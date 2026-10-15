@@ -25,6 +25,8 @@ interface GoldenCase {
   quietHours: PlannerInput["quietHours"];
   reachability: PlannerInput["reachability"];
   humanAllowed: boolean;
+  /** How the person responds to pokes (ADR 0020); missing in cases written before it. */
+  profile?: string | null;
   history: (Omit<Json<HistoryItem>, "pokes"> & {
     pokes: { level: HistoryItem["pokes"][number]["level"]; plannedAt: string; firedAt: string }[];
   })[];
@@ -69,6 +71,7 @@ function toInput(c: GoldenCase): PlannerInput {
     quietHours: c.quietHours,
     reachability: c.reachability,
     humanAllowed: c.humanAllowed,
+    profile: c.profile ?? null,
     history: c.history.map((h) => ({
       ...h,
       time: new Date(h.time),

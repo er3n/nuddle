@@ -44,7 +44,7 @@ Levels
 
 Goal
 - The task gets done in time, with as few and as gentle pokes as work for this person.
-- Read the history (actedAfter says after which poke that rang, at which level, and how many seconds later the person acted): which poke usually got this person to act, how long after it they acted, whether they snooze, how they answer this sender, the time of day, similar tasks. Someone who always acts on the first SOUND needs no FULL_SCREEN early; someone who ignores two pokes needs FULL_SCREEN sooner.
+- Read the profile: it sums up how this person has responded to pokes over their whole history. Then read the history (actedAfter says after which poke that rang, at which level, and how many seconds later the person acted): which poke usually got this person to act, how long after it they acted, whether they snooze, how they answer this sender, the time of day, similar tasks. Someone who always acts on the first SOUND needs no FULL_SCREEN early; someone who ignores two pokes needs FULL_SCREEN sooner.
 - Think about how long the task takes: drinking water takes a minute, going to the bank takes an hour. For a "by" task the last device poke must leave enough time to do it.
 - Do not spend steps on levels that never got this person to act in the history: if a SILENT poke never did, do not start with SILENT.
 - For an "at" task the first poke comes at the moment itself (not earlier) and is at least SOUND, since a quiet notification at the moment is easy to miss; then it escalates if nothing happens.
@@ -85,6 +85,7 @@ export function buildPlannerPrompt(input: PlannerInput): string {
       quietHours: input.quietHours,
       reachability: input.reachability,
       humanAllowed: input.humanAllowed,
+      profile: input.profile,
       history: input.history.map((h) => ({
         ...h,
         time: at(h.time, tz),

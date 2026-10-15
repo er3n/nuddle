@@ -25,3 +25,4 @@ To change a decision: add a new ADR that supersedes the old one, set the old one
 | 0017 | The LLM plans the pokes from the task and the recipient's history; the server enforces the rules, v0 is the fallback |
 | 0018 | E2E driven over adb on fake time, without Maestro |
 | 0019 | Every LLM call is kept with its input, answer and outcome |
+| 0020 | The planner reads a rolling person profile plus a short recent history |

@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { z } from "zod";
 import type { Extraction } from "../domain/extraction";
 import { after } from "next/server";
-import type { PokePlanner, TaskExtractor } from "../domain/ports";
+import type { PersonProfiler, PokePlanner, TaskExtractor } from "../domain/ports";
 import { JoseTokenVerifier } from "../infra/auth/jwt";
 import { SupabaseAuthGateway } from "../infra/auth/supabase-auth";
 import { OffsetClock, systemClock } from "../infra/clock";
@@ -13,6 +13,7 @@ import { fidsOf } from "../infra/db/store";
 import { FixtureExtractor } from "../infra/llm/fixture-extractor";
 import { OpenRouterExtractor } from "../infra/llm/openrouter-extractor";
 import { OpenRouterPlanner } from "../infra/llm/openrouter-planner";
+import { OpenRouterProfiler } from "../infra/llm/openrouter-profiler";
 import { TwilioOtpSender, unconfiguredOtpSender } from "../infra/otp/twilio";
 import { FcmPushSender } from "../infra/push/fcm";
 import { logPushSender } from "../infra/push/log";
@@ -65,6 +66,7 @@ export async function createProductionApp(
   let extractor: TaskExtractor;
   // E2E mode keeps plan v0 only: compressed, deterministic plans (docs/testing.md).
   let planner: PokePlanner | null = null;
+  let profiler: PersonProfiler | null = null;
   if (e2eMode) {
     extractor = await e2eExtractor(env.E2E_EXTRACTOR_FIXTURES);
   } else if (env.OPENROUTER_API_KEY !== null && env.OPENROUTER_MODEL !== null) {
@@ -73,6 +75,10 @@ export async function createProductionApp(
       model: env.OPENROUTER_MODEL,
     });
     planner = new OpenRouterPlanner({
+      apiKey: env.OPENROUTER_API_KEY,
+      model: env.OPENROUTER_MODEL,
+    });
+    profiler = new OpenRouterProfiler({
       apiKey: env.OPENROUTER_API_KEY,
       model: env.OPENROUTER_MODEL,
     });
@@ -102,6 +108,7 @@ export async function createProductionApp(
     otp,
     extractor,
     planner,
+    profiler,
     // The planner runs after the response is sent (ADR 0017).
     background: (job) => {
       after(job);

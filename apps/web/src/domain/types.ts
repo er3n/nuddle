@@ -34,7 +34,16 @@ export interface Person {
   useConnectionsForMyTasks: boolean;
   /** "Başkalarının işleri için bana haber verilebilir" */
   notifyMeForOthersTasks: boolean;
+  /** How this person responds to pokes, written by the LLM (ADR 0020); null until 10 tasks closed. */
+  pokeProfile: PokeProfile | null;
   deletedAt: Date | null;
+}
+
+export interface PokeProfile {
+  text: string;
+  writtenAt: Date;
+  /** Closed tasks the profile had seen when it was written. */
+  tasksSeen: number;
 }
 
 export interface Edge {

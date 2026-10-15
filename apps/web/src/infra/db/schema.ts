@@ -106,6 +106,11 @@ export const people = pgTable("people", {
   useConnectionsForMyTasks: boolean("use_connections_for_my_tasks").notNull().default(true),
   // "Başkalarının işleri için bana haber verilebilir"
   notifyMeForOthersTasks: boolean("notify_me_for_others_tasks").notNull().default(true),
+  // The rolling poke profile the planner reads (ADR 0020): the text, when it was written and how
+  // many closed tasks it had seen.
+  pokeProfile: text("poke_profile"),
+  pokeProfileAt: timestamp("poke_profile_at", { withTimezone: true }),
+  pokeProfileTasks: bigint("poke_profile_tasks", { mode: "number" }).notNull().default(0),
   createdAt: createdAt(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
@@ -300,7 +305,7 @@ export const otpAttempts = pgTable("otp_attempts", {
 
 // Every LLM call with what the model got and said, and what came of it (ADR 0019): golden data
 // for evals and the only record of why a plan fell back. Only the API reads it.
-export const llmCallKind = pgEnum("llm_call_kind", ["extraction", "plan"]);
+export const llmCallKind = pgEnum("llm_call_kind", ["extraction", "plan", "profile"]);
 
 export const llmCalls = pgTable(
   "llm_calls",

@@ -32,6 +32,7 @@ import type {
   PersonId,
   PokeLevel,
   PokePlan,
+  PokeProfile,
   Task,
   TaskEvent,
   TaskId,
@@ -114,8 +115,42 @@ export function toPerson(r: PersonRow): Person {
     },
     useConnectionsForMyTasks: r.useConnectionsForMyTasks,
     notifyMeForOthersTasks: r.notifyMeForOthersTasks,
+    pokeProfile:
+      r.pokeProfile !== null && r.pokeProfileAt !== null
+        ? { text: r.pokeProfile, writtenAt: r.pokeProfileAt, tasksSeen: r.pokeProfileTasks }
+        : null,
     deletedAt: r.deletedAt,
   };
+}
+
+/** The person's new poke profile (ADR 0020). */
+export async function savePokeProfile(
+  ex: Executor,
+  personId: PersonId,
+  profile: PokeProfile,
+): Promise<void> {
+  await ex
+    .update(people)
+    .set({
+      pokeProfile: profile.text,
+      pokeProfileAt: profile.writtenAt,
+      pokeProfileTasks: profile.tasksSeen,
+    })
+    .where(eq(people.id, personId));
+}
+
+/** How many of the person's tasks have closed, for the profile's staleness (ADR 0020). */
+export async function closedTaskCountOf(ex: Executor, recipientId: PersonId): Promise<number> {
+  const rows = await ex
+    .select({ n: sql<number>`count(*)::int` })
+    .from(tasks)
+    .where(
+      and(
+        eq(tasks.recipientId, recipientId),
+        inArray(tasks.status, ["DONE", "DROPPED", "MISSED", "CANCELLED"]),
+      ),
+    );
+  return rows[0]?.n ?? 0;
 }
 
 function toEdge(r: EdgeRow): Edge {
@@ -242,7 +277,16 @@ export async function updatePersonSettings(
 }
 
 export async function markPersonDeleted(tx: Tx, person: Person): Promise<void> {
-  await tx.update(people).set({ deletedAt: person.deletedAt }).where(eq(people.id, person.id));
+  // The profile goes with the account (ADR 0020).
+  await tx
+    .update(people)
+    .set({
+      deletedAt: person.deletedAt,
+      pokeProfile: null,
+      pokeProfileAt: null,
+      pokeProfileTasks: 0,
+    })
+    .where(eq(people.id, person.id));
 }
 
 /** The person's active outgoing connections: who they can write to, with names. */
@@ -925,7 +969,7 @@ export async function clearOtpAttempts(ex: Executor, phone: string): Promise<voi
 /** One LLM call and what came of it (ADR 0019). */
 export interface LlmCallRow {
   id: string;
-  kind: "extraction" | "plan";
+  kind: "extraction" | "plan" | "profile";
   personId: PersonId;
   taskId: TaskId | null;
   writeKey: string | null;

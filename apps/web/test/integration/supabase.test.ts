@@ -39,6 +39,7 @@ describe("local Supabase adapters", () => {
       otp: new RecordingOtpSender(),
       extractor: new FixtureExtractor(new Map()),
       planner: null,
+      profiler: null,
       background: (job) => job(),
       photos,
       tokens: JoseTokenVerifier.forSupabase(url),

@@ -22,7 +22,7 @@ import type {
 const MAX_DEVICE_STEPS = 8;
 /** At least this long between two device steps. */
 const MIN_STEP_GAP_MS = 3 * MINUTE;
-/** TODO(open-questions#42): the history the planner reads. */
+/** The closed tasks the profiler reads (ADR 0020, open-questions#42); the planner gets RECENT_TASKS. */
 export const HISTORY_TASKS = 30;
 export const HISTORY_DAYS = 60;
 
@@ -83,6 +83,9 @@ export interface PlannerInput {
   reachability: Reachability;
   /** Whether a HUMAN step (telling the sender) is allowed. */
   humanAllowed: boolean;
+  /** How this person responds to pokes, from their whole history (ADR 0020); null until known. */
+  profile: string | null;
+  /** The last closed tasks in full, newest first (RECENT_TASKS of them). */
   history: HistoryItem[];
 }
 

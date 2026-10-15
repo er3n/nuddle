@@ -15,12 +15,15 @@ import {
 import { resolveExtraction, type Extraction, type MissingField } from "../domain/extraction";
 import { afterWrongCode, lockedUntil } from "../domain/otp-attempts";
 import { humanChannelAllowed } from "../domain/plan-pokes";
+import { profileIsStale, RECENT_TASKS, type ProfileInput } from "../domain/profile";
+import type { PersonProfiler } from "../domain/ports";
 import { addMs, DAY, HOUR } from "../domain/time";
 import {
   checkPlan,
   HISTORY_DAYS,
   HISTORY_TASKS,
   historyItem,
+  type HistoryItem,
   type PlannerInput,
   type PlanProposal,
 } from "../domain/planner";
@@ -58,6 +61,7 @@ import type {
   FinishMode,
   Person,
   PersonId,
+  PokeProfile,
   PushMessage,
   Task,
   TaskEvent,
@@ -85,6 +89,8 @@ import {
   findTask,
   inSyncReadTx,
   insertEvents,
+  closedTaskCountOf,
+  savePokeProfile,
   deleteLlmCallsOf,
   linkAskedExtraction,
   insertInvite,
@@ -203,6 +209,7 @@ async function refinePlan(deps: AppDeps, taskId: TaskId, version: number): Promi
       addMs(now, -HISTORY_DAYS * DAY),
       HISTORY_TASKS,
     );
+    const closed = await closedTaskCountOf(deps.db, recipient.id);
     const senders = new Map<PersonId, { name: string; relationship: EdgeType | null }>();
     for (const p of past) {
       const id = p.task.senderId;
@@ -212,6 +219,20 @@ async function refinePlan(deps: AppDeps, taskId: TaskId, version: number): Promi
       senders.set(id, { name: person?.displayName ?? "?", relationship: edge?.type ?? null });
     }
     const connections = await activeConnections(deps.db, recipient.id);
+    const history = past.map((p) =>
+      historyItem(
+        p.task,
+        p.events,
+        p.fired,
+        senders.get(p.task.senderId) ?? { name: "self", relationship: null },
+      ),
+    );
+    // A stale profile is written again first (ADR 0020); a failure keeps the one there is.
+    let profile = recipient.pokeProfile;
+    if (deps.profiler && profileIsStale(profile, closed, now)) {
+      profile =
+        (await writeProfile(deps, deps.profiler, recipient, history, closed, now)) ?? profile;
+    }
 
     const input: PlannerInput = {
       now,
@@ -241,14 +262,8 @@ async function refinePlan(deps: AppDeps, taskId: TaskId, version: number): Promi
       quietHours: recipient.quietHours,
       reachability: await reachabilityOf(deps.db, recipient.id),
       humanAllowed: humanChannelAllowed({ task, recipient, sender, senderEdge }),
-      history: past.map((p) =>
-        historyItem(
-          p.task,
-          p.events,
-          p.fired,
-          senders.get(p.task.senderId) ?? { name: "self", relationship: null },
-        ),
-      ),
+      profile: profile?.text ?? null,
+      history: history.slice(0, RECENT_TASKS),
     };
     const call = new LlmCall(deps, {
       kind: "plan",
@@ -303,6 +318,36 @@ async function refinePlan(deps: AppDeps, taskId: TaskId, version: number): Promi
     }
   } catch (error) {
     console.error("poke planner failed, keeping v0", taskId, error);
+  }
+}
+
+/** Ask the profiler for the person's new profile and store it; null when the call failed. */
+async function writeProfile(
+  deps: AppDeps,
+  profiler: PersonProfiler,
+  recipient: Person,
+  history: HistoryItem[],
+  closed: number,
+  now: Date,
+): Promise<PokeProfile | null> {
+  const input: ProfileInput = {
+    now,
+    timeZone: recipient.quietHours.timeZone,
+    recipient: { name: recipient.displayName },
+    previous: recipient.pokeProfile?.text ?? null,
+    history,
+  };
+  const call = new LlmCall(deps, { kind: "profile", personId: recipient.id, input });
+  try {
+    const text = await profiler.profile(input, call.sink);
+    const profile: PokeProfile = { text, writtenAt: now, tasksSeen: closed };
+    await savePokeProfile(deps.db, recipient.id, profile);
+    await call.record("written");
+    return profile;
+  } catch (error) {
+    console.error("profiler failed, keeping the old profile", recipient.id, error);
+    await call.record("failed", { error: errorText(error) });
+    return null;
   }
 }
 

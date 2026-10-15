@@ -197,6 +197,7 @@ describe("OpenRouterPlanner", () => {
     quietHours: eren.quietHours,
     reachability: "FULL_SCREEN",
     humanAllowed: true,
+    profile: null,
     history: [],
   };
 

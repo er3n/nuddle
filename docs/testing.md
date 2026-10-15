@@ -45,6 +45,7 @@ Start the backend scenario suite with: task to self, task to other with done, ph
 - `evals/extraction/golden.jsonl`: about 30 cases to start. Each has raw text, sender time zone, a fixed `now`, the sender's connections, and the expected recipient, title, detail, deadline, finish mode, and whether a question is expected.
 - Cover relative times ("akşama", "yarın sabah", "9dan önce", "cuma akşama kadar"), numbers in words ("bin lira"), self tasks, ambiguous recipients, missing deadline.
 - `mise run eval` runs it against the real provider (OpenRouter, model from `OPENROUTER_MODEL`) and prints a score. Run when the prompt or model changes. Not part of CI.
+- `evals/stories/sentences.jsonl`: 100 everyday sentences with a fixed cast and clock, no expected values. `mise run stories` writes what was understood, plan v0, the model's proposal and what `checkPlan` kept for each, with latencies. It is how plans are judged by eye and how the prompt gets fixed (NUD-70); cases with expected values graduate to the golden sets.
 - Real use is the best source of cases: `mise run golden:export` writes every production task with what the LLM was given and answered and what happened (ADR 0019). A case taken from it keeps the text and the expected result and changes names where needed (the repo is public).
 
 ## Android UI tests
@@ -142,4 +143,5 @@ The full set runs on demand. Because the repo is public, standard GitHub-hosted 
 | `mise run e2e:sync` | two-person set on two emulators | before merging a change to sync, the outbox, alarms or notifications |
 | `mise run e2e` | full E2E set | nightly or on demand |
 | `mise run eval` | LLM golden set | when prompt or model changes |
+| `mise run stories` | 100 everyday sentences (`evals/stories/sentences.jsonl`) through the real extractor and planner; output in git-ignored `evals/stories/out/` (NUD-70) | when the prompts or the model change, before judging plans |
 | `mise run golden:export` | Every production task with its LLM calls, read-only, to git-ignored `golden/` (ADR 0019) | when building eval cases from real use |

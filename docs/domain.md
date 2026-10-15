@@ -8,7 +8,7 @@ Items marked **(proposed)** are reasonable defaults that were not explicitly dec
 
 | Entity | Table | Notes |
 |---|---|---|
-| Person | `people` | id, phone (E.164, unique), display name, created/deleted timestamps, quiet hours (default 23:00-07:00, stored as local times + IANA time zone), the two human channel switches (both default `true`). The user is a person. |
+| Person | `people` | id, phone (E.164, unique), display name, created/deleted timestamps, quiet hours (default 23:00-07:00, stored as local times + IANA time zone), the two human channel switches (both default `true`), the poke profile with when it was written and how many closed tasks it had seen (ADR 0020). The user is a person. |
 | Connection | `edges` | Directed pair (from, to) with `type` (`spouse`, `parent`, `child`, `sibling`, `roommate`, `other`) and learned statistics/weights. A 1:1 connection is two directed edges created together, because each side picks its own relationship ("Sibel senin neyin?") and weights are per direction. Status: `pending` (invite out), `active`, `removed`. `notify_me` (default `true`, **proposed**) is the from-person's switch on 5b, "Sibel'in işleri için bana haber verilebilir": the from-person may be told about the to-person's tasks. It narrows the person's own "Başkalarının işleri için bana haber verilebilir" switch for this one connection. |
 | Invite | `invites` **(proposed table)** | Inviter, invitee phone, chosen relationship, prefilled name, code for the link, status (`open`, `accepted`, `declined`, `revoked`, `expired`). Declining is stored but never shown to the inviter. |
 | Task | `tasks` | Sender, recipient (may equal sender), title, detail (e.g. amount), deadline, timing (`by`: done by the deadline; `at`: a moment, deadline is the moment plus a grace; ADR 0017), finish mode (`done` or `photo`), raw text the sender typed, status, plan version. |
@@ -97,7 +97,7 @@ If full screen is not permitted, `FULL_SCREEN` silently degrades to `SOUND` on t
 
 ## Poke plan
 
-- Planned by an LLM (`PokePlanner` port, ADR 0017) from the task, the people and their relationship, the recipient's connections and the recipient's history (their recent tasks: how each ended, which pokes rang, which one woke them, how fast they acted). The history is what makes the plan learn.
+- Planned by an LLM (`PokePlanner` port, ADR 0017) from the task, the people and their relationship, the recipient's connections, the recipient's **profile** (a rolling LLM-written summary of how they respond to pokes, ADR 0020) and their last 8 closed tasks (how each ended, which pokes rang, which one woke them, how fast they acted). The profile and the history are what make the plan learn.
 - Every LLM plan passes a pure rule check (`checkPlan`) before it is stored. The rules: steps in time order, not before `now` and not after the deadline, for an `at` task not before its moment, no step inside quiet hours, escalation never drops a level, `SILENT` is never the only step, at most one `HUMAN` step and only when allowed (rule 5 below), at most 8 device steps, at least 3 minutes between two device steps. A breaking step is dropped; a plan with no valid device step is rejected.
 - **Poke plan v0** (below) is the first plan and the fallback: writing a task stores v0 at once, the planner runs after the response and its checked plan replaces v0 as the next version. Planner error, a 10 s timeout or a rejected plan keep v0. The same on every regeneration.
 - Every regeneration bumps the plan version. Devices ignore steps from older versions.
