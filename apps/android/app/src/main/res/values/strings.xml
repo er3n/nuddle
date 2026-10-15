@@ -345,6 +345,11 @@
     <string name="task_delivery_seen">✓✓ Gördü.</string>
     <!-- NUD-68: when poking starts on a task to me; the ladder after it stays hidden. -->
     <string name="task_poke_starts">Saat %1$s olunca hatırlatırım, yapmazsan biraz ısrar ederim.</string>
+    <!-- NUD-81: the sender sees what the pokes did, never the plan ahead (glossary). -->
+    <plurals name="task_pokes_so_far">
+        <item quantity="one">%1$d kez dürttüm, en son %2$s.</item>
+        <item quantity="other">%1$d kez dürttüm, en son %2$s.</item>
+    </plurals>
     <string name="cd_task_start">Hatırlatma saatini değiştir</string>
     <string name="start_title">Ne zaman hatırlatayım?</string>
     <string name="start_body">Son zaman değişmez; dürtmeler seçtiğin saatte başlar.</string>

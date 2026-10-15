@@ -135,3 +135,12 @@ fun pokeStart(
     if (plan.isEmpty() || plan.any { it.firedAt != null }) return null
     return Instant.fromEpochMilliseconds(plan.minOf { it.plannedAt }).takeIf { it > now }
 }
+
+/** Kurulu or Tekrar istendi: the pokes are still going. */
+val DetailStatus.open: Boolean get() = this == DetailStatus.Scheduled || this == DetailStatus.ReRequested
+
+/** My task to someone, after the first poke rang (NUD-81): how many so far and when the last one was. */
+data class PokesSoFar(
+    val count: Int,
+    val lastAt: String,
+)
