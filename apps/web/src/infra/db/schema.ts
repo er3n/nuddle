@@ -295,3 +295,39 @@ export const otpAttempts = pgTable("otp_attempts", {
   lockedUntil: timestamp("locked_until", { withTimezone: true }),
   updatedAt: updatedAt(),
 });
+
+// Every LLM call with what the model got and said, and what came of it (ADR 0019): golden data
+// for evals and the only record of why a plan fell back. Only the API reads it.
+export const llmCallKind = pgEnum("llm_call_kind", ["extraction", "plan"]);
+
+export const llmCalls = pgTable(
+  "llm_calls",
+  {
+    id: uuid("id").primaryKey(),
+    kind: llmCallKind("kind").notNull(),
+    // The writer for an extraction, the recipient for a plan.
+    personId: uuid("person_id")
+      .notNull()
+      .references(() => people.id),
+    // Null for an extraction that created no task (a question, a reply, an error).
+    taskId: uuid("task_id").references(() => tasks.id),
+    // The write_task key, so an extraction that asked links to the task the preview created.
+    writeKey: uuid("write_key"),
+    // The plan version this call was for, and the one it became when adopted.
+    planVersion: bigint("plan_version", { mode: "number" }),
+    adoptedVersion: bigint("adopted_version", { mode: "number" }),
+    // The structured input: the extraction input or the PlannerInput.
+    input: jsonb("input").$type<unknown>().notNull(),
+    model: text("model"),
+    system: text("system"),
+    prompt: text("prompt"),
+    // What the model answered, parsed when it was JSON.
+    output: jsonb("output").$type<unknown>(),
+    // create, ask, chat; adopted, rejected, stale; failed.
+    outcome: text("outcome").notNull(),
+    error: text("error"),
+    latencyMs: bigint("latency_ms", { mode: "number" }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("llm_calls_task_idx").on(t.taskId), index("llm_calls_person_idx").on(t.personId)],
+);

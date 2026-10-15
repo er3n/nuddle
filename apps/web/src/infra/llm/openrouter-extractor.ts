@@ -3,7 +3,7 @@
 // OPENROUTER_MODEL.
 import { z } from "zod";
 import type { Extraction, ExtractionInput } from "../../domain/extraction";
-import type { TaskExtractor } from "../../domain/ports";
+import type { ExchangeSink, TaskExtractor } from "../../domain/ports";
 import { toLocalIso } from "../../domain/time";
 import { completeJson, type OpenRouterOptions } from "./openrouter";
 
@@ -122,11 +122,12 @@ export function buildPrompt(input: ExtractionInput): string {
 export class OpenRouterExtractor implements TaskExtractor {
   constructor(private readonly options: OpenRouterOptions) {}
 
-  async extract(input: ExtractionInput): Promise<Extraction> {
+  async extract(input: ExtractionInput, onExchange?: ExchangeSink): Promise<Extraction> {
     // The sender waits for this call: no thinking (NUD-52).
     const json = await completeJson(
       { ...this.options, reasoning: false },
       {
+        ...(onExchange ? { onExchange } : {}),
         system: RULES,
         user: buildPrompt(input),
         name: "task_extraction",

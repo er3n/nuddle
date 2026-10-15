@@ -41,6 +41,7 @@ import {
   edges,
   idempotencyKeys,
   invites,
+  llmCalls,
   otpAttempts,
   people,
   pokeSteps,
@@ -919,4 +920,53 @@ export async function saveOtpAttempts(
 
 export async function clearOtpAttempts(ex: Executor, phone: string): Promise<void> {
   await ex.delete(otpAttempts).where(eq(otpAttempts.phone, phone));
+}
+
+/** One LLM call and what came of it (ADR 0019). */
+export interface LlmCallRow {
+  id: string;
+  kind: "extraction" | "plan";
+  personId: PersonId;
+  taskId: TaskId | null;
+  writeKey: string | null;
+  planVersion: number | null;
+  adoptedVersion: number | null;
+  input: unknown;
+  model: string | null;
+  system: string | null;
+  prompt: string | null;
+  output: unknown;
+  outcome: string;
+  error: string | null;
+  latencyMs: number;
+}
+
+export async function insertLlmCall(ex: Executor, row: LlmCallRow): Promise<void> {
+  await ex.insert(llmCalls).values(row);
+}
+
+/**
+ * The preview (2b) created the task an extraction asked about: link the person's latest unlinked
+ * extraction of the same text from the last hour to it.
+ */
+export async function linkAskedExtraction(
+  ex: Executor,
+  personId: PersonId,
+  rawText: string,
+  taskId: TaskId,
+  since: Date,
+): Promise<void> {
+  await ex.execute(sql`
+    update llm_calls set task_id = ${taskId}
+    where id = (
+      select id from llm_calls
+      where person_id = ${personId} and kind = 'extraction' and task_id is null and outcome = 'ask'
+        and input->>'text' = ${rawText} and created_at >= ${since.toISOString()}
+      order by created_at desc limit 1
+    )`);
+}
+
+/** Deleting an account removes what the LLM was told about the person (ADR 0019). */
+export async function deleteLlmCallsOf(tx: Tx, personId: PersonId): Promise<void> {
+  await tx.delete(llmCalls).where(eq(llmCalls.personId, personId));
 }

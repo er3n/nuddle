@@ -1,6 +1,7 @@
 // OpenRouter's OpenAI-compatible chat completions API with structured output, shared by the task
 // extractor and the poke planner (docs/architecture.md, LLM; ADR 0017).
 import { z } from "zod";
+import type { ExchangeSink } from "../../domain/ports";
 
 const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -22,7 +23,14 @@ const completionSchema = z.object({
 /** One chat completion constrained to `schema`; returns the parsed JSON content. */
 export async function completeJson(
   options: OpenRouterOptions,
-  request: { system: string; user: string; name: string; schema: object; signal?: AbortSignal },
+  request: {
+    system: string;
+    user: string;
+    name: string;
+    schema: object;
+    signal?: AbortSignal;
+    onExchange?: ExchangeSink;
+  },
 ): Promise<unknown> {
   const fetchFn = options.fetch ?? fetch;
   const response = await fetchFn(ENDPOINT, {
@@ -52,7 +60,16 @@ export async function completeJson(
   }
   const completion = completionSchema.parse(await response.json());
   const content = completion.choices[0]?.message.content ?? "";
-  return JSON.parse(stripCodeFence(content));
+  const exchange = { model: options.model, system: request.system, prompt: request.user };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(stripCodeFence(content));
+  } catch (error) {
+    request.onExchange?.({ ...exchange, output: content });
+    throw error;
+  }
+  request.onExchange?.({ ...exchange, output: parsed });
+  return parsed;
 }
 
 /** Some models wrap JSON in a Markdown code fence even with structured output. */

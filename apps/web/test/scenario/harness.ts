@@ -631,6 +631,13 @@ export class World {
   }
 
   /** Re-read the database (and each person's invites through sync) after an action. */
+  /** The LLM call log (ADR 0019), oldest first, with people by name. */
+  async llmCalls(): Promise<(typeof schema.llmCalls.$inferSelect)[]> {
+    const { db } = (await this.ready).database;
+    const rows = await db.select().from(schema.llmCalls).orderBy(asc(schema.llmCalls.createdAt));
+    return rows.map((r) => ({ ...r, personId: this.nameOf(r.personId) }));
+  }
+
   async refresh(): Promise<void> {
     const { db } = (await this.ready).database;
     const named = (id: string) => this.nameOf(id);
