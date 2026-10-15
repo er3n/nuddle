@@ -34,7 +34,7 @@ export function smokeExtractions(now: Date): Record<string, unknown> {
 }
 
 /** A one hour quiet window starting 12 hours after `now`, in Sibel's time zone (Europe/Istanbul). */
-function quietHoursAwayFrom(now: Date): { start: string; end: string } {
+export function quietHoursAwayFrom(now: Date): { start: string; end: string } {
   const hour = Number(
     new Intl.DateTimeFormat("en-GB", {
       timeZone: "Europe/Istanbul",

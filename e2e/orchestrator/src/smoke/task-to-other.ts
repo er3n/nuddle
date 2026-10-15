@@ -30,7 +30,7 @@ export function taskToOtherExtractions(now: Date): Record<string, unknown> {
 }
 
 /** As for Sibel in smoke 1: default quiet hours would swallow the poke window of a run at night. */
-export async function erenQuietHours(run: RunContext, databaseUrl: string): Promise<void> {
+async function erenQuietHours(run: RunContext, databaseUrl: string): Promise<void> {
   await run.step("eren-quiet-hours", async () => {
     const db = postgres(databaseUrl, { max: 1, onnotice: () => undefined });
     try {

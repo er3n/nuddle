@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.work.WorkManager
+import app.nuddle.BuildConfig
 import app.nuddle.alarm.AlarmManagerScheduler
 import app.nuddle.alarm.AndroidPokeNotifications
 import app.nuddle.alarm.FullScreenPermission
@@ -42,8 +43,11 @@ import kotlin.time.Clock
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+    /** The `e2e` flavor runs on fake time the orchestrator moves (TestTime). */
     @Provides
-    fun clock(): Clock = Clock.System
+    fun clock(
+        @ApplicationContext context: Context,
+    ): Clock = if (BuildConfig.FAKE_TIME) TestTime.clock(context) else Clock.System
 
     /** Not a singleton: the user can change the zone while the app runs. */
     @Provides
@@ -72,7 +76,10 @@ object AppModule {
     @Singleton
     fun alarmScheduler(
         @ApplicationContext context: Context,
-    ): AlarmScheduler = AlarmManagerScheduler(context, context.getSystemService(AlarmManager::class.java))
+    ): AlarmScheduler =
+        AlarmManagerScheduler(context, context.getSystemService(AlarmManager::class.java)) { at ->
+            if (BuildConfig.FAKE_TIME) TestTime.shift(context, at) else at
+        }
 
     @Provides
     @Singleton

@@ -24,8 +24,9 @@ async function postTest(path: string, body: unknown = {}): Promise<unknown> {
 
 export const testApi = {
   reset: () => postTest("reset"),
+  resetTasks: () => postTest("reset-tasks"),
   tick: () => postTest("tick"),
-  advanceClock: (ms: number) => postTest("advance-clock", { ms }),
+  advanceClock: (ms: number) => postTest("advance-clock", { ms }) as Promise<{ now: string }>,
 };
 
 function unwrap<T>(what: string, r: { data?: T; error?: unknown; response: Response }): T {

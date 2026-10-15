@@ -1,12 +1,15 @@
 // The two emulators (docs/testing.md, Orchestrator): emulator-5554 is Sibel, emulator-5556 is Eren.
 // adb for setup, system conditions and screenshots; Maestro for the flows in e2e/flows/.
 import type { ChildProcess } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { repoRoot } from "./context";
 import { run, spawnLogged, stop } from "./proc";
 
 const APP_ID = "app.nuddle.debug";
+/** Where a warm start remembers which APK it installed (docs/testing.md, Warm start). */
+const APK_SHA = "/data/local/tmp/nuddle-e2e-apk.sha";
 /** The poke alarm's broadcast action (apps/android alarm/PokeIntents.kt, ACTION_FIRE). */
 const POKE_FIRE_TAG = "*walarm*:app.nuddle.action.POKE_FIRE";
 
@@ -46,6 +49,58 @@ export class Device {
     await this.adb(["install", "-r", "-g", apk], 180_000);
     await this.shell(`appops set ${APP_ID} USE_FULL_SCREEN_INTENT allow`);
     await this.reversePorts();
+  }
+
+  /**
+   * Warm start (docs/testing.md, Warm start): the app stays with its data, signed in; it is replaced (`install -r`)
+   * only when the APK changed since the last run on this device.
+   */
+  async installKeepingData(apk: string): Promise<void> {
+    const sha = createHash("sha256").update(readFileSync(apk)).digest("hex");
+    const installed = await this.shell(`cat ${APK_SHA} 2>/dev/null; true`);
+    if (installed.trim() !== sha || !(await this.installed())) {
+      await this.adb(["install", "-r", "-g", apk], 180_000);
+      await this.shell(`echo ${sha} > ${APK_SHA}`);
+    }
+    await this.shell(`appops set ${APP_ID} USE_FULL_SCREEN_INTENT allow`);
+    await this.reversePorts();
+  }
+
+  private async installed(): Promise<boolean> {
+    return (await this.shell(`pm path ${APP_ID}; true`)).includes("package:");
+  }
+
+  /** Whether the app is installed and has a signed-in session (its DataStore file). */
+  async signedIn(): Promise<boolean> {
+    if (!(await this.installed())) return false;
+    const files = await this.shell(`run-as ${APP_ID} ls files/datastore 2>/dev/null; true`);
+    return files.includes("session.preferences_pb");
+  }
+
+  /**
+   * Sends one of the e2e flavor's commands (apps/android e2e/E2eReceiver.kt) and waits for its result; returns its
+   * data. The app process starts for it if it is not running.
+   */
+  async e2e(action: string, extras: string[] = []): Promise<string> {
+    const out = await this.shell(
+      `am broadcast -a app.nuddle.e2e.${action} -n ${APP_ID}/app.nuddle.e2e.E2eReceiver ${extras.join(" ")}`,
+      30_000,
+    );
+    const data = /data="([^"]*)"/.exec(out)?.[1];
+    if (!/result=-1/.test(out) || data === undefined || data.startsWith("error"))
+      throw new Error(`e2e ${action} on ${this.role}: ${out.trim()}`);
+    return data;
+  }
+
+  /** The app's clock moves on by [ms]; steps that came due ring at once (fake time). */
+  async advance(ms: number): Promise<void> {
+    await this.e2e("ADVANCE", ["--el", "ms", String(ms)]);
+  }
+
+  /** No task on the phone, real time again, a full sync (between cases of a warm run). */
+  async resetApp(): Promise<void> {
+    const data = await this.e2e("RESET");
+    if (data !== "synced true") throw new Error(`reset on ${this.role}: ${data}`);
   }
 
   /**
@@ -153,19 +208,48 @@ export class Device {
     return new Set(await this.screenTagList());
   }
 
-  /** How many elements on screen carry [tag] (one per row for row tags). */
-  async countOnScreen(tag: string): Promise<number> {
-    return (await this.screenTagList()).filter((t) => t === tag).length;
+  /**
+   * Taps the element tagged [tag] once it is on screen, without starting Maestro (several seconds per flow): for the
+   * one-tap steps of the two-person set.
+   */
+  async tap(tag: string, timeoutMs = 30_000): Promise<void> {
+    const until = Date.now() + timeoutMs;
+    for (;;) {
+      const node = (await this.screenDump()).match(
+        new RegExp(
+          `resource-id="${tag.replaceAll(".", "\\.")}"[^>]*bounds="\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]"`,
+        ),
+      );
+      if (node) {
+        const [x1, y1, x2, y2] = node.slice(1, 5).map(Number) as [number, number, number, number];
+        await this.shell(`input tap ${String((x1 + x2) >> 1)} ${String((y1 + y2) >> 1)}`);
+        return;
+      }
+      if (Date.now() > until) throw new Error(`${this.role}: no ${tag} on screen to tap`);
+      await new Promise((resolve) => setTimeout(resolve, 700));
+    }
+  }
+
+  /** Types ASCII [text] into the focused field. */
+  async typeText(text: string): Promise<void> {
+    await this.shell(`input text '${text.replace(/[^A-Za-z0-9 ]/g, "").replaceAll(" ", "%s")}'`);
+  }
+
+  /** Taps [tags] one after the other, each once it is on screen. */
+  async taps(...tags: string[]): Promise<void> {
+    for (const tag of tags) await this.tap(tag);
   }
 
   private async screenTagList(): Promise<string[]> {
+    return [...(await this.screenDump()).matchAll(/resource-id="([^"]+)"/g)].map((m) => m[1] ?? "");
+  }
+
+  private async screenDump(): Promise<string> {
     for (let attempt = 0; ; attempt += 1) {
       const out = await this.shell(
         "uiautomator dump /data/local/tmp/ui.xml >/dev/null 2>&1; cat /data/local/tmp/ui.xml",
       );
-      if (out.includes("<hierarchy")) {
-        return [...out.matchAll(/resource-id="([^"]+)"/g)].map((m) => m[1] ?? "");
-      }
+      if (out.includes("<hierarchy")) return out;
       if (attempt >= 4) throw new Error(`no UI dump from ${this.role}`);
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }

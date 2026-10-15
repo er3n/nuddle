@@ -9,6 +9,7 @@ import app.nuddle.MainActivity
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.AlarmScheduler
 import app.nuddle.domain.PokeStep
+import kotlin.time.Instant
 
 private const val WINDOW_MS = 10 * 60 * 1000L
 
@@ -19,10 +20,12 @@ private const val WINDOW_MS = 10 * 60 * 1000L
 class AlarmManagerScheduler(
     private val context: Context,
     private val alarmManager: AlarmManager,
+    /** From the app's clock to the phone's; only the `e2e` flavor's fake time moves it (TestTime). */
+    private val onPhoneClock: (Instant) -> Instant = { it },
 ) : AlarmScheduler {
     override fun schedule(step: PokeStep) {
         val operation = firePendingIntent(context, step.key, PendingIntent.FLAG_UPDATE_CURRENT) ?: return
-        val at = step.plannedAt.toEpochMilliseconds()
+        val at = onPhoneClock(step.plannedAt).toEpochMilliseconds()
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) {
             val show =
                 PendingIntent.getActivity(
