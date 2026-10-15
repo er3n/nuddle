@@ -4,6 +4,7 @@
 import { planPokes } from "./plan-pokes";
 import type { Reachability } from "./reachability";
 import { DAY, HOUR, MINUTE, addMs } from "./time";
+import type { RepeatRule } from "./repeat";
 import { leadMinutesOf, reschedule, scheduleOf } from "./timing";
 import type {
   CancelReason,
@@ -766,6 +767,10 @@ export interface CreateTaskInput {
   leadMinutes?: number | null;
   finishMode: FinishMode;
   rawText: string | null;
+  /** The rule of a repeating task (ADR 0021); the first occurrence starts the series. */
+  repeat?: RepeatRule | null;
+  /** Set when this is the next occurrence of an existing series. */
+  seriesId?: TaskId | null;
   reachability: Reachability;
   now: Date;
 }
@@ -801,13 +806,21 @@ export function createTask(input: CreateTaskInput): Result<Outcome> {
     leadMinutes: leadMinutesOf(input.timing ?? "by", input.leadMinutes),
     finishMode: input.finishMode,
     rawText: input.rawText,
+    repeat: input.repeat ?? null,
+    seriesId: input.repeat ? (input.seriesId ?? input.id) : null,
     status: "SCHEDULED",
     late: false,
     planVersion: 1,
     statusChangedAt: now,
     removedByRecipientAt: null,
   };
-  const created = event(task, sender.id, "created", {}, now);
+  const created = event(
+    task,
+    sender.id,
+    "created",
+    task.seriesId === null ? {} : { seriesId: task.seriesId, repeat: task.repeat },
+    now,
+  );
   const effects = effectsOfStatus(
     task,
     {

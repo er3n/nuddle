@@ -6,6 +6,7 @@ import app.nuddle.alarm.FullScreenPermission
 import app.nuddle.alarm.PokeNotifications
 import app.nuddle.api.model.EdgeType
 import app.nuddle.api.model.FinishMode
+import app.nuddle.api.model.RepeatRule
 import app.nuddle.data.AccountRepository
 import app.nuddle.data.Approvals
 import app.nuddle.data.AuthRepository
@@ -330,6 +331,7 @@ class FakeTaskRepository : TaskRepository {
         recipientId: String?,
         moment: Boolean,
         missAfterMinutes: Int?,
+        repeat: RepeatRule?,
     ): WriteOutcome {
         created += Triple(title, deadline, idempotencyKey)
         createdFor += recipientId

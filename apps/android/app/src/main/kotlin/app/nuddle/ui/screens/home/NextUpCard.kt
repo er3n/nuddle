@@ -142,7 +142,14 @@ private fun ToDo(task: NextUpUi) {
     val from = task.from
     // Both tiles as tall as the taller one when a value wraps at large font scales.
     Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(dimens.space10)) {
-        InfoTile(task.deadline.timeLabel(), task.deadline.text(), Modifier.weight(1f), note = task.deadline.countdown())
+        // The countdown in the last hour, else the rule of a repeating task ("Her gün 09:00", ADR 0021).
+        InfoTile(
+            task.deadline.timeLabel(),
+            task.deadline.text(),
+            Modifier.weight(1f),
+            note =
+                task.deadline.countdown() ?: task.repeat?.text(),
+        )
         InfoTile(
             label = stringResource(R.string.home_finish_label),
             value =

@@ -7,6 +7,7 @@ import app.nuddle.api.model.EditCommand
 import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.NewDeadlineCommand
 import app.nuddle.api.model.RemoveMissedCommand
+import app.nuddle.api.model.RepeatRule
 import app.nuddle.api.model.SenderHandlesCommand
 import app.nuddle.api.model.TaskStatus
 import app.nuddle.api.model.Timing
@@ -81,6 +82,8 @@ data class TaskDraft(
     val moment: Boolean = false,
     /** For an `at` task: how long after the moment it is missed, as the extraction judged. */
     val missAfterMinutes: Int? = null,
+    /** A repeating task's rule (ADR 0021); the deadline is its first occurrence. */
+    val repeat: RepeatRule? = null,
 )
 
 /** Closes a task on the device at once (implemented by the alarm package, which also stops its alarms). */
@@ -129,6 +132,7 @@ interface TaskRepository {
         recipientId: String? = null,
         moment: Boolean = false,
         missAfterMinutes: Int? = null,
+        repeat: RepeatRule? = null,
     ): WriteOutcome
 
     /** "Düzenle" on the undo toast for a task to self: a new deadline, detail and finish mode kept. */
@@ -224,6 +228,7 @@ class ApiTaskRepository
                                 deadline = draft.deadline?.let { runCatching { Instant.parse(it) }.getOrNull() },
                                 moment = draft.timing == Timing.AT,
                                 missAfterMinutes = draft.missAfterMinutes,
+                                repeat = draft.repeat,
                             )
                         },
                     )
@@ -258,6 +263,7 @@ class ApiTaskRepository
             recipientId: String?,
             moment: Boolean,
             missAfterMinutes: Int?,
+            repeat: RepeatRule?,
         ): WriteOutcome {
             val me = sessions.current()?.personId ?: return WriteOutcome.Failed
             val command =
@@ -271,6 +277,7 @@ class ApiTaskRepository
                     rawText = rawText,
                     timing = if (moment) Timing.AT else Timing.BY,
                     missAfterMinutes = missAfterMinutes?.takeIf { moment },
+                    repeat = repeat,
                 )
             val created =
                 when (val result = apiCall(json) { commandsApi.createTask(command) }) {

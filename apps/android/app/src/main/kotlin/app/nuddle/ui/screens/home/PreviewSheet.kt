@@ -95,26 +95,7 @@ private fun ColumnScope.PreviewBody(
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .background(colors.surface, RoundedCornerShape(dimens.radiusM))
-                .border(dimens.borderCard, colors.border, RoundedCornerShape(dimens.radiusM))
-                .padding(horizontal = dimens.space16),
-    ) {
-        if (preview.recipients.isEmpty()) {
-            LineRow(label = stringResource(R.string.preview_to), value = preview.to ?: stringResource(R.string.home_to_self))
-        }
-        preview.knownDeadline?.let {
-            if (preview.recipients.isEmpty()) GroupDivider()
-            LineRow(label = it.timeLabel(), value = it.text(), onClick = callbacks.onToggleMoment)
-        }
-        preview.detail?.let {
-            if (preview.recipients.isEmpty() || preview.knownDeadline != null) GroupDivider()
-            LineRow(label = stringResource(R.string.preview_detail), value = it)
-        }
-    }
+    DraftRows(preview, callbacks)
     if (preview.recipients.isNotEmpty()) RecipientQuestion(preview, callbacks)
     if (preview.knownDeadline == null) DeadlineQuestion(preview, callbacks)
     if (preview.toOther) {

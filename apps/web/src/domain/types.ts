@@ -1,3 +1,5 @@
+import type { RepeatRule } from "./repeat";
+
 // Core domain types (docs/domain.md). Plain data; persistence maps these to the Drizzle schema.
 
 export type PersonId = string;
@@ -79,6 +81,10 @@ export interface Task {
   leadMinutes: number;
   finishMode: FinishMode;
   rawText: string | null;
+  /** The rule of a repeating task (ADR 0021); null for a one-off. Every occurrence carries it. */
+  repeat: RepeatRule | null;
+  /** The first occurrence's id, shared by every occurrence of the series; null for a one-off. */
+  seriesId: TaskId | null;
   status: TaskStatus;
   late: boolean;
   planVersion: number;

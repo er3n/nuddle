@@ -17,7 +17,8 @@ import { afterWrongCode, lockedUntil } from "../domain/otp-attempts";
 import { humanChannelAllowed } from "../domain/plan-pokes";
 import { profileIsStale, RECENT_TASKS, type ProfileInput } from "../domain/profile";
 import type { PersonProfiler } from "../domain/ports";
-import { addMs, DAY, HOUR } from "../domain/time";
+import { nextOccurrenceAt, repeatRuleOf, textSaysRepeat, type RepeatRule } from "../domain/repeat";
+import { addMs, DAY, HOUR, MINUTE } from "../domain/time";
 import { pokeStartOf } from "../domain/timing";
 import {
   checkPlan,
@@ -471,6 +472,8 @@ interface NewTask {
   leadMinutes?: number | null;
   finishMode: FinishMode;
   rawText: string | null;
+  /** The rule of a repeating task (ADR 0021); the deadline is its first occurrence. */
+  repeat?: RepeatRule | null;
 }
 
 async function createTaskTx(
@@ -584,6 +587,7 @@ export async function writeTask(
         missAfterMinutes,
         leadMinutes,
         finishMode,
+        repeat: textSaysRepeat(input.text) ? repeatRuleOf(extraction.repeat) : null,
       },
     };
   }
@@ -653,11 +657,72 @@ export async function taskCommand(
     if (!r.ok) throw new ApiError(r.error);
     const o = adjust(deps, r.value, now);
     await persistOutcome(tx, o, now);
+    // A sender's cancel ends a series; any other close brings the next occurrence (ADR 0021).
+    const next =
+      cmd.type === "cancel" ? noEffects : await spawnNextOccurrence(tx, deps, task, o, now);
     return {
       result: { taskId: o.task.id, status: o.task.status, planVersion: o.task.planVersion },
-      effects: effectsOf(o),
+      effects: mergeEffects(effectsOf(o), next),
     };
   });
+}
+
+function mergeEffects(a: Effects, b: Effects): Effects {
+  return {
+    pushes: [...a.pushes, ...b.pushes],
+    deletePhotosFor: [...a.deletePhotosFor, ...b.deletePhotosFor],
+    deleteFiles: [...(a.deleteFiles ?? []), ...(b.deleteFiles ?? [])],
+    replans: [...(a.replans ?? []), ...(b.replans ?? [])],
+  };
+}
+
+/**
+ * The next occurrence of a repeating task, created when an occurrence just closed (ADR 0021): the
+ * same task at the next time the rule gives after the occurrence's own time (or now, when it closed
+ * late). Nothing when the task is a one-off, was already closed, or the two people are no longer
+ * connected (the series ends quietly).
+ */
+async function spawnNextOccurrence(
+  tx: Tx,
+  deps: AppDeps,
+  before: Task,
+  o: Outcome,
+  now: Date,
+): Promise<Effects> {
+  const t = o.task;
+  if (t.repeat === null || t.seriesId === null) return noEffects;
+  if (!isOpen(before.status) || isOpen(t.status)) return noEffects;
+  const sender = await findPerson(tx, t.senderId);
+  const recipient = await findPerson(tx, t.recipientId);
+  if (!sender || !recipient) return noEffects;
+  const own = t.remindAt ?? t.deadline;
+  const after = own.getTime() > now.getTime() ? own : now;
+  const time = nextOccurrenceAt(t.repeat, after, recipient.quietHours.timeZone);
+  const r = createTaskDomain({
+    id: randomUUID(),
+    sender,
+    recipient,
+    edge: sender.id === recipient.id ? null : await findEdge(tx, sender.id, recipient.id),
+    title: t.title,
+    detail: t.detail,
+    deadline: time,
+    timing: t.timing,
+    missAfterMinutes:
+      t.remindAt === null
+        ? null
+        : Math.round((t.deadline.getTime() - t.remindAt.getTime()) / MINUTE),
+    leadMinutes: t.leadMinutes,
+    finishMode: t.finishMode,
+    rawText: null,
+    repeat: t.repeat,
+    seriesId: t.seriesId,
+    reachability: await reachabilityOf(tx, recipient.id),
+    now,
+  });
+  if (!r.ok) return noEffects;
+  const next = adjust(deps, r.value, now);
+  await persistOutcome(tx, next, now);
+  return effectsOf(next);
 }
 
 /** "Kaldır" on the recipient's missed card (NUD-49): off their list now; the task stays missed. */
@@ -1208,7 +1273,11 @@ class PgTickPort implements TickPort {
           if (current?.planVersion === result.outcome.task.planVersion - 1) {
             const o = adjust(this.deps, result.outcome, now);
             await persistOutcome(tx, o, now);
-            effects = effectsOf(o);
+            // A missed or auto-approved occurrence of a series brings the next one (ADR 0021).
+            effects = mergeEffects(
+              effectsOf(o),
+              await spawnNextOccurrence(tx, this.deps, current, o, now),
+            );
           }
           break;
         }

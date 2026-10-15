@@ -3,6 +3,7 @@
 // There is no group, household or role table, and there must never be one (ADR 0010).
 import { sql } from "drizzle-orm";
 import type { PermissionSummary } from "../../domain/reachability";
+import type { RepeatRule } from "../../domain/repeat";
 import {
   bigint,
   boolean,
@@ -190,6 +191,9 @@ export const tasks = pgTable(
     removedByRecipientAt: timestamp("removed_by_recipient_at", { withTimezone: true }),
     finishMode: finishMode("finish_mode").notNull(),
     rawText: text("raw_text"),
+    // A repeating task's rule and the id of its first occurrence (ADR 0021); null for a one-off.
+    repeat: jsonb("repeat").$type<RepeatRule>(),
+    seriesId: uuid("series_id"),
     status: taskStatus("status").notNull().default("SCHEDULED"),
     // TODO(open-questions#9): "Sonradan yaptım" after MISSED closes as DONE with late = true.
     late: boolean("late").notNull().default(false),

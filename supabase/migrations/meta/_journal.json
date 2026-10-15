@@ -92,6 +92,13 @@
       "when": 1792090387276,
       "tag": "20261015185307_avatar_path",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792098163189,
+      "tag": "20261015210243_repeat_rule",
+      "breakpoints": true
     }
   ]
 }

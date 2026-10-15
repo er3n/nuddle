@@ -49,6 +49,8 @@ class TaskBuilder {
     planVersion: 1,
     statusChangedAt: new Date("2026-10-11T20:00:00+03:00"),
     removedByRecipientAt: null,
+    repeat: null,
+    seriesId: null,
   };
 
   from(sender: Person): this {

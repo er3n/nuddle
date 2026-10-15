@@ -3,6 +3,7 @@
 // OPENROUTER_MODEL.
 import { z } from "zod";
 import type { Extraction, ExtractionInput } from "../../domain/extraction";
+import { repeatRuleOf } from "../../domain/repeat";
 import type { ExchangeSink, TaskExtractor } from "../../domain/ports";
 import { toLocalIso } from "../../domain/time";
 import { completeJson, type OpenRouterOptions } from "./openrouter";
@@ -19,6 +20,15 @@ const extractionSchema = z.object({
   missing: z.array(z.enum(["recipient", "title", "deadline"])),
   // Required in the JSON schema; optional here so an answer from before NUD-52 still parses.
   reply: z.string().nullable().optional(),
+  // Optional for the same reason (NUD-77); checked by repeatRuleOf before use.
+  repeat: z
+    .object({
+      every: z.enum(["day", "week", "weekdays"]),
+      days: z.array(z.number()).nullable(),
+      time: z.string(),
+    })
+    .nullable()
+    .optional(),
 });
 
 const nullableString = { type: ["string", "null"] };
@@ -37,6 +47,7 @@ const jsonSchema = {
     "finishMode",
     "missing",
     "reply",
+    "repeat",
   ],
   properties: {
     recipient: nullableString,
@@ -49,6 +60,16 @@ const jsonSchema = {
     finishMode: { type: "string", enum: ["done", "photo"] },
     missing: { type: "array", items: { type: "string", enum: ["recipient", "title", "deadline"] } },
     reply: nullableString,
+    repeat: {
+      type: ["object", "null"],
+      additionalProperties: false,
+      required: ["every", "days", "time"],
+      properties: {
+        every: { type: "string", enum: ["day", "week", "weekdays"] },
+        days: { type: ["array", "null"], items: { type: "integer" } },
+        time: { type: "string" },
+      },
+    },
   },
 };
 
@@ -58,7 +79,7 @@ Return only JSON that matches the schema.
 reply
 - null for anything that asks for something to be done or remembered, even when it is short or unclear ("ekmek", "yarın", "eren"): that is a task with fields missing.
 - Things the app cannot do get a reply that says so and shows the one-off form, in Turkish, one sentence:
-  - a repeat ("her gün", "her salı", "her saat başı", "3 kere", "dakikada bir"): "Tekrarlayan görev henüz yok. Tek seferlik yazarsan kurarım: 'annem yarın 9da ilacını alsın'."
+  - a repeat the app cannot do: within a day ("her saat başı", "dakikada bir", "3 kere") or more than once a day ("hem sabah hem akşam"): "Günde en fazla bir kez tekrarlayan görev kurabiliyorum; her saat için ayrı yaz."
   - two or more times in one sentence ("hem sabah hem akşam"): "Bir mesajda tek görev kurabiliyorum; her saat için ayrı yaz."
   - a message to pass on with nothing for the person to do ("X'e seni seviyorum de", "baban seni alabilir de", "yemek hazır de" when it only informs): "Mesaj iletmiyorum, sadece görev. Birine yapması gereken bir şey yazarsan dürterim." But when the message asks the person to do something ("ona uyuması gerektiğini ilet", "yemeğe gelsin de"), that is their task: title the action ("Uyu", "Yemeğe gel").
   - a complaint or feedback about the app ("dün alarm çalmadı"): "Üzgünüm. Hangi dürtmenin çalmadığını zil ekranında görebilirsin; bana yeni bir görev yazabilirsin."
@@ -114,6 +135,10 @@ finishMode
 missing
 - The fields you could not determine. Empty when the task is complete.
 
+repeat
+- A task that comes back on a schedule (NUD-77): "her gün 9da ilacını alsın" {every "day", days null, time "09:00"}; "her salı çöpü çıkarsın" {every "week", days [2], time}; "pazartesi ve perşembe" days [1, 4]; "hafta içi her sabah 7de kalksın" {every "weekdays", time "07:00"}; "her sabah" is every day at 09:00, "her akşam" at 19:00 unless an hour is given. ISO weekdays: 1 pazartesi, 2 salı, 3 çarşamba, 4 perşembe, 5 cuma, 6 cumartesi, 7 pazar. The deadline is then the first occurrence: the next matching time after now, which is today when that time is still ahead today ("her gün 9da" at 08:00 is today 09:00; at 10:00 it is tomorrow 09:00). Everything else (title, timing, finishMode, leadMinutes) as for a one-off.
+- null for a one-off task, which is the usual case. Only the sentence itself makes a task repeat, with a word like "her gün", "her sabah", "her akşam", "her hafta", "her salı", "hafta içi", "her iş günü". A day named once ("çarşamba 9da", "cumartesi"), "yarın", "bugün", a school run, a pickup or a bill said once: a one-off, repeat null, even when such a thing happens every day in real life. Never more than once a day: those get a reply (see below).
+
 Worked examples (sender's local time Sunday 21:00, connections Eren: spouse, Ayşe: parent)
 - "babamı yarın ara": the sender calls; babam is only the object. recipient "self", deadline tomorrow 19:00, timing "by".
 - "annem 11de ilacını içsin": annem means Ayşe; 11 has no part of day, so 11:00, which has passed today, so tomorrow 11:00; timing "at".
@@ -123,6 +148,8 @@ Worked examples (sender's local time Sunday 21:00, connections Eren: spouse, Ay�
 - "eren yarın 14.30da diş randevusu var": recipient Eren, title "Diş randevusuna git", 14:30 tomorrow, timing "at", leadMinutes 45, missAfterMinutes 15.
 - "erene yemek hazır de": nothing to do but come: recipient Eren, title "Yemeğe gel", now plus 5 minutes, timing "at".
 - "eşim sabah 6da kalkacak ona uyuması gerektiğini ilet": the 6 is why, not when; Sibel should sleep now: recipient Sibel, title "Uyu", now plus 5 minutes, timing "at".
+- "annem her gün 9da ilacını alsın": recipient Ayşe, title "İlacını al", repeat {every "day", days null, time "09:00"}; the first occurrence is tomorrow 09:00 (today's has passed), timing "at".
+- "eren her salı akşam 7de çöpü çıkarsın": recipient Eren, repeat {every "week", days [2], time "19:00"}; the first occurrence is the next Tuesday 19:00, timing "at".
 - "öğlen öğretmeni ara": nobody named, so "self"; 12:00 today, timing "at", missAfterMinutes 30.
 - "eren yarın 6.30da kargoyu kapıya koysun": a morning thing, so 06:30 tomorrow, timing "at", leadMinutes 0, missAfterMinutes 15.
 - "eren bu akşam annesini arasın" at 18:00: by 22:00, timing "by".
@@ -162,6 +189,8 @@ export class OpenRouterExtractor implements TaskExtractor {
         schema: jsonSchema,
       },
     );
-    return extractionSchema.parse(json);
+    const parsed = extractionSchema.parse(json);
+    // The rule as the domain keeps it (days cleaned, the time checked), or none.
+    return { ...parsed, repeat: repeatRuleOf(parsed.repeat) };
   }
 }

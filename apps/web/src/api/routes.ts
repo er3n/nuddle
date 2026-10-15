@@ -6,6 +6,7 @@ import type { Command } from "../domain/task-machine";
 import type { Person } from "../domain/types";
 import type { Caller } from "../infra/auth/jwt";
 import type { AppDeps } from "./deps";
+import { repeatRuleOf } from "../domain/repeat";
 import { ApiError } from "./errors";
 import * as s from "./schemas";
 import * as svc from "./services";
@@ -433,6 +434,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
         await svc.createTask(deps, await person(c.get("caller")), {
           ...b,
           deadline: new Date(b.deadline),
+          repeat: repeatRuleOf(b.repeat),
         }),
         200,
       );

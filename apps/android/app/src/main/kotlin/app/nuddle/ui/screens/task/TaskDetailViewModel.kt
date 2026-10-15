@@ -25,10 +25,12 @@ import app.nuddle.ui.screens.home.FromUi
 import app.nuddle.ui.screens.home.HOUR_MINUTE
 import app.nuddle.ui.screens.home.MissedUi
 import app.nuddle.ui.screens.home.NewDeadlineUi
+import app.nuddle.ui.screens.home.RepeatUi
 import app.nuddle.ui.screens.home.SentIssueUi
 import app.nuddle.ui.screens.home.issues
 import app.nuddle.ui.screens.home.nextOccurrence
 import app.nuddle.ui.screens.home.quickDeadlines
+import app.nuddle.ui.screens.home.repeat
 import app.nuddle.ui.screens.home.timeText
 import app.nuddle.ui.screens.home.writtenText
 import app.nuddle.ui.screens.poke.DropUi
@@ -109,6 +111,8 @@ data class TaskDetailUiState(
     val delivery: Delivery? = null,
     /** "09:00": a task to me that has not rung yet starts poking then (NUD-68). */
     val pokeStartsAt: String? = null,
+    /** A repeating task's rule (ADR 0021): the "Tekrar" row; null for a one-off. */
+    val repeat: RepeatUi? = null,
 ) {
     val actions: List<DetailAction> get() = actionsFor(side, status, photo)
     val editable: Boolean get() = editable(side, status)
@@ -213,6 +217,7 @@ class TaskDetailViewModel
                     deadline = task.timeText(now, timeZone),
                     detail = task.detail,
                     photo = task.finishMode == FinishMode.PHOTO.value,
+                    repeat = task.repeat,
                     side = side,
                     status = status,
                     from =

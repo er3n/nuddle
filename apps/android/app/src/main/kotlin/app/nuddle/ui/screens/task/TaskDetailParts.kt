@@ -100,6 +100,10 @@ internal fun DetailRows(
             onClick = { callbacks.onEdit(EditRow.Deadline) }.takeIf { state.editable },
             modifier = Modifier.testTag(TestTags.TASK_EDIT_DEADLINE),
         )
+        state.repeat?.let {
+            GroupDivider()
+            LineRow(label = stringResource(R.string.task_repeat_label), value = it.text())
+        }
         state.detail?.let {
             GroupDivider()
             LineRow(label = stringResource(R.string.preview_detail), value = it)

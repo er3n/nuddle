@@ -148,6 +148,15 @@ export const RegisterCommand = keyed({
   timeZone: z.string().min(1).openapi({ example: "Europe/Istanbul" }),
 }).openapi("RegisterCommand");
 
+/** A repeating task's rule (ADR 0021): every day, the given ISO weekdays, or weekdays, at a local time. */
+const RepeatRule = z
+  .object({
+    every: z.enum(["day", "week", "weekdays"]),
+    days: z.array(z.int().min(1).max(7)).nullable().optional(),
+    time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  })
+  .openapi("RepeatRule");
+
 export const WriteTaskCommand = keyed({ text: z.string().trim().min(1).max(500) }).openapi(
   "WriteTaskCommand",
 );
@@ -173,6 +182,8 @@ export const WriteTaskResult = z
         /** For an `at` task: minutes before the moment the person must start (NUD-70). */
         leadMinutes: LeadMinutes.nullable().optional(),
         finishMode: FinishMode,
+        /** The rule the text gave, for the preview's "Her gün 09:00" line (NUD-77). */
+        repeat: RepeatRule.nullable().optional(),
       })
       .nullable(),
     /** Only for `chat`. */
@@ -192,6 +203,8 @@ export const CreateTaskCommand = keyed({
   leadMinutes: LeadMinutes.nullable().optional(),
   finishMode: FinishMode,
   rawText: z.string().max(500).nullable(),
+  /** The rule of a repeating task; the picked deadline is its first occurrence (NUD-77). */
+  repeat: RepeatRule.nullable().optional(),
 }).openapi("CreateTaskCommand");
 
 export const DoneCommand = taskKeyed({
@@ -440,6 +453,9 @@ const SyncTask = z
     photoSentAt: Instant.nullable().optional(),
     /** The note of the last "Tekrar iste" while the task is REJECTED (4g); null otherwise. */
     reRequestNote: z.string().nullable().optional(),
+    /** The rule of a repeating task and the id shared by its occurrences (ADR 0021); null for a one-off. */
+    repeat: RepeatRule.nullable().optional(),
+    seriesId: Id.nullable().optional(),
   })
   .openapi("SyncTask");
 

@@ -41,6 +41,7 @@ describe("resolveExtraction", () => {
       missAfterMinutes: null,
       leadMinutes: null,
       finishMode: "photo",
+      repeat: null,
     });
   });
 
@@ -186,7 +187,7 @@ describe("OpenRouterExtractor", () => {
       );
     };
     const extractor = new OpenRouterExtractor({ apiKey: "k", model: "m/x", fetch: fakeFetch });
-    expect(await extractor.extract(input)).toEqual(complete);
+    expect(await extractor.extract(input)).toEqual({ ...complete, repeat: null });
 
     const body = JSON.parse(requests[0]?.init.body as string) as {
       model: string;
@@ -224,7 +225,7 @@ describe("OpenRouterExtractor", () => {
         }),
       );
     const extractor = new OpenRouterExtractor({ apiKey: "k", model: "m", fetch: fakeFetch });
-    expect(await extractor.extract(input)).toEqual(complete);
+    expect(await extractor.extract(input)).toEqual({ ...complete, repeat: null });
   });
 
   it("fails loudly on an HTTP error", async () => {

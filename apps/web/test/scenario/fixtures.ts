@@ -14,6 +14,8 @@ export const TEXT = {
   dishesToEren: "eren yarın gece 10a kadar bulaşıkları yıkasın",
   pickupKidsAt: "eren saat 5.30da çocukları okuldan alsın, yürüyüş 20 dakika sürüyor",
   hello: "merhaba",
+  dailyMedicineToEren: "eren her gün 9da ilacını alsın",
+  weeklyTrashToEren: "eren her salı akşam 7de çöpü çıkarsın",
 } as const;
 
 const fixtures: Record<string, FixtureExtraction> = {
@@ -95,6 +97,27 @@ const fixtures: Record<string, FixtureExtraction> = {
     deadline: "2026-10-12T22:00:00+03:00",
     finishMode: "done",
     missing: [],
+  },
+  // Repeating tasks (ADR 0021): the first occurrence is the next matching time after Sunday 20:00.
+  [TEXT.dailyMedicineToEren]: {
+    recipient: "Eren",
+    title: "İlacını al",
+    detail: null,
+    deadline: "2026-10-12T09:00:00+03:00",
+    timing: "at",
+    missAfterMinutes: 120,
+    finishMode: "done",
+    missing: [],
+    repeat: { every: "day", time: "09:00" },
+  },
+  [TEXT.weeklyTrashToEren]: {
+    recipient: "Eren",
+    title: "Çöpü çıkar",
+    detail: null,
+    deadline: "2026-10-13T19:00:00+03:00",
+    finishMode: "done",
+    missing: [],
+    repeat: { every: "week", days: [2], time: "19:00" },
   },
   [TEXT.homeworkToDefne]: {
     recipient: "Defne",

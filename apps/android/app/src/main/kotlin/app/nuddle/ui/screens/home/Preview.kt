@@ -61,6 +61,8 @@ data class PreviewUi(
     val recipient: RecipientChoice? = RecipientChoice.Self,
     /** The deadline the text already gave, when the question was "Kime?"; then "Ne zamana kadar?" is not asked. */
     val knownDeadline: DeadlineText? = null,
+    /** The rule the text gave (ADR 0021): "Her gün 09:00" under the time; the picked time is its first occurrence. */
+    val repeat: RepeatUi? = null,
     /** For a moment ([knownDeadline] `moment`): how long after it the task is missed, from the extraction. */
     val missAfterMinutes: Int? = null,
     /** 4a, a task to someone else: "Fotoğrafla, sen onayla" is chosen; [photoSuggested] when the text was about money. */
@@ -202,7 +204,8 @@ fun previewFor(
     val draft = ask.draft ?: return null
     val title = draft.title ?: return null
     val photo = draft.finishMode == FinishMode.PHOTO
-    val base = previewFor(rawText, title, draft.detail, quiet, now).copy(photo = photo, photoSuggested = photo)
+    val repeat = draft.repeat?.let { RepeatUi(it.every.value, it.days.orEmpty(), it.time) }
+    val base = previewFor(rawText, title, draft.detail, quiet, now).copy(photo = photo, photoSuggested = photo, repeat = repeat)
     return when (ask.question) {
         WriteTaskResult.Question.DEADLINE -> {
             when (val recipient = recipientNamed(draft.recipient, connections) ?: return null) {
