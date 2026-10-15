@@ -9,6 +9,7 @@ import app.nuddle.api.model.NewDeadlineCommand
 import app.nuddle.api.model.RemoveMissedCommand
 import app.nuddle.api.model.RepeatRule
 import app.nuddle.api.model.SenderHandlesCommand
+import app.nuddle.api.model.SetStartCommand
 import app.nuddle.api.model.TaskStatus
 import app.nuddle.api.model.Timing
 import app.nuddle.api.model.WriteTaskCommand
@@ -140,7 +141,7 @@ interface TaskRepository {
         taskId: String,
         deadline: Instant,
         idempotencyKey: String,
-    ): WriteOutcome
+    ): WriteOutcome = edit(taskId, deadline, null, idempotencyKey)
 
     /** A row changed in the sender's task detail (7c): the deadline or how it ends, the rest kept. */
     suspend fun edit(
@@ -178,6 +179,13 @@ interface TaskRepository {
     suspend fun newDeadline(
         taskId: String,
         deadline: Instant,
+        idempotencyKey: String,
+    ): WriteOutcome
+
+    /** The recipient moves when the pokes begin (NUD-78); the deadline stays. Reuse [idempotencyKey] when retrying. */
+    suspend fun setStart(
+        taskId: String,
+        startAt: Instant,
         idempotencyKey: String,
     ): WriteOutcome
 }
@@ -288,12 +296,6 @@ class ApiTaskRepository
             return WriteOutcome.Created(created.taskId)
         }
 
-        override suspend fun editDeadline(
-            taskId: String,
-            deadline: Instant,
-            idempotencyKey: String,
-        ): WriteOutcome = edit(taskId, deadline, null, idempotencyKey)
-
         override suspend fun edit(
             taskId: String,
             deadline: Instant?,
@@ -367,6 +369,19 @@ class ApiTaskRepository
             val command = NewDeadlineCommand(idempotencyKey = idempotencyKey, taskId = taskId, deadline = deadline.toString())
             val result = apiCall(json) { commandsApi.newDeadline(command) }
             if (result !is ApiResult.Success) return WriteOutcome.Failed
+            sync.sync()
+            return WriteOutcome.Created(taskId)
+        }
+
+        override suspend fun setStart(
+            taskId: String,
+            startAt: Instant,
+            idempotencyKey: String,
+        ): WriteOutcome {
+            val command = SetStartCommand(idempotencyKey = idempotencyKey, taskId = taskId, startAt = startAt.toString())
+            val result = apiCall(json) { commandsApi.setStart(command) }
+            if (result !is ApiResult.Success) return WriteOutcome.Failed
+            // The new plan comes with the sync; the detail's start line follows it.
             sync.sync()
             return WriteOutcome.Created(taskId)
         }

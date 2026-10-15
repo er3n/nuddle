@@ -76,6 +76,7 @@ components:
                 - not_connected
                 - recipient_unavailable
                 - snooze_not_allowed
+                - start_not_in_window
                 - invite_not_open
                 - wrong_invitee
                 - self_invite
@@ -412,6 +413,12 @@ components:
           type: integer
           minimum: 0
           maximum: 360
+        pokeFrom:
+          type: string
+          nullable: true
+          format: date-time
+          example: 2026-10-12T09:00:00+03:00
+          description: ISO 8601 with offset
         planVersion:
           type: integer
         statusChangedAt:
@@ -555,6 +562,7 @@ components:
         - permission_missing
         - delivered
         - seen
+        - start_set
     SyncPlan:
       type: object
       properties:
@@ -981,6 +989,25 @@ components:
         - idempotencyKey
         - taskId
         - seen
+    SetStartCommand:
+      type: object
+      properties:
+        idempotencyKey:
+          type: string
+          format: uuid
+          description: Client generated UUIDv7; a replay returns the first result (ADR 0006)
+        taskId:
+          type: string
+          format: uuid
+        startAt:
+          type: string
+          format: date-time
+          example: 2026-10-12T09:00:00+03:00
+          description: ISO 8601 with offset
+      required:
+        - idempotencyKey
+        - taskId
+        - startAt
     DoneCommand:
       type: object
       properties:
@@ -2103,6 +2130,63 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/AcknowledgeCommand"
+      responses:
+        "200":
+          description: The result; a replay with the same key returns it again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskCommandResult"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/commands/set_start:
+    post:
+      operationId: setStart
+      summary: "Recipient: when the pokes may begin, the deadline unchanged (NUD-78)"
+      tags:
+        - commands
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetStartCommand"
       responses:
         "200":
           description: The result; a replay with the same key returns it again

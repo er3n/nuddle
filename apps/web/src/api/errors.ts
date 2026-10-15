@@ -23,6 +23,7 @@ const errors = {
   not_connected: { code: "DRT-4006", status: 409 },
   recipient_unavailable: { code: "DRT-4007", status: 409 },
   snooze_not_allowed: { code: "DRT-4008", status: 409 },
+  start_not_in_window: { code: "DRT-4009", status: 409 },
   invite_not_open: { code: "DRT-4101", status: 409 },
   wrong_invitee: { code: "DRT-4102", status: 403 },
   self_invite: { code: "DRT-4103", status: 409 },

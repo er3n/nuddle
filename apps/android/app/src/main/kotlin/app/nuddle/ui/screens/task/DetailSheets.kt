@@ -24,6 +24,7 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 // The parts of the task detail that answer a task in one tap or through a sheet (docs/ux/screens.md, Task detail).
 // Kept out of TaskDetailViewModel so each stays small; the route binds their functions as callbacks.
@@ -130,6 +131,54 @@ class NewDeadlineHolder(
         sheet.value = current.copy(saving = true, failed = false)
         scope.launch {
             val ok = tasks.newDeadline(taskId, deadline, key) is WriteOutcome.Created
+            if (ok) saveKey = null
+            sheet.update { if (ok) null else it?.copy(saving = false, failed = true) }
+        }
+    }
+}
+
+/**
+ * "Saat 09:00 olunca hatırlatırım" tapped (NUD-78): the recipient picks when the pokes begin, between now and the
+ * task's time. The same sheet as a new deadline, without the quick choices (they are deadlines, not starts).
+ */
+class StartHolder(
+    private val taskId: String,
+    private val tasks: TaskRepository,
+    private val ids: IdGenerator,
+    private val clock: Clock,
+    private val timeZone: TimeZone,
+    private val scope: CoroutineScope,
+) {
+    private val sheet = MutableStateFlow<NewDeadlineUi?>(null)
+    val open: StateFlow<NewDeadlineUi?> = sheet.asStateFlow()
+
+    /** Kept while the same start is retried, so it is not applied twice. */
+    private var saveKey: String? = null
+
+    /** [taskTime] is the task's own time: the moment of an `at` task, else the deadline. */
+    fun onOpen(taskTime: Instant) {
+        saveKey = null
+        sheet.value = NewDeadlineUi(taskId, toName = "", choices = emptyList(), limit = taskTime)
+    }
+
+    fun onTimePicked(time: LocalTime) {
+        saveKey = null
+        val picked = DeadlineChoice.Picked(nextOccurrence(time, clock.now(), timeZone), time.format(HOUR_MINUTE))
+        sheet.update { it?.copy(picked = picked, failed = false) }
+    }
+
+    fun onDismiss() {
+        sheet.value = null
+    }
+
+    fun onSave() {
+        val current = sheet.value ?: return
+        val startAt = current.picked?.at ?: return
+        if (current.saving || current.pickedTooLate) return
+        val key = saveKey ?: ids.next().also { saveKey = it }
+        sheet.value = current.copy(saving = true, failed = false)
+        scope.launch {
+            val ok = tasks.setStart(taskId, startAt, key) is WriteOutcome.Created
             if (ok) saveKey = null
             sheet.update { if (ok) null else it?.copy(saving = false, failed = true) }
         }

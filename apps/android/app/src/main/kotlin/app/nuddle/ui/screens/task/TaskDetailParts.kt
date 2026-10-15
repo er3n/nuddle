@@ -4,6 +4,7 @@ package app.nuddle.ui.screens.task
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -151,7 +153,11 @@ internal fun ReachButtons(
 
 /** The status and what it means now: how far pokes reach, the sender's note, what happened (open-questions#34, #36). */
 @Composable
-internal fun StatusCard(state: TaskDetailUiState) {
+internal fun StatusCard(
+    state: TaskDetailUiState,
+    /** The start line tapped (NUD-78). */
+    onStart: () -> Unit = {},
+) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
     val shape = RoundedCornerShape(dimens.radiusXl)
@@ -179,7 +185,17 @@ internal fun StatusCard(state: TaskDetailUiState) {
         }
         Text(statusSentence(state), style = DurtTheme.type.body, color = colors.ink)
         state.pokeStartsAt?.let {
-            Text(stringResource(R.string.task_poke_starts, it), style = DurtTheme.type.bodySmall, color = colors.textSecondary)
+            // The recipient can move the start (NUD-78): the line is a row that opens the sheet.
+            val change = stringResource(R.string.cd_task_start)
+            Text(
+                stringResource(R.string.task_poke_starts, it),
+                style = DurtTheme.type.bodySmall,
+                color = colors.link,
+                modifier =
+                    Modifier
+                        .clickable(onClickLabel = change, role = Role.Button, onClick = onStart)
+                        .testTag(TestTags.TASK_START),
+            )
         }
         // Nothing while only sent: the phone may be fine and the server just has not said so yet.
         state.delivery

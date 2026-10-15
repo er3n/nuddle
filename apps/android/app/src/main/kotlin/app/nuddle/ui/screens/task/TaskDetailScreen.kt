@@ -84,6 +84,9 @@ data class TaskDetailCallbacks(
     val onMessage: (String) -> Unit = {},
     val drop: DropCallbacks = DropCallbacks(),
     val newDeadline: NewDeadlineCallbacks = NewDeadlineCallbacks(),
+    /** The start line tapped, and its sheet (NUD-78). */
+    val onStart: () -> Unit = {},
+    val start: NewDeadlineCallbacks = NewDeadlineCallbacks(),
 )
 
 private val CancelReason.label: Int
@@ -180,7 +183,7 @@ fun TaskDetailScreen(
             }
         }
         Text(state.title, style = DurtTheme.type.h1, color = colors.ink, modifier = Modifier.semantics { heading() })
-        StatusCard(state)
+        StatusCard(state, callbacks.onStart)
         DetailRows(state, callbacks)
         if (state.editable) {
             Text(
@@ -195,7 +198,7 @@ fun TaskDetailScreen(
     if (state.cancelling) CancelSheet(state, callbacks)
     if (state.editing != null) EditSheet(state, callbacks)
     state.drop?.let { DropSheet(it, callbacks.drop) }
-    state.newDeadline?.let { NewDeadlineSheet(it, callbacks.newDeadline) }
+    TimeSheets(state, callbacks)
 }
 
 @Composable
@@ -205,6 +208,23 @@ private fun cancelAction(
 ): SheetAction {
     val note = state.reason?.let { stringResource(it.label) }
     return SheetAction(stringResource(R.string.cancel_confirm), { callbacks.onCancelConfirm(note) }, destructive = true)
+}
+
+/** Yeni zaman ver (5d) for the sender, and the moved start (NUD-78) for the recipient: the same sheet, other words. */
+@Composable
+private fun TimeSheets(
+    state: TaskDetailUiState,
+    callbacks: TaskDetailCallbacks,
+) {
+    state.newDeadline?.let { NewDeadlineSheet(it, callbacks.newDeadline) }
+    state.start?.let {
+        NewDeadlineSheet(
+            it,
+            callbacks.start,
+            title = stringResource(R.string.start_title),
+            description = stringResource(R.string.start_body),
+        )
+    }
 }
 
 /** 7d: Danger primary, two optional reasons, Vazgeç. */

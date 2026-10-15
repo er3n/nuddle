@@ -37,10 +37,18 @@ export function leadMinutesOf(timing: Timing, minutes: number | null | undefined
   return Math.min(MAX_LEAD_MINUTES, Math.max(0, Math.round(minutes)));
 }
 
-/** When poking may start on an `at` task: the moment minus its lead. Null for `by`. */
-export function pokeStartOf(task: Pick<Task, "remindAt" | "leadMinutes">): Date | null {
-  return task.remindAt === null ? null : addMs(task.remindAt, -task.leadMinutes * MINUTE);
+/**
+ * When poking may start: for an `at` task the moment minus its lead; for a `by` task the start the
+ * recipient set (NUD-78), else null (the plan decides).
+ */
+export function pokeStartOf(
+  task: Pick<Task, "remindAt" | "leadMinutes"> & Partial<Pick<Task, "pokeFrom">>,
+): Date | null {
+  if (task.remindAt !== null) return addMs(task.remindAt, -task.leadMinutes * MINUTE);
+  return task.pokeFrom ?? null;
 }
+
+export { MAX_LEAD_MINUTES };
 
 /** The time the person picked and sees: the moment of an `at` task, the deadline of a `by` task. */
 export function pickedTime(task: Pick<Task, "deadline" | "remindAt">): Date {

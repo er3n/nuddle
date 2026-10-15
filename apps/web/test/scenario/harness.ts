@@ -322,6 +322,8 @@ export class Client {
         return post("/api/v1/commands/did_it_later", {});
       case "snooze":
         return post("/api/v1/commands/snooze", {});
+      case "set_start":
+        return post("/api/v1/commands/set_start", { startAt: cmd.startAt.toISOString() });
       case "cancel":
         return post("/api/v1/commands/cancel", { note: cmd.note });
       case "edit":

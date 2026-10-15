@@ -84,6 +84,7 @@ const TaskEventType = z
     "permission_missing",
     "delivered",
     "seen",
+    "start_set",
   ])
   .openapi("TaskEventType");
 
@@ -224,6 +225,8 @@ export const RemoveMissedCommand = taskKeyed({}).openapi("RemoveMissedCommand");
 /** The recipient's phone: the task reached it, or (seen) the recipient has seen it (NUD-68). */
 export const AcknowledgeCommand = taskKeyed({ seen: z.boolean() }).openapi("AcknowledgeCommand");
 export const SnoozeCommand = taskKeyed({}).openapi("SnoozeCommand");
+/** The recipient moves when the pokes begin (NUD-78): between now and the task's time. */
+export const SetStartCommand = taskKeyed({ startAt: Instant }).openapi("SetStartCommand");
 export const CancelCommand = taskKeyed({ note: Note }).openapi("CancelCommand");
 export const EditCommand = taskKeyed({
   /** The picked time; an `at` task moves its moment and keeps its grace. Same for NewDeadlineCommand. */
@@ -436,6 +439,8 @@ const SyncTask = z
     late: z.boolean(),
     /** Minutes before the moment poking may start on an `at` task (NUD-70); 0 for `by`. */
     leadMinutes: LeadMinutes.optional(),
+    /** The recipient's earliest poke time on a `by` task (NUD-78); null or absent: the plan decides. */
+    pokeFrom: Instant.nullable().optional(),
     planVersion: z.int(),
     statusChangedAt: Instant,
     /** False once the task leaves the recipient's list (a missed card after one day). */

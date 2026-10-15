@@ -81,6 +81,7 @@ export const taskEventType = pgEnum("task_event_type", [
   "permission_missing",
   "delivered",
   "seen",
+  "start_set",
 ]);
 export const pokeLevel = pgEnum("poke_level", ["SILENT", "SOUND", "FULL_SCREEN", "HUMAN"]);
 export const scheduledActionKind = pgEnum("scheduled_action_kind", [
@@ -187,6 +188,8 @@ export const tasks = pgTable(
     remindAt: timestamp("remind_at", { withTimezone: true }),
     // Minutes before the moment the person must start (NUD-70); 0 for `by`.
     leadMinutes: bigint("lead_minutes", { mode: "number" }).notNull().default(0),
+    // The recipient's earliest poke time on a `by` task (NUD-78); null: the plan decides.
+    pokeFrom: timestamp("poke_from", { withTimezone: true }),
     // "Kaldır" on the recipient's missed card (NUD-49): hidden from their list from then on.
     removedByRecipientAt: timestamp("removed_by_recipient_at", { withTimezone: true }),
     finishMode: finishMode("finish_mode").notNull(),

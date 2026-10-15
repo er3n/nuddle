@@ -10,6 +10,7 @@ import app.nuddle.data.DoneNotes
 import app.nuddle.data.WriteOutcome
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.db.TaskEventEntity
+import app.nuddle.data.db.shownTime
 import app.nuddle.domain.IdGenerator
 import app.nuddle.domain.QuietHours
 import app.nuddle.testing.Cast
@@ -38,6 +39,7 @@ import app.nuddle.ui.screens.task.TaskDetailViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import org.junit.Rule
 import kotlin.test.Test
@@ -348,5 +350,40 @@ class TaskDetailViewModelTest {
                 open(aTask().copy(senderId = Cast.SIBEL_ID, recipientId = "someone-else"))
                 awaitItem()
             }
+        }
+
+    @Test
+    fun `the start line opens a sheet whose time must be before the task's time, and saving sends set_start (NUD-78)`() =
+        runTest(main.dispatcher) {
+            ready()
+            val taskTime = vm.state.value?.taskTime
+            assertEquals(Instant.fromEpochMilliseconds(aTask().shownTime), taskTime)
+            vm.start.onOpen(taskTime ?: error("no task time"))
+            assertEquals(
+                taskTime,
+                vm.state.value
+                    ?.start
+                    ?.limit,
+            )
+            vm.start.onTimePicked(LocalTime(10, 0))
+            assertEquals(
+                true,
+                vm.state.value
+                    ?.start
+                    ?.pickedTooLate,
+            )
+            vm.start.onSave()
+            assertEquals(emptyList(), tasks.starts, "a start past the task's time is not sent")
+            vm.start.onTimePicked(LocalTime(8, 0))
+            assertEquals(
+                false,
+                vm.state.value
+                    ?.start
+                    ?.pickedTooLate,
+            )
+            vm.start.onSave()
+            assertEquals(1, tasks.starts.size)
+            assertEquals(Cast.TASK_ID, tasks.starts.single().first)
+            assertNull(vm.state.value?.start, "the sheet closes once the server took it")
         }
 }

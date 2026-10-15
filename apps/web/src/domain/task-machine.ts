@@ -5,7 +5,7 @@ import { planPokes } from "./plan-pokes";
 import type { Reachability } from "./reachability";
 import { DAY, HOUR, MINUTE, addMs } from "./time";
 import type { RepeatRule } from "./repeat";
-import { leadMinutesOf, reschedule, scheduleOf } from "./timing";
+import { leadMinutesOf, MAX_LEAD_MINUTES, reschedule, scheduleOf } from "./timing";
 import type {
   CancelReason,
   DeviceLevel,
@@ -47,6 +47,8 @@ export type Command =
   | { type: "cant_today"; note: string | null }
   | { type: "did_it_later" }
   | { type: "snooze" }
+  /** When the pokes may begin, chosen by the recipient (NUD-78); the deadline stays. */
+  | { type: "set_start"; startAt: Date }
   // Sender
   | { type: "cancel"; note: string | null }
   /** `deadline` here and in new_deadline is the time the person picked; an `at` task keeps its grace. */
@@ -71,6 +73,7 @@ export type DomainError =
   | "not_recipient"
   | "wrong_finish_mode"
   | "deadline_not_in_future"
+  | "start_not_in_window"
   | "not_connected"
   | "recipient_unavailable"
   | "snooze_not_allowed";
@@ -112,6 +115,7 @@ function transitionsFrom(status: TaskStatus): Partial<Record<CommandType, TaskSt
         photo_sent: "AWAITING_APPROVAL",
         cant_today: "DROPPED",
         snooze: "SCHEDULED",
+        set_start: "SCHEDULED",
         deadline_passed: "MISSED",
         cancel: "CANCELLED",
         edit: "SCHEDULED",
@@ -176,6 +180,7 @@ function actorOf(type: CommandType): Actor {
     case "cant_today":
     case "did_it_later":
     case "snooze":
+    case "set_start":
       return "recipient";
     case "cancel":
     case "edit":
@@ -414,11 +419,12 @@ function hintsFor(task: Task, e: TaskEvent): PushMessage[] {
   const self = senderId === recipientId;
   switch (e.type) {
     // After a snooze the device rings the snoozed step again itself; the hint brings the shifted
-    // rest of the plan.
+    // rest of the plan. A moved start (NUD-78) is a new plan too.
     case "created":
     case "edited":
     case "re_requested":
     case "snoozed":
+    case "start_set":
       return [push(recipientId, "plan_changed", task, e.type)];
     case "photo_sent":
       return self ? [] : [push(senderId, "sync", task, e.type)];
@@ -494,6 +500,8 @@ function eventFor(
       return [event(task, actorId, "dropped", { note: cmd.note }, now)];
     case "did_it_later":
       return [event(task, actorId, "done", { late: true }, now)];
+    case "set_start":
+      return [event(task, actorId, "start_set", { startAt: cmd.startAt.toISOString() }, now)];
     case "cancel":
       return [
         event(task, actorId, "cancelled", { reason: "sender_cancelled", note: cmd.note }, now),
@@ -601,6 +609,23 @@ export function applyCommand(
     case "did_it_later":
       next.late = true;
       break;
+    case "set_start": {
+      // Between now and the task's time; for an `at` task inside the lead limit (NUD-78).
+      const time = task.remindAt ?? task.deadline;
+      const at = cmd.startAt.getTime();
+      if (at <= now.getTime() || at > time.getTime()) {
+        return { ok: false, error: "start_not_in_window" };
+      }
+      if (task.remindAt !== null) {
+        const lead = Math.round((task.remindAt.getTime() - at) / MINUTE);
+        if (lead > MAX_LEAD_MINUTES) return { ok: false, error: "start_not_in_window" };
+        next.leadMinutes = lead;
+        next.pokeFrom = null;
+      } else {
+        next.pokeFrom = cmd.startAt;
+      }
+      break;
+    }
     case "edit":
       if (cmd.deadline !== undefined) {
         if (cmd.deadline.getTime() <= now.getTime()) {
@@ -645,7 +670,10 @@ export function applyCommand(
   const effects = effectsOfStatus(
     next,
     ctx,
-    cmd.type === "re_request" || cmd.type === "replan" || snooze !== null,
+    cmd.type === "re_request" ||
+      cmd.type === "replan" ||
+      cmd.type === "set_start" ||
+      snooze !== null,
     snooze?.until,
   );
   if (effects.planEvent) events.push(effects.planEvent);
@@ -804,6 +832,7 @@ export function createTask(input: CreateTaskInput): Result<Outcome> {
     timing: input.timing ?? "by",
     ...scheduleOf(input.timing ?? "by", input.deadline, input.missAfterMinutes),
     leadMinutes: leadMinutesOf(input.timing ?? "by", input.leadMinutes),
+    pokeFrom: null,
     finishMode: input.finishMode,
     rawText: input.rawText,
     repeat: input.repeat ?? null,

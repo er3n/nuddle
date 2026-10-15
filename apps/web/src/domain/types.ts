@@ -79,6 +79,11 @@ export interface Task {
    * the spot.
    */
   leadMinutes: number;
+  /**
+   * The earliest the pokes of a `by` task may begin, set by the recipient ("Saat 09:00 olunca
+   * hatırlatırım" moved; NUD-78). Null: the plan decides. For an `at` task the lead holds this.
+   */
+  pokeFrom: Date | null;
   finishMode: FinishMode;
   rawText: string | null;
   /** The rule of a repeating task (ADR 0021); null for a one-off. Every occurrence carries it. */
@@ -125,7 +130,8 @@ export type TaskEventType =
   | "human_notified"
   | "permission_missing"
   | "delivered"
-  | "seen";
+  | "seen"
+  | "start_set";
 
 export interface TaskEvent {
   taskId: TaskId;

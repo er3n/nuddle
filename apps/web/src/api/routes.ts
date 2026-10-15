@@ -198,6 +198,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
             snoozedUntil: t.snoozedUntil === null ? null : iso(t.snoozedUntil),
             createdAt: iso(t.createdAt),
             photoSentAt: t.photoSentAt === null ? null : iso(t.photoSentAt),
+            pokeFrom: t.pokeFrom === null ? null : iso(t.pokeFrom),
             reRequestNote: t.reRequestNote,
           })),
           sentInvites: r.sentInvites.map((i) => ({
@@ -485,6 +486,13 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
     },
   );
 
+  taskCommand(
+    "set_start",
+    "setStart",
+    "Recipient: when the pokes may begin, the deadline unchanged (NUD-78)",
+    s.SetStartCommand,
+    (b) => ({ type: "set_start", startAt: new Date(b.startAt) }),
+  );
   taskCommand("done", "done", "Recipient: Bitti", s.DoneCommand, (b) => ({
     type: "done",
     ...(b.cameraUnavailable === undefined ? {} : { cameraUnavailable: b.cameraUnavailable }),
