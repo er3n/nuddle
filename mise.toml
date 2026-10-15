@@ -195,6 +195,12 @@ description = "Two-emulator smoke set before merging"
 depends = ["_install"]
 run = "pnpm --filter @nuddle/e2e smoke"
 
+[tasks."e2e:sync"]
+description = "Two-emulator set of the sender and recipient cases (NUD-64)"
+# Like e2e:smoke, with a 45 minute hard timeout: background it and poll <run folder>/orchestrator.log.
+depends = ["_install"]
+run = "pnpm --filter @nuddle/e2e sync"
+
 [tasks."e2e:emulators"]
 hide = true
 description = "Create and boot the two E2E emulators headless (emulator-5554 Sibel, emulator-5556 Eren)"

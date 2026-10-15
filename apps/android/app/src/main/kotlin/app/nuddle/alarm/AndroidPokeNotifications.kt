@@ -108,6 +108,14 @@ class AndroidPokeNotifications
             NotificationManagerCompat.from(context).cancel(notificationId(taskId))
         }
 
+        // Each poke is in a group of its own task (NotificationIds.pokeGroup), which names the task.
+        override fun showing(): Set<String> =
+            NotificationManagerCompat
+                .from(context)
+                .activeNotifications
+                .mapNotNull { it.notification.group?.let(NotificationIds::taskOfPokeGroup) }
+                .toSet()
+
         /**
          * At most three actions (docs/ux/components.md, 7): Bitti, Ertele, Bugün olmaz. Ertele shows the length of the
          * snooze it gives and "son hakkın" on the last one; it is left out when none is left (NUD-36).

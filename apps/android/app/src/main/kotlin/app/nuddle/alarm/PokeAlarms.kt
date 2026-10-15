@@ -31,16 +31,45 @@ class PokeAlarms
         private val steps: PokeStepDao,
         private val scheduler: AlarmScheduler,
         private val clock: Clock,
+        private val notifications: PokeNotifications,
     ) : AlarmRearmer {
         override suspend fun rearm() {
             val all = steps.all()
-            val states = tasks.all().associate { it.id to it.toLocalState() }
+            val taskList = tasks.all()
+            val states = taskList.associate { it.id to it.toLocalState() }
             val fired = all.filter { it.firedAt != null }.map { it.toStep().key }.toSet()
-            val toArm = PokeRules.stepsToArm(all.map { it.toStep() }, states, fired, clock.now())
+            val now = clock.now()
+            val toArm = PokeRules.stepsToArm(all.map { it.toStep() }, states, fired, now) + snoozedRings(taskList, all, now)
             val armed = toArm.map { it.key }.toSet()
             all.map { it.toStep().key }.filterNot { it in armed }.forEach(scheduler::cancel)
             toArm.forEach(scheduler::schedule)
+            // A task closed on the other phone or on the server (cancelled, missed, connection removed): the poke that
+            // rang for it goes too, not only its alarms (NUD-64). Asked of the system, because the sync that closed it
+            // has already replaced the steps that rang.
+            notifications
+                .showing()
+                .filter { states[it]?.open != true }
+                .forEach(notifications::cancel)
         }
+
+        /**
+         * Ertele rings the step that rang again when the snooze ends (PokeActions.snooze). Until the server's shifted
+         * plan replaces the version, a re-arm keeps that ring instead of cancelling it as a step that already fired.
+         */
+        private fun snoozedRings(
+            taskList: List<TaskEntity>,
+            all: List<PokeStepEntity>,
+            now: Instant,
+        ): List<PokeStep> =
+            taskList
+                .filter { it.status in OPEN_STATUSES && (it.snoozedUntil ?: 0) > now.toEpochMilliseconds() }
+                .mapNotNull { task ->
+                    all
+                        .filter { it.taskId == task.id && it.planVersion == task.planVersion && it.firedAt != null }
+                        .maxByOrNull { it.seq }
+                        ?.toStep()
+                        ?.copy(plannedAt = Instant.fromEpochMilliseconds(task.snoozedUntil ?: return@mapNotNull null))
+                }
 
         override suspend fun applyPlan(
             taskId: String,

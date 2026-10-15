@@ -78,6 +78,7 @@ class TaskRepositoryTest {
                         alarms,
                         RecordingAnnouncer(),
                         testJson,
+                        { emptySet() },
                     ),
                 closer =
                     object : TaskCloser {

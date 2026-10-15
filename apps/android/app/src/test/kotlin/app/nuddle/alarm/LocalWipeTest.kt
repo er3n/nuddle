@@ -14,6 +14,7 @@ import app.nuddle.data.photo.PhotoFiles
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.InMemorySessionStore
+import app.nuddle.testing.RecordingNotifications
 import app.nuddle.testing.RecordingScheduler
 import app.nuddle.testing.aSession
 import app.nuddle.testing.aStep
@@ -56,7 +57,7 @@ class LocalWipeTest {
     fun `wiping stops alarms, notifications and queued work, and empties the database, photos and session`() =
         runTest {
             val clock = FakeClock(Instant.parse("2026-10-12T08:00:00+03:00"))
-            val alarms = PokeAlarms(db.tasks(), db.pokeSteps(), scheduler, clock)
+            val alarms = PokeAlarms(db.tasks(), db.pokeSteps(), scheduler, clock, RecordingNotifications())
             db.tasks().upsert(listOf(aTask()))
             db.connections().upsert(listOf(sibelConnection()))
             alarms.applyPlan(Cast.TASK_ID, 1, listOf(aStep(1, "2026-10-12T08:30:00+03:00")))

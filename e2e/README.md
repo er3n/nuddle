@@ -13,6 +13,7 @@ Real flows on two emulators against the local backend in E2E mode (`docs/testing
 
 ```
 mise run e2e:smoke            # the smoke set; prints the run folder first and last
+mise run e2e:sync             # the two-person set (docs/testing.md, Two-person set), 45 minute hard timeout
 ```
 
 It runs in the foreground with a 20 minute hard timeout and exits non-zero on failure. It takes several minutes (first Gradle build, emulator boot), so agents start it in the background and poll `<run folder>/orchestrator.log` (CLAUDE.md, long-running commands).
@@ -74,6 +75,10 @@ Auth users live in the stack's Auth service and are not deleted; the app sees a 
 | 10 | Eren goes offline: the banner shows and a text waits as "Sırada"; back online it goes out and the task is on home | `orchestrator/src/smoke/offline.ts` |
 | 11 | Sibel taps the mic and speaks a task (injected speech); it goes into the box and the send arrow creates it | `orchestrator/src/smoke/voice.ts` |
 | 5, 6 | `docs/testing.md`, Smoke set (Doze, reboot) | not yet |
+
+## Two-person set
+
+`orchestrator/src/sync/two-person.ts`: Sibel signs up, invites Eren (smoke 2), then the seven cases of `docs/testing.md`, Two-person set, one step each (`sync-1-...` to `sync-7-...`). Besides Maestro flows it reads both phones directly: `Device.screenTags()` (the test tags on screen, from `uiautomator dump`), `Device.notificationChannels()` (the app's notifications that are up) and `Device.pendingPokeAlarms()`. A one-tap step uses `flows/common/tap.yaml` with the tag as `ID`. A failed check names what was on screen.
 
 Smokes run in the order of the table: each one starts from the state the one before left.
 

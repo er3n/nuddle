@@ -177,6 +177,7 @@ class RecordingScheduler : AlarmScheduler {
 class RecordingNotifications : PokeNotifications {
     val shown = mutableListOf<Pair<String, PokeLevel>>()
     val cancelled = mutableListOf<String>()
+    private val up = mutableSetOf<String>()
 
     override fun show(
         task: TaskEntity,
@@ -184,11 +185,15 @@ class RecordingNotifications : PokeNotifications {
         level: PokeLevel,
     ) {
         shown += task.id to level
+        up += task.id
     }
 
     override fun cancel(taskId: String) {
         cancelled += taskId
+        up -= taskId
     }
+
+    override fun showing(): Set<String> = up.toSet()
 }
 
 class RecordingDrainer : OutboxDrainer {
@@ -373,6 +378,8 @@ class InMemoryTaskDao : TaskDao {
     override suspend fun all(): List<TaskEntity> = tasks.value.values.toList()
 
     override fun observeAll(): Flow<List<TaskEntity>> = tasks.map { it.values.toList() }
+
+    override fun observe(id: String): Flow<TaskEntity?> = tasks.map { it[id] }
 
     override suspend fun hideFromMyList(id: String) {
         tasks.value[id]?.let { tasks.value += id to it.copy(inRecipientList = false) }

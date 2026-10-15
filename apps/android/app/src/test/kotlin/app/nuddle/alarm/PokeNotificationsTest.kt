@@ -48,6 +48,14 @@ class PokeNotificationsTest {
     private fun Notification.actionTitles() = actions.map { it.title.toString() }
 
     @Test
+    fun `the pokes that are up name their tasks, until they are cancelled (NUD-64)`() {
+        show(seq = 1)
+        assertEquals(setOf(Cast.TASK_ID), notifications.showing())
+        notifications.cancel(Cast.TASK_ID)
+        assertEquals(emptySet(), notifications.showing())
+    }
+
+    @Test
     fun `the first step says 1 dürtme`() {
         assertEquals("1. dürtme", show(seq = 1).extras.getString(Notification.EXTRA_SUB_TEXT))
     }

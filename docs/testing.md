@@ -105,6 +105,18 @@ FCM needs Google Play system images and the dev Firebase app. Flows wait with ti
 10. Eren loses his connection: home shows the offline banner (6a) and a text he writes waits as "Sırada"; when the connection is back it goes out by itself and the task is on home.
 11. Sibel taps the mic and speaks a task (4h): the transcript goes into the box and the send arrow creates the task.
 
+### Two-person set (`mise run e2e:sync`, NUD-64)
+Each case is one thing that happens between a sender and a recipient, checked on both phones: what home shows (test tags from a UI Automator dump), the pending poke alarms and the notifications that are up, and the task on the server. The step a person takes is done in their app; the other phone is only watched. Every case ends with no open task between them.
+1. Sibel writes a task while Eren's app is in the background: his alarms and the arrival note, her row; he opens the app and it is next up.
+2. Eren taps Şimdiden bitti: done on the server, his card, alarms and notifications go, her row goes.
+3. A poke is up on Eren's phone (app in the background) and Sibel cancels the task in the app: the poke and the alarms go from his phone, her row goes, his home says she cancelled it.
+4. The full screen poke rings and Eren taps Ertele: counted on the server, his card says when it rings again, his alarms stay, her row stays; Bitti then closes it on both.
+5. Eren answers Bugün yapamayacağım: his pokes stop, Sibel's home has the dropped card; Ben hallederim closes it on her side and nothing comes back on his.
+6. Nobody answers until the deadline: missed on the server, the poke goes from his phone, both homes have the missed card; Sonradan yaptım closes it on both.
+7. Sibel moves a far deadline close: Eren's phone takes the new plan and rings within two minutes; her cancel then leaves nothing on his phone.
+
+It runs on demand and before merging a change to sync, the outbox, alarms or notifications.
+
 The full set runs on demand. Because the repo is public, standard GitHub-hosted Linux runners are free and have KVM, so the smoke set also runs in CI: the `e2e` workflow (`.github/workflows/e2e.yml`, started by hand from the Actions tab, decided in NUD-30) boots both emulators on one runner with the x86_64 image and uploads `e2e-runs/` as an artifact. Locally `mise run e2e:smoke` remains the gate before merging.
 
 ## Manual checklist (before each beta build, about 15 minutes)
@@ -121,5 +133,6 @@ The full set runs on demand. Because the repo is public, standard GitHub-hosted 
 | `mise run test:fast` | lint (fast), typecheck, server unit, Android domain unit, UI behavior, a11y, screenshot record | after every change, under ~1 minute target |
 | `mise run test` | + contract diff, HTTP, scenario, integration, Roborazzi verify, Konsist | before opening a PR, in CI |
 | `mise run e2e:smoke` | smoke set on two emulators | before merging, background with timeout |
+| `mise run e2e:sync` | two-person set on two emulators | before merging a change to sync, the outbox, alarms or notifications |
 | `mise run e2e` | full E2E set | nightly or on demand |
 | `mise run eval` | LLM golden set | when prompt or model changes |

@@ -101,6 +101,7 @@ class SyncRepository
         private val alarms: AlarmRearmer,
         private val announcer: TaskAnnouncer,
         private val json: Json,
+        private val pending: PendingChanges,
     ) : Syncer {
         /**
          * One sync at a time in the process: a push, the app coming to the front and a write can ask at once (NUD-59),
@@ -129,7 +130,7 @@ class SyncRepository
                         .map { it.taskId }
                         .toSet()
                 }
-            tasks.upsert(response.tasks.map(SyncTask::toEntity))
+            tasks.upsert(keepLocalChanges(response.tasks.map(SyncTask::toEntity)))
             events.upsert(response.events.map(SyncEvent::toEntity))
             invites.upsert(response.sentInvites.map(SyncSentInvite::toEntity) + response.receivedInvites.map(SyncReceivedInvite::toEntity))
             response.plans.forEach { plan -> alarms.applyPlan(plan.taskId, plan.version, plan.toEntities()) }
@@ -138,6 +139,24 @@ class SyncRepository
             tell(news, response.tasks, session.personId)
             tellUnreached(unreached, response.tasks, session.personId)
             return true
+        }
+
+        /**
+         * What this phone did and has not sent yet stays as it is here: the status, whether it is on my list and the
+         * snooze. The server's version comes with the sync after the outbox sends it (NUD-64).
+         */
+        private suspend fun keepLocalChanges(synced: List<TaskEntity>): List<TaskEntity> {
+            val unsent = pending.taskIds()
+            if (unsent.isEmpty()) return synced
+            return synced.map { task ->
+                val local = task.takeIf { it.id in unsent }?.let { tasks.get(it.id) } ?: return@map task
+                task.copy(
+                    status = local.status,
+                    inRecipientList = local.inRecipientList,
+                    snoozesUsed = maxOf(local.snoozesUsed, task.snoozesUsed),
+                    snoozedUntil = local.snoozedUntil ?: task.snoozedUntil,
+                )
+            }
         }
 
         /** 7a for my open tasks whose human channel just fired; it goes once the task is no longer open. */

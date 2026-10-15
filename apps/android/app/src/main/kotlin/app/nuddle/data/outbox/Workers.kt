@@ -32,8 +32,17 @@ class OutboxWorker
         @Assisted context: Context,
         @Assisted params: WorkerParameters,
         private val sender: OutboxSender,
+        private val sync: SyncRepository,
     ) : CoroutineWorker(context, params) {
-        override suspend fun doWork(): Result = if (sender.drain()) Result.success() else Result.retry()
+        /**
+         * Then a sync: the server's answer replaces what the phone set locally, also when the server refused it (a
+         * Bitti for a task the sender had just cancelled), without waiting for a push (NUD-64).
+         */
+        override suspend fun doWork(): Result {
+            if (!sender.drain()) return Result.retry()
+            sync.sync()
+            return Result.success()
+        }
     }
 
 /** Pulls `GET /api/v1/sync`; FCM data messages only say "sync now" (docs/architecture.md, Push). */
@@ -83,7 +92,10 @@ class WorkManagerScheduling(
                 .setConstraints(online)
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
                 .build()
-        workManager.enqueueUniqueWork("outbox", ExistingWorkPolicy.APPEND_OR_REPLACE, request)
+        // A new command starts a fresh drain at once. Appended, it waited behind a drain in its retry backoff, which
+        // grows to hours, and the other phone never heard of the Bitti or İptal (NUD-64). A drain cut off midway sends
+        // its command again with the same key, which the server answers like the first time (ADR 0006).
+        workManager.enqueueUniqueWork("outbox", ExistingWorkPolicy.REPLACE, request)
     }
 
     override fun uploadSoon(taskId: String) {

@@ -76,7 +76,12 @@ object NotificationIds {
      * The group of a task's poke. Without a group of its own, Android folds two notifications of the app into one
      * automatic group whose children are silent, and a full screen poke then never opens (found by E2E smoke 3).
      */
-    fun pokeGroup(taskId: String): String = "poke:$taskId"
+    fun pokeGroup(taskId: String): String = "$POKE_GROUP$taskId"
+
+    /** The task of a poke's group, null for any other group. */
+    fun taskOfPokeGroup(group: String): String? = group.removePrefix(POKE_GROUP).takeIf { group.startsWith(POKE_GROUP) }
+
+    private const val POKE_GROUP = "poke:"
 
     /** 7a in a group of its own too, so it is not folded in silently next to a poke on the same phone. */
     fun reachGroup(taskId: String): String = "reach:$taskId"

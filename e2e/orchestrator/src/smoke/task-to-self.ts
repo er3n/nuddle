@@ -46,7 +46,8 @@ function quietHoursAwayFrom(now: Date): { start: string; end: string } {
   return { start: at(hour + 12), end: at(hour + 13) };
 }
 
-export async function taskToSelf(run: RunContext, databaseUrl: string): Promise<void> {
+/** Clean server, Sibel signs up on her emulator, her device registers, her quiet hours move away from now. */
+export async function signUpSibel(run: RunContext, databaseUrl: string): Promise<void> {
   const sibel = devices.sibel;
 
   await run.step("reset", async () => {
@@ -87,6 +88,11 @@ export async function taskToSelf(run: RunContext, databaseUrl: string): Promise<
       await db.end();
     }
   });
+}
+
+export async function taskToSelf(run: RunContext, databaseUrl: string): Promise<void> {
+  const sibel = devices.sibel;
+  await signUpSibel(run, databaseUrl);
 
   await run.step("write-task", async (dir) => {
     await sibel.maestro("sibel/write-task.yaml", dir, { TEXT: TASK_TEXT });
