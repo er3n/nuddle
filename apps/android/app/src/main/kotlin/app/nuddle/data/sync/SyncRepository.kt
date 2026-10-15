@@ -248,6 +248,9 @@ internal fun SyncTask.toEntity() =
         reRequestNote = reRequestNote,
         statusChangedAt = Instant.parse(statusChangedAt).toEpochMilliseconds(),
         remindAt = remindAt?.takeIf { timing == Timing.AT }?.let { Instant.parse(it).toEpochMilliseconds() },
+        repeatEvery = repeat?.every?.value,
+        repeatDays = repeat?.days?.joinToString(","),
+        repeatTime = repeat?.time,
     )
 
 internal fun SyncEvent.toEntity() =

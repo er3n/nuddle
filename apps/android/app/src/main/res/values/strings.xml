@@ -275,11 +275,25 @@
     <string name="task_reach_self">Zamanı gelince seni dürterim.</string>
     <string name="task_edit_hint_self">Bir satıra dokunup değiştirebilirsin.</string>
     <string name="cancel_body_self">Dürtmeler hemen durur.</string>
+    <string name="cancel_body_repeat">Tekrar eden görev: iptal edince seri de biter.</string>
     <string name="task_reach_none">Şu an %1$s telefonunda dürtülemiyor. Bitince sana yazarım.</string>
     <string name="reach_full_screen">tam ekran</string>
     <string name="reach_sound">sesli bildirim</string>
     <string name="reach_silent">sessiz bildirim</string>
     <string name="task_finish_label">Nasıl bitsin</string>
+    <string name="task_repeat_label">Tekrar</string>
+    <string name="repeat_daily">Her gün %1$s</string>
+    <string name="repeat_weekdays">Hafta içi %1$s</string>
+    <string name="repeat_weekly">Her %1$s %2$s</string>
+    <string-array name="weekday_names">
+        <item>pazartesi</item>
+        <item>salı</item>
+        <item>çarşamba</item>
+        <item>perşembe</item>
+        <item>cuma</item>
+        <item>cumartesi</item>
+        <item>pazar</item>
+    </string-array>
     <string name="task_finish_photo">Fotoğrafla, sen onayla</string>
     <string name="task_finish_done">\"Bitti\" yeter</string>
     <string name="task_cancel">Görevi iptal et</string>

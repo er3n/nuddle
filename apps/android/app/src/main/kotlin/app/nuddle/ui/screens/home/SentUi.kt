@@ -26,6 +26,8 @@ data class SentUi(
     val reRequested: Boolean = false,
     /** On their phone, or seen by them: the tick (NUD-68). */
     val delivery: Delivery = Delivery.Sent,
+    /** A repeating task's rule (ADR 0021); null for a one-off. */
+    val repeat: RepeatUi? = null,
 )
 
 /** My tasks to others that are still going: to do, a photo waiting for me, asked again. */
@@ -61,5 +63,6 @@ fun sentTasks(
                 awaitingApproval = task.status == TaskStatus.AWAITING_APPROVAL.value,
                 reRequested = task.status == TaskStatus.REJECTED.value,
                 delivery = deliveries[task.id] ?: Delivery.Sent,
+                repeat = task.repeat,
             )
         }

@@ -876,6 +876,9 @@ export interface components {
              */
             photoSentAt?: string | null;
             reRequestNote?: string | null;
+            repeat?: components["schemas"]["RepeatRule"];
+            /** Format: uuid */
+            seriesId?: string | null;
         };
         /** @enum {string} */
         Timing: "at" | "by";
@@ -883,6 +886,12 @@ export interface components {
         FinishMode: "done" | "photo";
         /** @enum {string} */
         TaskStatus: "SCHEDULED" | "AWAITING_APPROVAL" | "REJECTED" | "DONE" | "DROPPED" | "MISSED" | "CANCELLED";
+        RepeatRule: {
+            /** @enum {string} */
+            every: "day" | "week" | "weekdays";
+            days?: number[] | null;
+            time: string;
+        } | null;
         SyncEvent: {
             id: string;
             /** Format: uuid */
@@ -1030,6 +1039,7 @@ export interface components {
                 missAfterMinutes?: number | null;
                 leadMinutes?: number | null;
                 finishMode: components["schemas"]["FinishMode"];
+                repeat?: components["schemas"]["RepeatRule"];
             } | null;
             reply?: string | null;
         };
@@ -1068,6 +1078,7 @@ export interface components {
             leadMinutes?: number | null;
             finishMode: components["schemas"]["FinishMode"];
             rawText: string | null;
+            repeat?: components["schemas"]["RepeatRule"];
         };
         RemoveMissedCommand: {
             /**

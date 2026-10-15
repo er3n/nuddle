@@ -216,7 +216,17 @@ private fun CancelSheet(
     DurtBottomSheet(
         title = stringResource(R.string.cancel_title),
         description =
-            if (state.self) stringResource(R.string.cancel_body_self) else stringResource(R.string.cancel_body, state.toName, state.myName),
+            listOfNotNull(
+                if (state.self) {
+                    stringResource(
+                        R.string.cancel_body_self,
+                    )
+                } else {
+                    stringResource(R.string.cancel_body, state.toName, state.myName)
+                },
+                // A repeating task: the cancel ends the series (ADR 0021).
+                if (state.repeat != null) stringResource(R.string.cancel_body_repeat) else null,
+            ).joinToString(" "),
         onDismiss = callbacks.onCancelDismiss,
         primary = cancelAction(state, callbacks),
     ) {

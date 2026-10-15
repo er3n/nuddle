@@ -38,6 +38,13 @@ data class TaskEntity(
      * deadline of an `at` task is when it becomes missed; screens show this moment instead.
      */
     val remindAt: Long? = null,
+    /**
+     * A repeating task's rule (ADR 0021): "day", "week" or "weekdays"; the ISO weekdays as "2,4" for "week"; the
+     * local time "HH:MM". All null for a one-off.
+     */
+    val repeatEvery: String? = null,
+    val repeatDays: String? = null,
+    val repeatTime: String? = null,
 )
 
 /** The time the sender picked and screens show: the moment of an `at` task, otherwise the deadline (ADR 0017). */

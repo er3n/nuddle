@@ -11,7 +11,7 @@ Items marked **(proposed)** are reasonable defaults that were not explicitly dec
 | Person | `people` | id, phone (E.164, unique), display name, created/deleted timestamps, quiet hours (default 23:00-07:00, stored as local times + IANA time zone), the two human channel switches (both default `true`), the poke profile with when it was written and how many closed tasks it had seen (ADR 0020), the profile picture's path in the private bucket (`avatar_path`, NUD-72; the file goes with the account). The user is a person. |
 | Connection | `edges` | Directed pair (from, to) with `type` (`spouse`, `parent`, `child`, `sibling`, `roommate`, `other`) and learned statistics/weights. A 1:1 connection is two directed edges created together, because each side picks its own relationship ("Sibel senin neyin?") and weights are per direction. Status: `pending` (invite out), `active`, `removed`. `notify_me` (default `true`, **proposed**) is the from-person's switch on 5b, "Sibel'in işleri için bana haber verilebilir": the from-person may be told about the to-person's tasks. It narrows the person's own "Başkalarının işleri için bana haber verilebilir" switch for this one connection. |
 | Invite | `invites` **(proposed table)** | Inviter, invitee phone, chosen relationship, prefilled name, code for the link, status (`open`, `accepted`, `declined`, `revoked`, `expired`). Declining is stored but never shown to the inviter. |
-| Task | `tasks` | Sender, recipient (may equal sender), title, detail (e.g. amount), deadline, timing (`by`: done by the deadline; `at`: a moment, deadline is the moment plus a grace; ADR 0017), finish mode (`done` or `photo`), raw text the sender typed, status, plan version. |
+| Task | `tasks` | Sender, recipient (may equal sender), title, detail (e.g. amount), deadline, timing (`by`: done by the deadline; `at`: a moment, deadline is the moment plus a grace; ADR 0017), finish mode (`done` or `photo`), raw text the sender typed, status, plan version, and for a repeating task its rule and the series id its occurrences share (ADR 0021). |
 | Task event | `task_events` | Append-only log of everything that happens to a task. It is also the sync feed (see `architecture.md`). |
 | Poke step | `poke_steps` **(proposed table)** | The plan: ordered steps with planned time and level, versioned per task. Never exposed to clients except the recipient's device, which needs times and levels to set alarms. |
 | Scheduled action | `scheduled_actions` | Server-side timers: deadline check, approval timeout, human channel check, lost poke check, missed card expiry. Executed by `tick(now)`. |
@@ -63,6 +63,10 @@ Invariants:
 - The state machine is one exhaustive `switch` over a union type in TS and a `sealed` hierarchy in Kotlin. Adding a state must break the build everywhere it is not handled.
 
 UI mapping of each status (pill text, color, what each side sees) is in `ux/screens.md`.
+
+## Repeating tasks
+
+A repeating task (ADR 0021) is a series of one-off occurrences: the rule (`every` day, given ISO weekdays, or weekdays, at a local `time`) sits on every occurrence with the series id, and only one occurrence is open at a time. When an occurrence closes as done, approved, missed or dropped, the next one is created at once at the rule's first time after the closed one's own time (after now when it closed late), with the same title, detail, timing, grace, lead and finish mode. The sender's cancel ends the series; so does a removed connection or a deleted account. The extractor turns "her gün 9'da", "her salı", "pazartesi ve perşembe", "hafta içi her sabah" into the rule and the first occurrence; anything more often than once a day gets a reply instead.
 
 ## Time rules
 

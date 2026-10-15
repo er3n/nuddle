@@ -34,6 +34,8 @@ data class LaterUi(
     val fromId: String?,
     val fromName: String?,
     val status: PillStatus,
+    /** A repeating task's rule (ADR 0021); null for a one-off. */
+    val repeat: RepeatUi? = null,
 )
 
 private val LATER_STATUSES =
@@ -70,6 +72,7 @@ fun laterTasks(
                 fromId = from?.personId,
                 fromName = from?.displayName,
                 status = LATER_STATUSES.getValue(task.status),
+                repeat = task.repeat,
             )
         }
 
@@ -86,6 +89,7 @@ internal fun LaterRow(
             task.fromName ?: stringResource(R.string.home_to_self),
             task.detail,
             task.deadline.counting(task.deadline.inlineText()),
+            task.repeat?.text(),
         )
     TaskRow(
         task =

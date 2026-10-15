@@ -39,7 +39,7 @@ Changed on 2026-10-15 after the phone test: long titles wrapped into the buttons
 - No action buttons on home. The Sıradaki card and every row open the task: the detail below, or the approval (4f) for a photo waiting for me. Exceptions: the failed upload line on 4e still opens 6e, and the "iptal etti" row has a ✕ that removes it from this phone (it still goes by itself after a day, open-questions#36).
 - Titles never push other parts around: one line with an ellipsis in a row, two lines on the Sıradaki card. A row has the avatar, the title, one sub line and a chevron; the status is the first part of the sub line in its pill color (no pill for Kurulu), for example "Bırakıldı · Not: yarın hallederim".
 
-**Task detail (`task/{id}`).** One screen for any open task: the BackBar "Görev", who wrote it and when or whom it is for, the status pill, the whole title, the state's message, the rows (Kimden or Kime, Son zaman or Zaman, Detay, Nasıl bitsin), and the actions for the state and my side pinned to the bottom:
+**Task detail (`task/{id}`).** One screen for any open task: the BackBar "Görev", who wrote it and when or whom it is for, the status pill, the whole title, the state's message, the rows (Kimden or Kime, Son zaman or Zaman, Tekrar for a repeating task: "Her gün 09:00" (ADR 0021), Detay, Nasıl bitsin), and the actions for the state and my side pinned to the bottom:
 
 | My side | Status | Actions |
 |---|---|---|

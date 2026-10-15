@@ -1,5 +1,6 @@
 // LLM task extraction: the provider-neutral input/output and the post-processing that decides
 // between creating the task at once and asking exactly one question (docs/domain.md).
+import { repeatRuleOf, textSaysRepeat, type RepeatRule } from "./repeat";
 import type { EdgeType, FinishMode, PersonId, Timing } from "./types";
 
 export interface ExtractionInput {
@@ -27,6 +28,8 @@ export interface Extraction {
   /** For an `at` task: how long before the moment the person must start. Null for `by` or unknown. */
   leadMinutes?: number | null;
   finishMode: FinishMode;
+  /** A repeating task's rule (ADR 0021); null or absent for a one-off. The deadline is then the first occurrence. */
+  repeat?: RepeatRule | null;
   missing: MissingField[];
   /**
    * One short sentence when the text is not a reminder task at all (a greeting, small talk, a
@@ -47,6 +50,8 @@ export type Resolution =
       missAfterMinutes: number | null;
       leadMinutes: number | null;
       finishMode: FinishMode;
+      /** The rule of a repeating task (ADR 0021); null for a one-off. */
+      repeat: RepeatRule | null;
     }
   | { kind: "ask"; question: MissingField }
   | { kind: "chat"; reply: string };
@@ -125,5 +130,6 @@ export function resolveExtraction(
     missAfterMinutes: e.timing === "at" ? e.missAfterMinutes : null,
     leadMinutes: e.timing === "at" ? (e.leadMinutes ?? null) : null,
     finishMode: e.finishMode,
+    repeat: text !== undefined && textSaysRepeat(text) ? repeatRuleOf(e.repeat) : null,
   };
 }

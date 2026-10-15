@@ -109,6 +109,8 @@ data class NextUpUi(
     val photoSentAt: String? = null,
     /** The sender's note with Tekrar iste (4g). */
     val note: String? = null,
+    /** A repeating task's rule (ADR 0021); null for a one-off. */
+    val repeat: RepeatUi? = null,
     /** The photo is still on this phone and its upload failed (6e). */
     val uploadFailed: Boolean = false,
     /** "22:37": a snooze is on until then ("Ertelendi · tekrar 22:37", NUD-63). */
@@ -155,6 +157,7 @@ fun nextUp(
                         )
                     },
                 status = NEXT_UP_STATUSES.getValue(task.status),
+                repeat = task.repeat,
                 photoSentAt =
                     task.photoSentAt?.let {
                         Instant

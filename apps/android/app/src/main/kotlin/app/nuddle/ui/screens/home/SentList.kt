@@ -33,6 +33,7 @@ internal fun SentRow(
                 task.toName,
                 task.delivery.word(),
                 task.deadline.counting(task.deadline.inlineText()),
+                task.repeat?.text(),
                 if (task.photo) stringResource(R.string.sent_photo) else null,
             )
         }

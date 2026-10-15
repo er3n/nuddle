@@ -362,6 +362,7 @@ class HomeViewModel
                             recipientId = (open.ui.recipient as? RecipientChoice.Person)?.personId,
                             moment = open.ui.knownDeadline?.moment == true,
                             missAfterMinutes = open.ui.missAfterMinutes,
+                            repeat = open.ui.repeat?.toRule(),
                         )
                     }
                 when {

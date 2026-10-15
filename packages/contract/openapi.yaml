@@ -443,6 +443,12 @@ components:
         reRequestNote:
           type: string
           nullable: true
+        repeat:
+          $ref: "#/components/schemas/RepeatRule"
+        seriesId:
+          type: string
+          nullable: true
+          format: uuid
       required:
         - id
         - senderId
@@ -477,6 +483,29 @@ components:
         - DROPPED
         - MISSED
         - CANCELLED
+    RepeatRule:
+      type: object
+      nullable: true
+      properties:
+        every:
+          type: string
+          enum:
+            - day
+            - week
+            - weekdays
+        days:
+          type: array
+          nullable: true
+          items:
+            type: integer
+            minimum: 1
+            maximum: 7
+        time:
+          type: string
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+      required:
+        - every
+        - time
     SyncEvent:
       type: object
       properties:
@@ -828,6 +857,8 @@ components:
               maximum: 360
             finishMode:
               $ref: "#/components/schemas/FinishMode"
+            repeat:
+              $ref: "#/components/schemas/RepeatRule"
           required:
             - recipient
             - title
@@ -911,6 +942,8 @@ components:
           type: string
           nullable: true
           maxLength: 500
+        repeat:
+          $ref: "#/components/schemas/RepeatRule"
       required:
         - idempotencyKey
         - recipientId

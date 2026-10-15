@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { expect, it } from "vitest";
 import type { Extraction } from "../../src/domain/extraction";
+import { repeatRuleOf, textSaysRepeat, type RepeatRule } from "../../src/domain/repeat";
 import type { EdgeType, FinishMode, Timing } from "../../src/domain/types";
 import { OpenRouterExtractor } from "../../src/infra/llm/openrouter-extractor";
 
@@ -23,6 +24,8 @@ interface GoldenCase {
     question: boolean;
     /** Scored only when given (ADR 0017). */
     timing?: Timing;
+    /** A repeating task's rule (ADR 0021); absent or null for a one-off. */
+    repeat?: RepeatRule | null;
     /** Not a task: a reply and nothing else (NUD-52). Every other case must have no reply. */
     chat?: boolean;
   };
@@ -57,6 +60,10 @@ function score(c: GoldenCase, got: Extraction): Record<string, boolean> {
     result.finishMode = got.finishMode === c.expected.finishMode;
     result.detail = digits(got.detail) === digits(c.expected.detail);
     if (c.expected.timing !== undefined) result.timing = got.timing === c.expected.timing;
+    // A repeating task's rule (ADR 0021), as the server keeps it: cleaned, and only when the text
+    // itself says the task repeats (the model invents one for a bill or a school run said once).
+    const kept = textSaysRepeat(c.text) ? repeatRuleOf(got.repeat) : null;
+    result.repeat = JSON.stringify(kept) === JSON.stringify(c.expected.repeat ?? null);
   }
   return result;
 }
