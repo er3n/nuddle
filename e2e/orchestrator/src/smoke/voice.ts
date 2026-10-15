@@ -3,6 +3,7 @@
 // the task is created with the undo toast. Runs after smoke 10: Sibel is signed in on her device.
 import type { RunContext } from "../context";
 import { devices } from "../devices";
+import * as flows from "../flows";
 
 /** A confident task to self in the run's extraction fixtures (smoke 1). */
 const SPOKEN = "para cek";
@@ -10,9 +11,9 @@ const SPOKEN = "para cek";
 export async function voice(run: RunContext): Promise<void> {
   const { sibel } = devices;
 
-  await run.step("sibel-speaks-task", async (dir) => {
+  await run.step("sibel-speaks-task", async () => {
     await sibel.wakeAndUnlock();
     await sibel.injectSpeech(SPOKEN);
-    await sibel.maestro("sibel/voice-task.yaml", dir);
+    await flows.voiceTask(sibel);
   });
 }

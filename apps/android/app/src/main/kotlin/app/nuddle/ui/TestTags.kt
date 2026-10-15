@@ -9,7 +9,7 @@ import app.nuddle.BuildConfig
 
 /**
  * Test tags of every interactive element (docs/testing.md, Android `e2e` flavor). Compose UI tests find nodes by
- * them; in the `e2e` flavor they are also exposed as resource ids, which is how Maestro flows in `e2e/flows` find
+ * them; in the `e2e` flavor they are also exposed as resource ids, which is how the E2E flows (`e2e/orchestrator/src/flows.ts`) find
  * them. A tag is a contract with those flows: rename it there too.
  */
 object TestTags {

@@ -31,6 +31,7 @@ import { missedRing } from "./smoke/missed-ring";
 import { offline } from "./smoke/offline";
 import { voice } from "./smoke/voice";
 import { removeConnection } from "./smoke/remove-connection";
+import { FakeTime } from "./sync/time";
 import { twoPerson, twoPersonExtractions } from "./sync/two-person";
 
 const SETS = ["smoke", "sync"] as const;
@@ -103,7 +104,10 @@ process.on("SIGTERM", () => finish("failed", "terminated"));
 
 ctx.afterStep = async (stepDir) => {
   await Promise.all(
-    allDevices().map((d) => d.screenshot(join(stepDir, `${d.role}.png`)).catch(() => undefined)),
+    allDevices().flatMap((d) => [
+      d.screenshot(join(stepDir, `${d.role}.png`)).catch(() => undefined),
+      d.dumpTo(join(stepDir, `${d.role}.xml`)).catch(() => undefined),
+    ]),
   );
 };
 
@@ -196,13 +200,23 @@ async function main(): Promise<void> {
     );
     return;
   }
-  await taskToSelf(ctx, databaseUrl);
+  // Fake time (docs/testing.md): smokes move to a poke instead of waiting for it.
+  const time = new FakeTime(databaseUrl, allDevices());
+  try {
+    await smokeSet(databaseUrl, time);
+  } finally {
+    await time.close();
+  }
+}
+
+async function smokeSet(databaseUrl: string, time: FakeTime): Promise<void> {
+  await taskToSelf(ctx, databaseUrl, time);
   await invite(ctx, databaseUrl);
   await taskToOther(ctx, databaseUrl);
-  await photoTask(ctx);
-  await dropTask(ctx);
+  await photoTask(ctx, time);
+  await dropTask(ctx, time);
   await removeConnection(ctx);
-  await missedRing(ctx);
+  await missedRing(ctx, time);
   await offline(ctx);
   await voice(ctx);
 }

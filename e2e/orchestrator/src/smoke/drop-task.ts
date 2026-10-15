@@ -4,11 +4,13 @@
 // Runs after smoke 3: Sibel and Eren are connected and signed in, with no open task between them.
 import { Phone, signIn } from "../api";
 import type { RunContext } from "../context";
+import type { FakeTime } from "../sync/time";
 import { devices } from "../devices";
+import * as flows from "../flows";
 import { waitFor } from "../proc";
 
 const EREN_PHONE = "+905320000002";
-/** As in smoke 1: the FULL_SCREEN step of a compressed plan rings about 75 s after creation. */
+/** As in smoke 1: a plan with every level; fake time moves to its FULL_SCREEN step. */
 const DEADLINE_MINUTES = 90;
 /** What Sibel types; the fixture extractor answers it (docs/testing.md). */
 const TASK_TEXT = "eren kuru temizlemeyi alsin";
@@ -27,12 +29,12 @@ export function dropTaskExtractions(now: Date): Record<string, unknown> {
   };
 }
 
-export async function dropTask(run: RunContext): Promise<void> {
+export async function dropTask(run: RunContext, time: FakeTime): Promise<void> {
   const { sibel, eren } = devices;
 
-  await run.step("write-drop-task", async (dir) => {
+  await run.step("write-drop-task", async () => {
     await sibel.wakeAndUnlock();
-    await sibel.maestro("sibel/write-task-to-other.yaml", dir, { TEXT: TASK_TEXT });
+    await flows.writeTaskToOther(sibel, TASK_TEXT);
   });
 
   const { phone, taskId } = await run.step("drop-task-created", async () => {
@@ -55,12 +57,14 @@ export async function dropTask(run: RunContext): Promise<void> {
     await eren.screenOff();
   });
 
-  await run.step("eren-drop-poke", async (dir) => {
-    await eren.maestro("sibel/wait-poke.yaml", dir);
+  await run.step("eren-drop-poke", async () => {
+    // Fake time (docs/testing.md): straight to the full screen step instead of waiting for it.
+    await time.toStep(taskId, "FULL_SCREEN");
+    await flows.waitPoke(eren);
   });
 
-  await run.step("eren-cant-today", async (dir) => {
-    await eren.maestro("eren/poke-cant-today.yaml", dir);
+  await run.step("eren-cant-today", async () => {
+    await flows.pokeCantToday(eren);
   });
 
   await run.step("dropped", async () => {
@@ -79,9 +83,9 @@ export async function dropTask(run: RunContext): Promise<void> {
     );
   });
 
-  await run.step("sibel-new-time", async (dir) => {
+  await run.step("sibel-new-time", async () => {
     await sibel.wakeAndUnlock();
-    await sibel.maestro("sibel/new-time.yaml", dir);
+    await flows.newTime(sibel);
   });
 
   await run.step("rescheduled", async () => {

@@ -17,9 +17,10 @@ To change a decision: add a new ADR that supersedes the old one, set the old one
 | 0009 | Time is always injected |
 | 0010 | Graph of 1:1 connections, no groups or roles |
 | 0011 | Phone number is the only identity |
-| 0012 | Testing strategy with E2E mode and Maestro |
+| 0012 | Testing strategy with E2E mode and Maestro (driver superseded by 0018) |
 | 0013 | No alarms in the system Clock app |
 | 0014 | API sign-in proxy, person id = JWT `sub`, one sync sequence, Twilio for SMS |
 | 0015 | Push reaches a device by Firebase Installation ID, not registration token |
 | 0016 | Public invite preview before sign-in |
 | 0017 | The LLM plans the pokes from the task and the recipient's history; the server enforces the rules, v0 is the fallback |
+| 0018 | E2E driven over adb on fake time, without Maestro |

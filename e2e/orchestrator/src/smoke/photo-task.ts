@@ -5,10 +5,12 @@ import { join } from "node:path";
 import { Phone, signIn } from "../api";
 import { repoRoot, type RunContext } from "../context";
 import { devices } from "../devices";
+import * as flows from "../flows";
 import { waitFor } from "../proc";
+import type { FakeTime } from "../sync/time";
 
 const EREN_PHONE = "+905320000002";
-/** As in smoke 1: the FULL_SCREEN step of a compressed plan rings about 75 s after creation. */
+/** As in smoke 1: a plan with every level; fake time moves to its FULL_SCREEN step. */
 const DEADLINE_MINUTES = 90;
 /** What Sibel types; the fixture extractor answers it (docs/testing.md). */
 const TASK_TEXT = "eren para ceksin";
@@ -27,16 +29,16 @@ export function photoTaskExtractions(now: Date): Record<string, unknown> {
   };
 }
 
-export async function photoTask(run: RunContext): Promise<void> {
+export async function photoTask(run: RunContext, time: FakeTime): Promise<void> {
   const { sibel, eren } = devices;
 
   await run.step("inject-photo", async () => {
     await eren.injectPhoto(join(repoRoot, "e2e", "fixtures", "photo.jpg"));
   });
 
-  await run.step("write-photo-task", async (dir) => {
+  await run.step("write-photo-task", async () => {
     await sibel.wakeAndUnlock();
-    await sibel.maestro("sibel/write-task-to-other.yaml", dir, { TEXT: TASK_TEXT });
+    await flows.writeTaskToOther(sibel, TASK_TEXT);
   });
 
   const { phone, taskId } = await run.step("photo-task-created", async () => {
@@ -61,17 +63,19 @@ export async function photoTask(run: RunContext): Promise<void> {
     await eren.screenOff();
   });
 
-  await run.step("eren-full-screen-poke", async (dir) => {
-    await eren.maestro("sibel/wait-poke.yaml", dir);
+  await run.step("eren-full-screen-poke", async () => {
+    // Fake time (docs/testing.md): straight to the full screen step instead of waiting for it.
+    await time.toStep(taskId, "FULL_SCREEN");
+    await flows.waitPoke(eren);
   });
 
-  await run.step("eren-bitti-opens-camera", async (dir) => {
-    await eren.maestro("sibel/poke-done.yaml", dir);
+  await run.step("eren-bitti-opens-camera", async () => {
+    await flows.pokeDone(eren);
   });
 
-  await run.step("eren-sends-photo", async (dir) => {
+  await run.step("eren-sends-photo", async () => {
     await eren.wakeAndUnlock();
-    await eren.maestro("eren/photo-send.yaml", dir);
+    await flows.photoSend(eren);
   });
 
   await run.step("awaiting-approval", async () => {
@@ -90,9 +94,9 @@ export async function photoTask(run: RunContext): Promise<void> {
     );
   });
 
-  await run.step("sibel-approves", async (dir) => {
+  await run.step("sibel-approves", async () => {
     await sibel.wakeAndUnlock();
-    await sibel.maestro("sibel/approve.yaml", dir);
+    await flows.approve(sibel);
   });
 
   await run.step("photo-task-done", async () => {

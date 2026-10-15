@@ -6,6 +6,7 @@ import postgres from "postgres";
 import { Phone, signIn } from "../api";
 import type { RunContext } from "../context";
 import { devices } from "../devices";
+import * as flows from "../flows";
 import { waitFor } from "../proc";
 
 const EREN_PHONE = "+905320000002";
@@ -47,9 +48,9 @@ export async function taskToOther(run: RunContext, databaseUrl: string): Promise
 
   await erenQuietHours(run, databaseUrl);
 
-  await run.step("write-task-to-eren", async (dir) => {
+  await run.step("write-task-to-eren", async () => {
     await sibel.wakeAndUnlock();
-    await sibel.maestro("sibel/write-task-to-other.yaml", dir, { TEXT: TASK_TEXT });
+    await flows.writeTaskToOther(sibel, TASK_TEXT);
   });
 
   const { phone, taskId } = await run.step("task-created", async () => {
@@ -63,9 +64,9 @@ export async function taskToOther(run: RunContext, databaseUrl: string): Promise
     return { phone, taskId: task.id };
   });
 
-  await run.step("eren-home", async (dir) => {
+  await run.step("eren-home", async () => {
     await eren.wakeAndUnlock();
-    await eren.maestro("eren/home-from-sibel.yaml", dir);
+    await flows.homeFromSibel(eren);
   });
 
   await run.step("eren-alarms", async () => {
@@ -80,8 +81,8 @@ export async function taskToOther(run: RunContext, databaseUrl: string): Promise
     run.log(`${String(alarms)} poke alarms set`);
   });
 
-  await run.step("sibel-cancels", async (dir) => {
-    await sibel.maestro("sibel/cancel-task.yaml", dir);
+  await run.step("sibel-cancels", async () => {
+    await flows.cancelTask(sibel);
   });
 
   await run.step("cancelled", async () => {

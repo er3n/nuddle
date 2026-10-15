@@ -27,7 +27,7 @@ Why: one person reviews agent-written code. Tests are the spec and the reviewer'
 | UI screenshots | Roborazzi | JVM | Visual output per state; agent's visual check |
 | Accessibility | ATF checks via Robolectric | JVM | Touch targets, content descriptions, contrast |
 | Architecture | Konsist | JVM | Layering rules (see `quality.md`) |
-| E2E | Maestro + TS orchestrator, two emulators | emulator | Real flows across two devices and system conditions |
+| E2E | TS orchestrator over adb on fake time, two emulators (ADR 0018) | emulator | Real flows across two devices and system conditions |
 | Manual | checklist | real phones | OEM killers, loudness, real OTP delivery |
 
 ## Scenario tests (the most valuable layer)
@@ -74,7 +74,7 @@ Start the backend scenario suite with: task to self, task to other with done, ph
 - `adb reverse` also forwards `:54321` (local Supabase), where the signed photo upload and view URLs point.
 
 ### Orchestrator
-TypeScript runner in `e2e/orchestrator` that drives two emulators (`emulator-5554` as Sibel, `emulator-5556` as Eren), runs Maestro flows on each in sequence, and calls test endpoints in between. Every run writes `e2e-runs/<timestamp>/` with per-step screenshots of both devices, logcat for both, and server logs. Agents debug from that folder.
+TypeScript runner in `e2e/orchestrator` that drives two emulators (`emulator-5554` as Sibel, `emulator-5556` as Eren), runs the flows (`src/flows.ts`) on each in sequence over adb, and calls test endpoints in between (ADR 0018). A flow reads the screen with `uiautomator dump`, finds elements only by test tag (text only to check copy), and acts with `input tap` and `input text`; the emulators' on-screen keyboards are off, so keys go straight into the field. Time is fake (below): a flow never waits for a poke or a deadline, it moves the server and both phones to it. Every run writes `e2e-runs/<timestamp>/` with per-step screenshots and UI dumps of both devices, logcat for both, and server logs. Agents debug from that folder.
 
 The emulators are AVDs `nuddle-sibel` and `nuddle-eren` (`e2e/scripts/emulators.sh`): stock Android with Google Play (`android-36`, `google_apis_playstore`), hardware profile of a Galaxy S23 (1080 x 2340 px, 480 dpi, about 360 x 780 dp). A run of the smoke set starts from a clean state: a re-created `nuddle_e2e` database and the app reinstalled on both emulators. The two-person set starts warm when it can (below). Prerequisites, the run folder layout and the smoke flows are in `e2e/README.md`.
 

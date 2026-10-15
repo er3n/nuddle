@@ -9,7 +9,6 @@
       "Bash(supabase stop *)",
       "Bash(supabase status *)",
       "Bash(supabase db reset *)",
-      "Bash(maestro *)",
       "Bash(adb *)",
       "Bash(git *)",
       "Bash(mise exec -- supabase/cloud/configure.sh migrate*)"

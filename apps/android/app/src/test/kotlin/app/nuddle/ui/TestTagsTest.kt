@@ -82,8 +82,8 @@ import kotlin.test.assertEquals
 import kotlin.time.Instant
 
 /**
- * Every interactive element carries its test tag (docs/testing.md, Android `e2e` flavor): the Maestro flows in
- * `e2e/flows` find elements only by these tags, so a lost tag breaks E2E without failing anything else.
+ * Every interactive element carries its test tag (docs/testing.md, Android `e2e` flavor): the E2E flows in
+ * `e2e/orchestrator/src/flows.ts` find elements only by these tags, so a lost tag breaks E2E without failing anything else.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

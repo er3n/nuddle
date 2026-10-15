@@ -64,8 +64,7 @@ nuddle/
     migrations/             Drizzle output + hand-written SQL
     seed.sql
   e2e/
-    flows/                  Maestro YAML per device role
-    orchestrator/           TS runner that drives two emulators and the test endpoints
+    orchestrator/           TS runner that drives two emulators over adb and the test endpoints (ADR 0018)
   docs/
   .github/workflows/ci.yml
 ```

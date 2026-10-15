@@ -44,7 +44,7 @@ android {
             dimension = "env"
             applicationIdSuffix = ".debug"
             buildConfigField("String", "API_BASE_URL", "\"http://localhost:3000/\"")
-            // Maestro finds elements by test tag exposed as resource id (docs/testing.md, Android `e2e` flavor).
+            // E2E flows find elements by test tag exposed as resource id (docs/testing.md, Android `e2e` flavor).
             buildConfigField("boolean", "EXPOSE_TEST_TAGS", "true")
             // The camera takes the photo the orchestrator put on the phone (docs/testing.md, Android `e2e` flavor).
             buildConfigField("boolean", "INJECTED_PHOTO", "true")
