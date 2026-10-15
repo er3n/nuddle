@@ -78,9 +78,13 @@ export async function createProductionApp(
       apiKey: env.OPENROUTER_API_KEY,
       model: env.OPENROUTER_MODEL,
     });
+    // Thinking off and a short timeout: the profile is written after the plan (ADR 0020) and
+    // with thinking on it took 11-30 s.
     profiler = new OpenRouterProfiler({
       apiKey: env.OPENROUTER_API_KEY,
       model: env.OPENROUTER_MODEL,
+      reasoning: false,
+      timeoutMs: 20_000,
     });
   } else {
     throw new Error("OPENROUTER_API_KEY and OPENROUTER_MODEL are required outside E2E mode");

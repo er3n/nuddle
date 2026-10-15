@@ -228,12 +228,15 @@ async function refinePlan(deps: AppDeps, taskId: TaskId, version: number): Promi
         senders.get(p.task.senderId) ?? { name: "self", relationship: null },
       ),
     );
-    // A stale profile is written again first (ADR 0020); a failure keeps the one there is.
-    let profile = recipient.pokeProfile;
-    if (deps.profiler && profileIsStale(profile, closed, now)) {
-      profile =
-        (await writeProfile(deps, deps.profiler, recipient, history, closed, now)) ?? profile;
-    }
+    // This plan reads the profile there is; a stale one is written again after the plan, for
+    // the next one (ADR 0020), so a slow profiler never delays the pokes.
+    const profile = recipient.pokeProfile;
+    const profileStale = profileIsStale(profile, closed, now);
+    const writeStaleProfile = async () => {
+      if (deps.profiler && profileStale) {
+        await writeProfile(deps, deps.profiler, recipient, history, closed, now);
+      }
+    };
 
     const input: PlannerInput = {
       now,
@@ -280,6 +283,7 @@ async function refinePlan(deps: AppDeps, taskId: TaskId, version: number): Promi
       proposal = await planner.plan(input, call.sink);
     } catch (error) {
       await call.record("failed", { error: errorText(error) });
+      await writeStaleProfile();
       throw error;
     }
     const steps = checkPlan(proposal, {
@@ -293,6 +297,7 @@ async function refinePlan(deps: AppDeps, taskId: TaskId, version: number): Promi
     if (!steps) {
       console.warn("poke planner: no valid plan, keeping v0", taskId, proposal.reason);
       await call.record("rejected", { error: "checkPlan left no device step" });
+      await writeStaleProfile();
       return;
     }
     const out = await inWriteTx(deps.db, async (tx) => {
@@ -308,6 +313,7 @@ async function refinePlan(deps: AppDeps, taskId: TaskId, version: number): Promi
     if (!out) {
       // The task moved on (a new version, closed) while the model was thinking.
       await call.record("stale");
+      await writeStaleProfile();
       return;
     }
     await call.record("adopted", { adoptedVersion: out.plan.version });
@@ -319,6 +325,7 @@ async function refinePlan(deps: AppDeps, taskId: TaskId, version: number): Promi
         console.error("push failed", p, error);
       }
     }
+    await writeStaleProfile();
   } catch (error) {
     console.error("poke planner failed, keeping v0", taskId, error);
   }
