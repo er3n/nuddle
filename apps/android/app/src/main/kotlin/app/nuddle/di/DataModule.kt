@@ -26,6 +26,8 @@ import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEventDao
 import app.nuddle.data.outbox.WorkManagerScheduling
 import app.nuddle.data.photo.ApiPhotoLoader
+import app.nuddle.data.photo.ContentGalleryImages
+import app.nuddle.data.photo.GalleryImages
 import app.nuddle.data.photo.PhotoLoader
 import app.nuddle.data.photo.PhotoUploads
 import app.nuddle.data.session.ConsentPrompts
@@ -89,6 +91,10 @@ object CameraModule {
         camera: Provider<CameraXSource>,
         injected: Provider<InjectedPhotoSource>,
     ): CameraSource = if (BuildConfig.INJECTED_PHOTO) injected.get() else camera.get()
+
+    /** "Galeriden seç" (4d): the system photo picker's result read as JPEG (NUD-73). */
+    @Provides
+    fun galleryImages(impl: ContentGalleryImages): GalleryImages = impl
 }
 
 /** Speech recognition on the phone, or in the `e2e` flavor the text the orchestrator put on the phone (4h). */

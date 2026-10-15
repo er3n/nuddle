@@ -171,6 +171,7 @@ dependencies {
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.compose)
+    implementation(libs.androidx.exifinterface)
 
     implementation(libs.retrofit)
     implementation(libs.retrofit.kotlinx.serialization)

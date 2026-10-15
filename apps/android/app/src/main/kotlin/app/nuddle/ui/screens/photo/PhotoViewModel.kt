@@ -1,6 +1,7 @@
 package app.nuddle.ui.screens.photo
 
 import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -10,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.TaskDao
+import app.nuddle.data.photo.GalleryImages
 import app.nuddle.data.photo.PhotoSender
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -57,6 +59,7 @@ class PhotoViewModel
         connectionDao: ConnectionDao,
         /** The route renders its viewfinder; shots go through [onShoot]. */
         val camera: CameraSource,
+        private val gallery: GalleryImages,
         private val sender: PhotoSender,
         private val tasks: TaskRepository,
     ) : ViewModel() {
@@ -97,11 +100,25 @@ class PhotoViewModel
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
-        fun onShoot() {
+        fun onShoot() = take { camera.capture() }
+
+        /** "Kamerayı çevir": the other camera (NUD-73). */
+        fun onFlip() {
+            if (local.value.stage == PhotoStage.Camera) camera.flip()
+        }
+
+        /** "Galeriden seç" came back; null when the person picked nothing (NUD-73). */
+        fun onPicked(uri: Uri?) {
+            uri ?: return
+            take { gallery.read(uri) }
+        }
+
+        /** A shot or a picked picture: on the review stage when it could be read, else back to the camera. */
+        private fun take(bytes: suspend () -> ByteArray?) {
             if (local.value.busy) return
             local.update { it.copy(busy = true) }
             viewModelScope.launch {
-                val shot = camera.capture()
+                val shot = bytes()
                 val image = shot?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() }
                 if (shot != null && image != null) {
                     jpeg = shot

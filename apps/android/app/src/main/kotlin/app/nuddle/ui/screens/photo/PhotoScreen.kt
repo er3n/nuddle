@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -43,14 +44,19 @@ import app.nuddle.ui.theme.DurtTheme
 data class PhotoCallbacks(
     val onClose: () -> Unit = {},
     val onShoot: () -> Unit = {},
+    /** "Galeriden seç": the route opens the system photo picker (NUD-73). */
+    val onPick: () -> Unit = {},
+    /** "Kamerayı çevir" (NUD-73). */
+    val onFlip: () -> Unit = {},
     val onRetake: () -> Unit = {},
     val onSend: () -> Unit = {},
     val onDoneWithoutPhoto: () -> Unit = {},
 )
 
 /**
- * 4d: the in-app camera on a dark screen. The live [viewfinder] until the shot, then the shot with Gönder and
- * Tekrar çek. Without a camera, the plain Bitti fallback. Copy without suffixes after names: open-questions#35.
+ * 4d: the camera on a dark screen. The live [viewfinder] until the shot, with Galeriden seç and Kamerayı çevir
+ * beside the shutter (open-questions#48), then the picture with Gönder and Tekrar çek. Without a camera, the plain
+ * Bitti fallback. Copy without suffixes after names: open-questions#35.
  */
 @Composable
 fun PhotoScreen(
@@ -146,18 +152,37 @@ private fun ColumnScope.Actions(
     when (state.stage) {
         PhotoStage.Camera -> {
             val shoot = stringResource(R.string.photo_shoot)
-            Box(
-                Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .size(dimens.buttonPoke)
-                    .clip(CircleShape)
-                    .border(dimens.borderStrong * 2, colors.darkText, CircleShape)
-                    .padding(dimens.space6)
-                    .clip(CircleShape)
-                    .background(if (state.busy) colors.darkTextSecondary else colors.darkText)
-                    .clickable(enabled = !state.busy, onClickLabel = shoot, role = Role.Button, onClick = callbacks.onShoot)
-                    .testTag(TestTags.PHOTO_SHOOT),
-            )
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RoundAction(
+                    icon = DurtIcons.Gallery,
+                    label = stringResource(R.string.photo_pick),
+                    enabled = !state.busy,
+                    onClick = callbacks.onPick,
+                    modifier = Modifier.testTag(TestTags.PHOTO_PICK),
+                )
+                Box(
+                    Modifier
+                        .size(dimens.buttonPoke)
+                        .clip(CircleShape)
+                        .border(dimens.borderStrong * 2, colors.darkText, CircleShape)
+                        .padding(dimens.space6)
+                        .clip(CircleShape)
+                        .background(if (state.busy) colors.darkTextSecondary else colors.darkText)
+                        .clickable(enabled = !state.busy, onClickLabel = shoot, role = Role.Button, onClick = callbacks.onShoot)
+                        .testTag(TestTags.PHOTO_SHOOT),
+                )
+                RoundAction(
+                    icon = DurtIcons.Flip,
+                    label = stringResource(R.string.photo_flip),
+                    enabled = !state.busy,
+                    onClick = callbacks.onFlip,
+                    modifier = Modifier.testTag(TestTags.PHOTO_FLIP),
+                )
+            }
         }
 
         is PhotoStage.Review -> {
@@ -193,6 +218,29 @@ private fun ColumnScope.Actions(
                 modifier = Modifier.testTag(TestTags.PHOTO_DONE_WITHOUT),
             )
         }
+    }
+}
+
+/** A round dark button beside the shutter: Galeriden seç, Kamerayı çevir. */
+@Composable
+private fun RoundAction(
+    icon: ImageVector,
+    label: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = DurtTheme.colors
+    val dimens = DurtTheme.dimens
+    Box(
+        modifier
+            .size(dimens.minTouchTarget)
+            .clip(CircleShape)
+            .background(colors.darkSurface)
+            .clickable(enabled = enabled, onClickLabel = label, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = label, tint = colors.darkText, modifier = Modifier.size(dimens.icon))
     }
 }
 

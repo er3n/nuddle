@@ -1,11 +1,13 @@
 package app.nuddle.ui
 
 import android.graphics.Bitmap
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import app.nuddle.data.TaskCloser
+import app.nuddle.data.photo.GalleryImages
 import app.nuddle.data.photo.PhotoFiles
 import app.nuddle.data.photo.PhotoSender
 import app.nuddle.domain.IdGenerator
@@ -19,8 +21,13 @@ import app.nuddle.testing.MainDispatcherRule
 import app.nuddle.testing.aTask
 import app.nuddle.testing.sibelConnection
 import app.nuddle.ui.screens.photo.CameraSource
+import app.nuddle.ui.screens.photo.Lens
 import app.nuddle.ui.screens.photo.PhotoStage
 import app.nuddle.ui.screens.photo.PhotoViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -58,11 +65,26 @@ class PhotoViewModelTest {
     private val camera =
         object : CameraSource {
             var next: ByteArray? = shot
+            private val current = MutableStateFlow(Lens.BACK)
+            override val lens: StateFlow<Lens> = current.asStateFlow()
+
+            override fun flip() = current.update { if (it == Lens.BACK) Lens.FRONT else Lens.BACK }
 
             @Composable
             override fun Viewfinder(modifier: Modifier) = Unit
 
             override suspend fun capture(): ByteArray? = next
+        }
+
+    private val gallery =
+        object : GalleryImages {
+            var next: ByteArray? = shot
+            val read = mutableListOf<Uri>()
+
+            override suspend fun read(uri: Uri): ByteArray? {
+                read += uri
+                return next
+            }
         }
 
     private val closer =
@@ -93,6 +115,7 @@ class PhotoViewModelTest {
             taskDao,
             connectionDao,
             camera,
+            gallery,
             PhotoSender(PhotoFiles(temp.newFolder("photos")), closer, uploads, IdGenerator(FakeClock()), FakeClock()),
             tasks,
         )
@@ -136,6 +159,44 @@ class PhotoViewModelTest {
             assertEquals(PhotoStage.Camera, vm.state.value?.stage)
             camera.next = null
             vm.onShoot()
+            assertEquals(PhotoStage.Camera, vm.state.value?.stage)
+            assertEquals(false, vm.state.value?.busy)
+        }
+
+    @Test
+    fun `Kamerayı çevir flips the lens, only while the camera shows`() =
+        runTest(main.dispatcher) {
+            ready()
+            vm.onFlip()
+            assertEquals(Lens.FRONT, camera.lens.value)
+            vm.onShoot()
+            vm.onFlip()
+            assertEquals(Lens.FRONT, camera.lens.value)
+        }
+
+    @Test
+    fun `a picture from the gallery goes to the review like a shot, and nothing picked changes nothing`() =
+        runTest(main.dispatcher) {
+            ready()
+            vm.onPicked(null)
+            assertEquals(PhotoStage.Camera, vm.state.value?.stage)
+            val uri = Uri.parse("content://media/picker/1")
+            vm.onPicked(uri)
+            assertIs<PhotoStage.Review>(vm.state.value?.stage)
+            assertEquals(listOf(uri), gallery.read)
+            vm.close.test {
+                vm.onSend()
+                awaitItem()
+            }
+            assertEquals(listOf(Cast.TASK_ID), uploads.started)
+        }
+
+    @Test
+    fun `a picture that cannot be read stays on the camera`() =
+        runTest(main.dispatcher) {
+            ready()
+            gallery.next = null
+            vm.onPicked(Uri.parse("content://media/picker/2"))
             assertEquals(PhotoStage.Camera, vm.state.value?.stage)
             assertEquals(false, vm.state.value?.busy)
         }

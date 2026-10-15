@@ -54,6 +54,8 @@ object TestTags {
     const val PHOTO = "photo.screen"
     const val PHOTO_CLOSE = "photo.close"
     const val PHOTO_SHOOT = "photo.shoot"
+    const val PHOTO_PICK = "photo.pick"
+    const val PHOTO_FLIP = "photo.flip"
     const val PHOTO_SEND = "photo.send"
     const val PHOTO_RETAKE = "photo.retake"
     const val PHOTO_DONE_WITHOUT = "photo.doneWithout"

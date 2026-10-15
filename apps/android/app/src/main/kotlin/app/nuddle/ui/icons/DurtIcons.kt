@@ -46,6 +46,24 @@ object DurtIcons {
             "M12 16.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
         )
     }
+    val Gallery by lazy {
+        stroke(
+            "Gallery",
+            "M4 5h16v14H4V5z",
+            "M4 16l5-5 4 4 3-3 4 4",
+            "M15.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z",
+        )
+    }
+    val Flip by lazy {
+        stroke(
+            "Flip",
+            "M4 8h3l2-3h6l2 3h3v11H4V8z",
+            "M9.5 13.5a2.5 2.5 0 0 0 4.3 1.7",
+            "M14.5 13.5a2.5 2.5 0 0 0-4.3-1.7",
+            "M14 12.5l.5 2.5-2.5-.5",
+            "M10 14.5l-.5-2.5 2.5.5",
+        )
+    }
     val LinkOff by lazy {
         stroke(
             "LinkOff",

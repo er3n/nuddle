@@ -307,6 +307,8 @@
     <string name="photo_send">Gönder</string>
     <string name="photo_retake">Tekrar çek</string>
     <string name="photo_shoot">Fotoğraf çek</string>
+    <string name="photo_pick">Galeriden seç</string>
+    <string name="photo_flip">Kamerayı çevir</string>
     <string name="photo_close">Kapat</string>
     <string name="photo_no_camera_title">Kamera kullanılamıyor</string>
     <string name="photo_no_camera_body">Kamera izni olmadan fotoğraf çekemem. Fotoğrafsız da bitirebilirsin.</string>
