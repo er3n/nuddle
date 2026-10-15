@@ -35,6 +35,7 @@ import {
   isOpen,
   MISSED_CARD_TTL_MS,
   removeMissedCard,
+  acknowledge as acknowledgeDomain,
   PHOTO_CLEANUP_RETRY_MS,
   takenInTime,
   type Command,
@@ -544,6 +545,28 @@ export async function removeMissed(
     return {
       result: { taskId: task.id, status: task.status, planVersion: task.planVersion },
       effects: noEffects,
+    };
+  });
+}
+
+/** The recipient's phone acknowledges a task: reached, or seen (NUD-68). Logged once each; the sender syncs. */
+export async function acknowledge(
+  deps: AppDeps,
+  caller: Person,
+  input: { idempotencyKey: string; taskId: TaskId; seen: boolean },
+): Promise<{ taskId: TaskId; status: TaskStatus; planVersion: number }> {
+  return runCommand(deps, caller.id, "acknowledge", input.idempotencyKey, async (tx, now) => {
+    const task = await lockTaskOf(tx, caller.id, input.taskId);
+    const logged = new Set((await eventsOf(tx, task.id)).map((e) => e.type));
+    const r = acknowledgeDomain(task, caller.id, input.seen, logged, now);
+    if (!r.ok) throw new ApiError(r.error);
+    if (r.value.events.length > 0) {
+      await insertEvents(tx, r.value.events);
+      await touchTask(tx, task.id);
+    }
+    return {
+      result: { taskId: task.id, status: task.status, planVersion: task.planVersion },
+      effects: { pushes: r.value.pushes, deletePhotosFor: [] },
     };
   });
 }

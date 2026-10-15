@@ -238,6 +238,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/commands/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recipient's phone: the task reached it, or the recipient has seen it */
+        post: operations["acknowledge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/commands/done": {
         parameters: {
             query?: never;
@@ -830,7 +847,7 @@ export interface components {
             at: string;
         };
         /** @enum {string} */
-        TaskEventType: "created" | "edited" | "plan_generated" | "poke_fired" | "poke_lost" | "snoozed" | "done" | "photo_sent" | "approved" | "re_requested" | "dropped" | "missed" | "cancelled" | "human_notified" | "permission_missing";
+        TaskEventType: "created" | "edited" | "plan_generated" | "poke_fired" | "poke_lost" | "snoozed" | "done" | "photo_sent" | "approved" | "re_requested" | "dropped" | "missed" | "cancelled" | "human_notified" | "permission_missing" | "delivered" | "seen";
         SyncPlan: {
             /** Format: uuid */
             taskId: string;
@@ -992,6 +1009,16 @@ export interface components {
             idempotencyKey: string;
             /** Format: uuid */
             taskId: string;
+        };
+        AcknowledgeCommand: {
+            /**
+             * Format: uuid
+             * @description Client generated UUIDv7; a replay returns the first result (ADR 0006)
+             */
+            idempotencyKey: string;
+            /** Format: uuid */
+            taskId: string;
+            seen: boolean;
         };
         DoneCommand: {
             /**
@@ -2009,6 +2036,84 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["RemoveMissedCommand"];
+            };
+        };
+        responses: {
+            /** @description The result; a replay with the same key returns it again */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskCommandResult"];
+                };
+            };
+            /** @description Error with a DRT code */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    acknowledge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcknowledgeCommand"];
             };
         };
         responses: {

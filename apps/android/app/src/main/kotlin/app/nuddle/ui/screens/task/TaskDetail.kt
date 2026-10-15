@@ -1,7 +1,9 @@
 package app.nuddle.ui.screens.task
 
 import app.nuddle.api.model.TaskStatus
+import app.nuddle.data.db.PokeStepEntity
 import app.nuddle.data.db.TaskEntity
+import kotlin.time.Instant
 
 /** Whose task it is from where I stand (docs/ux/screens.md, Home tabs and task detail). */
 enum class DetailSide { ToMe, ToSelf, Mine }
@@ -107,3 +109,17 @@ fun editable(
     side: DetailSide,
     status: DetailStatus,
 ): Boolean = side != DetailSide.ToMe && status in setOf(DetailStatus.Scheduled, DetailStatus.ReRequested)
+
+/**
+ * When poking starts on a task to me (NUD-68, "09:00'da hatırlatacağım"): the first step of the current plan, while none
+ * of its steps has rung and it is still ahead. Null otherwise; the rest of the ladder stays hidden.
+ */
+fun pokeStart(
+    steps: List<PokeStepEntity>,
+    planVersion: Int,
+    now: Instant,
+): Instant? {
+    val plan = steps.filter { it.planVersion == planVersion }
+    if (plan.isEmpty() || plan.any { it.firedAt != null }) return null
+    return Instant.fromEpochMilliseconds(plan.minOf { it.plannedAt }).takeIf { it > now }
+}

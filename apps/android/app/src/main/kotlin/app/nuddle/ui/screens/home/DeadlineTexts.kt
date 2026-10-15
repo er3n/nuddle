@@ -39,6 +39,16 @@ internal fun DeadlineText.inlineText(): String =
         is DeadlineText.OnDate -> stringResource(R.string.deadline_on_date, day, stringArrayResource(R.array.month_names)[month - 1], time)
     }
 
+/** [text] with the countdown in the last hour: "bugün 19:00, 35 dk kaldı", "bugün 19:00, 35 dk sonra" (NUD-68). */
+@Composable
+internal fun DeadlineText.counting(text: String): String =
+    minutesLeft?.let { stringResource(if (moment) R.string.home_minutes_until else R.string.home_minutes_left, text, it) } ?: text
+
+/** The countdown alone, for a tile under the time: "35 dk kaldı", "35 dk sonra". */
+@Composable
+internal fun DeadlineText.countdown(): String? =
+    minutesLeft?.let { stringResource(if (moment) R.string.home_countdown_until else R.string.home_countdown_left, it) }
+
 /** 2f for an `at` task: "Zaman · Bugün 19:48" (open-questions#43). */
 @PreviewScreens
 @Composable
@@ -49,6 +59,36 @@ private fun HomeScreenMomentPreview() {
                 HomeUiState(
                     myName = "Sibel",
                     nextUp = NextUpUi("task-1", "Su iç", null, DeadlineText.Today("19:48", moment = true), photo = false),
+                ),
+            onBell = {},
+            onProfile = {},
+            onInvite = {},
+            onComposeTextChange = {},
+            onComposeSend = {},
+            onVoiceStart = {},
+            onVoiceEnd = {},
+        )
+    }
+}
+
+/** NUD-68: the next-up card in its last hour, "35 dk kaldı" under the time. */
+@PreviewScreens
+@Composable
+private fun HomeScreenCountdownPreview() {
+    DurtTheme {
+        HomeScreen(
+            state =
+                HomeUiState(
+                    myName = "Eren",
+                    nextUp =
+                        NextUpUi(
+                            "task-1",
+                            "Çayı demle",
+                            null,
+                            DeadlineText.Today("19:00", minutesLeft = 35),
+                            photo = false,
+                            from = FromUi("Sibel", WrittenText.Today("18:10"), null),
+                        ),
                 ),
             onBell = {},
             onProfile = {},

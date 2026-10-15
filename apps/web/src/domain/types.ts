@@ -100,7 +100,9 @@ export type TaskEventType =
   | "missed"
   | "cancelled"
   | "human_notified"
-  | "permission_missing";
+  | "permission_missing"
+  | "delivered"
+  | "seen";
 
 export interface TaskEvent {
   taskId: TaskId;

@@ -5,6 +5,7 @@ import app.nuddle.data.DoneNotes
 import app.nuddle.data.TaskCloser
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.WriteOutcome
+import app.nuddle.data.session.TaskAcks
 import app.nuddle.domain.IdGenerator
 import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.HOUR_MINUTE
@@ -132,5 +133,20 @@ class NewDeadlineHolder(
             if (ok) saveKey = null
             sheet.update { if (ok) null else it?.copy(saving = false, failed = true) }
         }
+    }
+}
+
+/** Tells the server once that the task was on screen here (NUD-68). */
+class SeenOnce(
+    private val taskId: String,
+    private val acks: TaskAcks,
+    private val scope: CoroutineScope,
+) {
+    private var told = false
+
+    fun tell() {
+        if (told) return
+        told = true
+        scope.launch { acks.seen(listOf(taskId)) }
     }
 }

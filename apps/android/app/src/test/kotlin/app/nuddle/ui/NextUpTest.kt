@@ -1,6 +1,7 @@
 package app.nuddle.ui
 
 import app.nuddle.testing.Cast
+import app.nuddle.testing.aStep
 import app.nuddle.testing.aTask
 import app.nuddle.testing.sibelConnection
 import app.nuddle.ui.screens.home.DeadlineText
@@ -8,14 +9,18 @@ import app.nuddle.ui.screens.home.FromUi
 import app.nuddle.ui.screens.home.NextUpStatus
 import app.nuddle.ui.screens.home.WrittenText
 import app.nuddle.ui.screens.home.deadlineText
+import app.nuddle.ui.screens.home.minutesLeft
 import app.nuddle.ui.screens.home.nextUp
 import app.nuddle.ui.screens.home.writtenText
+import app.nuddle.ui.screens.task.pokeStart
 import kotlinx.datetime.TimeZone
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 /** The "Sıradaki" card (docs/ux/screens.md 2f, 4c): which task it shows and how the deadline reads. */
@@ -54,7 +59,7 @@ class NextUpTest {
         val bill = selfTask("bill", "2026-10-11T20:20:00+03:00")
         val card = nextUp(listOf(bill, water), Cast.EREN_ID, emptyMap(), now, istanbul)
         assertEquals("water", card?.taskId)
-        assertEquals(DeadlineText.Today("20:02", moment = true), card?.deadline)
+        assertEquals(DeadlineText.Today("20:02", moment = true, minutesLeft = 2), card?.deadline)
     }
 
     @Test
@@ -124,5 +129,31 @@ class NextUpTest {
         assertEquals(DeadlineText.OnDate(14, 10, "09:00"), deadlineText(Instant.parse("2026-10-14T09:00:00+03:00"), now, istanbul))
         // 22:30 UTC on the 11th is already the 12th in Istanbul.
         assertEquals(DeadlineText.Tomorrow("01:30"), deadlineText(Instant.parse("2026-10-11T22:30:00Z"), now, istanbul))
+    }
+
+    @Test
+    fun `the countdown covers the last hour only, rounded up to whole minutes (NUD-68)`() {
+        val at = Instant.parse("2026-10-11T20:00:00+03:00")
+        assertNull(minutesLeft(at, at), "due now: no countdown")
+        assertNull(minutesLeft(at, at + 1.seconds), "passed")
+        assertEquals(1, minutesLeft(at, at - 10.seconds))
+        assertEquals(35, minutesLeft(at, at - 34.minutes - 30.seconds))
+        assertEquals(60, minutesLeft(at, at - 60.minutes))
+        assertNull(minutesLeft(at, at - 61.minutes))
+    }
+
+    @Test
+    fun `poking starts at the first step of the current plan, while none rang and it is ahead (NUD-68)`() {
+        val now = Instant.parse("2026-10-12T07:00:00+03:00")
+        val plan =
+            listOf(
+                aStep(1, "2026-10-12T08:30:00+03:00"),
+                aStep(0, "2026-10-12T08:00:00+03:00"),
+                aStep(0, "2026-10-12T06:00:00+03:00", planVersion = 0),
+            )
+        assertEquals(Instant.parse("2026-10-12T08:00:00+03:00"), pokeStart(plan, 1, now))
+        assertNull(pokeStart(plan.map { if (it.seq == 0) it.copy(firedAt = 1) else it }, 1, now), "it rang already")
+        assertNull(pokeStart(plan, 1, Instant.parse("2026-10-12T08:10:00+03:00")), "the first step is behind")
+        assertNull(pokeStart(emptyList(), 1, now))
     }
 }

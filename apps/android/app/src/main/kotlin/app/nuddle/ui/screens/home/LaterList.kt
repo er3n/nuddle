@@ -80,7 +80,12 @@ internal fun LaterRow(
     onClick: () -> Unit,
 ) {
     val colors = DurtTheme.colors
-    val parts = listOfNotNull(task.fromName ?: stringResource(R.string.home_to_self), task.detail, task.deadline.inlineText())
+    val parts =
+        listOfNotNull(
+            task.fromName ?: stringResource(R.string.home_to_self),
+            task.detail,
+            task.deadline.counting(task.deadline.inlineText()),
+        )
     TaskRow(
         task =
             TaskUi(

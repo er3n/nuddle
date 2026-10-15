@@ -57,6 +57,13 @@
       "when": 1791911700030,
       "tag": "20261013171500_missed_card_removed",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792070182543,
+      "tag": "20261015131622_task_event_ack",
+      "breakpoints": true
     }
   ]
 }

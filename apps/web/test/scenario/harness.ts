@@ -260,6 +260,15 @@ export class Client {
     return r.error ? { ok: false, error: r.error.error.name as DomainError } : { ok: true };
   }
 
+  /** The phone says a task reached it, or (seen) that its person has seen it (NUD-68). */
+  async acknowledge(taskId: TaskId, seen: boolean): Promise<CommandResult> {
+    const r = await this.api.POST("/api/v1/commands/acknowledge", {
+      body: { idempotencyKey: uuidv7(), taskId, seen },
+    });
+    await this.world.refresh();
+    return r.error ? { ok: false, error: r.error.error.name as DomainError } : { ok: true };
+  }
+
   /** Write free text in the one input box. A text queued offline (6a) is sent again with its [idempotencyKey]. */
   async write(text: string, idempotencyKey: string = uuidv7()): Promise<WriteResult> {
     const r = await this.api.POST("/api/v1/commands/write_task", {

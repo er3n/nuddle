@@ -5,6 +5,7 @@ import {
   PHOTO_CLEANUP_RETRY_MS,
   createTask,
   removeMissedCard,
+  acknowledge,
   type Command,
   type TaskContext,
 } from "../../src/domain/task-machine";
@@ -543,5 +544,43 @@ describe("removeMissedCard (NUD-49)", () => {
       ok: false,
       error: "wrong_status",
     });
+  });
+});
+
+describe("acknowledge (NUD-68)", () => {
+  const none = new Set<TaskEvent["type"]>();
+
+  it("reached logs delivered once and tells the sender; seen adds seen, and delivered if it is missing", () => {
+    const task = aTask().build();
+    const reached = acknowledge(task, "eren", false, none, now);
+    expect(reached).toEqual({
+      ok: true,
+      value: {
+        events: [{ taskId: task.id, actorId: "eren", type: "delivered", payload: {}, at: now }],
+        pushes: [{ to: "sibel", hint: "sync", taskId: task.id, event: "delivered" }],
+      },
+    });
+    const seenFirst = acknowledge(task, "eren", true, none, now);
+    expect(seenFirst.ok && seenFirst.value.events.map((e) => e.type)).toEqual([
+      "delivered",
+      "seen",
+    ]);
+    const seenLater = acknowledge(task, "eren", true, new Set(["delivered"] as const), now);
+    expect(seenLater.ok && seenLater.value.events.map((e) => e.type)).toEqual(["seen"]);
+    expect(acknowledge(task, "eren", true, new Set(["delivered", "seen"] as const), now)).toEqual({
+      ok: true,
+      value: { events: [], pushes: [] },
+    });
+  });
+
+  it("only the recipient; nothing for a closed task or a task to self", () => {
+    expect(acknowledge(aTask().build(), "sibel", false, none, now)).toEqual({
+      ok: false,
+      error: "not_recipient",
+    });
+    const empty = { ok: true, value: { events: [], pushes: [] } };
+    expect(acknowledge(aTask().withStatus("DONE").build(), "eren", true, none, now)).toEqual(empty);
+    const self = { ...aTask().build(), senderId: "eren" };
+    expect(acknowledge(self, "eren", true, none, now)).toEqual(empty);
   });
 });
