@@ -80,7 +80,7 @@ private fun TaskDetailViewModel.answer(
     takePhoto: () -> Unit,
 ) {
     when (action) {
-        DetailAction.DoneEarly -> answers.onDone(state.title)
+        DetailAction.DoneEarly, DetailAction.Ok -> answers.onDone(state.title)
 
         DetailAction.TakePhoto, DetailAction.NewPhoto -> takePhoto()
 

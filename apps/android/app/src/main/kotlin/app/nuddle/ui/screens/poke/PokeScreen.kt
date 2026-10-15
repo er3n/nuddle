@@ -50,6 +50,8 @@ data class PokeUiState(
     val message: String? = null,
     /** What Ertele gives now; null hides it (no snooze left, or it would pass the deadline). */
     val snooze: SnoozeUi? = SnoozeUi(time = "08:30", last = false),
+    /** A one-time message (NUD-79): "Tamam" only. */
+    val notice: Boolean = false,
 )
 
 @Composable
@@ -78,14 +80,14 @@ fun PokeScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         bottom = {
             DurtButton(
-                text = stringResource(R.string.poke_done),
+                text = stringResource(if (state.notice) R.string.poke_ok else R.string.poke_done),
                 onClick = onDone,
                 kind = DurtButtonKind.OnPoke,
                 size = DurtButtonSize.Poke,
                 leadingIcon = DurtIcons.Check,
                 modifier = Modifier.testTag(TestTags.POKE_DONE),
             )
-            if (state.snooze != null) {
+            if (state.snooze != null && !state.notice) {
                 DurtButton(
                     text =
                         stringResource(
@@ -98,13 +100,15 @@ fun PokeScreen(
                     modifier = Modifier.testTag(TestTags.POKE_SNOOZE),
                 )
             }
-            TextLink(
-                text = stringResource(R.string.poke_cant_today),
-                onClick = onCantToday,
-                color = colors.surface,
-                style = DurtTheme.type.button,
-                modifier = Modifier.testTag(TestTags.POKE_CANT_TODAY),
-            )
+            if (!state.notice) {
+                TextLink(
+                    text = stringResource(R.string.poke_cant_today),
+                    onClick = onCantToday,
+                    color = colors.surface,
+                    style = DurtTheme.type.button,
+                    modifier = Modifier.testTag(TestTags.POKE_CANT_TODAY),
+                )
+            }
         },
     ) {
         Text(

@@ -103,6 +103,8 @@ data class NextUpUi(
     val detail: String?,
     val deadline: DeadlineText,
     val photo: Boolean,
+    /** A one-time message (NUD-79). */
+    val notice: Boolean = false,
     val from: FromUi? = null,
     val status: NextUpStatus = NextUpStatus.Scheduled,
     /** "08:24": when the photo went out (4e); null while it is still on its way. */
@@ -147,6 +149,7 @@ fun nextUp(
                 detail = task.detail,
                 deadline = task.timeText(now, timeZone),
                 photo = task.finishMode == FinishMode.PHOTO.value,
+                notice = task.finishMode == FinishMode.NOTICE.value,
                 from =
                     connections[task.senderId]?.takeIf { task.senderId != me }?.let {
                         FromUi(

@@ -80,6 +80,8 @@ data class TaskDetailUiState(
     val deadline: DeadlineText,
     val detail: String?,
     val photo: Boolean,
+    /** A one-time message (NUD-79): "Tamam" only, no Bugün olmaz, no edit of how it ends. */
+    val notice: Boolean = false,
     val side: DetailSide = if (self) DetailSide.ToSelf else DetailSide.Mine,
     val status: DetailStatus = DetailStatus.Scheduled,
     /** Who wrote a task to me, when, and their number for Ara and Mesaj (4c). */
@@ -119,7 +121,7 @@ data class TaskDetailUiState(
     /** A repeating task's rule (ADR 0021): the "Tekrar" row; null for a one-off. */
     val repeat: RepeatUi? = null,
 ) {
-    val actions: List<DetailAction> get() = actionsFor(side, status, photo)
+    val actions: List<DetailAction> get() = actionsFor(side, status, photo, notice)
     val editable: Boolean get() = editable(side, status)
 }
 
@@ -226,6 +228,7 @@ class TaskDetailViewModel
                     deadline = task.timeText(now, timeZone),
                     detail = task.detail,
                     photo = task.finishMode == FinishMode.PHOTO.value,
+                    notice = task.finishMode == FinishMode.NOTICE.value,
                     repeat = task.repeat,
                     side = side,
                     status = status,

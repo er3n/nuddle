@@ -108,6 +108,7 @@ class PokeActivity : ComponentActivity() {
                 return@LaunchedEffect
             }
             photo = task.finishMode == FinishMode.PHOTO.value
+            val notice = task.finishMode == FinishMode.NOTICE.value
             if (task.senderId != task.recipientId) senderName = connections.get(task.senderId)?.displayName
             val time = step.plannedAt.toLocalDateTime(timeZone).time
             val deadline = Instant.fromEpochMilliseconds(task.deadline)
@@ -122,6 +123,7 @@ class PokeActivity : ComponentActivity() {
                         SnoozeRules.next(task.snoozesUsed, clock.now(), deadline)?.let {
                             SnoozeUi(it.until.hourMinute(timeZone), it.last)
                         },
+                    notice = notice,
                 )
         }
         // Closed on the other phone or on the server while it is up (cancelled, missed): the poke goes (NUD-64).

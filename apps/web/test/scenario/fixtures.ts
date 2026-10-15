@@ -16,6 +16,8 @@ export const TEXT = {
   hello: "merhaba",
   dailyMedicineToEren: "eren her gün 9da ilacını alsın",
   weeklyTrashToEren: "eren her salı akşam 7de çöpü çıkarsın",
+  loveToEren: "erene 3te seni seviyorum de",
+  dinnerToEren: "erene yemek hazır de",
 } as const;
 
 const fixtures: Record<string, FixtureExtraction> = {
@@ -118,6 +120,28 @@ const fixtures: Record<string, FixtureExtraction> = {
     finishMode: "done",
     missing: [],
     repeat: { every: "week", days: [2], time: "19:00" },
+  },
+  // A one-time message (NUD-79): 15:00 has passed on Sunday 20:00, so tomorrow 15:00.
+  [TEXT.loveToEren]: {
+    recipient: "Eren",
+    title: "Seni seviyorum",
+    detail: null,
+    deadline: "2026-10-12T15:00:00+03:00",
+    timing: "at",
+    missAfterMinutes: 60,
+    finishMode: "notice",
+    missing: [],
+  },
+  // No time: the next five-minute mark (the app sends it at once).
+  [TEXT.dinnerToEren]: {
+    recipient: "Eren",
+    title: "Yemek hazır",
+    detail: null,
+    deadline: "2026-10-11T20:05:00+03:00",
+    timing: "at",
+    missAfterMinutes: 60,
+    finishMode: "notice",
+    missing: [],
   },
   [TEXT.homeworkToDefne]: {
     recipient: "Defne",

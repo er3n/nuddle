@@ -99,7 +99,7 @@ private fun ColumnScope.PreviewBody(
     if (preview.recipients.isNotEmpty()) RecipientQuestion(preview, callbacks)
     if (preview.knownDeadline == null) DeadlineQuestion(preview, callbacks)
     if (preview.toOther) {
-        FinishChoice(preview, callbacks)
+        if (!preview.notice) FinishChoice(preview, callbacks)
         preview.reach?.let { ReachNote(preview.to.orEmpty(), it) }
     } else {
         Row(horizontalArrangement = Arrangement.spacedBy(dimens.space8)) {

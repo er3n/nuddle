@@ -480,6 +480,7 @@ components:
       enum:
         - done
         - photo
+        - notice
     TaskStatus:
       type: string
       enum:

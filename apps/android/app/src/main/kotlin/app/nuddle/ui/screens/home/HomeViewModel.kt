@@ -447,8 +447,15 @@ class HomeViewModel
                 val quiet = sessions.quietHours() ?: QuietHours.default(timeZone)
                 preview.value =
                     OpenPreview(
-                        ui = previewFor(shown.rawText, shown.title, shown.detail, quiet, clock.now()).copy(to = shown.to),
-                        finishMode = if (shown.photo) FinishMode.PHOTO else FinishMode.DONE,
+                        ui =
+                            previewFor(shown.rawText, shown.title, shown.detail, quiet, clock.now())
+                                .copy(to = shown.to, notice = shown.notice),
+                        finishMode =
+                            when {
+                                shown.notice -> FinishMode.NOTICE
+                                shown.photo -> FinishMode.PHOTO
+                                else -> FinishMode.DONE
+                            },
                         key = ids.next(),
                         editing = shown.taskId,
                     )

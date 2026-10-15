@@ -89,6 +89,8 @@
     <string name="home_from_wrote">%1$s yazdı · %2$s</string>
     <string name="written_yesterday">Dün %1$s</string>
     <string name="home_finish_photo_from">Fotoğraf, %1$s onaylar</string>
+    <!-- NUD-79: a one-time message; "Tamam" closes it, so does its time passing. -->
+    <string name="home_finish_notice">Mesaj, \"Tamam\" deyince biter</string>
     <string name="home_call">Ara</string>
     <string name="home_message">Mesaj</string>
     <string name="home_invite_compact_body">Birini davet et, birbirinize görev yazın</string>
@@ -578,6 +580,8 @@
     <string name="next_up_snoozed">Ertelendi · tekrar %1$s</string>
     <string name="poke_cant_today_short">Bugün olmaz</string>
     <string name="poke_cant_today">Bugün yapamayacağım</string>
+    <!-- NUD-79: the only answer to a one-time message. -->
+    <string name="poke_ok">Tamam</string>
     <!-- 7f: the optional note after Bugün yapamayacağım (open-questions#36) -->
     <string name="drop_title">Tamam, bugün olmuyor</string>
     <string name="drop_body">%1$s için bir not bırakmak ister misin? Zorunlu değil.</string>

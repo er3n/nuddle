@@ -16,7 +16,7 @@ const extractionSchema = z.object({
   timing: z.enum(["at", "by"]),
   missAfterMinutes: z.number().nullable(),
   leadMinutes: z.number().nullable().optional(),
-  finishMode: z.enum(["done", "photo"]),
+  finishMode: z.enum(["done", "photo", "notice"]),
   missing: z.array(z.enum(["recipient", "title", "deadline"])),
   // Required in the JSON schema; optional here so an answer from before NUD-52 still parses.
   reply: z.string().nullable().optional(),
@@ -57,7 +57,7 @@ const jsonSchema = {
     timing: { type: "string", enum: ["at", "by"] },
     missAfterMinutes: { type: ["integer", "null"] },
     leadMinutes: { type: ["integer", "null"] },
-    finishMode: { type: "string", enum: ["done", "photo"] },
+    finishMode: { type: "string", enum: ["done", "photo", "notice"] },
     missing: { type: "array", items: { type: "string", enum: ["recipient", "title", "deadline"] } },
     reply: nullableString,
     repeat: {
@@ -81,7 +81,6 @@ reply
 - Things the app cannot do get a reply that says so and shows the one-off form, in Turkish, one sentence:
   - a repeat the app cannot do: within a day ("her saat başı", "dakikada bir", "3 kere") or more than once a day ("hem sabah hem akşam"): "Günde en fazla bir kez tekrarlayan görev kurabiliyorum; her saat için ayrı yaz."
   - two or more times in one sentence ("hem sabah hem akşam"): "Bir mesajda tek görev kurabiliyorum; her saat için ayrı yaz."
-  - a message to pass on with nothing for the person to do ("X'e seni seviyorum de", "baban seni alabilir de", "yemek hazır de" when it only informs): "Mesaj iletmiyorum, sadece görev. Birine yapması gereken bir şey yazarsan dürterim." But when the message asks the person to do something ("ona uyuması gerektiğini ilet", "yemeğe gelsin de"), that is their task: title the action ("Uyu", "Yemeğe gel").
   - a complaint or feedback about the app ("dün alarm çalmadı"): "Üzgünüm. Hangi dürtmenin çalmadığını zil ekranında görebilirsin; bana yeni bir görev yazabilirsin."
 - Only when the text is not a task at all (a greeting, thanks, small talk, a question about the app or about you): one short Turkish sentence answering it as the app, first person singular, "sen", no emoji, and point to writing a task. Then every other field is null, missing is empty, timing "by", finishMode "done".
 - Examples: "merhaba" → "Merhaba! Kime ne hatırlatayım? Mesela: Eren yarın 9'dan önce ekmek alsın." "bu uygulama ne işe yarıyor" → "Birine ya da kendine bir iş yazarsın, iş bitene kadar zamanında dürterim." "teşekkürler" → "Rica ederim, başka ne hatırlatayım?"
@@ -130,7 +129,9 @@ missAfterMinutes
 - null for "by".
 
 finishMode
-- "photo" for money: withdrawing, sending, paying bills, rent, dues, taxes, or any task with a money amount. Otherwise "done".
+- "photo" for money: withdrawing, sending, paying bills, rent, dues, taxes, or any task with a money amount.
+- "notice" for a message to pass on with nothing for the person to do (NUD-79): "X'e seni seviyorum de", "baban seni alabilir de", "iyi ki doğdun de", "yemek hazır de" when it only informs. Then the title is the message itself as the person will read it, capitalized, without the "de" ("Seni seviyorum", "Baban seni alabilir", "Yemek hazır"), timing "at"; deadline is the moment the message goes out: the time given ("3te" is 15:00 today, or tomorrow when it has passed), else the next five-minute mark after now (at 19:00 that is 19:05), and the app sends it at once; never null, never a question; missAfterMinutes 60, leadMinutes 0. When the message asks the person to do something ("ona uyuması gerektiğini ilet", "yemeğe gelsin de"), that is their task, finishMode "done": title the action ("Uyu", "Yemeğe gel").
+- Otherwise "done".
 
 missing
 - The fields you could not determine. Empty when the task is complete.

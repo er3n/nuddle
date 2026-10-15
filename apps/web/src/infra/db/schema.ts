@@ -49,7 +49,7 @@ export const inviteStatus = pgEnum("invite_status", [
   "revoked",
   "expired",
 ]);
-export const finishMode = pgEnum("finish_mode", ["done", "photo"]);
+export const finishMode = pgEnum("finish_mode", ["done", "photo", "notice"]);
 // ADR 0017: `by` is done by the deadline, `at` is a moment (remind_at) and the deadline its grace.
 export const timing = pgEnum("timing", ["at", "by"]);
 // Server statuses only. QUEUED is client-only and never stored here.
