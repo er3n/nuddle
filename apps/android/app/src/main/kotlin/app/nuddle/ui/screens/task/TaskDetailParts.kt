@@ -177,25 +177,27 @@ internal fun StatusCard(state: TaskDetailUiState) {
         state.pokeStartsAt?.let {
             Text(stringResource(R.string.task_poke_starts, it), style = DurtTheme.type.bodySmall, color = colors.textSecondary)
         }
-        state.delivery?.takeIf { state.status == DetailStatus.Scheduled || state.status == DetailStatus.ReRequested }?.let {
-            Text(
-                stringResource(it.sentence()),
-                style = DurtTheme.type.bodySmallStrong,
-                color = if (it == Delivery.Seen) colors.success else colors.textSecondary,
-                modifier = Modifier.testTag(TestTags.TASK_DELIVERY),
-            )
-        }
+        // Nothing while only sent: the phone may be fine and the server just has not said so yet.
+        state.delivery
+            ?.takeIf { it != Delivery.Sent && (state.status == DetailStatus.Scheduled || state.status == DetailStatus.ReRequested) }
+            ?.let {
+                Text(
+                    stringResource(it.sentence()),
+                    style = DurtTheme.type.bodySmallStrong,
+                    color = if (it == Delivery.Seen) colors.success else colors.textSecondary,
+                    modifier = Modifier.testTag(TestTags.TASK_DELIVERY),
+                )
+            }
         state.snoozedUntil?.takeIf { state.status == DetailStatus.Scheduled }?.let {
             Text(stringResource(R.string.next_up_snoozed, it), style = DurtTheme.type.bodySmallStrong, color = colors.warning)
         }
     }
 }
 
-/** The sender's tick in words (NUD-68). */
+/** The sender's tick in words (NUD-68); only sent has no line. */
 private fun Delivery.sentence(): Int =
     when (this) {
-        Delivery.Sent -> R.string.task_delivery_sent
-        Delivery.Reached -> R.string.task_delivery_reached
+        Delivery.Sent, Delivery.Reached -> R.string.task_delivery_reached
         Delivery.Seen -> R.string.task_delivery_seen
     }
 

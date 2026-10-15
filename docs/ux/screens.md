@@ -59,12 +59,12 @@ The screen goes back by itself once the task leaves that list (done, cancelled, 
 ## Quality pass (NUD-68)
 
 Added on 2026-10-15 after the first test with two phones. Wins over the rows, the detail and 4i where they differ.
-- **The sender's tick.** My task to someone shows how far it got: on a row in Gönderdiklerim after the name ("Sibel · gördü · bugün 19:00"), and in the detail under the status sentence while it is Kurulu or Tekrar istendi ("Henüz telefonuna ulaşmadı." until it reached the phone, "✓ Telefonuna ulaştı, henüz bakmadı.", "✓✓ Gördü." in the success color). Reached means the recipient's phone stored it at a sync; seen means the task was on screen there: the Bana tab of home or its detail (domain.md, Task events). A full screen poke alone is not seen. No name in these lines, so no suffix (#21).
+- **The sender's tick.** My task to someone shows how far it got: on a row in Gönderdiklerim after the name ("Sibel · gördü · bugün 19:00"), and in the detail under the status sentence while it is Kurulu or Tekrar istendi ("✓ Telefonuna ulaştı, henüz bakmadı.", "✓✓ Gördü." in the success color; nothing while it is only sent, since the server may simply not have heard yet). Reached means the recipient's phone stored it at a sync; seen means the task was on screen there: the Bana tab of home or its detail (domain.md, Task events). A full screen poke alone is not seen. No name in these lines, so no suffix (#21).
 - **When poking starts, to the recipient.** The detail of a task to me or to self that has not rung yet and is not snoozed says "Saat 09:00 olunca hatırlatırım, yapmazsan biraz ısrar ederim." under the status sentence: the first step of the plan on this phone. The rest of the ladder stays hidden. Changing the start is not offered yet.
 - **The last hour counts down.** Within an hour of a task's time, home adds the minutes left and keeps them current while it is on screen: rows "bugün 19:00, 35 dk kaldı" (an `at` task: "35 dk sonra"), the next-up card's time tile a second line "35 dk kaldı" in the link color. Further out the clock time stays alone. The detail, notifications and the bell do not count down.
 - **4i says which time it is.** The undo toast's sub line uses the deadline phrase: "Para çek · son zaman yarın 09:00 · bitince fotoğraf" for a `by` task, "Su iç · bugün 19:48" for the moment of an `at` task, so a wrong reading of the text shows before the toast goes. Düzenle stays the way to fix it.
 
-**Copy:** ulaştı | gördü | Henüz telefonuna ulaşmadı. | ✓ Telefonuna ulaştı, henüz bakmadı. | ✓✓ Gördü. | Saat 09:00 olunca hatırlatırım, yapmazsan biraz ısrar ederim. | bugün 19:00, 35 dk kaldı | 35 dk sonra
+**Copy:** ulaştı | gördü | ✓ Telefonuna ulaştı, henüz bakmadı. | ✓✓ Gördü. | Saat 09:00 olunca hatırlatırım, yapmazsan biraz ısrar ederim. | bugün 19:00, 35 dk kaldı | 35 dk sonra
 
 ## Status to UI
 

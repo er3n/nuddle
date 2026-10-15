@@ -323,7 +323,6 @@
     <string name="sent_reached">ulaştı</string>
     <string name="sent_seen">gördü</string>
     <!-- NUD-68: the tick in the detail of my task; no name, so no suffix to get wrong. -->
-    <string name="task_delivery_sent">Henüz telefonuna ulaşmadı.</string>
     <string name="task_delivery_reached">✓ Telefonuna ulaştı, henüz bakmadı.</string>
     <string name="task_delivery_seen">✓✓ Gördü.</string>
     <!-- NUD-68: when poking starts on a task to me; the ladder after it stays hidden. -->
