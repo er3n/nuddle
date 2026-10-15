@@ -30,7 +30,14 @@ internal fun DraftRows(
                 null
             },
             preview.knownDeadline?.let { known ->
-                { LineRow(label = known.timeLabel(), value = known.text(), onClick = callbacks.onToggleMoment) }
+                {
+                    // A moment with a lead says when the pokes begin (NUD-82).
+                    val value =
+                        preview.firstPokeAt
+                            ?.let { stringResource(R.string.separator_dot, known.text(), stringResource(R.string.preview_first_poke, it)) }
+                            ?: known.text()
+                    LineRow(label = known.timeLabel(), value = value, onClick = callbacks.onToggleMoment)
+                }
             },
             preview.repeat?.let { rule -> { LineRow(label = stringResource(R.string.task_repeat_label), value = rule.text()) } },
             preview.detail?.let { detail -> { LineRow(label = stringResource(R.string.preview_detail), value = detail) } },

@@ -80,7 +80,7 @@ internal fun PreviewSheet(
 }
 
 @Composable
-private fun PreviewUi.confirmAction(callbacks: PreviewCallbacks) =
+internal fun PreviewUi.confirmAction(callbacks: PreviewCallbacks) =
     SheetAction(
         text = stringResource(if (toOther) R.string.preview_send else R.string.preview_confirm),
         onClick = callbacks.onConfirm,
@@ -89,7 +89,7 @@ private fun PreviewUi.confirmAction(callbacks: PreviewCallbacks) =
     )
 
 @Composable
-private fun ColumnScope.PreviewBody(
+internal fun ColumnScope.PreviewBody(
     preview: PreviewUi,
     callbacks: PreviewCallbacks,
 ) {

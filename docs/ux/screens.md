@@ -161,7 +161,7 @@ ComposeBar focused with keyboard. Text that is not a task ("merhaba") gets the e
 **Copy:** Kime, ne, ne zaman. Yazınca mikrofon gönder butonuna dönüşür. | Yeni görev | (example input) 1000 tl çek
 
 ### 2b Preview, only when info is missing · `TaskPreview.png`
-Bottom sheet. Shows what was understood and asks exactly one question (here: the deadline).
+Bottom sheet. Shows what was understood and asks exactly one question (here: the deadline). When the text gave the time of a moment task and the extraction judged a lead, the time row adds "ilk hatırlatma 17:10" after the time (NUD-82).
 **Copy:** Yazdığın: "1000 tl çek" | Para çek | Kime | Kendine | Detay | 1.000 TL | Ne zamana kadar? | Bugün 19:00 | Yarın 09:00 (the canvas says "Bugün akşam" and "Yarın sabah"; open-questions #28) | Saat seç | Zamanı gelince seni dürterim. Gece 23:00 ile 07:00 arası asla. | Kur | Vazgeç
 
 ### 2c Setup: try first · `SetupDemo.png`
