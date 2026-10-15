@@ -64,6 +64,26 @@ describe("checkPlan (ADR 0017)", () => {
     ).toEqual(["1:SOUND@05:00", "2:FULL_SCREEN@05:30"]);
   });
 
+  it("lets an at task start before its moment by its lead, and ring inside quiet hours (NUD-70)", () => {
+    // Pick up at 08:00 with a 45 minute lead: 07:15 is allowed although quiet hours end at 07:00 anyway;
+    // 06:50 is before the start and dropped. A 06:30 wake-up keeps its 06:30 step.
+    const pickup = {
+      ...aTask().from(sibel).forRecipient(eren).at("2026-10-12T08:00:00+03:00", 15).build(),
+      leadMinutes: 45,
+    };
+    expect(
+      summary(
+        check([step("06:50", "SOUND"), step("07:15", "SOUND"), step("07:40", "FULL_SCREEN")], {
+          task: pickup,
+        }),
+      ),
+    ).toEqual(["1:SOUND@04:15", "2:FULL_SCREEN@04:40"]);
+    const wake = aTask().from(sibel).forRecipient(eren).at("2026-10-12T06:30:00+03:00", 15).build();
+    expect(
+      summary(check([step("06:30", "SOUND"), step("06:35", "FULL_SCREEN")], { task: wake })),
+    ).toEqual(["1:SOUND@03:30", "2:FULL_SCREEN@03:35"]);
+  });
+
   it("never pokes before the moment of an at task", () => {
     const at = aTask().from(sibel).forRecipient(eren).at("2026-10-12T08:00:00+03:00", 60).build();
     expect(
@@ -100,7 +120,9 @@ describe("checkPlan (ADR 0017)", () => {
     expect(check(many)).toHaveLength(8);
   });
 
-  it("allows one HUMAN step, last, and only when the human channel is allowed", () => {
+  it("allows one HUMAN step, after the last device step and within the last hour, only when allowed", () => {
+    // The deadline is 09:00: a HUMAN at 08:30 stays, the device steps after it are kept too, and a
+    // second HUMAN is ignored. The 08:40 FULL_SCREEN pushes the HUMAN to 08:43.
     expect(
       summary(
         check([
@@ -110,7 +132,12 @@ describe("checkPlan (ADR 0017)", () => {
           step("08:50", "HUMAN"),
         ]),
       ),
-    ).toEqual(["1:SOUND@05:00", "2:HUMAN@05:30"]);
+    ).toEqual(["1:SOUND@05:00", "2:FULL_SCREEN@05:40", "3:HUMAN@05:43"]);
+    // An early HUMAN is moved into the last hour (NUD-70), not dropped.
+    expect(summary(check([step("07:30", "SOUND"), step("07:40", "HUMAN")]))).toEqual([
+      "1:SOUND@04:30",
+      "2:HUMAN@05:00",
+    ]);
     expect(
       summary(
         check([step("08:00", "SOUND"), step("08:30", "HUMAN")], {
@@ -185,6 +212,8 @@ describe("OpenRouterPlanner", () => {
       finishMode: "photo",
       timing: "by",
       time: new Date("2026-10-12T09:00:00+03:00"),
+      startAt: new Date("2026-10-12T09:00:00+03:00"),
+      leadMinutes: 0,
       deadline: new Date("2026-10-12T09:00:00+03:00"),
       notBefore: new Date("2026-10-11T20:00:00+03:00"),
       floor: "SILENT",
@@ -197,6 +226,7 @@ describe("OpenRouterPlanner", () => {
     quietHours: eren.quietHours,
     reachability: "FULL_SCREEN",
     humanAllowed: true,
+    profile: null,
     history: [],
   };
 

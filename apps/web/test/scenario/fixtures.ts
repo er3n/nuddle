@@ -1,5 +1,5 @@
 // Extractor fixtures for the scenario texts. Scenarios start Sunday 2026-10-11 20:00 Istanbul.
-import type { PokePlanner } from "../../src/domain/ports";
+import type { PersonProfiler, PokePlanner } from "../../src/domain/ports";
 import type { FixtureExtraction } from "../../src/infra/llm/fixture-extractor";
 import { World, type Client } from "./harness";
 
@@ -12,6 +12,7 @@ export const TEXT = {
   homeworkToDefne: "defne yarın akşam ödevini bitirsin",
   waterSelfAt: "2 dakika sonra su iç",
   dishesToEren: "eren yarın gece 10a kadar bulaşıkları yıkasın",
+  pickupKidsAt: "eren saat 5.30da çocukları okuldan alsın, yürüyüş 20 dakika sürüyor",
   hello: "merhaba",
 } as const;
 
@@ -66,6 +67,17 @@ const fixtures: Record<string, FixtureExtraction> = {
     missing: [],
   },
   // A moment, not a deadline (ADR 0017).
+  [TEXT.pickupKidsAt]: {
+    recipient: "Eren",
+    title: "Çocukları okuldan al",
+    detail: null,
+    deadline: "2026-10-12T17:30:00+03:00",
+    finishMode: "done",
+    missing: [],
+    timing: "at",
+    missAfterMinutes: 15,
+    leadMinutes: 20,
+  },
   [TEXT.waterSelfAt]: {
     recipient: "self",
     title: "Su iç",
@@ -96,7 +108,7 @@ const fixtures: Record<string, FixtureExtraction> = {
 
 /** Sibel and Eren, signed up and connected as spouses. */
 export async function sibelAndEren(
-  options: { planner?: PokePlanner } = {},
+  options: { planner?: PokePlanner; profiler?: PersonProfiler } = {},
 ): Promise<{ world: World; sibel: Client; eren: Client }> {
   const world = new World(fixtures, options);
   const sibel = await world.addPerson("Sibel");

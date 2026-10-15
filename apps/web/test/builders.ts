@@ -17,6 +17,7 @@ export function aPerson(name: string, overrides: Partial<Person> = {}): Person {
     quietHours: { start: "23:00", end: "07:00", timeZone: "Europe/Istanbul" },
     useConnectionsForMyTasks: true,
     notifyMeForOthersTasks: true,
+    pokeProfile: null,
     deletedAt: null,
     ...overrides,
   };
@@ -39,6 +40,7 @@ class TaskBuilder {
     deadline: new Date("2026-10-12T09:00:00+03:00"),
     timing: "by",
     remindAt: null,
+    leadMinutes: 0,
     finishMode: "photo",
     rawText: "eren yarın 9dan önce temizlikçi için 1000 çeksin",
     status: "SCHEDULED",

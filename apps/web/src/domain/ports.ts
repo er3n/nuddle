@@ -2,6 +2,7 @@
 // src/infra, recording fakes in test/fakes.
 import type { Extraction, ExtractionInput } from "./extraction";
 import type { PlannerInput, PlanProposal } from "./planner";
+import type { ProfileInput } from "./profile";
 import type { PushMessage, TaskId } from "./types";
 
 export interface Clock {
@@ -33,6 +34,11 @@ export type ExchangeSink = (exchange: LlmExchange) => void;
 /** LLM task extraction (docs/domain.md, LLM task extraction). */
 export interface TaskExtractor {
   extract(input: ExtractionInput, onExchange?: ExchangeSink): Promise<Extraction>;
+}
+
+/** LLM person profile writer (ADR 0020): a short text on how the person responds to pokes. */
+export interface PersonProfiler {
+  profile(input: ProfileInput, onExchange?: ExchangeSink): Promise<string>;
 }
 
 /** LLM poke planner (ADR 0017). Its answer is checked by `checkPlan` before it is used. */

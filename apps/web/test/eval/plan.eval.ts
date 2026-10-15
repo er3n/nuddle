@@ -17,7 +17,8 @@ interface GoldenCase {
   id: string;
   now: string;
   timeZone: string;
-  task: Json<PlannerInput["task"]>;
+  task: Omit<Json<PlannerInput["task"]>, "startAt" | "leadMinutes"> &
+    Partial<Pick<Json<PlannerInput["task"]>, "startAt" | "leadMinutes">>;
   sender: PlannerInput["sender"];
   recipient: PlannerInput["recipient"];
   relationship: PlannerInput["relationship"];
@@ -25,6 +26,8 @@ interface GoldenCase {
   quietHours: PlannerInput["quietHours"];
   reachability: PlannerInput["reachability"];
   humanAllowed: boolean;
+  /** How the person responds to pokes (ADR 0020); missing in cases written before it. */
+  profile?: string | null;
   history: (Omit<Json<HistoryItem>, "pokes"> & {
     pokes: { level: HistoryItem["pokes"][number]["level"]; plannedAt: string; firedAt: string }[];
   })[];
@@ -58,6 +61,8 @@ function toInput(c: GoldenCase): PlannerInput {
     timeZone: c.timeZone,
     task: {
       ...c.task,
+      startAt: new Date(c.task.startAt ?? c.task.time),
+      leadMinutes: c.task.leadMinutes ?? 0,
       time: new Date(c.task.time),
       deadline: new Date(c.task.deadline),
       notBefore: new Date(c.task.notBefore),
@@ -69,6 +74,7 @@ function toInput(c: GoldenCase): PlannerInput {
     quietHours: c.quietHours,
     reachability: c.reachability,
     humanAllowed: c.humanAllowed,
+    profile: c.profile ?? null,
     history: c.history.map((h) => ({
       ...h,
       time: new Date(h.time),

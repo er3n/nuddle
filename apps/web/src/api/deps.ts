@@ -3,6 +3,7 @@
 import type {
   Clock,
   OtpSender,
+  PersonProfiler,
   PhotoStorage,
   PokePlanner,
   PushSender,
@@ -22,6 +23,8 @@ export interface AppDeps {
   extractor: TaskExtractor;
   /** The LLM poke planner (ADR 0017); null keeps plan v0 only (E2E mode, most tests). */
   planner: PokePlanner | null;
+  /** The LLM person profiler (ADR 0020); null with no planner. */
+  profiler: PersonProfiler | null;
   /**
    * Runs work after the response: Next's `after()` in production. Tests await it so scenarios stay
    * deterministic.

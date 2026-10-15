@@ -55,6 +55,7 @@ export async function startTestServer(overrides: Partial<AppDeps> = {}): Promise
     otp: new RecordingOtpSender(),
     extractor: new FixtureExtractor(new Map()),
     planner: null,
+    profiler: null,
     background: (job) => job(),
     photos: new FakePhotoStorage(),
     tokens: new JoseTokenVerifier(publicKey),

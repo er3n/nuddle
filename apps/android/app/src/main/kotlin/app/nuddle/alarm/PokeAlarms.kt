@@ -4,6 +4,7 @@ import app.nuddle.data.db.PokeStepDao
 import app.nuddle.data.db.PokeStepEntity
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEntity
+import app.nuddle.data.db.isMoment
 import app.nuddle.data.sync.AlarmRearmer
 import app.nuddle.data.sync.OPEN_STATUSES
 import app.nuddle.domain.AlarmKey
@@ -20,7 +21,7 @@ import kotlin.time.Instant
 internal fun PokeStepEntity.toStep() =
     PokeStep(taskId, planVersion, seq, Instant.fromEpochMilliseconds(plannedAt), PokeLevel.valueOf(level))
 
-internal fun TaskEntity.toLocalState() = LocalTaskState(currentPlanVersion = planVersion, open = status in OPEN_STATUSES)
+internal fun TaskEntity.toLocalState() = LocalTaskState(currentPlanVersion = planVersion, open = status in OPEN_STATUSES, moment = isMoment)
 
 /** Keeps the alarms in AlarmManager equal to the stored plans (ADR 0005). */
 @Singleton

@@ -188,6 +188,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
             rawText: t.rawText,
             status: t.status,
             late: t.late,
+            leadMinutes: t.leadMinutes,
             planVersion: t.planVersion,
             statusChangedAt: iso(t.statusChangedAt),
             inRecipientList: t.inRecipientList,

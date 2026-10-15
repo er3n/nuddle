@@ -34,7 +34,16 @@ export interface Person {
   useConnectionsForMyTasks: boolean;
   /** "Başkalarının işleri için bana haber verilebilir" */
   notifyMeForOthersTasks: boolean;
+  /** How this person responds to pokes, written by the LLM (ADR 0020); null until 10 tasks closed. */
+  pokeProfile: PokeProfile | null;
   deletedAt: Date | null;
+}
+
+export interface PokeProfile {
+  text: string;
+  writtenAt: Date;
+  /** Closed tasks the profile had seen when it was written. */
+  tasksSeen: number;
 }
 
 export interface Edge {
@@ -58,8 +67,14 @@ export interface Task {
   /** When the task becomes missed. For an `at` task the moment plus its grace. */
   deadline: Date;
   timing: Timing;
-  /** The moment of an `at` task, null for `by`. No poke comes before it. */
+  /** The moment of an `at` task, null for `by`. */
   remindAt: Date | null;
+  /**
+   * How many minutes before the moment the person must start (getting ready, travelling), so the
+   * first poke of an `at` task comes that much earlier (NUD-70). 0 for `by` and for things done on
+   * the spot.
+   */
+  leadMinutes: number;
   finishMode: FinishMode;
   rawText: string | null;
   status: TaskStatus;

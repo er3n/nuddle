@@ -46,6 +46,27 @@ describe("scenarios: LLM poke plan", () => {
     expect(world.violations).toEqual([]);
   });
 
+  it("an at task with a lead starts poking before its moment, in v0 and in what the planner is told (NUD-70)", async () => {
+    const planner = new ScriptedPlanner(() => ({ steps: [], reason: "keep v0" }));
+    const { world, sibel, eren } = await sibelAndEren({ planner });
+    const taskId = await writeTask(sibel, TEXT.pickupKidsAt);
+
+    expect(world.task(taskId)).toMatchObject({ timing: "at", leadMinutes: 20 });
+    expect(hhmm(world.currentPlan(taskId)?.steps[0]?.plannedAt ?? new Date(0))).toBe("17:10");
+    expect(planner.calls.at(-1)?.task).toMatchObject({
+      leadMinutes: 20,
+      startAt: at("2026-10-12T17:10:00"),
+      time: at("2026-10-12T17:30:00"),
+      deadline: at("2026-10-12T17:45:00"),
+    });
+    await world.advanceTo(at("2026-10-12T17:46:00"));
+    expect(rings(eren.phone.ringsFor(taskId)).slice(0, 2)).toEqual([
+      "SOUND@17:10",
+      "FULL_SCREEN@17:15",
+    ]);
+    expect(world.violations).toEqual([]);
+  });
+
   it("an answer that breaks the rules keeps v0", async () => {
     // Inside quiet hours and after the deadline: nothing valid is left.
     const planner = new ScriptedPlanner(() => ({

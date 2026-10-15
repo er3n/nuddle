@@ -71,6 +71,20 @@
       "when": 1792076955222,
       "tag": "20261015150915_llm_calls",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792078550793,
+      "tag": "20261015153550_poke_profile",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792079175050,
+      "tag": "20261015154615_lead_minutes",
+      "breakpoints": true
     }
   ]
 }

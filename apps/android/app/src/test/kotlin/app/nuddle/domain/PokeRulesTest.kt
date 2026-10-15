@@ -3,6 +3,7 @@ package app.nuddle.domain
 import kotlinx.datetime.TimeZone
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
@@ -48,6 +49,13 @@ class PokeRulesTest {
             FireDecision.Skip(SkipReason.QUIET_HOURS),
             PokeRules.decideFire(step(at = night), open, quiet, night, true),
         )
+    }
+
+    @Test
+    fun `an at task rings inside quiet hours, the sender asked for that time (open-questions#47)`() {
+        val night = Instant.parse("2026-10-12T23:30:00+03:00")
+        val decision = PokeRules.decideFire(step(at = night), open.copy(moment = true), quiet, night, true)
+        assertTrue(decision is FireDecision.Ring, "got $decision")
     }
 
     @Test

@@ -7,6 +7,8 @@ import type { Task, Timing } from "./types";
 export const DEFAULT_MISS_AFTER_MS = 60 * MINUTE;
 const MIN_MISS_AFTER_MS = 15 * MINUTE;
 const MAX_MISS_AFTER_MS = 12 * HOUR;
+/** A flight or an intercity trip needs the most; more than this is a different task. */
+const MAX_LEAD_MINUTES = 6 * 60;
 
 /** The grace of an `at` task from the extractor's `missAfterMinutes`, kept inside the limits. */
 export function missAfterMs(minutes: number | null | undefined): number {
@@ -25,6 +27,19 @@ export function scheduleOf(
   return timing === "at"
     ? { deadline: addMs(time, missAfterMs(missAfterMinutes)), remindAt: time }
     : { deadline: time, remindAt: null };
+}
+
+/** The lead of an `at` task from the extractor's `leadMinutes`, kept inside the limits; 0 for `by`. */
+export function leadMinutesOf(timing: Timing, minutes: number | null | undefined): number {
+  if (timing !== "at" || minutes === null || minutes === undefined || !Number.isFinite(minutes)) {
+    return 0;
+  }
+  return Math.min(MAX_LEAD_MINUTES, Math.max(0, Math.round(minutes)));
+}
+
+/** When poking may start on an `at` task: the moment minus its lead. Null for `by`. */
+export function pokeStartOf(task: Pick<Task, "remindAt" | "leadMinutes">): Date | null {
+  return task.remindAt === null ? null : addMs(task.remindAt, -task.leadMinutes * MINUTE);
 }
 
 /** The time the person picked and sees: the moment of an `at` task, the deadline of a `by` task. */

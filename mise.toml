@@ -227,6 +227,11 @@ depends = ["_install"]
 env = { GOLDEN_DB_URL_FILE = "{{env.HOME}}/.nuddle/prod/DATABASE_URL" }
 run = "pnpm --filter @nuddle/web golden:export"
 
+[tasks.stories]
+description = "Run evals/stories/sentences.jsonl through the real extractor and planner; output in evals/stories/out (NUD-70)"
+depends = ["_install"]
+run = "pnpm --filter @nuddle/web stories"
+
 [tasks.eval]
 description = "LLM golden sets: extraction and poke plans (needs an API key)"
 # OPENROUTER_API_KEY and OPENROUTER_MODEL from the environment or apps/web/.env.local.

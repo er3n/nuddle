@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_MISS_AFTER_MS,
+  leadMinutesOf,
+  pokeStartOf,
   missAfterMs,
   pickedTime,
   reschedule,
@@ -40,5 +42,23 @@ describe("task timing (ADR 0017)", () => {
       deadline: later,
       remindAt: null,
     });
+  });
+});
+
+describe("lead (NUD-70)", () => {
+  it("is clamped to 0..6 hours and ignored for by tasks", () => {
+    expect(leadMinutesOf("at", 45)).toBe(45);
+    expect(leadMinutesOf("at", -5)).toBe(0);
+    expect(leadMinutesOf("at", 1000)).toBe(360);
+    expect(leadMinutesOf("at", null)).toBe(0);
+    expect(leadMinutesOf("by", 45)).toBe(0);
+  });
+
+  it("moves the poke start before the moment", () => {
+    const moment = new Date("2026-10-14T17:30:00+03:00");
+    expect(pokeStartOf({ remindAt: moment, leadMinutes: 20 })).toEqual(
+      new Date("2026-10-14T17:10:00+03:00"),
+    );
+    expect(pokeStartOf({ remindAt: null, leadMinutes: 20 })).toBeNull();
   });
 });

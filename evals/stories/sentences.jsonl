@@ -1,0 +1,99 @@
+{"id":"wake-7","group":"wake","sender":"Sibel","now":"2026-10-14T22:10:00+03:00","text":"eren yarın sabah 7de kalksın"}
+{"id":"wake-me-630","group":"wake","sender":"Eren","now":"2026-10-14T22:10:00+03:00","text":"beni yarın 6.30da uyandır"}
+{"id":"wake-child-school","group":"wake","sender":"Sibel","now":"2026-10-14T21:40:00+03:00","text":"bahar yarın 7.15te kalksın okula geç kalmasın"}
+{"id":"wake-weekend","group":"wake","sender":"Sibel","now":"2026-10-16T23:30:00+03:00","text":"eren cumartesi 10 gibi kalksın"}
+{"id":"wake-at-latest","group":"wake","sender":"Eren","now":"2026-10-14T22:00:00+03:00","text":"sabah en geç 8de kalkmış olayım"}
+{"id":"pickup-kids-530","group":"pickup","sender":"Eren","now":"2026-10-14T13:50:00+03:00","text":"saat 5.30da çocukları okuldan alıcam, yürüyüş 20 dakika sürüyor"}
+{"id":"pickup-remind-earlier","group":"pickup","sender":"Sibel","now":"2026-10-14T14:10:00+03:00","text":"erene 17.30da kızları alması gerektiğini 16.45te hatırlat"}
+{"id":"pickup-tomorrow-service","group":"pickup","sender":"Sibel","now":"2026-10-14T21:00:00+03:00","text":"eren yarın baharı 8de servise bindirsin"}
+{"id":"pickup-mother-airport","group":"pickup","sender":"Sibel","now":"2026-10-14T12:00:00+03:00","text":"eren annemi akşam 9da havalimanından alsın"}
+{"id":"pickup-kid-course","group":"pickup","sender":"Eren","now":"2026-10-14T15:00:00+03:00","text":"baharı 6da kurstan al"}
+{"id":"med-mother-11","group":"medicine","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"annem yarın 11de tansiyon ilacını içsin"}
+{"id":"med-self-after-meal","group":"medicine","sender":"Eren","now":"2026-10-14T19:05:00+03:00","text":"yemekten sonra ilacımı almayı hatırlat"}
+{"id":"med-child-syrup","group":"medicine","sender":"Sibel","now":"2026-10-14T19:30:00+03:00","text":"bahar 8de şurubunu içsin"}
+{"id":"med-vitamin-morning","group":"medicine","sender":"Sibel","now":"2026-10-14T22:30:00+03:00","text":"eren sabah vitaminini almayı unutmasın"}
+{"id":"med-mother-twice","group":"medicine","sender":"Sibel","now":"2026-10-14T08:00:00+03:00","text":"annem bugün ilacını hem sabah hem akşam alsın"}
+{"id":"bill-rent-friday","group":"money","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"eren cumaya kadar kirayı yatırsın"}
+{"id":"bill-electric-today","group":"money","sender":"Eren","now":"2026-10-14T09:30:00+03:00","text":"bugün elektrik faturasını öde"}
+{"id":"bill-cleaner-cash","group":"money","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"eren yarın 9dan önce temizlikçi için 1000 çeksin"}
+{"id":"bill-school-dues","group":"money","sender":"Sibel","now":"2026-10-14T11:00:00+03:00","text":"eren ayın 20sine kadar okul aidatını göndersin"}
+{"id":"bill-credit-card","group":"money","sender":"Eren","now":"2026-10-14T20:00:00+03:00","text":"kredi kartı son ödeme pazartesi, unutma"}
+{"id":"bill-pocket-money","group":"money","sender":"Sibel","now":"2026-10-14T18:00:00+03:00","text":"bahara yarın sabah 50 lira harçlık ver"}
+{"id":"chore-trash-tonight","group":"chore","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"eren bu akşam çöpü atsın"}
+{"id":"chore-laundry-hang","group":"chore","sender":"Sibel","now":"2026-10-14T13:00:00+03:00","text":"eren eve gelince çamaşırları assın"}
+{"id":"chore-dishes-before-bed","group":"chore","sender":"Sibel","now":"2026-10-14T21:30:00+03:00","text":"eren yatmadan bulaşıkları yıkasın"}
+{"id":"chore-child-room","group":"chore","sender":"Sibel","now":"2026-10-14T16:00:00+03:00","text":"bahar akşama kadar odasını toplasın"}
+{"id":"chore-water-plants","group":"chore","sender":"Eren","now":"2026-10-14T20:00:00+03:00","text":"yarın çiçekleri sula"}
+{"id":"chore-homework","group":"chore","sender":"Sibel","now":"2026-10-14T17:00:00+03:00","text":"bahar 8e kadar ödevini bitirsin"}
+{"id":"chore-tea","group":"chore","sender":"Eren","now":"2026-10-14T20:30:00+03:00","text":"sibel bir çay koysun"}
+{"id":"chore-dryer","group":"chore","sender":"Sibel","now":"2026-10-14T19:00:00+03:00","text":"eren 1 saat sonra çamaşırları kurutucuya atsın"}
+{"id":"chore-car-wash","group":"chore","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"eren hafta sonu arabayı yıkatsın"}
+{"id":"instant-water-2min","group":"instant","sender":"Sibel","now":"2026-10-14T20:29:00+03:00","text":"2 dakika sonra su içmemi hatırlat"}
+{"id":"instant-tea-check","group":"instant","sender":"Eren","now":"2026-10-14T20:37:00+03:00","text":"5 dakika sonra çaya bak"}
+{"id":"instant-oven","group":"instant","sender":"Sibel","now":"2026-10-14T18:20:00+03:00","text":"25 dakika sonra fırını kapat"}
+{"id":"instant-call-back","group":"instant","sender":"Eren","now":"2026-10-14T14:00:00+03:00","text":"10 dakika sonra babamı geri ara"}
+{"id":"instant-parking","group":"instant","sender":"Eren","now":"2026-10-14T11:15:00+03:00","text":"1 saat sonra parkmetreyi uzat"}
+{"id":"instant-laundry-done","group":"instant","sender":"Sibel","now":"2026-10-14T15:00:00+03:00","text":"yarım saat sonra makine bitiyor çamaşırları çıkar"}
+{"id":"instant-eggs","group":"instant","sender":"Eren","now":"2026-10-14T08:05:00+03:00","text":"7 dakika sonra yumurtaları ocaktan al"}
+{"id":"appt-dentist","group":"appointment","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"eren yarın 14.30da diş randevusu var"}
+{"id":"appt-service-next-wed","group":"appointment","sender":"Eren","now":"2026-10-14T11:00:00+03:00","text":"haftaya çarşamba 9da araba servisi, orada olmam lazım"}
+{"id":"appt-parent-meeting","group":"appointment","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"cuma 16da baharın okulunda veli toplantısı var eren gitsin"}
+{"id":"appt-mother-doctor","group":"appointment","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"annemi yarın 10da doktora götür"}
+{"id":"appt-flight","group":"appointment","sender":"Eren","now":"2026-10-14T20:00:00+03:00","text":"pazar sabah 7 uçağım var"}
+{"id":"appt-online-meeting","group":"appointment","sender":"Eren","now":"2026-10-14T09:00:00+03:00","text":"3te toplantım var hatırlat"}
+{"id":"appt-haircut","group":"appointment","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"bahar cumartesi 11de kuaföre gidecek"}
+{"id":"shop-bread","group":"shopping","sender":"Sibel","now":"2026-10-14T16:00:00+03:00","text":"eren gelirken ekmek alsın"}
+{"id":"shop-milk-morning","group":"shopping","sender":"Sibel","now":"2026-10-14T22:00:00+03:00","text":"eren sabah süt alsın"}
+{"id":"shop-gift","group":"shopping","sender":"Eren","now":"2026-10-14T20:00:00+03:00","text":"cumaya kadar annemin doğum günü hediyesini al"}
+{"id":"shop-dry-cleaning","group":"shopping","sender":"Sibel","now":"2026-10-14T12:00:00+03:00","text":"eren 6ya kadar kuru temizlemeyi alsın, 6da kapanıyor"}
+{"id":"shop-pharmacy","group":"shopping","sender":"Sibel","now":"2026-10-14T19:40:00+03:00","text":"eren eczane kapanmadan şurubu alsın"}
+{"id":"shop-market-list","group":"shopping","sender":"Sibel","now":"2026-10-14T10:00:00+03:00","text":"eren akşam markete uğrasın, yumurta ve yoğurt bitti"}
+{"id":"travel-leave-work","group":"travel","sender":"Sibel","now":"2026-10-14T15:00:00+03:00","text":"eren 6da işten çıksın, misafir geliyor"}
+{"id":"travel-bus","group":"travel","sender":"Sibel","now":"2026-10-14T21:00:00+03:00","text":"bahar yarın 7.40 servisini kaçırmasın"}
+{"id":"travel-train","group":"travel","sender":"Eren","now":"2026-10-14T20:00:00+03:00","text":"yarın 18.10 trenine yetişmem lazım"}
+{"id":"travel-leave-home","group":"travel","sender":"Eren","now":"2026-10-14T07:00:00+03:00","text":"8.20de evden çık"}
+{"id":"call-mother","group":"call","sender":"Sibel","now":"2026-10-14T18:00:00+03:00","text":"eren bu akşam annesini arasın"}
+{"id":"call-teacher","group":"call","sender":"Sibel","now":"2026-10-14T09:00:00+03:00","text":"öğlen öğretmeni ara"}
+{"id":"call-plumber","group":"call","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"eren yarın tesisatçıyı arasın"}
+{"id":"call-grandma-weekend","group":"call","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"bahar hafta sonu anneannesini arasın"}
+{"id":"relay-dad-pickup","group":"relay","sender":"Eren","now":"2026-10-14T16:27:00+03:00","text":"4.30da bahara baban seni alabilir de"}
+{"id":"relay-sleep-early","group":"relay","sender":"Eren","now":"2026-10-14T22:56:00+03:00","text":"eşim sabah 6da kalkacak ona uyuması gerektiğini ilet"}
+{"id":"relay-not-messaging","group":"relay","sender":"Eren","now":"2026-10-14T22:48:00+03:00","text":"bahara 2 dk sonra bunun mesajlaşma uygulaması olmadığını hatırlat"}
+{"id":"relay-dinner-ready","group":"relay","sender":"Sibel","now":"2026-10-14T19:00:00+03:00","text":"erene yemek hazır de"}
+{"id":"relay-love","group":"relay","sender":"Eren","now":"2026-10-14T13:00:00+03:00","text":"sibele 3te seni seviyorum de"}
+{"id":"repeat-hourly","group":"repeat","sender":"Bahar","now":"2026-10-14T22:47:00+03:00","text":"erene her saat başı bekle de"}
+{"id":"repeat-every-minute","group":"repeat","sender":"Eren","now":"2026-10-14T22:46:00+03:00","text":"bahara 2 dakika boyunca bir dakikada bir uyu artık de"}
+{"id":"repeat-daily-medicine","group":"repeat","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"annem her gün 9da ilacını alsın"}
+{"id":"repeat-weekly-trash","group":"repeat","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"eren her salı çöpü çıkarsın"}
+{"id":"repeat-three-alarms","group":"repeat","sender":"Eren","now":"2026-10-14T21:36:00+03:00","text":"sibele bir dakika içinde 3 kere alarm gönder"}
+{"id":"chat-hello","group":"chat","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"merhaba"}
+{"id":"chat-what-can-you-do","group":"chat","sender":"Eren","now":"2026-10-14T20:00:00+03:00","text":"ne yapabiliyorsun"}
+{"id":"chat-thanks","group":"chat","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"teşekkürler çok iyi oldu"}
+{"id":"chat-complaint","group":"chat","sender":"Eren","now":"2026-10-14T20:00:00+03:00","text":"dün alarm çalmadı"}
+{"id":"vague-bread","group":"vague","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"ekmek"}
+{"id":"vague-someone","group":"vague","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"biri çöpü atsın"}
+{"id":"vague-no-time","group":"vague","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"eren lambayı değiştirsin"}
+{"id":"vague-sometime","group":"vague","sender":"Eren","now":"2026-10-14T20:00:00+03:00","text":"bir ara byd servisi ara"}
+{"id":"vague-kids","group":"vague","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"çocuklar odalarını toplasın"}
+{"id":"vague-name-only","group":"vague","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"eren"}
+{"id":"past-time-today","group":"edge","sender":"Sibel","now":"2026-10-14T21:00:00+03:00","text":"eren bugün 5te faturayı ödesin"}
+{"id":"quiet-hours-moment","group":"edge","sender":"Sibel","now":"2026-10-14T22:40:00+03:00","text":"eren 23.30da ilacını alsın"}
+{"id":"quiet-hours-deadline","group":"edge","sender":"Sibel","now":"2026-10-14T22:50:00+03:00","text":"eren gece yarısına kadar raporu göndersin"}
+{"id":"after-midnight-tomorrow","group":"edge","sender":"Sibel","now":"2026-10-15T00:40:00+03:00","text":"eren yarın sabah 9da ekmek alsın"}
+{"id":"early-morning-task","group":"edge","sender":"Sibel","now":"2026-10-14T22:00:00+03:00","text":"eren yarın 6.30da kargoyu kapıya koysun"}
+{"id":"far-future-month","group":"edge","sender":"Eren","now":"2026-10-14T20:00:00+03:00","text":"önümüzdeki ayın 9unda ziraat parasını öde"}
+{"id":"two-days-deadline","group":"edge","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"eren perşembeye kadar sigortayı yenilesin"}
+{"id":"whole-day","group":"edge","sender":"Eren","now":"2026-10-14T08:21:00+03:00","text":"gün içinde byd yi ara"}
+{"id":"very-short-window","group":"edge","sender":"Eren","now":"2026-10-14T21:46:00+03:00","text":"sibel bana 1 dakika içinde çay getirsin"}
+{"id":"window-prefers-earlier","group":"edge","sender":"Sibel","now":"2026-10-14T14:00:00+03:00","text":"eren bugün 5 ile 6 arası bankaya gitsin"}
+{"id":"long-task-bank","group":"edge","sender":"Sibel","now":"2026-10-14T09:00:00+03:00","text":"eren 17ye kadar bankadan evrakları alsın"}
+{"id":"photo-proof","group":"edge","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"eren yarın 9a kadar 2500 lira yatırsın dekontu atsın"}
+{"id":"voice-filler","group":"voice","sender":"Eren","now":"2026-10-14T20:00:00+03:00","text":"şey sibel yarın sabah hmm dokuz gibi kargoyu kapıya koysun"}
+{"id":"voice-numbers-words","group":"voice","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"eren yarın sekiz buçukta baharı okula bıraksın"}
+{"id":"voice-relative","group":"voice","sender":"Sibel","now":"2026-10-14T16:00:00+03:00","text":"eren iki saat sonra beni arasın"}
+{"id":"voice-long","group":"voice","sender":"Sibel","now":"2026-10-14T23:00:00+03:00","text":"erene görev oluştur salondaki kirli sepetlerinden birini diğerine koysun kurutma makinesindekileri o sepete koyup çıkarsın çamaşır makinesindekileri de kurutmaya atsın"}
+{"id":"self-sport","group":"self","sender":"Eren","now":"2026-10-14T20:00:00+03:00","text":"yarın sabah 8de spor yap"}
+{"id":"self-water-hourly","group":"self","sender":"Sibel","now":"2026-10-14T10:00:00+03:00","text":"bugün bol su iç"}
+{"id":"self-sleep","group":"self","sender":"Eren","now":"2026-10-14T22:30:00+03:00","text":"11de yat"}
+{"id":"self-read","group":"self","sender":"Sibel","now":"2026-10-14T20:00:00+03:00","text":"yatmadan önce 20 dakika kitap oku"}
+{"id":"self-tomorrow-vague","group":"self","sender":"Eren","now":"2026-10-14T20:00:00+03:00","text":"yarın kargoyu gönder"}

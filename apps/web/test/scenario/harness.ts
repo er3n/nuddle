@@ -11,7 +11,7 @@ import { asc } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { afterEach } from "vitest";
 import type { MissingField } from "../../src/domain/extraction";
-import type { PokePlanner } from "../../src/domain/ports";
+import type { PersonProfiler, PokePlanner } from "../../src/domain/ports";
 import { isQuiet } from "../../src/domain/quiet-hours";
 import {
   deriveReachability,
@@ -499,13 +499,14 @@ export class World {
 
   constructor(
     fixtures: Record<string, FixtureExtraction> = {},
-    options: { planner?: PokePlanner } = {},
+    options: { planner?: PokePlanner; profiler?: PersonProfiler } = {},
   ) {
     this.extractor = new FixtureExtractor(new Map(Object.entries(fixtures)));
     this.ready = startTestServer({
       clock: this.clock,
       extractor: this.extractor,
       planner: options.planner ?? null,
+      profiler: options.profiler ?? null,
       photos: this.photos,
       push: {
         send: async (message: PushMessage) => {

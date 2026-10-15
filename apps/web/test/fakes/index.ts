@@ -2,11 +2,13 @@
 // Assertions read the records.
 import { randomUUID } from "node:crypto";
 import type { PlannerInput, PlanProposal } from "../../src/domain/planner";
+import type { ProfileInput } from "../../src/domain/profile";
 import type {
   Clock,
   OtpSender,
   PhotoStorage,
   ExchangeSink,
+  PersonProfiler,
   PokePlanner,
   PushSender,
 } from "../../src/domain/ports";
@@ -123,6 +125,20 @@ export class FakeAuthGateway implements AuthGateway {
 }
 
 /** A poke planner that answers with whatever the test gives it and records what it was asked. */
+/** A profiler that answers from a function and records what it was asked (ADR 0020). */
+export class ScriptedProfiler implements PersonProfiler {
+  readonly calls: ProfileInput[] = [];
+
+  constructor(private readonly answer: (input: ProfileInput) => string | Promise<string>) {}
+
+  async profile(input: ProfileInput, onExchange?: ExchangeSink): Promise<string> {
+    this.calls.push(input);
+    const text = await this.answer(input);
+    onExchange?.({ model: "scripted", system: "", prompt: "", output: { profile: text } });
+    return text;
+  }
+}
+
 export class ScriptedPlanner implements PokePlanner {
   readonly calls: PlannerInput[] = [];
 

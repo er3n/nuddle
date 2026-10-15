@@ -56,6 +56,10 @@ const MissAfterMinutes = z
   .int()
   .min(1)
   .max(24 * 60);
+const LeadMinutes = z
+  .int()
+  .min(0)
+  .max(6 * 60);
 const EdgeType = z
   .enum(["spouse", "parent", "child", "sibling", "roommate", "other"])
   .openapi("EdgeType");
@@ -164,6 +168,8 @@ export const WriteTaskResult = z
         /** Always sent; optional so an app reading an older server's answer treats the draft as `by`. */
         timing: Timing.optional(),
         missAfterMinutes: MissAfterMinutes.nullable().optional(),
+        /** For an `at` task: minutes before the moment the person must start (NUD-70). */
+        leadMinutes: LeadMinutes.nullable().optional(),
         finishMode: FinishMode,
       })
       .nullable(),
@@ -181,6 +187,7 @@ export const CreateTaskCommand = keyed({
   /** Defaults to `by`. */
   timing: Timing.optional(),
   missAfterMinutes: MissAfterMinutes.nullable().optional(),
+  leadMinutes: LeadMinutes.nullable().optional(),
   finishMode: FinishMode,
   rawText: z.string().max(500).nullable(),
 }).openapi("CreateTaskCommand");
@@ -390,6 +397,8 @@ const SyncTask = z
     rawText: z.string().nullable(),
     status: TaskStatus,
     late: z.boolean(),
+    /** Minutes before the moment poking may start on an `at` task (NUD-70); 0 for `by`. */
+    leadMinutes: LeadMinutes.optional(),
     planVersion: z.int(),
     statusChangedAt: Instant,
     /** False once the task leaves the recipient's list (a missed card after one day). */

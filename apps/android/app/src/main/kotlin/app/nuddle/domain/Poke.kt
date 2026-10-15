@@ -31,6 +31,8 @@ data class PokeStep(
 data class LocalTaskState(
     val currentPlanVersion: Int,
     val open: Boolean,
+    /** An `at` task: the sender asked for that time, so its pokes ring inside quiet hours too (open-questions#47). */
+    val moment: Boolean = false,
 )
 
 sealed interface FireDecision {
@@ -72,7 +74,7 @@ object PokeRules {
                 FireDecision.Skip(SkipReason.TASK_CLOSED)
             }
 
-            quietHours.contains(now) -> {
+            quietHours.contains(now) && !task.moment -> {
                 FireDecision.Skip(SkipReason.QUIET_HOURS)
             }
 
