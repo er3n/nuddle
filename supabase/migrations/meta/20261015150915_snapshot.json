@@ -1,6 +1,6 @@
 {
-  "id": "3b0b4762-792c-4595-aa79-61350162e063",
-  "prevId": "044f65b7-59a6-45f3-94bb-646fc417efe8",
+  "id": "b976f404-38cf-4927-8404-2b4677d5d7cb",
+  "prevId": "adc93e99-470d-4db6-bef2-136a8c16a13b",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1326,7 +1326,9 @@
         "missed",
         "cancelled",
         "human_notified",
-        "permission_missing"
+        "permission_missing",
+        "delivered",
+        "seen"
       ]
     },
     "public.task_status": {
