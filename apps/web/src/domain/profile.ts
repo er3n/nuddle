@@ -7,10 +7,7 @@ import type { PokeProfile } from "./types";
 /** Closed tasks since the profile before it is written again. */
 export const PROFILE_EVERY_TASKS = 10;
 /** A profile older than this is rewritten once a task has closed since. */
-export const PROFILE_MAX_AGE_MS = 7 * DAY;
-/** How many closed tasks the profiler reads, and from how far back. */
-export const PROFILE_TASKS = 30;
-export const PROFILE_DAYS = 60;
+const PROFILE_MAX_AGE_MS = 7 * DAY;
 /** The closed tasks the planner still gets in full, next to the profile. */
 export const RECENT_TASKS = 8;
 /** The profile's length limit, in words, as the prompt asks for it. */

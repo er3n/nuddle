@@ -109,7 +109,7 @@ export interface CheckInput extends Pick<PlanPokesInput, "recipient" | "sender" 
 }
 
 /** A HUMAN step comes no earlier than this before the deadline (NUD-70). */
-export const HUMAN_LAST_MS = 60 * MINUTE;
+const HUMAN_LAST_MS = 60 * MINUTE;
 
 /**
  * The rules every LLM plan must follow (docs/domain.md, Poke plan). A step that breaks one is
