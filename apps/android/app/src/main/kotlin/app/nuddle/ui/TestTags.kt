@@ -73,6 +73,7 @@ object TestTags {
     const val TASK_START = "task.start"
     const val TASK_CALL = "task.call"
     const val TASK_MESSAGE = "task.message"
+    const val TASK_POKES = "task_pokes"
     const val TASK_DELIVERY = "task.delivery"
 
     fun cancelReason(name: String) = "task.cancelReason.$name"

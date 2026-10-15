@@ -8,6 +8,7 @@ import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.Reachability
 import app.nuddle.data.Delivery
 import app.nuddle.data.DoneNotes
+import app.nuddle.data.EventTypes
 import app.nuddle.data.TaskCloser
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.WriteOutcome
@@ -19,6 +20,7 @@ import app.nuddle.data.db.shownTime
 import app.nuddle.data.delivery
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.session.TaskAcks
+import app.nuddle.data.sinceLastDeadline
 import app.nuddle.domain.IdGenerator
 import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.DeadlineText
@@ -112,6 +114,8 @@ data class TaskDetailUiState(
     val delivery: Delivery? = null,
     /** "09:00": a task to me that has not rung yet starts poking then (NUD-68). */
     val pokeStartsAt: String? = null,
+    /** My task to someone: the pokes that rang so far, once one has (NUD-81). */
+    val pokesSoFar: PokesSoFar? = null,
     /** The sheet that moves the start (NUD-78); open after a tap on the start line. */
     val start: NewDeadlineUi? = null,
     /** The task's own time (the moment of an `at` task, else the deadline): the latest start allowed. */
@@ -255,6 +259,12 @@ class TaskDetailViewModel
                     start = sheets.start,
                     taskTime = Instant.fromEpochMilliseconds(task.shownTime),
                     delivery = events.delivery().takeIf { side == DetailSide.Mine },
+                    pokesSoFar =
+                        events
+                            .sinceLastDeadline()
+                            .filter { it.type == EventTypes.POKE_FIRED }
+                            .takeIf { side == DetailSide.Mine && status.open && it.isNotEmpty() }
+                            ?.let { fired -> PokesSoFar(fired.size, Instant.fromEpochMilliseconds(fired.maxOf { it.at }).hourMinute()) },
                     pokeStartsAt =
                         pokeStart(steps, task.planVersion, now)
                             ?.takeIf { side != DetailSide.Mine && status == DetailStatus.Scheduled && task.snoozedUntil == null }

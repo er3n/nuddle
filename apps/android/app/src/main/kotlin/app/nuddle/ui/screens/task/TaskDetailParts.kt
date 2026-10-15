@@ -65,6 +65,7 @@ import app.nuddle.ui.screens.home.text
 import app.nuddle.ui.screens.home.timeLabel
 import app.nuddle.ui.screens.poke.DropCallbacks
 import app.nuddle.ui.screens.poke.DropSheet
+import app.nuddle.ui.theme.DurtColors
 import app.nuddle.ui.theme.DurtTheme
 import kotlinx.datetime.LocalTime
 
@@ -197,25 +198,12 @@ internal fun StatusCard(
                         .testTag(TestTags.TASK_START),
             )
         }
-        // Nothing while only sent: the phone may be fine and the server just has not said so yet.
-        state.delivery
-            ?.takeIf { it != Delivery.Sent && (state.status == DetailStatus.Scheduled || state.status == DetailStatus.ReRequested) }
-            ?.let {
-                Text(
-                    stringResource(it.sentence()),
-                    style = DurtTheme.type.bodySmallStrong,
-                    color = if (it == Delivery.Seen) colors.success else colors.textSecondary,
-                    modifier = Modifier.testTag(TestTags.TASK_DELIVERY),
-                )
-            }
-        state.snoozedUntil?.takeIf { state.status == DetailStatus.Scheduled }?.let {
-            Text(stringResource(R.string.next_up_snoozed, it), style = DurtTheme.type.bodySmallStrong, color = colors.warning)
-        }
+        StatusNotes(state)
     }
 }
 
 /** The sender's tick in words (NUD-68); only sent has no line. */
-private fun Delivery.sentence(): Int =
+internal fun Delivery.sentence(): Int =
     when (this) {
         Delivery.Sent, Delivery.Reached -> R.string.task_delivery_reached
         Delivery.Seen -> R.string.task_delivery_seen

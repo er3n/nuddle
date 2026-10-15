@@ -35,6 +35,7 @@ import app.nuddle.ui.screens.task.DetailAction
 import app.nuddle.ui.screens.task.DetailSide
 import app.nuddle.ui.screens.task.DetailStatus
 import app.nuddle.ui.screens.task.EditRow
+import app.nuddle.ui.screens.task.PokesSoFar
 import app.nuddle.ui.screens.task.TaskDetailViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -285,6 +286,34 @@ class TaskDetailViewModelTest {
             vm.answers.onRemoveMissed()
             assertEquals(listOf(Cast.TASK_ID), tasks.didItLater)
             assertEquals(listOf(Cast.TASK_ID), tasks.removedMissed)
+        }
+
+    @Test
+    fun `my task to Sibel says how many pokes rang and when the last one was (NUD-81)`() =
+        runTest(main.dispatcher) {
+            open(toSibel)
+            assertEquals(null, vm.state.value!!.pokesSoFar)
+            events.upsert(
+                listOf(
+                    TaskEventEntity(
+                        "p1",
+                        Cast.TASK_ID,
+                        null,
+                        "poke_fired",
+                        "{}",
+                        Instant.parse("2026-10-12T09:00:00+03:00").toEpochMilliseconds(),
+                    ),
+                    TaskEventEntity(
+                        "p2",
+                        Cast.TASK_ID,
+                        null,
+                        "poke_fired",
+                        "{}",
+                        Instant.parse("2026-10-12T09:10:00+03:00").toEpochMilliseconds(),
+                    ),
+                ),
+            )
+            assertEquals(PokesSoFar(2, "09:10"), vm.state.value!!.pokesSoFar)
         }
 
     @Test

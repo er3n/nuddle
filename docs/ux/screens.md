@@ -49,7 +49,7 @@ Changed on 2026-10-15 after the phone test: long titles wrapped into the buttons
 | To me | Kaçırıldı | Sonradan yaptım, Ara, Listeden kaldır |
 | To self | Kurulu | Şimdiden bitti (Bitti, çek), Görevi iptal et; Son zaman and Nasıl bitsin can be edited (NUD-47) |
 | To self | Kaçırıldı | Sonradan yaptım, Listeden kaldır |
-| Mine to someone | Kurulu, Tekrar istendi | 7c as before: rows can be edited, Görevi iptal et (7d) |
+| Mine to someone | Kurulu, Tekrar istendi | 7c as before: rows can be edited, Görevi iptal et (7d). Once a poke rang, a past-tense line under the sentence: "2 kez dürttüm, en son 09:10." (NUD-81); never the plan ahead |
 | Mine to someone | Bırakıldı | The 5d message; Yeni zaman ver, Ben hallederim |
 | Mine to someone | Kaçırıldı | The 5d message; Süreyi uzat, İptal et (no 7d sheet) |
 
