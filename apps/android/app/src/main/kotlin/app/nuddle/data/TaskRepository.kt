@@ -83,6 +83,8 @@ data class TaskDraft(
     val moment: Boolean = false,
     /** For an `at` task: how long after the moment it is missed, as the extraction judged. */
     val missAfterMinutes: Int? = null,
+    /** For an `at` task: how long before the moment the pokes begin, as the extraction judged (NUD-70). */
+    val leadMinutes: Int? = null,
     /** A repeating task's rule (ADR 0021); the deadline is its first occurrence. */
     val repeat: RepeatRule? = null,
 )
@@ -236,6 +238,7 @@ class ApiTaskRepository
                                 deadline = draft.deadline?.let { runCatching { Instant.parse(it) }.getOrNull() },
                                 moment = draft.timing == Timing.AT,
                                 missAfterMinutes = draft.missAfterMinutes,
+                                leadMinutes = draft.leadMinutes,
                                 repeat = draft.repeat,
                             )
                         },

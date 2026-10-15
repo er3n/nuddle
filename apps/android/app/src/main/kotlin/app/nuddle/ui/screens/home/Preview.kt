@@ -8,6 +8,7 @@ import app.nuddle.data.WriteOutcome
 import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.domain.QuietHours
+import app.nuddle.ui.screens.hourMinute
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
@@ -17,6 +18,7 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import java.util.Locale
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 // Parts of the day as the extraction prompt reads them (apps/web/src/infra/llm): akşam 19:00, sabah 09:00.
@@ -65,6 +67,8 @@ data class PreviewUi(
     val repeat: RepeatUi? = null,
     /** For a moment ([knownDeadline] `moment`): how long after it the task is missed, from the extraction. */
     val missAfterMinutes: Int? = null,
+    /** "17:10": when the pokes begin for a moment with a lead (NUD-82); null for a deadline or no lead. */
+    val firstPokeAt: String? = null,
     /** 4a, a task to someone else: "Fotoğrafla, sen onayla" is chosen; [photoSuggested] when the text was about money. */
     val photo: Boolean = false,
     val photoSuggested: Boolean = false,
@@ -175,6 +179,17 @@ fun undoFor(
         to = to,
     )
 
+/** "17:10" for a 17:30 moment with a 20 minute lead (NUD-82); null for a deadline or without a lead. */
+internal fun firstPokeAt(
+    moment: Instant,
+    isMoment: Boolean,
+    leadMinutes: Int?,
+    timeZone: TimeZone,
+): String? {
+    val lead = leadMinutes?.takeIf { isMoment && it > 0 } ?: return null
+    return (moment - lead.minutes).hourMinute(timeZone)
+}
+
 private val TURKISH = Locale.forLanguageTag("tr")
 
 private fun String.folded() = trim().lowercase(TURKISH)
@@ -228,6 +243,7 @@ fun previewFor(
                 recipient = null,
                 knownDeadline = known?.let { deadlineText(it, now, quiet.timeZone, draft.moment) },
                 missAfterMinutes = draft.missAfterMinutes,
+                firstPokeAt = known?.let { firstPokeAt(it, draft.moment, draft.leadMinutes, quiet.timeZone) },
             ) to known
         }
 

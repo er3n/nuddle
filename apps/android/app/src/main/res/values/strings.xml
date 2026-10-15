@@ -677,6 +677,8 @@
         <item quantity="other">%1$d saat</item>
     </plurals>
     <string name="separator_dot">%1$s · %2$s</string>
+    <!-- NUD-82: after the time of a moment task in the preview, when the pokes begin earlier. -->
+    <string name="preview_first_poke">ilk hatırlatma %1$s</string>
     <string name="paragraphs">%1$s\n\n%2$s</string>
 
     <!-- Notification channels (docs/ux/platform.md) -->
