@@ -112,7 +112,7 @@ class SetupViewModel
                     settingsCount = settingsCount,
                     notificationsGranted = granted.notifications,
                     steps =
-                        SetupStep.entries.map { step ->
+                        granted.steps.map { step ->
                             PermissionStepUi(step, granted = granted.has(step), skipped = step in skipped)
                         },
                     active = active,

@@ -14,7 +14,7 @@ Min SDK 26, target the current SDK (35+). The app is declared to Play as an alar
 | Boot | `RECEIVE_BOOT_COMPLETED` | Automatic | Alarms lost on reboot |
 
 - No contacts permission: the invitee is picked with `ActivityResultContracts.PickContact` (single contact).
-- No battery optimization exemption in setup. On stock Android `setAlarmClock` is not deferred by Doze.
+- Battery optimization exemption (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, the one-tap system dialog) is setup step 4 only on phones whose manufacturer puts sleeping apps to sleep (Samsung, Xiaomi, Huawei, Oppo, Vivo and their sub-brands; `SetupRules.needsBatteryStep`). Stock Android keeps three steps: `setAlarmClock` is not deferred by Doze there. Decided 2026-10-15 after a Samsung put the app into deep sleep (open-questions #49, NUD-75).
 - Play policy for `USE_EXACT_ALARM` and `USE_FULL_SCREEN_INTENT` is still to be confirmed; submit the first closed test build early.
 
 ## Alarms and pokes

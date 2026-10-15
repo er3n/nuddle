@@ -203,13 +203,14 @@ private fun Permissions(
     onFix: (SetupStep) -> Unit,
 ) {
     SettingsGroup(stringResource(R.string.profile_permissions)) {
-        SetupStep.entries.forEachIndexed { i, step ->
+        granted.steps.forEachIndexed { i, step ->
             if (i > 0) GroupDivider()
             val label =
                 when (step) {
                     SetupStep.NOTIFICATIONS -> R.string.profile_permission_notifications
                     SetupStep.EXACT_ALARM -> R.string.profile_permission_alarms
                     SetupStep.FULL_SCREEN -> R.string.profile_permission_full_screen
+                    SetupStep.BATTERY -> R.string.profile_permission_battery
                 }
             val tag = Modifier.testTag(TestTags.profilePermission(step.name))
             if (granted.has(step)) {

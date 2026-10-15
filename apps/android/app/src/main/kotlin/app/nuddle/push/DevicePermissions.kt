@@ -11,8 +11,10 @@ import app.nuddle.alarm.NotificationChannels
 import app.nuddle.api.model.PermissionSummary
 import app.nuddle.api.model.PermissionSummaryChannels
 import app.nuddle.data.BatteryOptimization
+import app.nuddle.data.DeviceBrand
 import app.nuddle.domain.GrantedPermissions
 import app.nuddle.domain.PermissionReader
+import app.nuddle.domain.SetupRules
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
@@ -24,6 +26,7 @@ class DevicePermissions
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
+        private val brand: DeviceBrand,
     ) : FullScreenPermission,
         PermissionReader,
         BatteryOptimization {
@@ -43,6 +46,8 @@ class DevicePermissions
                 notifications = NotificationManagerCompat.from(context).areNotificationsEnabled(),
                 exactAlarm = exactAlarm(),
                 fullScreen = granted(),
+                // Only where the phone puts apps to sleep; stock Android keeps three steps (NUD-75).
+                battery = if (SetupRules.needsBatteryStep(brand.manufacturer())) ignored() else null,
             )
 
         fun summary(): PermissionSummary {

@@ -1,6 +1,7 @@
 package app.nuddle.ui.nav
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -102,6 +103,9 @@ private fun canAskForNotifications(
     askedOnce: Boolean,
 ): Boolean = !askedOnce || activity.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
 
+// Reason: an alarm app whose core function is ringing on time is the use case Play allows this for
+// (docs/ux/platform.md, Permissions; open-questions#49). The rule flags the policy, not a defect.
+@SuppressLint("BatteryLife")
 internal fun settingsIntent(
     activity: Activity,
     step: SetupStep,
@@ -114,6 +118,11 @@ internal fun settingsIntent(
 
         step == SetupStep.FULL_SCREEN && Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
             Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, app)
+        }
+
+        // The one-tap system dialog "always run in the background" (NUD-75, open-questions#49).
+        step == SetupStep.BATTERY -> {
+            Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, app)
         }
 
         // Notifications, and the steps on versions where they have no page of their own (granted there anyway).
