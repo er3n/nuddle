@@ -62,6 +62,13 @@ fun TaskDetailRoute(
                         onSave = viewModel.newDeadline::onSave,
                         onDismiss = viewModel.newDeadline::onDismiss,
                     ),
+                onStart = { current.taskTime?.let(viewModel.start::onOpen) },
+                start =
+                    NewDeadlineCallbacks(
+                        onTimePicked = viewModel.start::onTimePicked,
+                        onSave = viewModel.start::onSave,
+                        onDismiss = viewModel.start::onDismiss,
+                    ),
             ),
     )
 }

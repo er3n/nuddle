@@ -50,7 +50,7 @@ const AT_HUMAN_AFTER_MS = 30 * MINUTE;
 
 export interface PlanPokesInput {
   task: Pick<Task, "deadline" | "senderId" | "recipientId"> &
-    Partial<Pick<Task, "timing" | "remindAt" | "leadMinutes">>;
+    Partial<Pick<Task, "timing" | "remindAt" | "leadMinutes" | "pokeFrom">>;
   recipient: Pick<Person, "quietHours" | "useConnectionsForMyTasks">;
   /** The human channel in the MVP is the sender (docs/product.md, Human channel). */
   sender: Pick<Person, "notifyMeForOthersTasks">;
@@ -73,12 +73,15 @@ function pokeWindow(
   deadline: Date,
   recipient: Pick<Person, "quietHours">,
   now: Date,
+  /** The recipient's earliest poke time (NUD-78): the window never starts before it. */
+  pokeFrom: Date | null = null,
 ): { start: Date; end: Date } | null {
   let end = pokeWindowEnd(deadline, recipient);
+  const floor = Math.max(now.getTime(), pokeFrom?.getTime() ?? 0);
   // Each pass either settles the window or moves its end to an earlier quiet start.
   for (let pass = 0; pass < 3; pass++) {
-    if (end.getTime() <= now.getTime()) return null;
-    const start = new Date(Math.max(now.getTime(), end.getTime() - POKE_WINDOW_MS));
+    if (end.getTime() <= floor) return null;
+    const start = new Date(Math.max(floor, end.getTime() - POKE_WINDOW_MS));
     const quiet = latestQuietOverlap(start, end, recipient.quietHours);
     if (!quiet) return { start, end };
     if (end.getTime() - quiet.end.getTime() >= MIN_WINDOW_MS) return { start: quiet.end, end };
@@ -134,7 +137,7 @@ function planAt(input: PlanPokesInput, remindAt: Date): PokeStep[] {
 export function planPokes(input: PlanPokesInput): PokeStep[] {
   const { task, recipient, now } = input;
   if (task.timing === "at" && task.remindAt) return planAt(input, task.remindAt);
-  const window = pokeWindow(task.deadline, recipient, now);
+  const window = pokeWindow(task.deadline, recipient, now, task.pokeFrom ?? null);
   if (!window) return [];
   const { start, end } = window;
 

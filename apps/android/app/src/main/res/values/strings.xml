@@ -343,6 +343,11 @@
     <string name="task_delivery_seen">✓✓ Gördü.</string>
     <!-- NUD-68: when poking starts on a task to me; the ladder after it stays hidden. -->
     <string name="task_poke_starts">Saat %1$s olunca hatırlatırım, yapmazsan biraz ısrar ederim.</string>
+    <string name="cd_task_start">Hatırlatma saatini değiştir</string>
+    <string name="start_title">Ne zaman hatırlatayım?</string>
+    <string name="start_body">Son zaman değişmez; dürtmeler seçtiğin saatte başlar.</string>
+    <string name="start_too_late_title">Bu saat çok geç</string>
+    <string name="start_too_late_body">Görevin zamanından önce bir saat seç.</string>
     <string name="photo_waiting">Fotoğrafı %1$s görüyor. Onaylayınca görev kapanır.</string>
     <string name="photo_waiting_sent">Gönderildi · %1$s · Dürtme durdu</string>
     <string name="photo_waiting_sending">Gönderiliyor · Dürtme durdu</string>

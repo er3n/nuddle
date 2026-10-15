@@ -15,6 +15,7 @@ import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.PokeStepDao
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEventDao
+import app.nuddle.data.db.shownTime
 import app.nuddle.data.delivery
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.session.TaskAcks
@@ -111,6 +112,10 @@ data class TaskDetailUiState(
     val delivery: Delivery? = null,
     /** "09:00": a task to me that has not rung yet starts poking then (NUD-68). */
     val pokeStartsAt: String? = null,
+    /** The sheet that moves the start (NUD-78); open after a tap on the start line. */
+    val start: NewDeadlineUi? = null,
+    /** The task's own time (the moment of an `at` task, else the deadline): the latest start allowed. */
+    val taskTime: Instant? = null,
     /** A repeating task's rule (ADR 0021): the "Tekrar" row; null for a one-off. */
     val repeat: RepeatUi? = null,
 ) {
@@ -166,15 +171,19 @@ class TaskDetailViewModel
         /** Yeni zaman ver and Süreyi uzat (5d). */
         val newDeadline = NewDeadlineHolder(taskId, tasks, ids, clock, timeZone, viewModelScope)
 
+        /** The recipient moves when the pokes begin (NUD-78). */
+        val start = StartHolder(taskId, tasks, ids, clock, timeZone, viewModelScope)
+
         /** The task is gone from my lists: answered here, or closed elsewhere (done, cancelled by sync). */
         val close: Flow<Unit> = closeChannel.receiveAsFlow()
 
-        private val sheets = combine(local, drop.open, newDeadline.open, ::Sheets)
+        private val sheets = combine(local, drop.open, newDeadline.open, start.open, ::Sheets)
 
         private data class Sheets(
             val local: Local,
             val drop: DropUi?,
             val newDeadline: NewDeadlineUi?,
+            val start: NewDeadlineUi?,
         )
 
         val state: StateFlow<TaskDetailUiState?> =
@@ -243,6 +252,8 @@ class TaskDetailViewModel
                     saveFailed = local.saveFailed,
                     drop = sheets.drop,
                     newDeadline = sheets.newDeadline,
+                    start = sheets.start,
+                    taskTime = Instant.fromEpochMilliseconds(task.shownTime),
                     delivery = events.delivery().takeIf { side == DetailSide.Mine },
                     pokeStartsAt =
                         pokeStart(steps, task.planVersion, now)

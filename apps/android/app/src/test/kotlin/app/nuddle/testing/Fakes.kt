@@ -378,6 +378,19 @@ class FakeTaskRepository : TaskRepository {
         return newDeadlineOutcome
     }
 
+    /** Task and start of every moved start (NUD-78). */
+    val starts = mutableListOf<Pair<String, Instant>>()
+    var startOutcome: WriteOutcome = WriteOutcome.Created(Cast.TASK_ID)
+
+    override suspend fun setStart(
+        taskId: String,
+        startAt: Instant,
+        idempotencyKey: String,
+    ): WriteOutcome {
+        starts += taskId to startAt
+        return startOutcome
+    }
+
     /** What [done] answers: the poke number that caught the person. */
     var caughtAt: Int? = null
 

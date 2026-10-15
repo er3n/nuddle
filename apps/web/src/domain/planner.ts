@@ -103,7 +103,7 @@ const rank: Record<DeviceLevel, number> = { SILENT: 0, SOUND: 1, FULL_SCREEN: 2 
 
 export interface CheckInput extends Pick<PlanPokesInput, "recipient" | "sender" | "senderEdge"> {
   task: Pick<Task, "deadline" | "senderId" | "recipientId" | "timing" | "remindAt"> &
-    Partial<Pick<Task, "leadMinutes">>;
+    Partial<Pick<Task, "leadMinutes" | "pokeFrom">>;
   notBefore: Date;
   floor: DeviceLevel;
 }
@@ -125,7 +125,13 @@ export function checkPlan(proposal: PlanProposal, input: CheckInput): PokeStep[]
     task.timing === "at" && task.remindAt
       ? pokeStartOf({ remindAt: task.remindAt, leadMinutes: task.leadMinutes ?? 0 })
       : null;
-  const earliest = Math.max(input.notBefore.getTime(), start?.getTime() ?? 0);
+  // The recipient's own earliest time on a `by` task (NUD-78); quiet hours still hold there.
+  const pokeFrom = task.timing === "at" ? null : (task.pokeFrom ?? null);
+  const earliest = Math.max(
+    input.notBefore.getTime(),
+    start?.getTime() ?? 0,
+    pokeFrom?.getTime() ?? 0,
+  );
   const quietApplies = (at: number) => start === null || at < start.getTime();
   const kept: { at: Date; level: PokeLevel }[] = [];
   let devices = 0;

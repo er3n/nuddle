@@ -42,6 +42,7 @@ class TaskBuilder {
     timing: "by",
     remindAt: null,
     leadMinutes: 0,
+    pokeFrom: null,
     finishMode: "photo",
     rawText: "eren yarın 9dan önce temizlikçi için 1000 çeksin",
     status: "SCHEDULED",

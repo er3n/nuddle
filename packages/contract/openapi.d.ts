@@ -289,6 +289,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/commands/set_start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recipient: when the pokes may begin, the deadline unchanged (NUD-78) */
+        post: operations["setStart"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/commands/done": {
         parameters: {
             query?: never;
@@ -687,7 +704,7 @@ export interface components {
                 /** @example DRT-4001 */
                 code: string;
                 /** @enum {string} */
-                name: "validation_failed" | "unauthorized" | "not_registered" | "not_found" | "idempotency_key_reused" | "invalid_otp" | "forbidden" | "otp_locked" | "wrong_status" | "not_sender" | "not_recipient" | "wrong_finish_mode" | "deadline_not_in_future" | "not_connected" | "recipient_unavailable" | "snooze_not_allowed" | "invite_not_open" | "wrong_invitee" | "self_invite" | "not_inviter" | "internal" | "upstream_failed";
+                name: "validation_failed" | "unauthorized" | "not_registered" | "not_found" | "idempotency_key_reused" | "invalid_otp" | "forbidden" | "otp_locked" | "wrong_status" | "not_sender" | "not_recipient" | "wrong_finish_mode" | "deadline_not_in_future" | "not_connected" | "recipient_unavailable" | "snooze_not_allowed" | "start_not_in_window" | "invite_not_open" | "wrong_invitee" | "self_invite" | "not_inviter" | "internal" | "upstream_failed";
                 message: string;
                 requestId: string;
                 details?: {
@@ -848,6 +865,12 @@ export interface components {
             status: components["schemas"]["TaskStatus"];
             late: boolean;
             leadMinutes?: number;
+            /**
+             * Format: date-time
+             * @description ISO 8601 with offset
+             * @example 2026-10-12T09:00:00+03:00
+             */
+            pokeFrom?: string | null;
             planVersion: number;
             /**
              * Format: date-time
@@ -910,7 +933,7 @@ export interface components {
             at: string;
         };
         /** @enum {string} */
-        TaskEventType: "created" | "edited" | "plan_generated" | "poke_fired" | "poke_lost" | "snoozed" | "done" | "photo_sent" | "approved" | "re_requested" | "dropped" | "missed" | "cancelled" | "human_notified" | "permission_missing" | "delivered" | "seen";
+        TaskEventType: "created" | "edited" | "plan_generated" | "poke_fired" | "poke_lost" | "snoozed" | "done" | "photo_sent" | "approved" | "re_requested" | "dropped" | "missed" | "cancelled" | "human_notified" | "permission_missing" | "delivered" | "seen" | "start_set";
         SyncPlan: {
             /** Format: uuid */
             taskId: string;
@@ -1098,6 +1121,21 @@ export interface components {
             /** Format: uuid */
             taskId: string;
             seen: boolean;
+        };
+        SetStartCommand: {
+            /**
+             * Format: uuid
+             * @description Client generated UUIDv7; a replay returns the first result (ADR 0006)
+             */
+            idempotencyKey: string;
+            /** Format: uuid */
+            taskId: string;
+            /**
+             * Format: date-time
+             * @description ISO 8601 with offset
+             * @example 2026-10-12T09:00:00+03:00
+             */
+            startAt: string;
         };
         DoneCommand: {
             /**
@@ -2299,6 +2337,84 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AcknowledgeCommand"];
+            };
+        };
+        responses: {
+            /** @description The result; a replay with the same key returns it again */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskCommandResult"];
+                };
+            };
+            /** @description Error with a DRT code */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    setStart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetStartCommand"];
             };
         };
         responses: {

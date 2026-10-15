@@ -28,7 +28,12 @@ data class NewDeadlineUi(
     val picked: DeadlineChoice? = null,
     val saving: Boolean = false,
     val failed: Boolean = false,
-)
+    /** The latest time allowed (the task's own time) when the sheet moves the start (NUD-78); null for a deadline. */
+    val limit: Instant? = null,
+) {
+    /** A picked time past the limit cannot be saved. */
+    val pickedTooLate: Boolean get() = limit != null && picked != null && picked.at > limit
+}
 
 data class NewDeadlineCallbacks(
     val onChoice: (DeadlineChoice) -> Unit = {},
@@ -44,7 +49,7 @@ private fun saveAction(
 ) = SheetAction(
     text = stringResource(R.string.action_save),
     onClick = callbacks.onSave,
-    enabled = state.picked != null,
+    enabled = state.picked != null && !state.pickedTooLate,
     loading = state.saving,
 )
 
@@ -52,10 +57,12 @@ private fun saveAction(
 fun NewDeadlineSheet(
     state: NewDeadlineUi,
     callbacks: NewDeadlineCallbacks,
+    title: String = stringResource(R.string.preview_question_deadline),
+    description: String = stringResource(R.string.issue_new_time_body, state.toName),
 ) {
     DurtBottomSheet(
-        title = stringResource(R.string.preview_question_deadline),
-        description = stringResource(R.string.issue_new_time_body, state.toName),
+        title = title,
+        description = description,
         onDismiss = callbacks.onDismiss,
         primary = saveAction(state, callbacks),
     ) { NewDeadlineBody(state, callbacks) }
@@ -67,6 +74,7 @@ private fun ColumnScope.NewDeadlineBody(
     callbacks: NewDeadlineCallbacks,
 ) {
     DeadlineChips(state.choices, state.picked, callbacks.onChoice, callbacks.onTimePicked)
+    if (state.pickedTooLate) InlineAlert(stringResource(R.string.start_too_late_title), stringResource(R.string.start_too_late_body))
     if (state.failed) InlineAlert(stringResource(R.string.task_edit_failed_title), stringResource(R.string.invite_failed_body))
 }
 
