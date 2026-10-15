@@ -161,13 +161,19 @@ class PokeActions
         suspend fun cantToday(
             key: AlarmKey,
             note: String? = null,
+        ) = cantToday(key.taskId, note)
+
+        /** Also "Bugün yapamayacağım" in the task detail. */
+        override suspend fun cantToday(
+            taskId: String,
+            note: String?,
         ) {
-            close(key.taskId, TaskStatus.DROPPED)
+            close(taskId, TaskStatus.DROPPED)
             val id = ids.next()
             outbox.enqueue(
                 "cant_today",
                 id,
-                CantTodayCommand(idempotencyKey = id, taskId = key.taskId, note = note?.trim()?.takeIf { it.isNotEmpty() }),
+                CantTodayCommand(idempotencyKey = id, taskId = taskId, note = note?.trim()?.takeIf { it.isNotEmpty() }),
                 CantTodayCommand.serializer(),
             )
         }

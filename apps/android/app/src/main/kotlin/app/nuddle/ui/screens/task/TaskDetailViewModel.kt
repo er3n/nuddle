@@ -6,20 +6,28 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.Reachability
-import app.nuddle.api.model.TaskStatus
+import app.nuddle.data.DoneNotes
+import app.nuddle.data.TaskCloser
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.WriteOutcome
 import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.TaskDao
+import app.nuddle.data.db.TaskEventDao
 import app.nuddle.data.session.SessionStore
 import app.nuddle.domain.IdGenerator
 import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.DeadlineText
+import app.nuddle.ui.screens.home.FromUi
 import app.nuddle.ui.screens.home.HOUR_MINUTE
-import app.nuddle.ui.screens.home.deadlineText
+import app.nuddle.ui.screens.home.MissedUi
+import app.nuddle.ui.screens.home.NewDeadlineUi
+import app.nuddle.ui.screens.home.SentIssueUi
+import app.nuddle.ui.screens.home.issues
 import app.nuddle.ui.screens.home.nextOccurrence
 import app.nuddle.ui.screens.home.quickDeadlines
 import app.nuddle.ui.screens.home.timeText
+import app.nuddle.ui.screens.home.writtenText
+import app.nuddle.ui.screens.poke.DropUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -35,6 +43,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
+import kotlinx.datetime.toLocalDateTime
 import javax.inject.Inject
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -47,19 +56,37 @@ enum class CancelReason { HandledIt, NotNeeded }
 /** The rows of 7c that can be changed; Kime and Detay stay as written (open-questions#34). */
 enum class EditRow { Deadline, Finish }
 
-/** 7c: my task to someone else as I see it. The plan is hidden; only how far pokes reach them shows. */
+/**
+ * The detail of an open task from either side (docs/ux/screens.md, Task detail; 7c for my task to someone else). The
+ * plan is hidden; only how far pokes reach the recipient shows.
+ */
 @Immutable
 data class TaskDetailUiState(
     val myName: String,
     val title: String,
     val rawText: String?,
+    /** The recipient of my task; empty otherwise. */
     val toName: String,
     val reachability: Reachability,
-    /** A task to self, opened from the next-up card (NUD-47): no recipient to tell or reach. */
+    /** A task to self, opened from home (NUD-47): no recipient to tell or reach. */
     val self: Boolean = false,
     val deadline: DeadlineText,
     val detail: String?,
     val photo: Boolean,
+    val side: DetailSide = if (self) DetailSide.ToSelf else DetailSide.Mine,
+    val status: DetailStatus = DetailStatus.Scheduled,
+    /** Who wrote a task to me, when, and their number for Ara and Mesaj (4c). */
+    val from: FromUi? = null,
+    /** "22:37": a snooze I chose is on until then (NUD-63). */
+    val snoozedUntil: String? = null,
+    /** The sender's note with Tekrar iste (4g). */
+    val reRequestNote: String? = null,
+    /** "08:24": when my photo went out (4e). */
+    val photoSentAt: String? = null,
+    /** A missed task to me or to self (7e). */
+    val missed: MissedUi? = null,
+    /** My task to someone that they dropped or missed (5d). */
+    val sentIssue: SentIssueUi? = null,
     /** 7d is open. */
     val cancelling: Boolean = false,
     val reason: CancelReason? = null,
@@ -70,7 +97,14 @@ data class TaskDetailUiState(
     val pickedPhoto: Boolean = photo,
     val saving: Boolean = false,
     val saveFailed: Boolean = false,
-)
+    /** 7f, while open. */
+    val drop: DropUi? = null,
+    /** The 5d deadline sheet, while open. */
+    val newDeadline: NewDeadlineUi? = null,
+) {
+    val actions: List<DetailAction> get() = actionsFor(side, status, photo)
+    val editable: Boolean get() = editable(side, status)
+}
 
 @HiltViewModel
 class TaskDetailViewModel
@@ -79,13 +113,16 @@ class TaskDetailViewModel
         savedState: SavedStateHandle,
         taskDao: TaskDao,
         connectionDao: ConnectionDao,
+        eventDao: TaskEventDao,
         sessions: SessionStore,
+        doneNotes: DoneNotes,
+        closer: TaskCloser,
         private val tasks: TaskRepository,
         private val ids: IdGenerator,
         private val clock: Clock,
         private val timeZone: TimeZone,
     ) : ViewModel() {
-        private val taskId: String = checkNotNull(savedState[ARG_TASK])
+        val taskId: String = checkNotNull(savedState[ARG_TASK])
 
         private data class Local(
             val cancelling: Boolean = false,
@@ -103,42 +140,93 @@ class TaskDetailViewModel
         private val local = MutableStateFlow(Local())
         private val closeChannel = Channel<Unit>(Channel.CONFLATED)
 
-        /** The task is gone: cancelled here, or closed elsewhere (done, cancelled by sync). */
+        /** The one-tap answers: Şimdiden bitti, Sonradan yaptım, Ben hallederim and the like. */
+        val answers = TaskAnswers(taskId, tasks, closer, doneNotes, viewModelScope)
+
+        /** 7f over the detail. */
+        val drop = DropSheetHolder()
+
+        /** Yeni zaman ver and Süreyi uzat (5d). */
+        val newDeadline = NewDeadlineHolder(taskId, tasks, ids, clock, timeZone, viewModelScope)
+
+        /** The task is gone from my lists: answered here, or closed elsewhere (done, cancelled by sync). */
         val close: Flow<Unit> = closeChannel.receiveAsFlow()
+
+        private val sheets = combine(local, drop.open, newDeadline.open, ::Sheets)
+
+        private data class Sheets(
+            val local: Local,
+            val drop: DropUi?,
+            val newDeadline: NewDeadlineUi?,
+        )
 
         val state: StateFlow<TaskDetailUiState?> =
             combine(
                 taskDao.observeAll().map { all -> all.firstOrNull { it.id == taskId } },
                 connectionDao.observeAll(),
-                sessions.displayName,
-                local,
-            ) { task, connections, myName, local ->
-                // Still going: to do, or asked again for a photo (4g). A photo waiting is answered on 4f.
-                if (task == null || task.status !in setOf(TaskStatus.SCHEDULED.value, TaskStatus.REJECTED.value)) {
+                eventDao.observeAll().map { all -> all.filter { it.taskId == taskId } },
+                combine(sessions.session.map { it?.personId }, sessions.displayName, ::Pair),
+                sheets,
+            ) { task, connections, events, (me, myName), sheets ->
+                val shown = if (task == null || me == null) null else detailOf(task, me)
+                if (task == null || me == null || shown == null) {
                     closeChannel.trySend(Unit)
                     return@combine null
                 }
-                val to = connections.firstOrNull { it.personId == task.recipientId }
+                val (side, status) = shown
+                val now = clock.now()
+                val byId = connections.associateBy { it.personId }
+                val to = byId[task.recipientId]
+                val sender = byId[task.senderId]?.takeIf { side == DetailSide.ToMe }
+                val issues = issues(listOf(task), mapOf(taskId to events), me, byId, now, timeZone)
+                val local = sheets.local
                 TaskDetailUiState(
                     myName = myName.orEmpty(),
                     title = task.title,
                     rawText = task.rawText,
-                    toName = to?.displayName.orEmpty(),
+                    toName =
+                        to
+                            ?.displayName
+                            .orEmpty()
+                            .takeIf { side == DetailSide.Mine }
+                            .orEmpty(),
                     reachability = to?.reachability?.let { Reachability.decode(it) } ?: Reachability.NONE,
-                    self = task.senderId == task.recipientId,
-                    deadline = task.timeText(clock.now(), timeZone),
+                    self = side == DetailSide.ToSelf,
+                    deadline = task.timeText(now, timeZone),
                     detail = task.detail,
                     photo = task.finishMode == FinishMode.PHOTO.value,
+                    side = side,
+                    status = status,
+                    from =
+                        sender?.let {
+                            FromUi(it.displayName, writtenText(Instant.fromEpochMilliseconds(task.createdAt), now, timeZone), it.phone)
+                        },
+                    snoozedUntil =
+                        task.snoozedUntil
+                            ?.let(Instant::fromEpochMilliseconds)
+                            ?.takeIf { it > now }
+                            ?.hourMinute(),
+                    reRequestNote = task.reRequestNote,
+                    photoSentAt = task.photoSentAt?.let(Instant::fromEpochMilliseconds)?.hourMinute(),
+                    missed = issues.missed.firstOrNull(),
+                    sentIssue = issues.sent.firstOrNull(),
                     cancelling = local.cancelling,
                     reason = local.reason,
                     editing = local.editing,
-                    deadlineChoices = quickDeadlines(clock.now(), timeZone),
+                    deadlineChoices = quickDeadlines(now, timeZone),
                     pickedDeadline = local.pickedDeadline,
                     pickedPhoto = local.pickedPhoto ?: (task.finishMode == FinishMode.PHOTO.value),
                     saving = local.saving,
                     saveFailed = local.saveFailed,
+                    drop = sheets.drop,
+                    newDeadline = sheets.newDeadline,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
+
+        private fun Instant.hourMinute(): String =
+            toLocalDateTime(timeZone)
+                .time
+                .format(HOUR_MINUTE)
 
         fun onCancel() {
             local.update { it.copy(cancelling = true) }

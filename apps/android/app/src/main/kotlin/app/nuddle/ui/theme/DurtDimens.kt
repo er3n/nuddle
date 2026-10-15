@@ -51,6 +51,10 @@ data class DurtDimens(
     val switchHeight: Dp = 32.dp,
     val switchThumb: Dp = 26.dp,
     val pillHeight: Dp = 24.dp,
+    // size.tabs: home tabs (NUD-67)
+    val tabHeight: Dp = 40.dp,
+    val tabPadding: Dp = 4.dp,
+    val tabSwipe: Dp = 48.dp,
     val pillPaddingHorizontal: Dp = 10.dp,
     val sheetHandleWidth: Dp = 40.dp,
     val sheetHandleHeight: Dp = 5.dp,

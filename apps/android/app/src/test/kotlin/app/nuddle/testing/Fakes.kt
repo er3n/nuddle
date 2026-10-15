@@ -13,6 +13,7 @@ import app.nuddle.data.InvitePreviews
 import app.nuddle.data.InviteRepository
 import app.nuddle.data.SendOtpOutcome
 import app.nuddle.data.SessionStarter
+import app.nuddle.data.TaskCloser
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.VerifyOutcome
 import app.nuddle.data.WriteOutcome
@@ -235,6 +236,30 @@ class FakeFullScreen(
     var allowed: Boolean = true,
 ) : FullScreenPermission {
     override fun granted(): Boolean = allowed
+}
+
+/** Records what closes a task on the device; the task detail sends "Bugün yapamayacağım" here (7f). */
+class FakeTaskCloser : TaskCloser {
+    val cantToday = mutableListOf<Pair<String, String?>>()
+
+    override suspend fun done(
+        taskId: String,
+        cameraUnavailable: Boolean,
+    ) = Unit
+
+    override suspend fun photoTaken(taskId: String) = Unit
+
+    override suspend fun cancel(
+        taskId: String,
+        note: String?,
+    ) = Unit
+
+    override suspend fun cantToday(
+        taskId: String,
+        note: String?,
+    ) {
+        cantToday += taskId to note
+    }
 }
 
 class FakeTaskRepository : TaskRepository {

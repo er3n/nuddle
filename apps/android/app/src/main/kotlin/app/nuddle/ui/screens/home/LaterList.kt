@@ -1,14 +1,10 @@
 package app.nuddle.ui.screens.home
 
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import app.nuddle.R
 import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.TaskStatus
@@ -22,11 +18,10 @@ import app.nuddle.ui.components.TaskUi
 import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.theme.DurtTheme
 import app.nuddle.ui.theme.avatarFor
-import app.nuddle.ui.uppercaseForUi
 import kotlinx.datetime.TimeZone
 import kotlin.time.Instant
 
-/** 5c: an open task to me after the next-up card, as a row under "Sana yazılanlar" or "Kendine" (NUD-61). */
+/** 5c: an open task to me after the next-up card, a row in Bana (NUD-61, NUD-67). */
 @Immutable
 data class LaterUi(
     val taskId: String,
@@ -77,42 +72,15 @@ fun laterTasks(
             )
         }
 
-/** "Sana yazılanlar" for tasks from others, then "Kendine"; a task to self opens its detail (7c). */
+/** 5c: an open task to me as a row in Bana, from someone ("Sibel · bu akşam") or to self ("Kendine · ..."). */
 @Composable
-internal fun ColumnScope.LaterSection(
-    later: List<LaterUi>,
-    myName: String,
-    onOpenSelf: (taskId: String) -> Unit,
-) {
-    val (fromOthers, toSelf) = later.partition { it.fromId != null }
-    if (fromOthers.isNotEmpty()) {
-        Heading(R.string.home_to_me)
-        fromOthers.forEach { LaterRow(it, myName, onClick = null) }
-    }
-    if (toSelf.isNotEmpty()) {
-        Heading(R.string.home_to_self)
-        toSelf.forEach { task -> LaterRow(task, myName, onClick = { onOpenSelf(task.taskId) }) }
-    }
-}
-
-@Composable
-private fun Heading(text: Int) {
-    Text(
-        text = stringResource(text).uppercaseForUi(),
-        style = DurtTheme.type.overline,
-        color = DurtTheme.colors.textTertiary,
-        modifier = Modifier.semantics { heading() },
-    )
-}
-
-@Composable
-private fun LaterRow(
+internal fun LaterRow(
     task: LaterUi,
     myName: String,
-    onClick: (() -> Unit)?,
+    onClick: () -> Unit,
 ) {
     val colors = DurtTheme.colors
-    val parts = listOfNotNull(task.fromName, task.detail, task.deadline.inlineText())
+    val parts = listOfNotNull(task.fromName ?: stringResource(R.string.home_to_self), task.detail, task.deadline.inlineText())
     TaskRow(
         task =
             TaskUi(
@@ -127,7 +95,7 @@ private fun LaterRow(
     )
 }
 
-/** HomeFull.png: the next-up card, then the rest written to me and to myself. */
+/** HomeFull.png in tabs (NUD-67): the next-up card, then the rest written to me and to myself. */
 @PreviewScreens
 @Composable
 private fun HomeScreenFullPreview() {

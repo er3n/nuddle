@@ -1,11 +1,10 @@
 package app.nuddle.ui
 
-import app.nuddle.data.WriteOutcome
-import app.nuddle.domain.IdGenerator
+import app.nuddle.data.db.TaskEventEntity
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
-import app.nuddle.testing.FakeTaskRepository
 import app.nuddle.testing.InMemoryConnectionDao
+import app.nuddle.testing.InMemoryDismissedRows
 import app.nuddle.testing.InMemorySessionStore
 import app.nuddle.testing.InMemoryTaskDao
 import app.nuddle.testing.InMemoryTaskEventDao
@@ -13,92 +12,79 @@ import app.nuddle.testing.MainDispatcherRule
 import app.nuddle.testing.aSession
 import app.nuddle.testing.aTask
 import app.nuddle.testing.sibelConnection
-import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.HomeIssuesViewModel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.TimeZone
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
 
-/** The answers on home's 5d and 7e cards (docs/domain.md, Task states; open-questions#8, #9, #36). */
+/** What on home waits for an answer, and the ✕ of an "iptal etti" row (docs/ux/screens.md, Home tabs; NUD-67). */
 class HomeIssuesViewModelTest {
     @get:Rule val main = MainDispatcherRule()
 
     private val istanbul = TimeZone.of("Europe/Istanbul")
-    private val clock = FakeClock(Instant.parse("2026-10-12T10:00:00+03:00"))
+    private val now = Instant.parse("2026-10-12T10:00:00+03:00")
+    private val clock = FakeClock(now)
     private val taskDao = InMemoryTaskDao()
+    private val events = InMemoryTaskEventDao()
     private val connections = InMemoryConnectionDao()
-    private val tasks = FakeTaskRepository()
+    private val dismissed = InMemoryDismissedRows()
     private val vm by lazy {
-        HomeIssuesViewModel(
-            InMemorySessionStore(aSession()),
-            taskDao,
-            InMemoryTaskEventDao(),
-            connections,
-            tasks,
-            IdGenerator(clock),
-            clock,
-            istanbul,
-        )
-    }
-
-    private suspend fun TestScope.ready() {
-        connections.upsert(listOf(sibelConnection()))
-        taskDao.upsert(listOf(aTask(status = "MISSED").copy(senderId = Cast.EREN_ID, recipientId = Cast.SIBEL_ID)))
-        backgroundScope.launch { vm.issues.collect {} }
+        HomeIssuesViewModel(InMemorySessionStore(aSession()), taskDao, events, connections, dismissed, clock, istanbul)
     }
 
     @Test
-    fun `Süreyi uzat opens the deadline picks for that task and saves the pick`() =
+    fun `my missed task to Sibel waits for my answer`() =
         runTest(main.dispatcher) {
-            ready()
-            assertEquals(1, vm.issues.value.sent.size)
-
-            vm.onNewDeadline(Cast.TASK_ID)
-            val sheet = vm.newDeadline.value!!
-            assertEquals("Sibel", sheet.toName)
-            val evening = DeadlineChoice.TonightEvening(Instant.parse("2026-10-12T19:00:00+03:00"))
-            assertTrue(evening in sheet.choices)
-
-            vm.onDeadlineChoice(evening)
-            vm.onSave()
-
-            assertEquals(listOf(Cast.TASK_ID to evening.at), tasks.newDeadlines)
-            assertNull(vm.newDeadline.value)
+            connections.upsert(listOf(sibelConnection()))
+            taskDao.upsert(listOf(aTask(status = "MISSED").copy(senderId = Cast.EREN_ID, recipientId = Cast.SIBEL_ID)))
+            backgroundScope.launch { vm.issues.collect {} }
+            assertEquals(
+                listOf(Cast.TASK_ID),
+                vm.issues.value.sent
+                    .map { it.taskId },
+            )
         }
 
     @Test
-    fun `a failed save keeps the sheet open and says so`() =
+    fun `the ✕ takes the cancelled row off home, and only that one`() =
         runTest(main.dispatcher) {
-            ready()
-            tasks.newDeadlineOutcome = WriteOutcome.Failed
-            vm.onNewDeadline(Cast.TASK_ID)
-            vm.onDeadlineChoice(DeadlineChoice.TomorrowMorning(Instant.parse("2026-10-13T09:00:00+03:00")))
-            vm.onSave()
+            connections.upsert(listOf(sibelConnection()))
+            val cancelledAt = (now - 1.hours).toEpochMilliseconds()
+            taskDao.upsert(
+                listOf(
+                    aTask(status = "CANCELLED").copy(statusChangedAt = cancelledAt),
+                    aTask(id = "other", status = "CANCELLED").copy(statusChangedAt = cancelledAt),
+                ),
+            )
+            events.upsert(listOf(Cast.TASK_ID, "other").map { cancelEvent(it, cancelledAt) })
+            backgroundScope.launch { vm.issues.collect {} }
+            assertEquals(2, vm.issues.value.cancelled.size)
 
-            val sheet = vm.newDeadline.value!!
-            assertTrue(sheet.failed)
-            assertEquals(false, sheet.saving)
+            vm.onDismissCancelled(Cast.TASK_ID)
+
+            assertEquals(
+                listOf("other"),
+                vm.issues.value.cancelled
+                    .map { it.taskId },
+            )
+            assertTrue(taskDao.get(Cast.TASK_ID)?.status == "CANCELLED", "the task itself is not touched")
         }
 
-    @Test
-    fun `the other answers go to the repository`() =
-        runTest(main.dispatcher) {
-            ready()
-            vm.onDidItLater("missed-to-me")
-            vm.onRemoveMissed("missed-to-me")
-            vm.onSenderHandles("dropped")
-            vm.onCancel(Cast.TASK_ID)
-
-            assertEquals(listOf("missed-to-me"), tasks.didItLater)
-            assertEquals(listOf("missed-to-me"), tasks.removedMissed)
-            assertEquals(listOf("dropped"), tasks.senderHandled)
-            assertEquals(listOf<String?>(null), tasks.cancelNotes)
-        }
+    private fun cancelEvent(
+        taskId: String,
+        at: Long,
+    ) = TaskEventEntity(
+        id = "cancel-$taskId",
+        taskId = taskId,
+        actorId = Cast.SIBEL_ID,
+        type = "cancelled",
+        payload = """{"reason":"sender_cancelled"}""",
+        at = at,
+    )
 }

@@ -61,8 +61,8 @@ import app.nuddle.ui.theme.DurtTheme
 import app.nuddle.ui.uppercaseForUi
 
 /**
- * 1a: home with nobody connected and no tasks; 2f and 4c: the task due first as the "Sıradaki" card. Lists and the other
- * home states arrive with the feature slices.
+ * 1a: home with nobody connected and no tasks; 2f and 4c: the task due first as the "Sıradaki" card; with someone to
+ * write to, Bana and Gönderdiklerim (docs/ux/screens.md, Home tabs and task detail).
  */
 @Immutable
 data class HomeUiState(
@@ -85,8 +85,8 @@ data class HomeUiState(
     val pendingInvite: PendingInviteUi? = null,
     /** 7e and 5d: missed, dropped and cancelled tasks that wait for an answer. */
     val issues: IssuesUi = IssuesUi(),
-    /** The new deadline sheet of 5d, while open. */
-    val newDeadline: NewDeadlineUi? = null,
+    /** Bana or Gönderdiklerim, once there is someone to write to (NUD-67). */
+    val tab: HomeTab = HomeTab.Mine,
     /** No connection (6a): the banner under the top bar. */
     val offline: Boolean = false,
     /** Texts written offline, waiting for the connection (6a). */
@@ -108,6 +108,18 @@ private val HomeUiState.hasTasks: Boolean
 data class QueuedUi(
     val key: String,
     val text: String,
+)
+
+/** Opening a task from home, and the rest home does with its rows (NUD-67). */
+@Immutable
+data class HomeTaskCallbacks(
+    /** A card or row: the task detail, or the approval (4f) when a photo waits for me. */
+    val onOpenTask: (taskId: String, awaitingApproval: Boolean) -> Unit = { _, _ -> },
+    /** The photo whose upload failed: the kept photo and Şimdi tekrar dene (6e). */
+    val onOpenUnsentPhoto: (taskId: String) -> Unit = {},
+    /** The ✕ of an "iptal etti" row. */
+    val onDismissCancelled: (taskId: String) -> Unit = {},
+    val onTab: (HomeTab) -> Unit = {},
 )
 
 @Immutable
@@ -138,14 +150,10 @@ fun HomeScreen(
     onVoiceStart: () -> Unit,
     onVoiceEnd: (cancelled: Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    nextUpActions: NextUpCallbacks = NextUpCallbacks(),
-    /** A row under "Senin yazdıkların": its detail (7c), or the approval (4f) when a photo waits. */
-    onOpenTask: (taskId: String, awaitingApproval: Boolean) -> Unit = { _, _ -> },
+    tasks: HomeTaskCallbacks = HomeTaskCallbacks(),
     preview: PreviewCallbacks = PreviewCallbacks(),
     undo: UndoCallbacks = UndoCallbacks(),
     pendingInvite: PendingInviteCallbacks = PendingInviteCallbacks(),
-    issueActions: IssueCallbacks = IssueCallbacks(),
-    newDeadline: NewDeadlineCallbacks = NewDeadlineCallbacks(),
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
@@ -166,55 +174,17 @@ fun HomeScreen(
         if (waiting != null) {
             PendingInviteCard(state.myName, waiting, { pendingInvite.onReshare(waiting) }, { pendingInvite.onRevoke(waiting) })
         }
-        if (!state.hasTasks) {
-            if (waiting == null && !state.connected) InviteCard(state.myName, onInvite)
-            EmptyTasks(Modifier.padding(top = dimens.space48))
+        if (state.connected) {
+            HomeTabs(state.tab, state.mineCount, state.sentWaiting, tasks.onTab)
+            TabContent(state.tab, tasks.onTab) { tab -> if (tab == HomeTab.Mine) MineTab(state, tasks) else SentTab(state, tasks) }
         } else {
-            Tasks(state, nextUpActions, onOpenTask, issueActions)
-            if (waiting == null && !state.connected) CompactInviteCard(onInvite)
+            // Nobody to write to yet: one list, no tabs.
+            if (waiting == null && !state.hasTasks) InviteCard(state.myName, onInvite)
+            MineTab(state, tasks)
+            if (waiting == null && state.hasTasks) CompactInviteCard(onInvite)
         }
     }
     state.preview?.let { PreviewSheet(it, preview) }
-    state.newDeadline?.let { NewDeadlineSheet(it, newDeadline) }
-}
-
-/** Sıradaki and the rest to me (5c), then what waits for an answer (7e), then my tasks to others with 5d on top. */
-@Composable
-private fun ColumnScope.Tasks(
-    state: HomeUiState,
-    nextUpActions: NextUpCallbacks,
-    onOpenTask: (taskId: String, awaitingApproval: Boolean) -> Unit,
-    issueActions: IssueCallbacks,
-) {
-    val nextUp = state.nextUp
-    val issues = state.issues
-    if (nextUp != null) {
-        Text(
-            text = stringResource(R.string.home_next_up).uppercaseForUi(),
-            style = DurtTheme.type.overline,
-            color = DurtTheme.colors.textTertiary,
-            modifier = Modifier.semantics { heading() },
-        )
-        NextUpCard(
-            nextUp,
-            nextUpActions,
-            state.nextUpPhoto,
-            onOpen = { onOpenTask(nextUp.taskId, false) }.takeIf { nextUp.from == null && nextUp.status == NextUpStatus.Scheduled },
-        )
-    }
-    if (state.later.isNotEmpty()) LaterSection(state.later, state.myName) { onOpenTask(it, false) }
-    if (issues.toMe) ToMeIssues(issues, issueActions)
-    if (state.sent.isNotEmpty() || issues.sent.isNotEmpty() || state.queued.isNotEmpty()) {
-        SentSection(
-            state.sent,
-            fresh = state.undo?.taskId,
-            onOpen = onOpenTask,
-            issues = issues.sent,
-            issueActions = issueActions,
-            queued = state.queued,
-            myName = state.myName,
-        )
-    }
 }
 
 @Composable
@@ -285,7 +255,7 @@ internal fun DashedPlus(
 }
 
 @Composable
-private fun EmptyTasks(modifier: Modifier = Modifier) {
+internal fun EmptyTasks(modifier: Modifier = Modifier) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
     Column(

@@ -31,19 +31,7 @@ import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.theme.DurtTheme
 
-// The parts of the next-up card for a task from someone else (4c). Used only by NextUpCard.
-
-@Immutable
-data class NextUpCallbacks(
-    val onDone: () -> Unit = {},
-    /** "Bitti, çek" on a photo task: the camera (4d) for that task. */
-    val onTakePhoto: (taskId: String) -> Unit = {},
-    /** The photo whose upload failed: the kept photo and Şimdi tekrar dene (6e). */
-    val onOpenUnsentPhoto: (taskId: String) -> Unit = {},
-    /** The phone number of the person who wrote the task. */
-    val onCall: (String) -> Unit = {},
-    val onMessage: (String) -> Unit = {},
-)
+// The part of the next-up card for a task from someone else (4c): who wrote it and when.
 
 @Composable
 private fun WrittenText.text(): String =
@@ -53,9 +41,9 @@ private fun WrittenText.text(): String =
         is WrittenText.OnDate -> stringResource(R.string.deadline_on_date, day, stringArrayResource(R.array.month_names)[month - 1], time)
     }
 
-/** "**Sibel** yazdı · 14:32" with Sibel's avatar. */
+/** "**Sibel** yazdı · 14:32" with Sibel's avatar; also on top of the task detail. */
 @Composable
-internal fun FromLine(
+fun FromLine(
     from: FromUi,
     modifier: Modifier = Modifier,
 ) {
@@ -72,62 +60,6 @@ internal fun FromLine(
             style = DurtTheme.type.bodySmall,
             color = colors.textSecondary,
         )
-    }
-}
-
-/** Call and Message (docs/product.md: no in-app chat; docs/ux/platform.md: ACTION_DIAL and smsto:). */
-@Composable
-internal fun ReachRow(
-    phone: String,
-    callbacks: NextUpCallbacks,
-    note: String? = null,
-) {
-    val dimens = DurtTheme.dimens
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(dimens.space10),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // TODO(NUD-16): "Bugün yapamayacağım" (7f) goes on the left when there is no note.
-        if (note != null) {
-            Text(note, style = DurtTheme.type.caption, color = DurtTheme.colors.textSecondary, modifier = Modifier.weight(1f))
-        } else {
-            Spacer(Modifier.weight(1f))
-        }
-        RoundIconButton(
-            DurtIcons.Phone,
-            stringResource(R.string.home_call),
-            { callbacks.onCall(phone) },
-            Modifier.testTag(TestTags.HOME_CALL),
-        )
-        RoundIconButton(
-            DurtIcons.Message,
-            stringResource(R.string.home_message),
-            { callbacks.onMessage(phone) },
-            Modifier.testTag(TestTags.HOME_MESSAGE),
-        )
-    }
-}
-
-@Composable
-private fun RoundIconButton(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val colors = DurtTheme.colors
-    val dimens = DurtTheme.dimens
-    Box(
-        modifier =
-            modifier
-                .size(dimens.minTouchTarget)
-                .clip(CircleShape)
-                .border(dimens.borderCard, colors.border, CircleShape)
-                .clickable(onClickLabel = label, role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(icon, contentDescription = label, tint = colors.ink, modifier = Modifier.size(dimens.icon))
     }
 }
 

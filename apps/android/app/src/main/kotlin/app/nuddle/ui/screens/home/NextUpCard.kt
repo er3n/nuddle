@@ -29,18 +29,14 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import app.nuddle.R
 import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.DoneNote
-import app.nuddle.ui.components.DurtButton
-import app.nuddle.ui.components.DurtButtonKind
-import app.nuddle.ui.components.DurtButtonSize
-import app.nuddle.ui.components.GroupDivider
 import app.nuddle.ui.components.PillStatus
 import app.nuddle.ui.components.StatusPill
 import app.nuddle.ui.components.UndoToast
-import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.theme.DurtTheme
 
@@ -55,28 +51,27 @@ private val NextUpStatus.pill: PillStatus
         }
 
 /**
- * 2f: title, detail and who it is for, the deadline and how it ends, and "Şimdiden bitti" or "Bitti, çek". 4c, a
- * task from someone else: who wrote it and when on top, and Call and Message under a line. 4e: the photo waits for
- * the sender. 4g: the sender asked for another photo.
+ * 2f: title, detail and who it is for, the deadline and how it ends. 4c, a task from someone else: who wrote it and when
+ * on top. 4e: the photo waits for the sender. 4g: the sender asked for another photo. No buttons since NUD-67: a tap
+ * opens the task, whose detail has the actions.
  */
 @Composable
 internal fun NextUpCard(
     task: NextUpUi,
-    callbacks: NextUpCallbacks,
+    onOpen: () -> Unit,
     photo: ImageBitmap? = null,
-    /** A task to self opens its detail (7c) to edit or cancel it (NUD-47); null keeps the card still. */
-    onOpen: (() -> Unit)? = null,
+    /** The photo whose upload failed: the kept photo and Şimdi tekrar dene (6e). */
+    onOpenUnsentPhoto: (taskId: String) -> Unit = {},
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
     val shape = RoundedCornerShape(dimens.radiusXl)
-    val from = task.from
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .clip(shape)
-                .then(if (onOpen != null) Modifier.clickable(onClick = onOpen) else Modifier)
+                .clickable(onClick = onOpen)
                 .background(colors.surface, shape)
                 .border(dimens.borderCard, colors.border, shape)
                 .padding(dimens.space16)
@@ -85,23 +80,9 @@ internal fun NextUpCard(
     ) {
         Heading(task)
         when (task.status) {
-            NextUpStatus.Scheduled -> {
-                ToDo(task, callbacks)
-            }
-
-            NextUpStatus.AwaitingApproval -> {
-                PhotoWaiting(task, photo, callbacks.onOpenUnsentPhoto)
-            }
-
-            NextUpStatus.ReRequested -> {
-                ReRequested(task)
-                TakePhotoButton(task, callbacks, R.string.rerequest_new_photo)
-            }
-        }
-        from?.phone?.let { phone ->
-            GroupDivider()
-            val note = if (task.status == NextUpStatus.AwaitingApproval) stringResource(R.string.photo_auto_approve, from.name) else null
-            ReachRow(phone, callbacks, note)
+            NextUpStatus.Scheduled -> ToDo(task)
+            NextUpStatus.AwaitingApproval -> PhotoWaiting(task, photo, onOpenUnsentPhoto)
+            NextUpStatus.ReRequested -> ReRequested(task)
         }
     }
 }
@@ -116,7 +97,7 @@ private fun ColumnScope.Heading(task: NextUpUi) {
         val toSelf = stringResource(R.string.home_to_self)
         Row(horizontalArrangement = Arrangement.spacedBy(dimens.space12)) {
             Column(Modifier.weight(1f)) {
-                Text(task.title, style = DurtTheme.type.brand, color = colors.ink)
+                Text(task.title, style = DurtTheme.type.brand, color = colors.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(
                     text = task.detail?.let { stringResource(R.string.separator_dot, it, toSelf) } ?: toSelf,
                     style = DurtTheme.type.bodySmall,
@@ -131,7 +112,7 @@ private fun ColumnScope.Heading(task: NextUpUi) {
             StatusPill(task.status.pill)
         }
         Column {
-            Text(task.title, style = DurtTheme.type.brand, color = colors.ink)
+            Text(task.title, style = DurtTheme.type.brand, color = colors.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
             // Once the photo is involved the tiles go and the deadline joins the line (4e, 4g).
             val deadline = task.deadline.phrase()
             val line =
@@ -154,12 +135,9 @@ private fun ColumnScope.Heading(task: NextUpUi) {
     }
 }
 
-/** The deadline and how it ends, then the way to finish it. */
+/** The deadline and how it ends. */
 @Composable
-private fun ColumnScope.ToDo(
-    task: NextUpUi,
-    callbacks: NextUpCallbacks,
-) {
+private fun ToDo(task: NextUpUi) {
     val dimens = DurtTheme.dimens
     val from = task.from
     // Both tiles as tall as the taller one when a value wraps at large font scales.
@@ -176,33 +154,6 @@ private fun ColumnScope.ToDo(
             modifier = Modifier.weight(1f),
         )
     }
-    if (task.photo) {
-        TakePhotoButton(task, callbacks, R.string.home_done_photo)
-    } else {
-        DurtButton(
-            text = stringResource(R.string.home_done_early),
-            onClick = callbacks.onDone,
-            kind = DurtButtonKind.Success,
-            size = DurtButtonSize.Small,
-            modifier = Modifier.testTag(TestTags.HOME_DONE_EARLY),
-        )
-    }
-}
-
-@Composable
-private fun TakePhotoButton(
-    task: NextUpUi,
-    callbacks: NextUpCallbacks,
-    text: Int,
-) {
-    DurtButton(
-        text = stringResource(text),
-        onClick = { callbacks.onTakePhoto(task.taskId) },
-        kind = DurtButtonKind.Success,
-        size = DurtButtonSize.Small,
-        leadingIcon = DurtIcons.Camera,
-        modifier = Modifier.testTag(TestTags.HOME_TAKE_PHOTO),
-    )
 }
 
 @Composable
@@ -221,7 +172,7 @@ private fun InfoTile(
                 .padding(horizontal = dimens.space12, vertical = dimens.space10),
     ) {
         Text(label, style = DurtTheme.type.caption, color = colors.textTertiary)
-        Text(value, style = DurtTheme.type.bodySmallStrong, color = colors.ink)
+        Text(value, style = DurtTheme.type.bodySmallStrong, color = colors.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
 

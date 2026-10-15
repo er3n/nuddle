@@ -9,7 +9,6 @@ import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.Reachability
 import app.nuddle.api.model.SyncConnection
 import app.nuddle.api.model.WriteTaskResult
-import app.nuddle.data.DoneNote
 import app.nuddle.data.DoneNotes
 import app.nuddle.data.SetupGate
 import app.nuddle.data.TaskRepository
@@ -94,6 +93,9 @@ class HomeViewModel
 
         /** The one-line answer to a text that is not a task, above the bar (NUD-52). */
         private val reply = MutableStateFlow<String?>(null)
+
+        /** Bana or Gönderdiklerim (NUD-67); a task just written shows the tab it went to. */
+        private val tab = MutableStateFlow(HomeTab.Mine)
         private val setup = Channel<Unit>(Channel.CONFLATED)
 
         /**
@@ -179,8 +181,7 @@ class HomeViewModel
                     inviteDao.observeAll().map { pendingInvite(it, clock.now(), timeZone) },
                     connectivity.online,
                     queuedWrites.observeAll().map { all -> all.map { QueuedUi(it.idempotencyKey, it.text) } },
-                    unrecoverable,
-                    reply,
+                    combine(unrecoverable, reply, tab, ::Notes),
                     ::Extras,
                 ),
             ) { (name, compose, tasksPart), preview, undo, doneNote, extras ->
@@ -198,8 +199,9 @@ class HomeViewModel
                     pendingInvite = extras.pendingInvite,
                     offline = !extras.online,
                     queued = extras.queued,
-                    unrecoverable = extras.unrecoverable,
-                    reply = extras.reply,
+                    unrecoverable = extras.notes.unrecoverable,
+                    reply = extras.notes.reply,
+                    tab = extras.notes.tab,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
@@ -207,8 +209,13 @@ class HomeViewModel
             val pendingInvite: PendingInviteUi?,
             val online: Boolean,
             val queued: List<QueuedUi>,
+            val notes: Notes,
+        )
+
+        private data class Notes(
             val unrecoverable: String?,
             val reply: String?,
+            val tab: HomeTab,
         )
 
         init {
@@ -255,6 +262,7 @@ class HomeViewModel
                                 val to = if (task.recipientId == task.senderId) null else connectionDao.get(task.recipientId)?.displayName
                                 undoFor(task, text, to, clock.now(), timeZone)
                             }
+                        undo.value?.let { tab.value = if (it.to == null) HomeTab.Mine else HomeTab.Sent }
                     }
 
                     // Not a task: the answer replaces the text, nothing was created (NUD-52).
@@ -345,6 +353,7 @@ class HomeViewModel
                     outcome is WriteOutcome.Created -> {
                         preview.value = null
                         compose.value = ComposeState.Idle
+                        tab.value = if (open.ui.toOther) HomeTab.Sent else HomeTab.Mine
                         // Setup follows a task to self only (open-questions#30).
                         if (!open.ui.toOther && setupGate.needed()) setup.send(Unit)
                     }
@@ -430,11 +439,8 @@ class HomeViewModel
             }
         }
 
-        /** Şimdiden bitti, then the done note for 4 s (domain.md, Done note). */
-        fun onFinishNextUp() {
-            val task = state.value?.nextUp ?: return
-            viewModelScope.launch {
-                doneNotes.post(DoneNote(task.taskId, task.title, tasks.done(task.taskId)))
-            }
+        /** A tap on a tab or a swipe (NUD-67). */
+        fun onTab(tab: HomeTab) {
+            this.tab.value = tab
         }
     }

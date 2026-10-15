@@ -99,7 +99,7 @@ export async function writeTask(d: Device, what: string): Promise<void> {
   await d.see("home.undo", 5_000);
 }
 
-/** Writes [what] in the compose bar; the fixture extractor makes it a task to someone, a row on home (4i). */
+/** Writes [what] in the compose bar; the fixture extractor makes it a task to someone, a row in Gönderdiklerim (4i). */
 export async function writeTaskToOther(d: Device, what: string): Promise<void> {
   await d.see("home.screen");
   await d.type("compose.input", what);
@@ -132,16 +132,20 @@ export async function homeDone(d: Device): Promise<void> {
   await d.gone("home.nextUp", 15_000);
 }
 
-/** Eren's home after Sibel's task arrived (4c): the next-up card with Ara and Mesaj. */
+/** Eren's home after Sibel's task arrived (4c): the next-up card opens the task, whose detail has Ara and Mesaj. */
 export async function homeFromSibel(d: Device): Promise<void> {
-  await d.see("home.nextUp", 60_000);
-  await d.see("home.call", 5_000);
-  await d.see("home.message", 5_000);
+  await d.tap("home.nextUp", 60_000);
+  await d.see("task.screen");
+  await d.see("task.call", 5_000);
+  await d.see("task.message", 5_000);
+  await d.back();
+  await d.see("home.nextUp");
 }
 
-/** Sibel opens the task she sent (7c) and cancels it, "Ben hallettim" (7d); its row leaves home. */
+/** Sibel opens the task she sent (7c) and cancels it, "Ben hallettim" (7d); its row leaves Gönderdiklerim. */
 export async function cancelTask(d: Device): Promise<void> {
   await d.gone("home.undo");
+  await d.tap("home.tab.sent");
   await d.tap("home.sent");
   await d.see("task.screen");
   await d.taps("task.cancel", "task.cancelReason.HandledIt", "sheet.primary");
@@ -158,9 +162,10 @@ export async function photoSend(d: Device): Promise<void> {
   await d.see("home.nextUp", 5_000);
 }
 
-/** Sibel's row says the photo waits for her; she opens it (4f) and approves; the row goes. */
+/** Sibel's row in Gönderdiklerim says the photo waits for her; she opens it (4f) and approves; the row goes. */
 export async function approve(d: Device): Promise<void> {
   await d.relaunch();
+  await d.tap("home.tab.sent");
   await d.see(textWith("Onayını bekliyor"), 60_000);
   await d.tap("home.sent");
   await d.see("approve.screen");
@@ -169,15 +174,23 @@ export async function approve(d: Device): Promise<void> {
   await d.gone("home.sent", 10_000);
 }
 
-/** The dropped card with Eren's note (5d); Yeni zaman ver, tomorrow morning, Kur; the card goes. */
+/**
+ * The dropped row with Eren's note (5d) in Gönderdiklerim; its detail, Yeni zaman ver, tomorrow morning, Kaydet; the
+ * task is going again, so back home it is a row under "Devam eden".
+ */
 export async function newTime(d: Device): Promise<void> {
   await d.relaunch();
+  await d.tap("home.tab.sent");
   await d.see(textWith("Not: Yarın hallederim"), 60_000);
+  await d.tap("home.sentIssue");
   await d.see(text("Bırakıldı"), 5_000);
-  await d.tap("issue.newTime");
+  await d.tap("task.action.NewTime");
   await d.tap("preview.morning", 15_000);
   await d.tap("sheet.primary");
-  await d.gone("issue.newTime");
+  await d.gone("task.action.NewTime");
+  await d.back();
+  await d.gone("home.sentIssue");
+  await d.see("home.sent");
 }
 
 /** Eren removes Sibel on her person screen (profile, person, Bağlantıyı kaldır, confirm); she leaves his profile. */

@@ -1,13 +1,9 @@
 package app.nuddle.ui.screens.home
 
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import app.nuddle.R
 import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.ComposeState
@@ -17,71 +13,61 @@ import app.nuddle.ui.components.TaskUi
 import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.theme.DurtTheme
 import app.nuddle.ui.theme.avatarFor
-import app.nuddle.ui.uppercaseForUi
 
-/** 4i: "Senin yazdıkların" and a TaskRow per task; [fresh] is the one whose undo toast is on screen ("Yeni"). */
+/** 4i: one of my tasks to others; [fresh] is the one whose undo toast is on screen ("Yeni"). */
 @Composable
-internal fun ColumnScope.SentSection(
-    sent: List<SentUi>,
+internal fun SentRow(
+    task: SentUi,
     fresh: String?,
-    onOpen: (taskId: String, awaitingApproval: Boolean) -> Unit,
-    issues: List<SentIssueUi> = emptyList(),
-    issueActions: IssueCallbacks = IssueCallbacks(),
-    queued: List<QueuedUi> = emptyList(),
-    myName: String = "",
+    onOpen: () -> Unit,
 ) {
     val colors = DurtTheme.colors
-    Text(
-        text = stringResource(R.string.home_sent).uppercaseForUi(),
-        style = DurtTheme.type.overline,
-        color = colors.textTertiary,
-        modifier = Modifier.semantics { heading() },
+    val isFresh = task.taskId == fresh
+    val parts =
+        if (task.awaitingApproval) {
+            listOfNotNull(task.toName, stringResource(R.string.sent_photo_arrived))
+        } else {
+            listOfNotNull(task.toName, task.deadline.inlineText(), if (task.photo) stringResource(R.string.sent_photo) else null)
+        }
+    TaskRow(
+        task =
+            TaskUi(
+                title = task.title,
+                subtitle = parts.reduce { line, part -> stringResource(R.string.separator_dot, line, part) },
+                status =
+                    when {
+                        isFresh -> PillStatus.New
+                        task.awaitingApproval -> PillStatus.AwaitingMyApproval
+                        task.reRequested -> PillStatus.Rejected
+                        else -> PillStatus.Scheduled
+                    },
+                personName = task.toName,
+                personColor = colors.avatarFor(task.toId),
+            ),
+        onClick = onOpen,
+        highlighted = isFresh,
+        modifier = Modifier.testTag(TestTags.HOME_SENT),
     )
-    // Dropped and missed wait for my answer, so they come first (5d).
-    issues.forEach { SentIssueCard(it, issueActions) }
-    // Written offline: not on the server yet, so there is nothing to open (6a).
-    queued.forEach { write ->
-        TaskRow(
-            task =
-                TaskUi(
-                    title = write.text,
-                    subtitle = stringResource(R.string.queued_waiting),
-                    status = PillStatus.Queued,
-                    personName = myName,
-                    personColor = colors.avatarFor(myName),
-                ),
-            onClick = null,
-            modifier = Modifier.testTag(TestTags.HOME_QUEUED),
-        )
-    }
-    sent.forEach { task ->
-        val isFresh = task.taskId == fresh
-        val parts =
-            if (task.awaitingApproval) {
-                listOfNotNull(task.detail, stringResource(R.string.sent_photo_arrived))
-            } else {
-                listOfNotNull(task.detail, task.deadline.inlineText(), if (task.photo) stringResource(R.string.sent_photo) else null)
-            }
-        TaskRow(
-            task =
-                TaskUi(
-                    title = task.title,
-                    subtitle = parts.reduce { line, part -> stringResource(R.string.separator_dot, line, part) },
-                    status =
-                        when {
-                            isFresh -> PillStatus.New
-                            task.awaitingApproval -> PillStatus.AwaitingMyApproval
-                            task.reRequested -> PillStatus.Rejected
-                            else -> PillStatus.Scheduled
-                        },
-                    personName = task.toName,
-                    personColor = colors.avatarFor(task.toId),
-                ),
-            onClick = { onOpen(task.taskId, task.awaitingApproval) },
-            highlighted = isFresh,
-            modifier = Modifier.testTag(TestTags.HOME_SENT),
-        )
-    }
+}
+
+/** Written offline: not on the server yet, so there is nothing to open (6a). */
+@Composable
+internal fun QueuedRow(
+    write: QueuedUi,
+    myName: String,
+) {
+    TaskRow(
+        task =
+            TaskUi(
+                title = write.text,
+                subtitle = stringResource(R.string.queued_waiting),
+                status = PillStatus.Queued,
+                personName = myName,
+                personColor = DurtTheme.colors.avatarFor(myName),
+            ),
+        onClick = null,
+        modifier = Modifier.testTag(TestTags.HOME_QUEUED),
+    )
 }
 
 /** ErrOffline.png */
@@ -95,6 +81,7 @@ private fun HomeScreenOfflinePreview() {
                     myName = "Eren",
                     connected = true,
                     offline = true,
+                    tab = HomeTab.Sent,
                     queued = listOf(QueuedUi("key-1", "sibel akşama kadar faturayı ödesin")),
                 ),
             onBell = {},
@@ -140,6 +127,7 @@ private fun HomeScreenQuickSentPreview() {
                 HomeUiState(
                     myName = "Sibel",
                     connected = true,
+                    tab = HomeTab.Sent,
                     sent =
                         listOf(
                             SentUi("task-1", "Temizlikçi için para çek", "1.000 TL", DeadlineText.Tomorrow("09:00"), true, "eren", "Eren"),

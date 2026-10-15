@@ -115,10 +115,18 @@
     <string name="undo_self_title">Kuruldu</string>
     <!-- 4i. open-questions#34: the design says "Eren\'e gitti"; rephrased so the name takes no suffix, the name opens the sub line. -->
     <string name="undo_sent_title">Gönderildi</string>
-    <!-- 4i. open-questions#34: the design says "Eren\'e yazdıkların"; the 5c section name. -->
-    <string name="home_sent">Senin yazdıkların</string>
-    <!-- 7e, 5d: what needs an answer on home (open-questions#36) -->
-    <string name="home_to_me">Sana yazılanlar</string>
+    <!-- Home tabs (NUD-67, docs/ux/screens.md, Home tabs and task detail) -->
+    <string name="home_tab_mine">Bana</string>
+    <string name="home_tab_sent">Gönderdiklerim</string>
+    <string name="home_tab_sent_waiting">cevabını bekleyen var</string>
+    <string name="home_later">Sonra</string>
+    <string name="home_waiting">Cevabını bekliyor</string>
+    <string name="home_ongoing">Devam eden</string>
+    <string name="home_sent_footer">Bitenler zilde yazar.</string>
+    <string name="home_sent_empty">Henüz kimseye görev yazmadın.</string>
+    <!-- Task detail (NUD-67) -->
+    <string name="task_from">Kimden</string>
+    <string name="task_remove_missed">Listeden kaldır</string>
     <!-- %2$s / %1$s: "son zaman yarın 09:00", or "yarın 09:00" for an `at` task (open-questions#43). -->
     <string name="issue_from_deadline">%1$s · %2$s</string>
     <string name="issue_self_deadline">Kendine · %1$s</string>
