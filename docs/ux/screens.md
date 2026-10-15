@@ -19,14 +19,42 @@ If a screen and `product.md` disagree on behavior, `product.md` wins. Copy writt
 | `onboarding/name` | 0e | New users only |
 | `consent/{inviteId}` | 0f, 1d, 0g | Right after sign-in when invited; later from the invite in the bell |
 | `setup` | 2c, 2d, 2e, 2h | After consent or at the first task. Granted steps are skipped |
-| `home` | 1a, 1b, 1g, 2a, 2f, 4c, 4e, 4g, 5c, 5d, 6a, 6b, 7e | One screen, state derived from the lists |
-| `task/{id}` | 2b, 4a, 7c, 7d | Preview (missing info) and the sender's detail. Cancel is a bottom sheet |
+| `home` | 1a, 1b, 1g, 2a, 2f, 4c, 4e, 4g, 5c, 5d, 6a, 6b, 7e | One screen, state derived from the lists. Two tabs and no action buttons since NUD-67 (Home tabs, below) |
+| `task/{id}` | 2b, 4a, 7c, 7d, 7f | Preview (missing info) and the detail of any open task, from either side, with the actions for its state (Task detail, below). Cancel and can't today are bottom sheets |
 | `task/{id}/photo`, `task/{id}/approve` | 4d, 6e, 4f | Camera and approval |
 | `inbox` | 1c, 2g, 7b | The bell |
 | `invite`, `invite/ready` | 1e, 1f | Ends in the system share sheet |
 | `profile`, `person/{id}` | 5a, 5b, 7g, 7h, 7i | Settings sheets on top of profile |
 | `PokeActivity` | 3b, 2d (demo), 7f | Opened from a notification or alarm |
 | System notification | 3a, 4b, 7a | `NotificationCompat`, not Compose |
+
+## Home tabs and task detail (NUD-67)
+
+Changed on 2026-10-15 after the phone test: long titles wrapped into the buttons, and three sections ("Sana yazılanlar", "Kendine", "Senin yazdıkların") in one scroll were hard to read. This section wins over the layout of 2f, 4c, 4e, 4g, 5c, 5d, 7c and 7e below; their copy still applies. The PNGs of those screens show the old layout.
+
+**Home.** Under the greeting, once there is someone to write to (`connected`), a segmented control with two tabs; without anyone there is one list and no tabs.
+- **Bana**: tasks to self and to me in one list. "Sıradaki" (the card of 2f, 4c, 4e, 4g) on top, then "Sonra": missed tasks to me first (7e), then every other open task due first, then the "iptal etti" rows. The tab label carries the number of open tasks to me.
+- **Gönderdiklerim**: my tasks to others. "Cevabını bekliyor" first (dropped, missed, a photo waiting for my approval), then "Devam eden" (scheduled, asked again) and the line "Bitenler zilde yazar." Texts written offline ("Sırada", 6a) show on both tabs, since only the server can tell whom they are for. The tab label carries a dot while something waits for my answer.
+- A tap on a tab or a horizontal swipe switches, with a short slide. Home opens on Bana; writing a task to someone switches to Gönderdiklerim so the "Yeni" row is in view, writing one to self switches to Bana.
+- No action buttons on home. The Sıradaki card and every row open the task: the detail below, or the approval (4f) for a photo waiting for me. Exceptions: the failed upload line on 4e still opens 6e, and the "iptal etti" row has a ✕ that removes it from this phone (it still goes by itself after a day, open-questions#36).
+- Titles never push other parts around: one line with an ellipsis in a row, two lines on the Sıradaki card. A row has the avatar, the title, one sub line and a chevron; the status is the first part of the sub line in its pill color (no pill for Kurulu), for example "Bırakıldı · Not: yarın hallederim".
+
+**Task detail (`task/{id}`).** One screen for any open task: the BackBar "Görev", who wrote it and when or whom it is for, the status pill, the whole title, the state's message, the rows (Kimden or Kime, Son zaman or Zaman, Detay, Nasıl bitsin), and the actions for the state and my side pinned to the bottom:
+
+| My side | Status | Actions |
+|---|---|---|
+| To me | Kurulu | Şimdiden bitti (Bitti, çek on a photo task), Bugün yapamayacağım (7f), Ara and Mesaj |
+| To me | Tekrar istendi | The sender's note; Yeni fotoğraf çek, Bugün yapamayacağım, Ara and Mesaj |
+| To me | Onay bekleniyor | The 4e message; no action |
+| To me | Kaçırıldı | Sonradan yaptım, Ara, Listeden kaldır |
+| To self | Kurulu | Şimdiden bitti (Bitti, çek), Görevi iptal et; Son zaman and Nasıl bitsin can be edited (NUD-47) |
+| To self | Kaçırıldı | Sonradan yaptım, Listeden kaldır |
+| Mine to someone | Kurulu, Tekrar istendi | 7c as before: rows can be edited, Görevi iptal et (7d) |
+| Mine to someone | Bırakıldı | The 5d message; Yeni zaman ver, Ben hallederim |
+| Mine to someone | Kaçırıldı | The 5d message; Süreyi uzat, İptal et (no 7d sheet) |
+
+The screen goes back by itself once the task leaves that list (done, cancelled, approved, handled). Yeni zaman ver and Süreyi uzat open the 5d deadline sheet over the detail.
+**Copy:** Bana | Gönderdiklerim | Sonra | Cevabını bekliyor | Devam eden | Bitenler zilde yazar. | Henüz kimseye görev yazmadın. | Kimden | Listeden kaldır | Kaldır
 
 ## Status to UI
 
@@ -36,8 +64,8 @@ If a screen and `product.md` disagree on behavior, `product.md` wins. Copy writt
 | `AWAITING_APPROVAL` | Onayını bekliyor / Onay bekleniyor | `infoPill` | Waiting card (4e) | Approval screen (4f) |
 | `REJECTED` | Tekrar istendi | `warningPill` | Note + take a new photo (4g), poking resumes | TaskRow |
 | `DONE` | Tamamlandı | `successSoft` | DoneNote (5c), then leaves the list | Text entry in the bell (7b) |
-| `DROPPED` | Bırakıldı | `neutralPill` | Leaves the list | TaskActionCard: Yeni zaman ver / Ben hallederim (5d) |
-| `MISSED` | Kaçırıldı | `danger` filled | TaskActionCard: Sonradan yaptım / Sibel'i ara (7e), gone after 1 day | TaskActionCard: Süreyi uzat / İptal et (5d) |
+| `DROPPED` | Bırakıldı | `neutralPill` | Leaves the list | Row under "Cevabını bekliyor"; Yeni zaman ver / Ben hallederim in the detail (5d) |
+| `MISSED` | Kaçırıldı | `danger` filled | Row in Bana; Sonradan yaptım / Ara in the detail (7e), gone after 1 day | Row under "Cevabını bekliyor"; Süreyi uzat / İptal et in the detail (5d) |
 | `CANCELLED` | İptal edildi | `neutralPill` | Info row (7e) | Leaves the list |
 | `QUEUED` (local) | Sırada | `warningPill` | Written offline, not yet on the server (6a) | same |
 | (local) just sent | Yeni | `neutralPill` | - | Highlighted TaskRow while the undo toast is on screen (4i) |
@@ -204,7 +232,7 @@ Note: the canvas shows "23:00 – 07:00" with an en dash. Use "23:00-07:00" or "
 Note: "Zamanında biten %88" is a statistic shown to both people. Check against the "never a scorecard" principle (open question).
 
 ### 5c Home, full + done note · `HomeFull.png`
-Sections: Sana yazılanlar, Senin yazdıkların, Kendine. DoneNote at the bottom. Built in NUD-61 with the 2f/4c next-up card kept on top: every other open task to me follows as a TaskRow, from others under "Sana yazılanlar" ("Sibel · bu akşam") and to self under "Kendine", due first; then "Senin yazdıkların". A row to self opens 7c; a row from someone else opens nothing yet (its actions are on the poke and on the next-up card once it is first).
+Sections: Sana yazılanlar, Senin yazdıkların, Kendine. DoneNote at the bottom. Built in NUD-61 with the 2f/4c next-up card kept on top: every other open task to me follows as a TaskRow, from others under "Sana yazılanlar" ("Sibel · bu akşam") and to self under "Kendine", due first; then "Senin yazdıkların". Since NUD-67 the sections are the two tabs above and every row opens the task detail.
 **Copy:** Gelirken ekmek al · Sibel · bu akşam · Kurulu | Faturayı öde · Sibel'e · fotoğraf geldi · Onayını bekliyor | Kuru temizlemeyi al · Sibel'e · cuma 18:00 | Spor salonu üyeliğini yenile · Pazartesi 12:00 | "Para çek" tamamlandı | Bu sefer seni 2. dürtmede yakaladım. Sabahları daha hızlısın.
 
 ### 5d Sibel: dropped and missed · `SibelIssues.png`

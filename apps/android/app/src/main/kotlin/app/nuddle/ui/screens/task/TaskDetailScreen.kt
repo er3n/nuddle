@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -21,6 +22,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -33,18 +35,31 @@ import app.nuddle.ui.components.DurtBottomSheet
 import app.nuddle.ui.components.DurtBottomSheetContent
 import app.nuddle.ui.components.DurtButton
 import app.nuddle.ui.components.DurtButtonKind
+import app.nuddle.ui.components.DurtButtonSize
 import app.nuddle.ui.components.GroupDivider
 import app.nuddle.ui.components.LineRow
 import app.nuddle.ui.components.PillStatus
 import app.nuddle.ui.components.SettingsGroup
 import app.nuddle.ui.components.SheetAction
 import app.nuddle.ui.components.StatusPill
+import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.screens.ScreenLayout
 import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.DeadlineText
+import app.nuddle.ui.screens.home.FromLine
+import app.nuddle.ui.screens.home.FromUi
+import app.nuddle.ui.screens.home.MissedUi
+import app.nuddle.ui.screens.home.NewDeadlineCallbacks
+import app.nuddle.ui.screens.home.NewDeadlineSheet
+import app.nuddle.ui.screens.home.SentIssue
+import app.nuddle.ui.screens.home.SentIssueUi
+import app.nuddle.ui.screens.home.WrittenText
+import app.nuddle.ui.screens.home.message
 import app.nuddle.ui.screens.home.text
 import app.nuddle.ui.screens.home.timeLabel
+import app.nuddle.ui.screens.poke.DropCallbacks
+import app.nuddle.ui.screens.poke.DropSheet
 import app.nuddle.ui.theme.DurtTheme
 import kotlinx.datetime.LocalTime
 
@@ -62,6 +77,13 @@ data class TaskDetailCallbacks(
     val onPhotoChoice: (Boolean) -> Unit = {},
     val onEditDismiss: () -> Unit = {},
     val onEditSave: () -> Unit = {},
+    /** A button at the bottom (docs/ux/screens.md, Task detail). */
+    val onAction: (DetailAction) -> Unit = {},
+    /** The sender's number. */
+    val onCall: (String) -> Unit = {},
+    val onMessage: (String) -> Unit = {},
+    val drop: DropCallbacks = DropCallbacks(),
+    val newDeadline: NewDeadlineCallbacks = NewDeadlineCallbacks(),
 )
 
 private val CancelReason.label: Int
@@ -72,7 +94,7 @@ private val CancelReason.label: Int
         }
 
 /** "tam ekran", "sesli bildirim": the strongest poke that reaches them now, never a setting name (product.md). */
-private val Reachability.level: Int?
+internal val Reachability.level: Int?
     get() =
         when (this) {
             Reachability.FULL_SCREEN -> R.string.reach_full_screen
@@ -81,9 +103,45 @@ private val Reachability.level: Int?
             Reachability.NONE -> null
         }
 
+private val DetailAction.label: Int
+    get() =
+        when (this) {
+            DetailAction.DoneEarly -> R.string.home_done_early
+            DetailAction.TakePhoto -> R.string.home_done_photo
+            DetailAction.NewPhoto -> R.string.rerequest_new_photo
+            DetailAction.CantToday -> R.string.poke_cant_today
+            DetailAction.DidItLater -> R.string.issue_did_it_later
+            DetailAction.RemoveMissed -> R.string.task_remove_missed
+            DetailAction.CancelTask -> R.string.task_cancel
+            DetailAction.NewTime -> R.string.issue_new_time
+            DetailAction.SenderHandles -> R.string.issue_i_handle
+            DetailAction.Extend -> R.string.issue_extend
+            DetailAction.CancelNow -> R.string.cancel_confirm
+        }
+
+/** The first action is the main one; finishing is green, cancelling red, the rest quiet. */
+private fun DetailAction.kind(first: Boolean): DurtButtonKind =
+    when {
+        this == DetailAction.CancelTask -> DurtButtonKind.DangerOutline
+
+        this in
+            setOf(
+                DetailAction.DoneEarly,
+                DetailAction.TakePhoto,
+                DetailAction.NewPhoto,
+                DetailAction.DidItLater,
+            )
+        -> DurtButtonKind.Success
+
+        first -> DurtButtonKind.Primary
+
+        else -> DurtButtonKind.Secondary
+    }
+
 /**
- * 7c: what I wrote, the status and how far pokes reach the recipient, the details, and "Görevi iptal et", which opens
- * 7d. Editing a row comes in its own step.
+ * Any open task from either side (docs/ux/screens.md, Task detail): who wrote it or what I wrote, the whole title, the
+ * state and its message, the rows, Ara and Mesaj for a task to me, and the actions for the state pinned to the bottom.
+ * For my task to someone else this is 7c, whose rows can be changed and whose "Görevi iptal et" opens 7d.
  */
 @Composable
 fun TaskDetailScreen(
@@ -97,87 +155,47 @@ fun TaskDetailScreen(
         background = colors.background,
         modifier = modifier.testTag(TestTags.TASK_DETAIL),
         bottom = {
-            DurtButton(
-                text = stringResource(R.string.task_cancel),
-                onClick = callbacks.onCancel,
-                kind = DurtButtonKind.DangerOutline,
-                modifier = Modifier.testTag(TestTags.TASK_CANCEL),
-            )
+            state.actions.forEachIndexed { index, action ->
+                DurtButton(
+                    text = stringResource(action.label),
+                    // Görevi iptal et opens 7d, as it always did; the rest go to the route.
+                    onClick = { if (action == DetailAction.CancelTask) callbacks.onCancel() else callbacks.onAction(action) },
+                    kind = action.kind(index == 0),
+                    size = if (index == 0) DurtButtonSize.Large else DurtButtonSize.Medium,
+                    modifier =
+                        Modifier.fillMaxWidth().testTag(
+                            if (action == DetailAction.CancelTask) TestTags.TASK_CANCEL else TestTags.taskAction(action.name),
+                        ),
+                )
+            }
         },
     ) {
         BackBar(title = stringResource(R.string.task_detail_title), onBack = callbacks.onBack)
-        state.rawText?.let {
-            Text(stringResource(R.string.preview_you_wrote, it), style = DurtTheme.type.caption, color = colors.textSecondary)
+        val from = state.from
+        if (from != null) {
+            FromLine(from)
+        } else {
+            state.rawText?.takeIf { state.side == DetailSide.Mine || state.self }?.let {
+                Text(stringResource(R.string.preview_you_wrote, it), style = DurtTheme.type.caption, color = colors.textSecondary)
+            }
         }
         Text(state.title, style = DurtTheme.type.h1, color = colors.ink, modifier = Modifier.semantics { heading() })
         StatusCard(state)
-        SettingsGroup(title = stringResource(R.string.preview_detail)) {
-            LineRow(
-                label = stringResource(R.string.preview_to),
-                value = if (state.self) stringResource(R.string.home_to_self) else state.toName,
-            )
-            GroupDivider()
-            LineRow(
-                label = state.deadline.timeLabel(),
-                value = state.deadline.text(),
-                onClick = { callbacks.onEdit(EditRow.Deadline) },
-                modifier = Modifier.testTag(TestTags.TASK_EDIT_DEADLINE),
-            )
-            state.detail?.let {
-                GroupDivider()
-                LineRow(label = stringResource(R.string.preview_detail), value = it)
-            }
-            GroupDivider()
-            LineRow(
-                label = stringResource(R.string.task_finish_label),
-                value = stringResource(if (state.photo) R.string.task_finish_photo else R.string.task_finish_done),
-                onClick = { callbacks.onEdit(EditRow.Finish) },
-                modifier = Modifier.testTag(TestTags.TASK_EDIT_FINISH),
+        DetailRows(state, callbacks)
+        if (state.editable) {
+            Text(
+                if (state.self) stringResource(R.string.task_edit_hint_self) else stringResource(R.string.task_edit_hint, state.toName),
+                style = DurtTheme.type.caption,
+                color = colors.textSecondary,
+                modifier = Modifier.padding(horizontal = dimens.space8),
             )
         }
-        Text(
-            if (state.self) stringResource(R.string.task_edit_hint_self) else stringResource(R.string.task_edit_hint, state.toName),
-            style = DurtTheme.type.caption,
-            color = colors.textSecondary,
-            modifier = Modifier.padding(horizontal = dimens.space8),
-        )
+        from?.phone?.let { ReachButtons(it, callbacks) }
     }
     if (state.cancelling) CancelSheet(state, callbacks)
     if (state.editing != null) EditSheet(state, callbacks)
-}
-
-/** Kurulu and "Şu an Eren için en güçlü dürtme: **tam ekran**. Bitince sana yazarım." (open-questions#34). */
-@Composable
-private fun StatusCard(state: TaskDetailUiState) {
-    val colors = DurtTheme.colors
-    val dimens = DurtTheme.dimens
-    val shape = RoundedCornerShape(dimens.radiusXl)
-    val level = state.reachability.level?.let { stringResource(it) }
-    val sentence =
-        if (state.self) {
-            buildAnnotatedString { append(stringResource(R.string.task_reach_self)) }
-        } else if (level == null) {
-            buildAnnotatedString { append(stringResource(R.string.task_reach_none, state.toName)) }
-        } else {
-            val full = stringResource(R.string.task_reach, state.toName, level)
-            val start = full.indexOf(level)
-            buildAnnotatedString {
-                append(full)
-                if (start >= 0) addStyle(SpanStyle(fontWeight = FontWeight.Bold), start, start + level.length)
-            }
-        }
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .background(colors.surface, shape)
-                .border(dimens.borderCard, colors.border, shape)
-                .padding(dimens.space16),
-        verticalArrangement = Arrangement.spacedBy(dimens.space12),
-    ) {
-        StatusPill(PillStatus.Scheduled)
-        Text(sentence, style = DurtTheme.type.body, color = colors.ink)
-    }
+    state.drop?.let { DropSheet(it, callbacks.drop) }
+    state.newDeadline?.let { NewDeadlineSheet(it, callbacks.newDeadline) }
 }
 
 @Composable
@@ -227,7 +245,7 @@ private fun ColumnScope.CancelReasons(
     Text(stringResource(R.string.cancel_reason_hint), style = DurtTheme.type.caption, color = DurtTheme.colors.textSecondary)
 }
 
-private val previewState =
+internal val previewState =
     TaskDetailUiState(
         myName = "Sibel",
         title = "Temizlikçi için para çek",
@@ -256,6 +274,7 @@ private fun TaskDetailScreenSelfPreview() {
                 rawText = "2 dakika sonra su iç",
                 toName = "",
                 self = true,
+                side = DetailSide.ToSelf,
                 deadline = DeadlineText.Today("19:48", moment = true),
                 detail = null,
                 photo = false,

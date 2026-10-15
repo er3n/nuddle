@@ -27,12 +27,15 @@ import app.nuddle.ui.screens.consent.ConsentCallbacks
 import app.nuddle.ui.screens.consent.ConsentScreen
 import app.nuddle.ui.screens.consent.ConsentUiState
 import app.nuddle.ui.screens.consent.MatchedScreen
+import app.nuddle.ui.screens.home.CancelledUi
 import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.FromUi
 import app.nuddle.ui.screens.home.HomeScreen
+import app.nuddle.ui.screens.home.HomeTab
+import app.nuddle.ui.screens.home.HomeTaskCallbacks
 import app.nuddle.ui.screens.home.HomeUiState
-import app.nuddle.ui.screens.home.NextUpCallbacks
+import app.nuddle.ui.screens.home.IssuesUi
 import app.nuddle.ui.screens.home.NextUpStatus
 import app.nuddle.ui.screens.home.NextUpUi
 import app.nuddle.ui.screens.home.PendingInviteCallbacks
@@ -66,6 +69,9 @@ import app.nuddle.ui.screens.setup.PermissionStepUi
 import app.nuddle.ui.screens.setup.PermissionsScreen
 import app.nuddle.ui.screens.setup.SetupDemoScreen
 import app.nuddle.ui.screens.setup.SetupUiState
+import app.nuddle.ui.screens.task.DetailAction
+import app.nuddle.ui.screens.task.DetailSide
+import app.nuddle.ui.screens.task.DetailStatus
 import app.nuddle.ui.screens.task.TaskDetailCallbacks
 import app.nuddle.ui.screens.task.TaskDetailScreen
 import app.nuddle.ui.screens.task.TaskDetailUiState
@@ -234,11 +240,11 @@ class TestTagsTest {
                 onComposeSend = { clicked += "send" },
                 onVoiceStart = {},
                 onVoiceEnd = {},
-                nextUpActions = NextUpCallbacks(onDone = { clicked += "doneEarly" }),
+                tasks = HomeTaskCallbacks(onOpenTask = { taskId, approval -> clicked += "open $taskId $approval" }),
             )
         }
         assertShown(TestTags.HOME_NEXT_UP)
-        assertTaps(TestTags.HOME_DONE_EARLY to "doneEarly", TestTags.HOME_INVITE to "invite")
+        assertTaps(TestTags.HOME_NEXT_UP to "open task-1 false", TestTags.HOME_INVITE to "invite")
     }
 
     @Test
@@ -246,7 +252,7 @@ class TestTagsTest {
         val sent = SentUi("task-1", "Para çek", null, DeadlineText.Tomorrow("09:00"), photo = false, toId = Cast.SIBEL_ID, toName = "Sibel")
         content {
             HomeScreen(
-                state = HomeUiState(myName = "Eren", connected = true, sent = listOf(sent)),
+                state = HomeUiState(myName = "Eren", connected = true, sent = listOf(sent), tab = HomeTab.Sent),
                 onBell = {},
                 onProfile = {},
                 onInvite = {},
@@ -254,10 +260,38 @@ class TestTagsTest {
                 onComposeSend = {},
                 onVoiceStart = {},
                 onVoiceEnd = {},
-                onOpenTask = { taskId, approval -> clicked += "open $taskId $approval" },
+                tasks =
+                    HomeTaskCallbacks(
+                        onOpenTask = { taskId, approval -> clicked += "open $taskId $approval" },
+                        onTab = { clicked += "tab $it" },
+                    ),
             )
         }
-        assertTaps(TestTags.HOME_SENT to "open task-1 false")
+        assertTaps(
+            TestTags.HOME_SENT to "open task-1 false",
+            TestTags.HOME_TAB_MINE to "tab Mine",
+            TestTags.HOME_TAB_SENT to "tab Sent",
+        )
+    }
+
+    @Test
+    fun `home with a cancelled task to me and its ✕`() {
+        val cancelled = CancelledUi("task-1", "Ütüyü kaldır", "Sibel", null)
+        content {
+            HomeScreen(
+                state = HomeUiState(myName = "Eren", connected = true, issues = IssuesUi(cancelled = listOf(cancelled))),
+                onBell = {},
+                onProfile = {},
+                onInvite = {},
+                onComposeTextChange = {},
+                onComposeSend = {},
+                onVoiceStart = {},
+                onVoiceEnd = {},
+                tasks = HomeTaskCallbacks(onDismissCancelled = { clicked += "dismiss $it" }),
+            )
+        }
+        assertShown(TestTags.ISSUE_CANCELLED)
+        assertTaps(TestTags.ISSUE_REMOVE to "dismiss task-1")
     }
 
     @Test
@@ -313,25 +347,42 @@ class TestTagsTest {
     }
 
     @Test
-    fun `home with a photo task opens the camera`() {
+    fun `task detail of a photo task to me`() {
         content {
-            HomeScreen(
-                state =
-                    HomeUiState(
-                        myName = "Eren",
-                        nextUp = NextUpUi("task-1", "Para çek", "1.000 TL", DeadlineText.Tomorrow("09:00"), photo = true),
-                    ),
-                onBell = {},
-                onProfile = {},
-                onInvite = {},
-                onComposeTextChange = {},
-                onComposeSend = {},
-                onVoiceStart = {},
-                onVoiceEnd = {},
-                nextUpActions = NextUpCallbacks(onTakePhoto = { clicked += "photo $it" }),
+            TaskDetailScreen(
+                state = toMeDetail.copy(photo = true),
+                callbacks = TaskDetailCallbacks(onAction = { clicked += it.name }),
             )
         }
-        assertTaps(TestTags.HOME_TAKE_PHOTO to "photo task-1")
+        assertTaps(
+            TestTags.taskAction(DetailAction.TakePhoto.name) to "TakePhoto",
+            TestTags.taskAction(DetailAction.CantToday.name) to "CantToday",
+        )
+    }
+
+    @Test
+    fun `task detail of my dropped task`() {
+        content {
+            TaskDetailScreen(
+                state =
+                    TaskDetailUiState(
+                        myName = "Sibel",
+                        title = "Para çek",
+                        rawText = null,
+                        toName = "Eren",
+                        reachability = Reachability.SOUND,
+                        deadline = DeadlineText.Today("19:00"),
+                        detail = null,
+                        photo = false,
+                        status = DetailStatus.Dropped,
+                    ),
+                callbacks = TaskDetailCallbacks(onAction = { clicked += it.name }),
+            )
+        }
+        assertTaps(
+            TestTags.taskAction(DetailAction.NewTime.name) to "NewTime",
+            TestTags.taskAction(DetailAction.SenderHandles.name) to "SenderHandles",
+        )
     }
 
     @Test
@@ -383,7 +434,7 @@ class TestTagsTest {
                 onComposeSend = {},
                 onVoiceStart = {},
                 onVoiceEnd = {},
-                nextUpActions = NextUpCallbacks(onOpenUnsentPhoto = { clicked += "unsent $it" }),
+                tasks = HomeTaskCallbacks(onOpenUnsentPhoto = { clicked += "unsent $it" }),
             )
         }
         assertTaps(TestTags.HOME_UNSENT_PHOTO to "unsent task-1")
@@ -406,19 +457,32 @@ class TestTagsTest {
                 onComposeSend = {},
                 onVoiceStart = {},
                 onVoiceEnd = {},
-                nextUpActions =
-                    NextUpCallbacks(
-                        onDone = { clicked += "doneEarly" },
+                tasks = HomeTaskCallbacks(onOpenTask = { taskId, approval -> clicked += "open $taskId $approval" }),
+            )
+        }
+        assertShown(TestTags.HOME_NEXT_UP)
+        assertTaps(TestTags.HOME_NEXT_UP to "open task-1 false")
+    }
+
+    @Test
+    fun `task detail of a task from Sibel`() {
+        content {
+            TaskDetailScreen(
+                state = toMeDetail,
+                callbacks =
+                    TaskDetailCallbacks(
+                        onAction = { clicked += it.name },
                         onCall = { clicked += "call $it" },
                         onMessage = { clicked += "message $it" },
                     ),
             )
         }
-        assertShown(TestTags.HOME_NEXT_UP)
+        assertShown(TestTags.TASK_DETAIL)
         assertTaps(
-            TestTags.HOME_DONE_EARLY to "doneEarly",
-            TestTags.HOME_CALL to "call ${Cast.SIBEL_PHONE}",
-            TestTags.HOME_MESSAGE to "message ${Cast.SIBEL_PHONE}",
+            TestTags.taskAction(DetailAction.DoneEarly.name) to "DoneEarly",
+            TestTags.taskAction(DetailAction.CantToday.name) to "CantToday",
+            TestTags.TASK_CALL to "call ${Cast.SIBEL_PHONE}",
+            TestTags.TASK_MESSAGE to "message ${Cast.SIBEL_PHONE}",
         )
     }
 
@@ -594,6 +658,20 @@ class TestTagsTest {
         assertShown(TestTags.SETUP_STEPS)
         assertTaps(TestTags.SETUP_OPEN_ACTIVE to "open", TestTags.SETUP_SKIP_STEP to "skip")
     }
+
+    private val toMeDetail =
+        TaskDetailUiState(
+            myName = "Eren",
+            title = "Gelirken ekmek al",
+            rawText = null,
+            toName = "",
+            reachability = Reachability.NONE,
+            deadline = DeadlineText.Today("19:00"),
+            detail = null,
+            photo = false,
+            side = DetailSide.ToMe,
+            from = FromUi("Sibel", WrittenText.Today("14:32"), Cast.SIBEL_PHONE),
+        )
 
     private fun homeWith(compose: ComposeState) {
         content {

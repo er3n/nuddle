@@ -80,6 +80,11 @@ class PhotoViewModelTest {
                 taskId: String,
                 note: String?,
             ) = Unit
+
+            override suspend fun cantToday(
+                taskId: String,
+                note: String?,
+            ) = Unit
         }
 
     private val vm by lazy {

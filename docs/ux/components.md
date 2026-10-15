@@ -49,19 +49,18 @@ sealed interface ComposeState { data object Idle; data class Typing(val text: St
 - Failed: text is kept, the button becomes "Tekrar dene", an InlineAlert shows above.
 - Sits above the keyboard with `imePadding()`.
 
-## 4. TaskRow, TaskActionCard, StatusPill
+## 4. TaskRow, StatusPill, HomeTabs
 
 ```kotlin
-@Composable fun TaskRow(task: TaskUi, onClick: () -> Unit,
-    highlighted: Boolean = false)                                     // avatar 36 + title + sub line + pill
-@Composable fun TaskActionCard(task: TaskUi, message: String,
-    primary: Action, secondary: Action?)                              // avatar 32, message box, 1-2 actions
+@Composable fun TaskRow(task: TaskUi, onClick: (() -> Unit)?,
+    highlighted: Boolean = false, trailing: (@Composable () -> Unit)? = null) // avatar 36 + title + sub line + chevron
 @Composable fun StatusPill(status: TaskStatus)
+@Composable fun HomeTabs(tab: HomeTab, count: Int, waiting: Boolean, onTab: (HomeTab) -> Unit)
 ```
-- TaskActionCard: an optional `onRemove` puts a small close button (×, "Kaldır") in the card's top right; the recipient's missed card uses it (NUD-49).
-- TaskRow: white card, 1 dp `border`, radius 16, padding 12x14. Title 15/600 single line with ellipsis. Sub line 13 `textSecondary`: "Person · deadline" or a status sentence. `highlighted`: 2 dp `accent` border, for the task that just went out (4i).
-- TaskActionCard: for states that need a decision (missed, dropped, awaiting approval). Radius 20, message box `background` radius 12, action buttons 42 dp.
+- TaskRow: white card, 1 dp `border`, radius 16, padding 12x14. Title 15/600 and sub line 13 `textSecondary`, each one line with an ellipsis, so a long title never moves anything else (NUD-67). The sub line starts with the status in its pill's text color ("Bırakıldı · Not: yarın hallederim"); Kurulu is not written. A chevron when the row opens something; `trailing` replaces it (the ✕ of an "iptal etti" row). `highlighted`: 2 dp `accent` border, for the task that just went out (4i).
+- The TaskActionCard with buttons on home is gone since NUD-67: a state that needs a decision is a row, and its buttons are in the task detail.
 - StatusPill: 12/600, horizontal padding 10, height 24. Mapping in `screens.md` (Status to UI).
+- HomeTabs: a segmented control on `neutralPill`, radius 16, padding 4 (`size.tabs`); each segment 40 high, the selected one `surface` with radius 12. Labels 14/600, `ink` when selected, `textSecondary` otherwise. Bana carries a count badge (`ink` fill, `surface` text, `micro`), Gönderdiklerim the 8 dp `poke` dot while something waits for an answer. A horizontal drag longer than `size.tabs.swipe` switches; the content slides in `motion` medium.
 
 ## 5. SettingsGroup, LineRow, ToggleRow, ChoiceChip
 

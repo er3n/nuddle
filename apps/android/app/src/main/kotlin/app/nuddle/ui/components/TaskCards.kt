@@ -28,9 +28,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import app.nuddle.R
 import app.nuddle.ui.TestTags
 import app.nuddle.ui.icons.DurtIcons
@@ -48,13 +51,6 @@ data class TaskUi(
     val status: PillStatus,
     val personName: String,
     val personColor: Color,
-)
-
-data class CardAction(
-    val text: String,
-    val onClick: () -> Unit,
-    val icon: ImageVector? = null,
-    val testTag: String = "",
 )
 
 @Composable
@@ -103,9 +99,25 @@ fun StatusPill(
     )
 }
 
+/** The text color of a status written at the start of a sub line: its pill's, readable on `surface`. */
+@Composable
+private fun PillStatus.lineColor(): Color {
+    val colors = DurtTheme.colors
+    return when (this) {
+        PillStatus.Scheduled, PillStatus.Dropped, PillStatus.Cancelled -> colors.textSecondary
+        PillStatus.New -> colors.ink
+        PillStatus.AwaitingMyApproval, PillStatus.AwaitingApproval -> colors.onInfoPill
+        PillStatus.Rejected, PillStatus.Queued -> colors.onWarningPill
+        PillStatus.Done -> colors.success
+        PillStatus.Missed -> colors.danger
+    }
+}
+
 /**
- * One task in a list: avatar, title, sub line, pill. TalkBack reads it as one element (platform.md). [highlighted]
- * draws a 2 dp `accent` border: the task that just went out (4i).
+ * One task in a list: avatar, title, sub line, chevron (docs/ux/components.md 4). Title and sub line are one line each
+ * with an ellipsis, so nothing moves when a title is long (NUD-67). The sub line starts with the status unless it is
+ * Kurulu. TalkBack reads it as one element (platform.md). [highlighted] draws a 2 dp `accent` border: the task that just
+ * went out (4i). [trailing] replaces the chevron.
  */
 @Composable
 fun TaskRow(
@@ -114,12 +126,23 @@ fun TaskRow(
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     highlighted: Boolean = false,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
     val shape = RoundedCornerShape(dimens.radiusM)
     val pill = task.status.label()
     val description = listOf(task.title, task.subtitle, pill).joinToString(", ")
+    val statusColor = task.status.lineColor()
+    val line =
+        buildAnnotatedString {
+            if (task.status != PillStatus.Scheduled) {
+                withStyle(SpanStyle(color = statusColor, fontWeight = FontWeight.SemiBold)) { append(pill) }
+                if (task.subtitle.isNotEmpty()) append(stringResource(R.string.separator_dot, "", task.subtitle))
+            } else {
+                append(task.subtitle)
+            }
+        }
     Row(
         modifier =
             modifier
@@ -133,100 +156,55 @@ fun TaskRow(
                         Modifier.border(dimens.borderCard, colors.border, shape)
                     },
                 ).then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-                .clearAndSetSemantics { contentDescription = description }
-                .padding(horizontal = dimens.space14, vertical = dimens.space12),
+                .semantics(mergeDescendants = true) { contentDescription = description }
+                .padding(start = dimens.space14, top = dimens.space12, bottom = dimens.space12, end = dimens.space8),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(dimens.space12),
     ) {
-        Avatar(task.personName, task.personColor, dimens.avatarList)
-        Column(Modifier.weight(1f)) {
+        Box(Modifier.clearAndSetSemantics { }) { Avatar(task.personName, task.personColor, dimens.avatarList) }
+        Column(Modifier.weight(1f).clearAndSetSemantics { }) {
             Text(task.title, style = DurtTheme.type.bodyStrong, color = colors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(task.subtitle, style = DurtTheme.type.caption, color = colors.textSecondary)
+            Text(line, style = DurtTheme.type.caption, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        StatusPill(task.status)
-    }
-}
-
-/** A task that needs a decision (missed, dropped, awaiting approval): message box and one or two actions. */
-@Composable
-fun TaskActionCard(
-    task: TaskUi,
-    message: String,
-    primary: CardAction,
-    modifier: Modifier = Modifier,
-    secondary: CardAction? = null,
-    /** A close button (×, "Kaldır") in the top right: the recipient's missed card (NUD-49). */
-    onRemove: (() -> Unit)? = null,
-) {
-    val colors = DurtTheme.colors
-    val dimens = DurtTheme.dimens
-    val shape = RoundedCornerShape(dimens.radiusXl)
-    Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .clip(shape)
-                .background(colors.surface)
-                .border(dimens.borderCard, colors.border, shape)
-                .padding(dimens.space16),
-        verticalArrangement = Arrangement.spacedBy(dimens.space12),
-    ) {
-        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(dimens.space12)) {
-            Avatar(task.personName, task.personColor, dimens.avatarCard)
-            Column(Modifier.weight(1f)) {
-                Text(task.title, style = DurtTheme.type.bodyStrong, color = colors.ink)
-                Text(task.subtitle, style = DurtTheme.type.caption, color = colors.textSecondary)
+        when {
+            trailing != null -> {
+                trailing()
             }
-            StatusPill(task.status)
-            if (onRemove != null) RemoveButton(onRemove)
-        }
-        Text(
-            text = message,
-            style = DurtTheme.type.bodySmall,
-            color = colors.textBody,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .background(colors.background, RoundedCornerShape(dimens.radiusS))
-                    .padding(dimens.space12),
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(dimens.space8)) {
-            DurtButton(
-                text = primary.text,
-                onClick = primary.onClick,
-                size = DurtButtonSize.Compact,
-                leadingIcon = primary.icon,
-                modifier = Modifier.weight(1f).testTag(primary.testTag),
-            )
-            if (secondary != null) {
-                DurtButton(
-                    text = secondary.text,
-                    onClick = secondary.onClick,
-                    kind = DurtButtonKind.Secondary,
-                    size = DurtButtonSize.Compact,
-                    leadingIcon = secondary.icon,
-                    modifier = Modifier.weight(1f).testTag(secondary.testTag),
+
+            onClick != null -> {
+                Icon(
+                    DurtIcons.ChevronRight,
+                    contentDescription = null,
+                    tint = colors.textMuted,
+                    modifier = Modifier.size(dimens.icon),
                 )
             }
         }
     }
 }
 
-/** The × of a card that can be taken off the list (NUD-49). */
+/** The × that takes a row off the list: "Kaldır" for TalkBack. */
 @Composable
-private fun RemoveButton(onRemove: () -> Unit) {
+fun RemoveButton(
+    onRemove: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val description = stringResource(R.string.issue_remove)
     Box(
         modifier =
-            Modifier
-                .size(DurtTheme.dimens.iconLarge)
+            modifier
+                .size(DurtTheme.dimens.minTouchTarget)
                 .clip(CircleShape)
                 .clickable(role = Role.Button, onClick = onRemove)
-                .semantics { contentDescription = description }
-                .testTag(TestTags.ISSUE_REMOVE),
+                .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) {
-        Icon(DurtIcons.Close, contentDescription = null, tint = DurtTheme.colors.textSecondary)
+        Icon(
+            DurtIcons.Close,
+            contentDescription = null,
+            tint = DurtTheme.colors.textSecondary,
+            modifier = Modifier.size(DurtTheme.dimens.icon),
+        )
     }
 }
 
@@ -237,11 +215,15 @@ private fun TaskCardsPreview() {
         val sibel = DurtTheme.colors.avatarOthers.first()
         Column(verticalArrangement = Arrangement.spacedBy(DurtTheme.dimens.space16)) {
             TaskRow(TaskUi("Gelirken ekmek al", "Sibel · bu akşam", PillStatus.Scheduled, "Sibel", sibel), onClick = {})
-            TaskActionCard(
-                task = TaskUi("Para çek", "Sibel · bugün 09:00'a kadardı", PillStatus.Missed, "Sibel", sibel),
-                message = "Son zaman geçti. Sibel'e haber verdim.",
-                primary = CardAction("Sonradan yaptım", {}),
-                secondary = CardAction("Ara", {}),
+            TaskRow(
+                TaskUi("Kuru temizlemeyi Moda'daki dükkandan al", "Not: yarın hallederim", PillStatus.Dropped, "Sibel", sibel),
+                onClick = {},
+            )
+            TaskRow(TaskUi("Para çek", "bugün 09:00'a kadardı", PillStatus.Missed, "Sibel", sibel), onClick = {})
+            TaskRow(
+                TaskUi("Ütüyü kaldır", "Dürtmeler durdu", PillStatus.Cancelled, "Sibel", sibel),
+                onClick = null,
+                trailing = { RemoveButton(onRemove = {}) },
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(DurtTheme.dimens.space8)) {
                 PillStatus.entries.forEach { StatusPill(it, Modifier.padding(bottom = DurtTheme.dimens.space8)) }

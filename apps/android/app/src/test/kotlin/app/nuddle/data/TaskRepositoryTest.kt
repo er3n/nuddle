@@ -99,6 +99,13 @@ class TaskRepositoryTest {
                         ) {
                             closed += "cancel $taskId"
                         }
+
+                        override suspend fun cantToday(
+                            taskId: String,
+                            note: String?,
+                        ) {
+                            closed += "cantToday $taskId"
+                        }
                     },
                 sessions = sessions,
                 tasks = db.tasks(),

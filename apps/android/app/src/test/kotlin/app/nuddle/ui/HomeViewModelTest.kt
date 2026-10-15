@@ -36,6 +36,7 @@ import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.DoneNoteUi
+import app.nuddle.ui.screens.home.HomeTab
 import app.nuddle.ui.screens.home.HomeViewModel
 import app.nuddle.ui.screens.home.NextUpStatus
 import app.nuddle.ui.screens.home.RecipientChoice
@@ -200,10 +201,8 @@ class HomeViewModelTest {
                 val after = awaitItemWhere { it?.nextUp != null }
                 assertEquals("Sibel", after?.nextUp?.from?.name)
                 assertTrue(after?.connected ?: false, "no invite card once someone is connected")
-                vm.onFinishNextUp()
                 cancelAndIgnoreRemainingEvents()
             }
-            assertEquals(listOf(Cast.TASK_ID), tasks.done)
         }
 
     @Test
@@ -234,7 +233,7 @@ class HomeViewModelTest {
         }
 
     @Test
-    fun `the task to self due first is next up and Şimdiden bitti closes it`() =
+    fun `the task to self due first is next up`() =
         runTest(main.dispatcher) {
             signedIn()
             taskDao.upsert(listOf(aTask().copy(senderId = Cast.EREN_ID)))
@@ -242,10 +241,8 @@ class HomeViewModelTest {
                 val card = awaitItemWhere { it?.nextUp != null }?.nextUp
                 assertEquals(Cast.TASK_ID, card?.taskId)
                 assertEquals(DeadlineText.Tomorrow("09:00"), card?.deadline)
-                vm.onFinishNextUp()
                 cancelAndIgnoreRemainingEvents()
             }
-            assertEquals(listOf(Cast.TASK_ID), tasks.done)
         }
 
     @Test
@@ -496,6 +493,27 @@ class HomeViewModelTest {
         }
 
     @Test
+    fun `home opens on Bana, a task to Sibel switches to Gönderdiklerim, one to self back to Bana (NUD-67)`() =
+        runTest(main.dispatcher) {
+            connectionDao.upsert(listOf(sibelConnection()))
+            ready()
+            assertEquals(HomeTab.Mine, vm.state.value?.tab)
+            taskDao.upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SIBEL_ID)))
+            vm.onComposeTextChange("sibel yarın 9dan önce 1000 tl çeksin")
+            vm.onComposeSend()
+            assertEquals(HomeTab.Sent, vm.state.value?.tab)
+
+            vm.onUndoTimeout()
+            taskDao.upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.EREN_ID)))
+            vm.onComposeTextChange("1000 tl çek yarın 9da")
+            vm.onComposeSend()
+            assertEquals(HomeTab.Mine, vm.state.value?.tab)
+
+            vm.onTab(HomeTab.Sent)
+            assertEquals(HomeTab.Sent, vm.state.value?.tab)
+        }
+
+    @Test
     fun `Düzenle on a task to Sibel keeps her in the preview`() =
         runTest(main.dispatcher) {
             connectionDao.upsert(listOf(sibelConnection()))
@@ -619,12 +637,10 @@ class HomeViewModelTest {
 
     @OptIn(ExperimentalCoroutinesApi::class) // Reason: advanceTimeBy is how virtual time moves (ADR 0009).
     @Test
-    fun `Şimdiden bitti shows the done note for 4 seconds`() =
+    fun `the done note shows for 4 seconds`() =
         runTest(main.dispatcher) {
             ready()
-            taskDao.upsert(listOf(aTask().copy(senderId = Cast.EREN_ID)))
-            tasks.caughtAt = 2
-            vm.onFinishNextUp()
+            doneNotes.post(DoneNote(Cast.TASK_ID, "Temizlikçi için para çek", caughtAt = 2))
             assertEquals(DoneNoteUi("Temizlikçi için para çek", 2), vm.state.value?.doneNote)
 
             advanceTimeBy(3_999)

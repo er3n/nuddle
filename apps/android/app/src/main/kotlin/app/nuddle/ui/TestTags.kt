@@ -34,9 +34,11 @@ object TestTags {
     const val HOME = "home.screen"
     const val HOME_INVITE = "home.invite"
     const val HOME_NEXT_UP = "home.nextUp"
-    const val HOME_DONE_EARLY = "home.doneEarly"
-    const val HOME_CALL = "home.call"
     const val HOME_SENT = "home.sent"
+    const val HOME_SENT_ISSUE = "home.sentIssue"
+    const val HOME_MISSED = "home.missed"
+    const val HOME_TAB_MINE = "home.tab.mine"
+    const val HOME_TAB_SENT = "home.tab.sent"
     const val NEXT_UP_SNOOZED = "nextUp.snoozed"
     const val HOME_LATER = "home.later"
     const val HOME_QUEUED = "home.queued"
@@ -55,7 +57,6 @@ object TestTags {
     const val PHOTO_SEND = "photo.send"
     const val PHOTO_RETAKE = "photo.retake"
     const val PHOTO_DONE_WITHOUT = "photo.doneWithout"
-    const val HOME_TAKE_PHOTO = "home.takePhoto"
     const val APPROVE = "approve.screen"
     const val HOME_UNSENT_PHOTO = "home.unsentPhoto"
     const val UNSENT_PHOTO = "unsent.screen"
@@ -67,8 +68,13 @@ object TestTags {
     const val TASK_CANCEL = "task.cancel"
     const val TASK_EDIT_DEADLINE = "task.editDeadline"
     const val TASK_EDIT_FINISH = "task.editFinish"
+    const val TASK_CALL = "task.call"
+    const val TASK_MESSAGE = "task.message"
 
     fun cancelReason(name: String) = "task.cancelReason.$name"
+
+    /** A button at the bottom of the task detail, by DetailAction name. */
+    fun taskAction(name: String) = "task.action.$name"
 
     fun bellEntry(taskId: String) = "inbox.entry.$taskId"
 
@@ -85,7 +91,6 @@ object TestTags {
     /** null is "Kendine". */
     fun previewRecipient(personId: String?) = "preview.recipient.${personId ?: "self"}"
 
-    const val HOME_MESSAGE = "home.message"
     const val HOME_UNDO = "home.undo"
     const val HOME_DONE_NOTE = "home.doneNote"
     const val HOME_PENDING_INVITE = "home.pendingInvite"
@@ -145,11 +150,6 @@ object TestTags {
     const val POKE_CANT_TODAY = "poke.cantToday"
     const val DROP_NOTE = "drop.note"
     const val ISSUE_REMOVE = "issue.remove"
-    const val ISSUE_DID_IT_LATER = "issue.didItLater"
-    const val ISSUE_CALL = "issue.call"
-    const val ISSUE_NEW_TIME = "issue.newTime"
-    const val ISSUE_I_HANDLE = "issue.iHandle"
-    const val ISSUE_CANCEL = "issue.cancel"
     const val ISSUE_CANCELLED = "issue.cancelled"
 
     const val PROFILE_SCREEN = "profile.screen"

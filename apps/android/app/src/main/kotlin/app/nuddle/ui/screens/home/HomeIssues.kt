@@ -5,7 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -20,66 +19,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import app.nuddle.R
 import app.nuddle.ui.TestTags
-import app.nuddle.ui.components.CardAction
 import app.nuddle.ui.components.PillStatus
-import app.nuddle.ui.components.TaskActionCard
+import app.nuddle.ui.components.RemoveButton
+import app.nuddle.ui.components.TaskRow
 import app.nuddle.ui.components.TaskUi
 import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.theme.DurtTheme
 import app.nuddle.ui.theme.avatarFor
-import app.nuddle.ui.uppercaseForUi
 
-// The cards of home that wait for an answer: 7e for tasks to me, 5d for my tasks to others.
+// The rows of home that wait for an answer: 7e in Bana, 5d in Gönderdiklerim. Their messages and buttons are in the
+// task detail since NUD-67.
 
-data class IssueCallbacks(
-    val onDidItLater: (taskId: String) -> Unit = {},
-    val onRemoveMissed: (taskId: String) -> Unit = {},
-    val onCall: (phone: String) -> Unit = {},
-    val onNewDeadline: (taskId: String) -> Unit = {},
-    val onSenderHandles: (taskId: String) -> Unit = {},
-    val onCancel: (taskId: String) -> Unit = {},
-)
-
-/** 7e under "Sana yazılanlar": missed cards, cancelled rows, and the footnote while a missed card is there. */
+/** 7e: a missed task to me or to self, "Kaçırıldı · Sibel · bugün 09:00'a kadardı". */
 @Composable
-internal fun ColumnScope.ToMeIssues(
-    issues: IssuesUi,
-    callbacks: IssueCallbacks,
-) {
-    val colors = DurtTheme.colors
-    Text(
-        text = stringResource(R.string.home_to_me).uppercaseForUi(),
-        style = DurtTheme.type.overline,
-        color = colors.textTertiary,
-        modifier = Modifier.semantics { heading() },
-    )
-    issues.missed.forEach { MissedCard(it, callbacks) }
-    issues.cancelled.forEach { CancelledRow(it) }
-    if (issues.missed.isNotEmpty()) {
-        Text(
-            stringResource(R.string.issues_footer),
-            style = DurtTheme.type.caption,
-            color = colors.textSecondary,
-            modifier = Modifier.padding(horizontal = DurtTheme.dimens.space4),
-        )
-    }
-}
-
-@Composable
-private fun MissedCard(
+internal fun MissedRow(
     task: MissedUi,
-    callbacks: IssueCallbacks,
+    myName: String,
+    onOpen: () -> Unit,
 ) {
     val colors = DurtTheme.colors
     val deadline = task.deadline.phrase()
     val from = task.fromName
-    val phone = task.phone
-    TaskActionCard(
+    TaskRow(
         task =
             TaskUi(
                 title = task.title,
@@ -90,34 +56,23 @@ private fun MissedCard(
                         stringResource(R.string.issue_from_deadline, from, deadline)
                     },
                 status = PillStatus.Missed,
-                personName = from ?: "",
+                personName = from ?: myName,
                 personColor = task.fromId?.let { colors.avatarFor(it) } ?: colors.avatarSelf,
             ),
-        onRemove = { callbacks.onRemoveMissed(task.taskId) },
-        message =
-            when {
-                from == null && task.deadline.moment -> stringResource(R.string.issue_missed_self_moment)
-                from == null -> stringResource(R.string.issue_missed_self)
-                task.deadline.moment -> stringResource(R.string.issue_missed_to_me_moment, from)
-                else -> stringResource(R.string.issue_missed_to_me, from)
-            },
-        primary =
-            CardAction(stringResource(R.string.issue_did_it_later), {
-                callbacks.onDidItLater(task.taskId)
-            }, testTag = TestTags.ISSUE_DID_IT_LATER),
-        secondary =
-            phone?.let {
-                CardAction(stringResource(R.string.home_call), { callbacks.onCall(it) }, DurtIcons.Phone, TestTags.ISSUE_CALL)
-            },
+        onClick = onOpen,
+        modifier = Modifier.testTag(TestTags.HOME_MISSED),
     )
 }
 
-/** "Sibel iptal etti: "Kuru temizlemeyi al"" with the note and "Dürtmeler durdu". */
+/** "Sibel iptal etti: "Kuru temizlemeyi al"" with the note and "Dürtmeler durdu", and a ✕ that removes it (NUD-67). */
 @Composable
-private fun CancelledRow(task: CancelledUi) {
+internal fun CancelledRow(
+    task: CancelledUi,
+    onRemove: () -> Unit,
+) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
-    val shape = RoundedCornerShape(dimens.radiusL)
+    val shape = RoundedCornerShape(dimens.radiusM)
     val stopped = stringResource(R.string.issue_pokes_stopped)
     Row(
         modifier =
@@ -125,7 +80,7 @@ private fun CancelledRow(task: CancelledUi) {
                 .fillMaxWidth()
                 .background(colors.surface, shape)
                 .border(dimens.borderCard, colors.border, shape)
-                .padding(dimens.space14)
+                .padding(start = dimens.space14, top = dimens.space10, bottom = dimens.space10, end = dimens.space4)
                 .testTag(TestTags.ISSUE_CANCELLED),
         horizontalArrangement = Arrangement.spacedBy(dimens.space12),
         verticalAlignment = Alignment.CenterVertically,
@@ -133,57 +88,58 @@ private fun CancelledRow(task: CancelledUi) {
         Box(Modifier.size(dimens.avatarList).background(colors.neutralPill, CircleShape), contentAlignment = Alignment.Center) {
             Icon(DurtIcons.Close, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(dimens.icon))
         }
-        Column(Modifier.weight(1f)) {
-            Text(stringResource(R.string.issue_cancelled_title, task.byName, task.title), style = DurtTheme.type.body, color = colors.ink)
+        Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
+            Text(
+                stringResource(R.string.issue_cancelled_title, task.byName, task.title),
+                style = DurtTheme.type.body,
+                color = colors.ink,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
             Text(
                 text =
                     task.note?.let { stringResource(R.string.separator_dot, stringResource(R.string.issue_note, it), stopped) } ?: stopped,
                 style = DurtTheme.type.caption,
                 color = colors.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
+        RemoveButton(onRemove, Modifier.testTag(TestTags.ISSUE_REMOVE))
     }
 }
 
-/** 5d: dropped (Yeni zaman ver, Ben hallederim) or missed (Süreyi uzat, İptal et), on top of "Senin yazdıkların". */
+/** 5d: my task that was dropped ("Bırakıldı · Not: yarın hallederim") or missed ("Kaçırıldı · ..."). */
 @Composable
-internal fun SentIssueCard(
+internal fun SentIssueRow(
     task: SentIssueUi,
-    callbacks: IssueCallbacks,
+    onOpen: () -> Unit,
 ) {
     val colors = DurtTheme.colors
     val dropped = task.issue == SentIssue.Dropped
-    TaskActionCard(
+    val note = task.note
+    TaskRow(
         task =
             TaskUi(
                 title = task.title,
-                subtitle = task.deadline.startPhrase(),
+                subtitle =
+                    if (dropped && note != null) {
+                        stringResource(R.string.separator_dot, task.toName, stringResource(R.string.issue_note, note))
+                    } else {
+                        stringResource(R.string.separator_dot, task.toName, task.deadline.startPhrase())
+                    },
                 status = if (dropped) PillStatus.Dropped else PillStatus.Missed,
                 personName = task.toName,
                 personColor = colors.avatarFor(task.toId),
             ),
-        message = task.message(),
-        primary =
-            CardAction(
-                stringResource(if (dropped) R.string.issue_new_time else R.string.issue_extend),
-                { callbacks.onNewDeadline(task.taskId) },
-                testTag = TestTags.ISSUE_NEW_TIME,
-            ),
-        secondary =
-            if (dropped) {
-                CardAction(
-                    stringResource(R.string.issue_i_handle),
-                    { callbacks.onSenderHandles(task.taskId) },
-                    testTag = TestTags.ISSUE_I_HANDLE,
-                )
-            } else {
-                CardAction(stringResource(R.string.cancel_confirm), { callbacks.onCancel(task.taskId) }, testTag = TestTags.ISSUE_CANCEL)
-            },
+        onClick = onOpen,
+        modifier = Modifier.testTag(TestTags.HOME_SENT_ISSUE),
     )
 }
 
+/** The 5d message: what happened, then the note or how many pokes rang. */
 @Composable
-private fun SentIssueUi.message(): String {
+fun SentIssueUi.message(): String {
     val first =
         when {
             issue == SentIssue.Dropped -> stringResource(R.string.issue_dropped, toName)
@@ -199,6 +155,18 @@ private fun SentIssueUi.message(): String {
             else -> pluralStringResource(R.plurals.issue_pokes, pokes, pokes)
         }
     return second?.let { stringResource(R.string.two_sentences, first, it) } ?: first
+}
+
+/** The 7e message of a missed task to me or to self. */
+@Composable
+fun MissedUi.message(): String {
+    val from = fromName
+    return when {
+        from == null && deadline.moment -> stringResource(R.string.issue_missed_self_moment)
+        from == null -> stringResource(R.string.issue_missed_self)
+        deadline.moment -> stringResource(R.string.issue_missed_to_me_moment, from)
+        else -> stringResource(R.string.issue_missed_to_me, from)
+    }
 }
 
 @Composable
@@ -217,7 +185,7 @@ private fun IssuesPreviewOf(state: HomeUiState) {
     }
 }
 
-/** 7e: Eren missed a task from Sibel, and Sibel cancelled another. */
+/** 7e in Bana: Eren missed a task from Sibel, and Sibel cancelled another. */
 @PreviewScreens
 @Composable
 private fun HomeScreenMissedPreview() {
@@ -237,7 +205,7 @@ private fun HomeScreenMissedPreview() {
     )
 }
 
-/** 5d: Sibel's tasks to Eren, one dropped with a note and one missed. */
+/** 5d in Gönderdiklerim: Sibel's tasks to Eren, one dropped with a note and one missed. */
 @PreviewScreens
 @Composable
 private fun HomeScreenSentIssuesPreview() {
@@ -245,6 +213,7 @@ private fun HomeScreenSentIssuesPreview() {
         HomeUiState(
             myName = "Sibel",
             connected = true,
+            tab = HomeTab.Sent,
             issues =
                 IssuesUi(
                     sent =

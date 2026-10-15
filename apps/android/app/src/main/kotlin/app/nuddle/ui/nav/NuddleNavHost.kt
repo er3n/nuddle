@@ -31,10 +31,8 @@ import app.nuddle.ui.screens.errors.InvalidInviteScreen
 import app.nuddle.ui.screens.home.HomeInvitesViewModel
 import app.nuddle.ui.screens.home.HomeIssuesViewModel
 import app.nuddle.ui.screens.home.HomeScreen
+import app.nuddle.ui.screens.home.HomeTaskCallbacks
 import app.nuddle.ui.screens.home.HomeViewModel
-import app.nuddle.ui.screens.home.IssueCallbacks
-import app.nuddle.ui.screens.home.NewDeadlineCallbacks
-import app.nuddle.ui.screens.home.NextUpCallbacks
 import app.nuddle.ui.screens.home.PendingInviteCallbacks
 import app.nuddle.ui.screens.home.PreviewCallbacks
 import app.nuddle.ui.screens.home.UndoCallbacks
@@ -178,7 +176,6 @@ fun NuddleNavHost(
             val invites: HomeInvitesViewModel = hiltViewModel()
             val issues: HomeIssuesViewModel = hiltViewModel()
             val issuesUi by issues.issues.collectAsStateWithLifecycle()
-            val newDeadline by issues.newDeadline.collectAsStateWithLifecycle()
             val activity = LocalActivity.current
             val state by viewModel.state.collectAsStateWithLifecycle()
             LaunchedEffect(viewModel) { viewModel.openSetup.collect { nav.navigate(Routes.SETUP) { launchSingleTop = true } } }
@@ -234,7 +231,6 @@ fun NuddleNavHost(
                         it.copy(
                             unread = unread,
                             issues = issuesUi,
-                            newDeadline = newDeadline,
                             compose =
                                 listening?.let { heard -> ComposeState.Listening(afterTyped(typed, heard)) } ?: it.compose,
                             voiceNotice = voiceNotice,
@@ -246,17 +242,17 @@ fun NuddleNavHost(
                     onComposeSend = viewModel::onComposeSend,
                     onVoiceStart = voiceInput.onStart,
                     onVoiceEnd = voiceInput.onEnd,
-                    nextUpActions =
-                        NextUpCallbacks(
-                            onDone = viewModel::onFinishNextUp,
-                            onTakePhoto = { nav.navigate(Routes.photo(it)) { launchSingleTop = true } },
+                    tasks =
+                        HomeTaskCallbacks(
+                            onOpenTask = { taskId, awaitingApproval ->
+                                nav.navigate(
+                                    if (awaitingApproval) Routes.approve(taskId) else Routes.task(taskId),
+                                ) { launchSingleTop = true }
+                            },
                             onOpenUnsentPhoto = { nav.navigate(Routes.unsent(it)) { launchSingleTop = true } },
-                            onCall = { activity?.dial(it) },
-                            onMessage = { activity?.message(it) },
+                            onDismissCancelled = issues::onDismissCancelled,
+                            onTab = viewModel::onTab,
                         ),
-                    onOpenTask = { taskId, awaitingApproval ->
-                        nav.navigate(if (awaitingApproval) Routes.approve(taskId) else Routes.task(taskId)) { launchSingleTop = true }
-                    },
                     preview =
                         PreviewCallbacks(
                             onChoice = viewModel.previewSheet::onChoice,
@@ -279,27 +275,17 @@ fun NuddleNavHost(
                             onReshare = { activity?.shareInvite(InviteLinks.of(it.code)) },
                             onRevoke = invites::onRevoke,
                         ),
-                    issueActions =
-                        IssueCallbacks(
-                            onDidItLater = issues::onDidItLater,
-                            onRemoveMissed = issues::onRemoveMissed,
-                            onCall = { activity?.dial(it) },
-                            onNewDeadline = issues::onNewDeadline,
-                            onSenderHandles = issues::onSenderHandles,
-                            onCancel = issues::onCancel,
-                        ),
-                    newDeadline =
-                        NewDeadlineCallbacks(
-                            onChoice = issues::onDeadlineChoice,
-                            onTimePicked = issues::onTimePicked,
-                            onSave = issues::onSave,
-                            onDismiss = issues::onDismiss,
-                        ),
                 )
             }
         }
         composable(Routes.TASK, arguments = listOf(navArgument(TaskDetailViewModel.ARG_TASK) { type = NavType.StringType })) {
-            TaskDetailRoute(onBack = { nav.popBackStack() })
+            val activity = LocalActivity.current
+            TaskDetailRoute(
+                onBack = { nav.popBackStack() },
+                onTakePhoto = { nav.navigate(Routes.photo(it)) { launchSingleTop = true } },
+                onCall = { activity?.dial(it) },
+                onMessage = { activity?.message(it) },
+            )
         }
         composable(Routes.PHOTO, arguments = listOf(navArgument(PhotoViewModel.ARG_TASK) { type = NavType.StringType })) {
             PhotoRoute(onClose = { nav.popBackStack() })

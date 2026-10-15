@@ -38,12 +38,19 @@ export function twoPersonExtractions(now: Date): Record<string, unknown> {
 interface Expect {
   visible?: string[];
   hidden?: string[];
+  /** The home tab to look at (NUD-67): Bana ("mine", where home opens) or Gönderdiklerim ("sent"). */
+  tab?: "mine" | "sent";
 }
 
-/** Waits until home is on [device]'s screen with every [visible] tag and none of the [hidden] ones. */
+/**
+ * Waits until home is on [device]'s screen with every [visible] tag and none of the [hidden] ones, on [Expect.tab]
+ * once its label shows.
+ */
 async function expectHome(device: Device, what: string, expect: Expect, timeoutMs = 60_000) {
   const visible = ["home.screen", ...(expect.visible ?? [])];
   const hidden = expect.hidden ?? [];
+  const tab = expect.tab === undefined ? undefined : `home.tab.${expect.tab}`;
+  let switched = false;
   let last = "";
   try {
     await waitFor(
@@ -51,6 +58,11 @@ async function expectHome(device: Device, what: string, expect: Expect, timeoutM
       async () => {
         const tags = await device.screenTags();
         last = [...tags].filter((t) => t.includes(".")).join(", ");
+        if (tab !== undefined && !switched && tags.has(tab)) {
+          await device.tap(tab);
+          switched = true;
+          return null;
+        }
         return visible.every((t) => tags.has(t)) && hidden.every((t) => !tags.has(t)) ? true : null;
       },
       timeoutMs,
@@ -135,7 +147,7 @@ export async function twoPerson(
       await d.openApp();
     }
     await expectHome(eren, "home", { hidden: ["home.nextUp"] });
-    await expectHome(sibel, "home", { hidden: ["home.sent"] });
+    await expectHome(sibel, "home", { hidden: ["home.sent"], tab: "sent" });
   };
 
   /** A task from Sibel through the API, both phones learn it from the push; returns its id once Eren has it. */
@@ -185,7 +197,10 @@ export async function twoPerson(
           async () => ((await eren.notificationChannels()).includes("tasks") ? true : null),
           30_000,
         );
-        await expectHome(sibel, "her row under Senin yazdıkların", { visible: ["home.sent"] });
+        await expectHome(sibel, "her row in Gönderdiklerim", {
+          visible: ["home.sent"],
+          tab: "sent",
+        });
         await eren.openApp();
         await expectHome(eren, "his next-up card", { visible: ["home.nextUp"] });
         await sibelApi.cancel(task.id);
@@ -194,23 +209,27 @@ export async function twoPerson(
           hidden: ["home.nextUp"],
         });
         await expectNoPokes(eren);
-        await expectHome(sibel, "no row", { hidden: ["home.sent"] });
+        await expectHome(sibel, "no row", { hidden: ["home.sent"], tab: "sent" });
       },
     ],
 
-    // 2. Eren taps Şimdiden bitti: done on the server, his card, alarms and notes go, her row goes.
+    // 2. Eren opens his task and taps Şimdiden bitti: done on the server, his card, alarms and notes go, her row goes.
     [
       2,
       "done-early",
       async () => {
         const taskId = await sibelSends("Çöpü at", QUIET_DEADLINE_MINUTES);
         await expectHome(eren, "his next-up card", { visible: ["home.nextUp"] });
-        await expectHome(sibel, "her row", { visible: ["home.sent"] });
-        await eren.tap("home.doneEarly");
+        await expectHome(sibel, "her row", { visible: ["home.sent"], tab: "sent" });
+        // The card opens the task; its detail has Şimdiden bitti (NUD-67).
+        await eren.taps("home.nextUp", "task.action.DoneEarly");
         await expectHome(eren, "no card after Bitti", { hidden: ["home.nextUp"] }, 15_000);
         await expectNoPokes(eren, 15_000);
         await expectStatus(erenApi, taskId, status("DONE"), "DONE");
-        await expectHome(sibel, "the row gone after his Bitti", { hidden: ["home.sent"] });
+        await expectHome(sibel, "the row gone after his Bitti", {
+          hidden: ["home.sent"],
+          tab: "sent",
+        });
         const left = await eren.notificationChannels();
         if (left.length > 0) throw new Error(`eren still has notifications: ${left.join(", ")}`);
       },
@@ -226,8 +245,9 @@ export async function twoPerson(
         await eren.pressHome();
         await time.toStep(taskId);
         await pokeUp(eren);
-        // Her task detail (7c), Görevi iptal et, "Ben hallettim", İptal et (7d).
+        // Gönderdiklerim, her task detail (7c), Görevi iptal et, "Ben hallettim", İptal et (7d).
         await sibel.taps(
+          "home.tab.sent",
           "home.sent",
           "task.cancel",
           "task.cancelReason.HandledIt",
@@ -235,7 +255,10 @@ export async function twoPerson(
         );
         await expectStatus(erenApi, taskId, status("CANCELLED"), "CANCELLED");
         await expectNoPokes(eren);
-        await expectHome(sibel, "the row gone after her cancel", { hidden: ["home.sent"] });
+        await expectHome(sibel, "the row gone after her cancel", {
+          hidden: ["home.sent"],
+          tab: "sent",
+        });
         await eren.openApp();
         await expectHome(eren, "the cancelled row, no card", {
           visible: ["issue.cancelled"],
@@ -245,7 +268,7 @@ export async function twoPerson(
     ],
 
     // 4. The full screen poke rings and Eren taps Ertele: the server counts it, his card says when it rings again,
-    //    his alarms stay, her row stays. Then Bitti on his card closes it on both.
+    //    his alarms stay, her row stays. Then Şimdiden bitti in his task detail closes it on both.
     [
       4,
       "snooze",
@@ -261,19 +284,22 @@ export async function twoPerson(
         await expectHome(eren, "the snoozed card", { visible: ["home.nextUp", "nextUp.snoozed"] });
         await expectAlarms(eren);
         if (await eren.pokeShowing()) throw new Error("eren: the poke is still up after Ertele");
-        await expectHome(sibel, "her row still there", { visible: ["home.sent"] });
+        await expectHome(sibel, "her row still there", { visible: ["home.sent"], tab: "sent" });
         // The snooze ends: it rings again.
         await time.toStep(taskId);
         await pokeUp(eren);
-        await eren.tap("home.doneEarly");
+        await eren.taps("home.nextUp", "task.action.DoneEarly");
         await expectStatus(erenApi, taskId, status("DONE"), "DONE");
         await expectNoPokes(eren);
-        await expectHome(sibel, "the row gone after his Bitti", { hidden: ["home.sent"] });
+        await expectHome(sibel, "the row gone after his Bitti", {
+          hidden: ["home.sent"],
+          tab: "sent",
+        });
       },
     ],
 
     // 5. Eren answers the full screen poke with Bugün yapamayacağım: dropped, his pokes stop, her home has the
-    //    dropped card. She taps Ben hallederim: the card goes on her side, nothing comes back on his.
+    //    dropped row. She opens it and taps Ben hallederim: the row goes on her side, nothing comes back on his.
     [
       5,
       "cant-today-then-sender-handles",
@@ -286,13 +312,17 @@ export async function twoPerson(
         await eren.taps("poke.cantToday", "drop.reason.Tomorrow", "sheet.primary");
         await expectStatus(erenApi, taskId, status("DROPPED"), "DROPPED");
         await expectNoPokes(eren);
-        await expectHome(sibel, "the dropped card", {
-          visible: ["issue.iHandle"],
+        await expectHome(sibel, "the dropped row", {
+          visible: ["home.sentIssue"],
           hidden: ["home.sent"],
+          tab: "sent",
         });
-        await sibel.tap("issue.iHandle");
+        await sibel.taps("home.sentIssue", "task.action.SenderHandles");
         await expectStatus(erenApi, taskId, status("CANCELLED"), "CANCELLED (Ben hallederim)");
-        await expectHome(sibel, "no dropped card", { hidden: ["issue.iHandle", "home.sent"] });
+        await expectHome(sibel, "no dropped row", {
+          hidden: ["home.sentIssue", "home.sent"],
+          tab: "sent",
+        });
         await eren.wakeAndUnlock();
         await eren.openApp();
         // Ben hallederim is not a cancel he is told about (5d).
@@ -303,7 +333,7 @@ export async function twoPerson(
     ],
 
     // 6. Nobody answers until the deadline: missed on the server, the poke goes from his phone, both homes have the
-    //    missed card. Eren taps Sonradan yaptım: done, and her missed card goes.
+    //    missed row. Eren opens his and taps Sonradan yaptım: done, and her missed row goes.
     [
       6,
       "missed-then-did-it-later",
@@ -315,19 +345,20 @@ export async function twoPerson(
         await time.pastDeadline(taskId);
         await expectStatus(erenApi, taskId, status("MISSED"), "MISSED");
         await expectNoPokes(eren);
-        await expectHome(sibel, "her missed card", {
-          visible: ["issue.newTime", "issue.cancel"],
+        await expectHome(sibel, "her missed row", {
+          visible: ["home.sentIssue"],
           hidden: ["home.sent"],
+          tab: "sent",
         });
         await eren.openApp();
-        await expectHome(eren, "his missed card", {
-          visible: ["issue.didItLater"],
+        await expectHome(eren, "his missed row", {
+          visible: ["home.missed"],
           hidden: ["home.nextUp"],
         });
-        await eren.tap("issue.didItLater");
+        await eren.taps("home.missed", "task.action.DidItLater");
         await expectStatus(erenApi, taskId, status("DONE"), "DONE (Sonradan yaptım)");
-        await expectHome(eren, "no missed card", { hidden: ["issue.didItLater"] }, 15_000);
-        await expectHome(sibel, "no missed card", { hidden: ["issue.newTime", "issue.cancel"] });
+        await expectHome(eren, "no missed row", { hidden: ["home.missed"] }, 15_000);
+        await expectHome(sibel, "no missed row", { hidden: ["home.sentIssue"], tab: "sent" });
       },
     ],
 
@@ -354,7 +385,7 @@ export async function twoPerson(
         await expectNoPokes(eren);
         await eren.openApp();
         await expectHome(eren, "no card", { hidden: ["home.nextUp"] });
-        await expectHome(sibel, "no row", { hidden: ["home.sent"] });
+        await expectHome(sibel, "no row", { hidden: ["home.sent"], tab: "sent" });
       },
     ],
   ];

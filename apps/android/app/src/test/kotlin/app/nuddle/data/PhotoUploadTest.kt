@@ -127,6 +127,11 @@ class PhotoUploadTest {
                         taskId: String,
                         note: String?,
                     ) = Unit
+
+                    override suspend fun cantToday(
+                        taskId: String,
+                        note: String?,
+                    ) = Unit
                 }
             val clock = FakeClock(Instant.parse("2026-10-12T08:58:00+03:00"))
             PhotoSender(files, closer, uploads, IdGenerator(clock), clock).send(Cast.TASK_ID, jpeg)

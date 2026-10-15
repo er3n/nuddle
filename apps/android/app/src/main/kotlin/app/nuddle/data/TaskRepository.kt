@@ -102,6 +102,12 @@ interface TaskCloser {
         taskId: String,
         note: String? = null,
     )
+
+    /** The recipient cannot today (7f): dropped, with an optional note for the sender. */
+    suspend fun cantToday(
+        taskId: String,
+        note: String? = null,
+    )
 }
 
 /** Writing and finishing tasks from home (docs/ux/screens.md 2a, 2f). */
