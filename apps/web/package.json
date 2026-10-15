@@ -14,6 +14,7 @@
     "eval": "vitest run --project eval --reporter=verbose",
     "db:generate": "drizzle-kit generate",
     "contract:gen": "tsx scripts/contract-gen.ts",
+    "golden:export": "tsx scripts/golden-export.ts",
     "contract:lint": "redocly lint ../../packages/contract/openapi.yaml --config ../../redocly.yaml"
   },
   "dependencies": {

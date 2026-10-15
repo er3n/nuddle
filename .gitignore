@@ -7,6 +7,9 @@ out/
 next-env.d.ts
 *.tsbuildinfo
 
+# Task stories exported from production (ADR 0019): private texts
+/golden/
+
 # Env and secrets (the repo is public, see ADR 0001)
 .env
 .env*.local

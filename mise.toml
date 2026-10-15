@@ -220,6 +220,13 @@ description = "Regenerate packages/contract/openapi.yaml"
 depends = ["_install"]
 run = "pnpm --filter @nuddle/web contract:gen"
 
+[tasks."golden:export"]
+description = "Export every task's story with its LLM calls from production, read-only, to golden/ (ADR 0019)"
+depends = ["_install"]
+# Private texts: golden/ is git-ignored and never committed (the repo is public).
+env = { GOLDEN_DB_URL_FILE = "{{env.HOME}}/.nuddle/prod/DATABASE_URL" }
+run = "pnpm --filter @nuddle/web golden:export"
+
 [tasks.eval]
 description = "LLM golden sets: extraction and poke plans (needs an API key)"
 # OPENROUTER_API_KEY and OPENROUTER_MODEL from the environment or apps/web/.env.local.

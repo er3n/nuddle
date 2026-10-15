@@ -6,6 +6,7 @@ import type {
   Clock,
   OtpSender,
   PhotoStorage,
+  ExchangeSink,
   PokePlanner,
   PushSender,
 } from "../../src/domain/ports";
@@ -129,8 +130,10 @@ export class ScriptedPlanner implements PokePlanner {
     private readonly answer: (input: PlannerInput) => PlanProposal | Promise<PlanProposal>,
   ) {}
 
-  async plan(input: PlannerInput): Promise<PlanProposal> {
+  async plan(input: PlannerInput, onExchange?: ExchangeSink): Promise<PlanProposal> {
     this.calls.push(input);
-    return this.answer(input);
+    const proposal = await this.answer(input);
+    onExchange?.({ model: "scripted", system: "", prompt: "", output: proposal });
+    return proposal;
   }
 }

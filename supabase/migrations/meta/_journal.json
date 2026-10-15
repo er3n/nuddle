@@ -57,6 +57,13 @@
       "when": 1791911700030,
       "tag": "20261013171500_missed_card_removed",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792073407747,
+      "tag": "20261015141007_llm_calls",
+      "breakpoints": true
     }
   ]
 }

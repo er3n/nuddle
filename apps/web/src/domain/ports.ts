@@ -18,14 +18,26 @@ export interface OtpSender {
   send(phone: string, code: string): Promise<void>;
 }
 
+/** What went to the model and what came back, for the LLM call log (ADR 0019). */
+export interface LlmExchange {
+  model: string;
+  system: string;
+  prompt: string;
+  /** The answer, parsed when it was JSON, otherwise the text as it came. */
+  output: unknown;
+}
+
+/** Told about the exchange once the model answered; fakes without a model never call it. */
+export type ExchangeSink = (exchange: LlmExchange) => void;
+
 /** LLM task extraction (docs/domain.md, LLM task extraction). */
 export interface TaskExtractor {
-  extract(input: ExtractionInput): Promise<Extraction>;
+  extract(input: ExtractionInput, onExchange?: ExchangeSink): Promise<Extraction>;
 }
 
 /** LLM poke planner (ADR 0017). Its answer is checked by `checkPlan` before it is used. */
 export interface PokePlanner {
-  plan(input: PlannerInput): Promise<PlanProposal>;
+  plan(input: PlannerInput, onExchange?: ExchangeSink): Promise<PlanProposal>;
 }
 
 /** Private photo bucket, one path per task. */
