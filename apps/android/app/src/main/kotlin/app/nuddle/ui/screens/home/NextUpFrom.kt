@@ -26,7 +26,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import app.nuddle.R
 import app.nuddle.ui.TestTags
-import app.nuddle.ui.components.Avatar
+import app.nuddle.ui.components.PersonAvatar
 import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.theme.DurtTheme
@@ -51,7 +51,7 @@ fun FromLine(
     val dimens = DurtTheme.dimens
     val line = stringResource(R.string.home_from_wrote, from.name, from.writtenAt.text())
     Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(dimens.space10)) {
-        Avatar(from.name, colors.avatarOthers.first(), dimens.avatarCard)
+        PersonAvatar(from.personId, from.name, colors.avatarOthers.first(), dimens.avatarCard)
         Text(
             buildAnnotatedString {
                 append(line)

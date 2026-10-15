@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import app.nuddle.R
 import app.nuddle.ui.TestTags
+import app.nuddle.ui.components.MY_AVATAR
 import app.nuddle.ui.components.PillStatus
 import app.nuddle.ui.components.RemoveButton
 import app.nuddle.ui.components.TaskRow
@@ -58,6 +59,7 @@ internal fun MissedRow(
                 status = PillStatus.Missed,
                 personName = from ?: myName,
                 personColor = task.fromId?.let { colors.avatarFor(it) } ?: colors.avatarSelf,
+                personId = task.fromId ?: MY_AVATAR,
             ),
         onClick = onOpen,
         modifier = Modifier.testTag(TestTags.HOME_MISSED),
@@ -131,6 +133,7 @@ internal fun SentIssueRow(
                 status = if (dropped) PillStatus.Dropped else PillStatus.Missed,
                 personName = task.toName,
                 personColor = colors.avatarFor(task.toId),
+                personId = task.toId,
             ),
         onClick = onOpen,
         modifier = Modifier.testTag(TestTags.HOME_SENT_ISSUE),

@@ -106,6 +106,8 @@ export const people = pgTable("people", {
   useConnectionsForMyTasks: boolean("use_connections_for_my_tasks").notNull().default(true),
   // "Başkalarının işleri için bana haber verilebilir"
   notifyMeForOthersTasks: boolean("notify_me_for_others_tasks").notNull().default(true),
+  // The profile picture in the private bucket, `avatars/<person>/<uuid>.jpg`; null for the initial (NUD-72).
+  avatarPath: text("avatar_path"),
   // The rolling poke profile the planner reads (ADR 0020): the text, when it was written and how
   // many closed tasks it had seen.
   pokeProfile: text("poke_profile"),

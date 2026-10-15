@@ -170,6 +170,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/avatar/upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A signed upload URL for my profile picture; set_avatar with its path makes it mine (NUD-72) */
+        post: operations["createAvatarUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/avatar/view-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A short-lived signed URL to my picture or a connection's (NUD-72) */
+        post: operations["createAvatarViewUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/commands/register": {
         parameters: {
             query?: never;
@@ -527,6 +561,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/commands/set_avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** My profile picture: an uploaded path, or null for the initial (NUD-72) */
+        post: operations["setAvatar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/commands/update_settings": {
         parameters: {
             query?: never;
@@ -704,6 +755,7 @@ export interface components {
             };
             useConnectionsForMyTasks: boolean;
             notifyMeForOthersTasks: boolean;
+            avatarPath?: string | null;
         };
         SyncConnection: {
             /** Format: uuid */
@@ -725,6 +777,7 @@ export interface components {
              */
             connectedAt?: string;
             notifyMe?: boolean;
+            avatarPath?: string | null;
         };
         /** @enum {string} */
         EdgeType: "spouse" | "parent" | "child" | "sibling" | "roommate" | "other";
@@ -938,6 +991,18 @@ export interface components {
         PhotoViewUrlRequest: {
             /** Format: uuid */
             taskId: string;
+        };
+        AvatarUploadUrlResult: {
+            path: string;
+            url: string;
+        };
+        AvatarViewUrlResult: {
+            url: string;
+            avatarPath: string;
+        };
+        AvatarViewUrlRequest: {
+            /** Format: uuid */
+            personId: string;
         };
         RegisterCommand: {
             /**
@@ -1221,6 +1286,14 @@ export interface components {
             idempotencyKey: string;
             /** Format: uuid */
             inviteId: string;
+        };
+        SetAvatarCommand: {
+            /**
+             * Format: uuid
+             * @description Client generated UUIDv7; a replay returns the first result (ADR 0006)
+             */
+            idempotencyKey: string;
+            avatarPath: string | null;
         };
         UpdateSettingsCommand: {
             /**
@@ -1786,6 +1859,104 @@ export interface operations {
             };
             /** @description Error with a DRT code */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createAvatarUploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Upload URL and the path to send with set_avatar */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvatarUploadUrlResult"];
+                };
+            };
+            /** @description Error with a DRT code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createAvatarViewUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AvatarViewUrlRequest"];
+            };
+        };
+        responses: {
+            /** @description Where to load the picture from */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvatarViewUrlResult"];
+                };
+            };
+            /** @description Error with a DRT code */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3375,6 +3546,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Ok"];
+                };
+            };
+            /** @description Error with a DRT code */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    setAvatar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetAvatarCommand"];
+            };
+        };
+        responses: {
+            /** @description The result; a replay with the same key returns it again */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
                 };
             };
             /** @description Error with a DRT code */

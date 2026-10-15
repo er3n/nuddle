@@ -22,6 +22,8 @@ data class Profile(
     val useConnectionsForMyTasks: Boolean,
     /** "Başkalarının işleri için bana haber verilebilir" */
     val notifyMeForOthersTasks: Boolean,
+    /** My profile picture's path on the server, null for the initial (NUD-72). */
+    val avatarPath: String? = null,
 )
 
 /** What the device keeps about the signed-in person between launches. */

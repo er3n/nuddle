@@ -61,6 +61,7 @@ function meDto(p: Person): z.infer<typeof s.Me> {
     quietHours: p.quietHours,
     useConnectionsForMyTasks: p.useConnectionsForMyTasks,
     notifyMeForOthersTasks: p.notifyMeForOthersTasks,
+    avatarPath: p.avatarPath,
   };
 }
 
@@ -349,6 +350,50 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
     },
   );
 
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/v1/avatar/upload-url",
+      operationId: "createAvatarUploadUrl",
+      summary:
+        "A signed upload URL for my profile picture; set_avatar with its path makes it mine (NUD-72)",
+      tags: ["photos"],
+      security: [{ bearer: [] }],
+      responses: {
+        200: {
+          description: "Upload URL and the path to send with set_avatar",
+          content: json(s.AvatarUploadUrlResult),
+        },
+        ...errors([401, 403]),
+      },
+    }),
+    async (c) => c.json(await svc.avatarUploadUrl(deps, await person(c.get("caller"))), 200),
+  );
+
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/v1/avatar/view-url",
+      operationId: "createAvatarViewUrl",
+      summary: "A short-lived signed URL to my picture or a connection's (NUD-72)",
+      tags: ["photos"],
+      security: [{ bearer: [] }],
+      request: { body: { required: true, content: json(s.AvatarViewUrlRequest) } },
+      responses: {
+        200: {
+          description: "Where to load the picture from",
+          content: json(s.AvatarViewUrlResult),
+        },
+        ...errors([400, 401, 403, 404]),
+      },
+    }),
+    async (c) =>
+      c.json(
+        await svc.avatarViewUrl(deps, await person(c.get("caller")), c.req.valid("json").personId),
+        200,
+      ),
+  );
+
   // ---- commands -----------------------------------------------------------------------------
 
   app.openapi(
@@ -604,6 +649,20 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
     async (c) =>
       c.json(
         await svc.revokeInviteCommand(deps, await person(c.get("caller")), c.req.valid("json")),
+        200,
+      ),
+  );
+  app.openapi(
+    command(
+      "set_avatar",
+      "setAvatar",
+      "My profile picture: an uploaded path, or null for the initial (NUD-72)",
+      s.SetAvatarCommand,
+      s.Me,
+    ),
+    async (c) =>
+      c.json(
+        meDto(await svc.setAvatar(deps, await person(c.get("caller")), c.req.valid("json"))),
         200,
       ),
   );

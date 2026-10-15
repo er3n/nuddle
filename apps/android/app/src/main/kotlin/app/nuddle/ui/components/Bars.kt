@@ -135,7 +135,8 @@ fun TopBar(
                 }
             }
         }
-        Avatar(
+        PersonAvatar(
+            personId = MY_AVATAR,
             name = myName,
             color = colors.avatarSelf,
             size = dimens.avatarTopBar,

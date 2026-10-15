@@ -103,6 +103,7 @@ import {
   markStepFired,
   rescheduleAction,
   persistOutcome,
+  saveAvatarPath,
   pokedTasks,
   recentClosedTasksOf,
   saveIdempotentResult,
@@ -127,6 +128,8 @@ import { errorText, LlmCall } from "./llm-log";
 interface Effects {
   pushes: readonly PushMessage[];
   deletePhotosFor: readonly TaskId[];
+  /** Single files to remove from Storage: a replaced or removed profile picture (NUD-72). */
+  deleteFiles?: readonly string[];
   /** New plan versions the LLM planner may improve after commit (ADR 0017). */
   replans?: readonly { taskId: TaskId; version: number }[];
 }
@@ -159,6 +162,14 @@ async function afterCommit(deps: AppDeps, effects: Effects): Promise<void> {
     } catch (error) {
       // The task's photo_cleanup timer tries again (NUD-25).
       console.error("photo deletion failed", taskId, error);
+    }
+  }
+  for (const path of effects.deleteFiles ?? []) {
+    try {
+      await deps.photos.deleteFile(path);
+    } catch (error) {
+      // An orphan file in the bucket; nothing points at it any more.
+      console.error("file deletion failed", path, error);
     }
   }
   for (const r of effects.replans ?? []) {
@@ -762,6 +773,58 @@ export async function photoViewUrl(
   return { url: await deps.photos.createViewUrl(path), sentAt: sent.at };
 }
 
+// ---- profile picture (NUD-72) ------------------------------------------------------------------
+
+const avatarFolder = (personId: PersonId) => `avatars/${personId}/`;
+
+/** A signed upload URL for my profile picture; `set_avatar` with the path makes it mine. */
+export async function avatarUploadUrl(
+  deps: AppDeps,
+  caller: Person,
+): Promise<{ path: string; url: string }> {
+  return deps.photos.createAvatarUploadUrl(caller.id);
+}
+
+/**
+ * My profile picture: an uploaded path under my folder, or null for the initial again. The one
+ * before is deleted after commit; my connections get the new path on their next sync.
+ */
+export async function setAvatar(
+  deps: AppDeps,
+  caller: Person,
+  input: { idempotencyKey: string; avatarPath: string | null },
+): Promise<Person> {
+  const path = input.avatarPath;
+  if (path !== null && (!path.startsWith(avatarFolder(caller.id)) || path.includes(".."))) {
+    throw new ApiError("validation_failed");
+  }
+  return runCommand(deps, caller.id, "set_avatar", input.idempotencyKey, async (tx) => {
+    await saveAvatarPath(tx, caller.id, path);
+    await touchEdgesTo(tx, caller.id);
+    const updated = await findPerson(tx, caller.id);
+    if (!updated) throw new ApiError("not_registered");
+    const deleteFiles =
+      caller.avatarPath !== null && caller.avatarPath !== path ? [caller.avatarPath] : [];
+    return { result: updated, effects: { pushes: [], deletePhotosFor: [], deleteFiles } };
+  });
+}
+
+/** A short-lived signed URL to my own picture or a connection's; `not_found` when there is none. */
+export async function avatarViewUrl(
+  deps: AppDeps,
+  caller: Person,
+  personId: PersonId,
+): Promise<{ url: string; avatarPath: string }> {
+  if (personId !== caller.id) {
+    const edge = await findEdge(deps.db, caller.id, personId);
+    if (!edge || edge.status !== "active") throw new ApiError("not_connected");
+  }
+  const person = personId === caller.id ? caller : await findPerson(deps.db, personId);
+  const path = person?.deletedAt === null ? person.avatarPath : null;
+  if (path === null) throw new ApiError("not_found");
+  return { url: await deps.photos.createViewUrl(path), avatarPath: path };
+}
+
 // ---- invites and account ----------------------------------------------------------------------
 
 function inviteCode(): string {
@@ -895,7 +958,9 @@ export async function deleteAccount(
     await deleteDevicesOf(tx, caller.id);
     await deleteLlmCallsOf(tx, caller.id);
     await touchEdgesTo(tx, caller.id);
-    return { result: { ok: true as const }, effects: { pushes, deletePhotosFor } };
+    // The profile picture goes with the account (NUD-72).
+    const deleteFiles = caller.avatarPath === null ? [] : [caller.avatarPath];
+    return { result: { ok: true as const }, effects: { pushes, deletePhotosFor, deleteFiles } };
   });
 }
 
@@ -1069,6 +1134,7 @@ export async function sync(
       phone: c.edge.status === "active" && c.person.deletedAt === null ? c.person.phone : undefined,
       connectedAt: c.connectedAt,
       notifyMe: c.edge.notifyMe,
+      avatarPath: c.person.avatarPath,
     })),
     sentInvites: rows.sentInvites.map((i) => ({ ...i, status: inviteStatusForInviter(i) })),
     receivedInvites: rows.receivedInvites,

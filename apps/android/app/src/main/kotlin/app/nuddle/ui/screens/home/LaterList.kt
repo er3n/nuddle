@@ -12,6 +12,7 @@ import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.db.shownTime
 import app.nuddle.ui.TestTags
+import app.nuddle.ui.components.MY_AVATAR
 import app.nuddle.ui.components.PillStatus
 import app.nuddle.ui.components.TaskRow
 import app.nuddle.ui.components.TaskUi
@@ -94,6 +95,7 @@ internal fun LaterRow(
                 status = task.status,
                 personName = task.fromName ?: myName,
                 personColor = task.fromId?.let { colors.avatarFor(it) } ?: colors.avatarSelf,
+                personId = task.fromId ?: MY_AVATAR,
             ),
         onClick = onClick,
         modifier = Modifier.testTag(TestTags.HOME_LATER),

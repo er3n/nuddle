@@ -88,6 +88,8 @@ data class FromUi(
     val writtenAt: WrittenText,
     /** Null when sync has no phone (an older server): no Call and Message icons then. */
     val phone: String?,
+    /** For their profile picture (NUD-72). */
+    val personId: String? = null,
 )
 
 /** Where the next-up task stands for me: to do (2f, 4c), its photo with the sender (4e), or asked again (4g). */
@@ -145,7 +147,12 @@ fun nextUp(
                 photo = task.finishMode == FinishMode.PHOTO.value,
                 from =
                     connections[task.senderId]?.takeIf { task.senderId != me }?.let {
-                        FromUi(it.displayName, writtenText(Instant.fromEpochMilliseconds(task.createdAt), now, timeZone), it.phone)
+                        FromUi(
+                            it.displayName,
+                            writtenText(Instant.fromEpochMilliseconds(task.createdAt), now, timeZone),
+                            it.phone,
+                            it.personId,
+                        )
                     },
                 status = NEXT_UP_STATUSES.getValue(task.status),
                 photoSentAt =

@@ -7,6 +7,8 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
+import app.nuddle.data.avatar.AvatarFiles
+import app.nuddle.data.avatar.ME
 import app.nuddle.data.db.NuddleDatabase
 import app.nuddle.data.outbox.WorkManagerScheduling
 import app.nuddle.data.photo.PendingPhoto
@@ -67,11 +69,14 @@ class LocalWipeTest {
             work.syncSoon()
             val photos = PhotoFiles(File(context.filesDir, "photos"))
             photos.save(Cast.TASK_ID, byteArrayOf(1), PendingPhoto("key-1", clock.now()))
+            val avatars = AvatarFiles(File(context.filesDir, "avatars"))
+            avatars.save(ME, "avatars/me/1.jpg", byteArrayOf(2))
             val manager = context.getSystemService(NotificationManager::class.java)
             manager.notify(1, NotificationCompat.Builder(context, "test").setSmallIcon(android.R.drawable.ic_dialog_info).build())
 
-            AndroidLocalWipe(context, alarms, work, db, photos, sessions).wipe()
+            AndroidLocalWipe(context, alarms, work, db, photos, avatars, sessions).wipe()
 
+            assertNull(avatars.pathOf(ME))
             assertTrue(scheduler.scheduled.isEmpty())
             assertTrue(shadowOf(manager).allNotifications.isEmpty())
             assertEquals(

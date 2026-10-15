@@ -29,10 +29,11 @@ import app.nuddle.api.model.EdgeType
 import app.nuddle.api.model.SyncSentInvite
 import app.nuddle.data.db.InviteEntity
 import app.nuddle.ui.TestTags
-import app.nuddle.ui.components.Avatar
 import app.nuddle.ui.components.DurtButton
 import app.nuddle.ui.components.DurtButtonKind
 import app.nuddle.ui.components.DurtButtonSize
+import app.nuddle.ui.components.MY_AVATAR
+import app.nuddle.ui.components.PersonAvatar
 import app.nuddle.ui.theme.DurtTheme
 import app.nuddle.ui.uppercaseForUi
 import kotlinx.datetime.TimeZone
@@ -107,7 +108,7 @@ internal fun PendingInviteCard(
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(dimens.space12), verticalAlignment = Alignment.CenterVertically) {
             Row(Modifier.clearAndSetSemantics { }) {
-                Avatar(myName, colors.avatarSelf, dimens.avatarTopBar)
+                PersonAvatar(MY_AVATAR, myName, colors.avatarSelf, dimens.avatarTopBar)
                 DashedInitial(invite.name, Modifier.offset(x = -dimens.space4))
             }
             Column(Modifier.weight(1f)) {

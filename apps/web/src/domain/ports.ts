@@ -3,7 +3,7 @@
 import type { Extraction, ExtractionInput } from "./extraction";
 import type { PlannerInput, PlanProposal } from "./planner";
 import type { ProfileInput } from "./profile";
-import type { PushMessage, TaskId } from "./types";
+import type { PersonId, PushMessage, TaskId } from "./types";
 
 export interface Clock {
   now(): Date;
@@ -52,4 +52,8 @@ export interface PhotoStorage {
   /** A short-lived signed URL to look at an uploaded photo (4f). */
   createViewUrl(path: string): Promise<string>;
   deleteForTask(taskId: TaskId): Promise<void>;
+  /** A signed upload URL for a profile picture, under `avatars/<person>/` (NUD-72). */
+  createAvatarUploadUrl(personId: PersonId): Promise<{ path: string; url: string }>;
+  /** One file by path: the previous profile picture. */
+  deleteFile(path: string): Promise<void>;
 }

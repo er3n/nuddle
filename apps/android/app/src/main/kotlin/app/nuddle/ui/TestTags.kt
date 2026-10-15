@@ -157,6 +157,8 @@ object TestTags {
 
     const val PROFILE_SCREEN = "profile.screen"
     const val PROFILE_EDIT = "profile.edit"
+    const val PROFILE_PICTURE = "profile.picture"
+    const val PICTURE_REMOVE = "picture.remove"
     const val PROFILE_INVITE = "profile.invite"
     const val PROFILE_USE_CONNECTIONS = "profile.useConnections"
     const val PROFILE_NOTIFY_ME = "profile.notifyMe"

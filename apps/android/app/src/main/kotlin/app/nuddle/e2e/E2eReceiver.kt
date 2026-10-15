@@ -7,6 +7,7 @@ import android.content.Intent
 import androidx.core.app.NotificationManagerCompat
 import app.nuddle.BuildConfig
 import app.nuddle.alarm.PokeAlarms
+import app.nuddle.data.avatar.AvatarFiles
 import app.nuddle.data.db.NuddleDatabase
 import app.nuddle.data.photo.PhotoFiles
 import app.nuddle.data.session.SessionStore
@@ -31,6 +32,8 @@ class E2eReceiver : BroadcastReceiver() {
     @Inject lateinit var database: NuddleDatabase
 
     @Inject lateinit var photos: PhotoFiles
+
+    @Inject lateinit var avatars: AvatarFiles
 
     @Inject lateinit var sessions: SessionStore
 
@@ -73,6 +76,7 @@ class E2eReceiver : BroadcastReceiver() {
                 NotificationManagerCompat.from(context).cancelAll()
                 database.clearAllTables()
                 photos.deleteAll()
+                avatars.deleteAll()
                 // Everything since the first change: the connections and invites come back, the tasks are gone.
                 sessions.saveSyncCursor("0")
                 TestTime.set(context, 0)

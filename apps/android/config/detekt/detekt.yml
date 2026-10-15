@@ -51,5 +51,6 @@ Compose:
   ModifierMissing:
     active: true
   CompositionLocalAllowlist:
-    # The theme is provided through CompositionLocals by design (docs/ux/components.md, Theme).
-    allowedCompositionLocals: LocalDurtColors,LocalDurtType,LocalDurtDimens
+    # The theme is provided through CompositionLocals by design (docs/ux/components.md, Theme), and so are the
+    # profile pictures every avatar may show (docs/ux/components.md 9, NUD-72).
+    allowedCompositionLocals: LocalDurtColors,LocalDurtType,LocalDurtDimens,LocalAvatars

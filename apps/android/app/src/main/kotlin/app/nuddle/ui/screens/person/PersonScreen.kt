@@ -22,7 +22,6 @@ import app.nuddle.R
 import app.nuddle.api.model.EdgeType
 import app.nuddle.domain.ConnectedFor
 import app.nuddle.ui.TestTags
-import app.nuddle.ui.components.Avatar
 import app.nuddle.ui.components.BackBar
 import app.nuddle.ui.components.ChoiceChip
 import app.nuddle.ui.components.DurtBottomSheet
@@ -32,6 +31,7 @@ import app.nuddle.ui.components.DurtButtonKind
 import app.nuddle.ui.components.GroupDivider
 import app.nuddle.ui.components.InlineAlert
 import app.nuddle.ui.components.LineRow
+import app.nuddle.ui.components.PersonAvatar
 import app.nuddle.ui.components.SettingsGroup
 import app.nuddle.ui.components.SheetAction
 import app.nuddle.ui.components.ToggleRow
@@ -90,7 +90,7 @@ fun PersonScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(dimens.space8),
         ) {
-            Avatar(state.name, colors.avatarFor(state.personId), dimens.avatarHero)
+            PersonAvatar(state.personId, state.name, colors.avatarFor(state.personId), dimens.avatarHero)
             Text(state.sinceLine(), style = DurtTheme.type.bodySmall, color = colors.textSecondary, textAlign = TextAlign.Center)
         }
         if (state.failed) InlineAlert(stringResource(R.string.profile_failed_title), stringResource(R.string.profile_failed_body))

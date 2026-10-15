@@ -42,13 +42,14 @@ import androidx.compose.ui.unit.Dp
 import app.nuddle.R
 import app.nuddle.api.model.EdgeType
 import app.nuddle.ui.TestTags
-import app.nuddle.ui.components.Avatar
 import app.nuddle.ui.components.ComposeBar
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.components.DurtButton
 import app.nuddle.ui.components.DurtButtonKind
 import app.nuddle.ui.components.DurtButtonSize
 import app.nuddle.ui.components.InlineAlert
+import app.nuddle.ui.components.MY_AVATAR
+import app.nuddle.ui.components.PersonAvatar
 import app.nuddle.ui.components.PillStatus
 import app.nuddle.ui.components.StatusBanner
 import app.nuddle.ui.components.StatusPill
@@ -205,7 +206,7 @@ private fun InviteCard(
         verticalArrangement = Arrangement.spacedBy(dimens.space8),
     ) {
         Row(Modifier.clearAndSetSemantics { }) {
-            Avatar(myName, colors.avatarSelf, dimens.avatarTopBar)
+            PersonAvatar(MY_AVATAR, myName, colors.avatarSelf, dimens.avatarTopBar)
             DashedPlus(dimens.avatarTopBar, Modifier.offset(x = -dimens.space4))
         }
         Text(stringResource(R.string.home_invite_title), style = DurtTheme.type.brand, color = colors.ink)

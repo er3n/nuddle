@@ -132,6 +132,8 @@ export const Me = z
     quietHours: z.object({ start: z.string(), end: z.string(), timeZone: z.string() }),
     useConnectionsForMyTasks: z.boolean(),
     notifyMeForOthersTasks: z.boolean(),
+    /** The profile picture's path, or null for the initial (NUD-72). Optional for an older server. */
+    avatarPath: z.string().nullable().optional(),
   })
   .openapi("Me");
 
@@ -261,6 +263,10 @@ export const InvitePreviewParams = z.object({
 export const InvitePreview = z
   .object({ inviterName: z.string(), prefilledName: z.string() })
   .openapi("InvitePreview");
+/** My profile picture: an uploaded path under my folder, or null to show the initial again (NUD-72). */
+export const SetAvatarCommand = keyed({
+  avatarPath: z.string().min(1).max(200).nullable(),
+}).openapi("SetAvatarCommand");
 export const LogOutCommand = keyed({ deviceId: Id }).openapi("LogOutCommand");
 export const DeleteAccountCommand = keyed({}).openapi("DeleteAccountCommand");
 
@@ -355,6 +361,24 @@ export const PhotoUploadUrlResult = z
     url: z.string(),
   })
   .openapi("PhotoUploadUrlResult");
+
+export const AvatarUploadUrlResult = z
+  .object({
+    /** Send this path with `set_avatar` once the PUT succeeded. */
+    path: z.string(),
+    /** PUT the JPEG here. */
+    url: z.string(),
+  })
+  .openapi("AvatarUploadUrlResult");
+export const AvatarViewUrlRequest = z.object({ personId: Id }).openapi("AvatarViewUrlRequest");
+export const AvatarViewUrlResult = z
+  .object({
+    /** GET the picture here; valid for a few minutes. */
+    url: z.string(),
+    /** The path the URL is for: cache the picture under it. */
+    avatarPath: z.string(),
+  })
+  .openapi("AvatarViewUrlResult");
 
 export const PhotoViewUrlRequest = z.object({ taskId: Id }).openapi("PhotoViewUrlRequest");
 export const PhotoViewUrlResult = z
@@ -463,6 +487,8 @@ export const SyncResponse = z
           connectedAt: Instant.optional(),
           /** My "Sibel'in işleri için bana haber verilebilir" switch (5b). Optional like `phone`. */
           notifyMe: z.boolean().optional(),
+          /** Their profile picture's path: fetch it once per path with `avatar/view-url` (NUD-72). */
+          avatarPath: z.string().nullable().optional(),
         })
         .openapi("SyncConnection"),
     ),

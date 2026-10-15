@@ -3,6 +3,7 @@ package app.nuddle.alarm
 import android.content.Context
 import androidx.core.app.NotificationManagerCompat
 import app.nuddle.data.LocalWipe
+import app.nuddle.data.avatar.AvatarFiles
 import app.nuddle.data.db.NuddleDatabase
 import app.nuddle.data.outbox.WorkManagerScheduling
 import app.nuddle.data.photo.PhotoFiles
@@ -25,6 +26,7 @@ class AndroidLocalWipe
         private val work: WorkManagerScheduling,
         private val database: NuddleDatabase,
         private val photos: PhotoFiles,
+        private val avatars: AvatarFiles,
         private val sessions: SessionStore,
     ) : LocalWipe {
         override suspend fun wipe() {
@@ -34,6 +36,7 @@ class AndroidLocalWipe
             withContext(Dispatchers.IO) {
                 database.clearAllTables()
                 photos.deleteAll()
+                avatars.deleteAll()
             }
             sessions.clear()
         }

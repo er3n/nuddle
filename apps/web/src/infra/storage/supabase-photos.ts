@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import type { PhotoStorage } from "../../domain/ports";
-import type { TaskId } from "../../domain/types";
+import type { PersonId, TaskId } from "../../domain/types";
 
 const BUCKET = "task-photos";
 /** Long enough to open the approval screen, short enough not to become a sharing link. */
@@ -31,6 +31,18 @@ export class SupabasePhotoStorage implements PhotoStorage {
       .createSignedUrl(path, VIEW_URL_SECONDS);
     if (error) throw error;
     return data.signedUrl;
+  }
+
+  async createAvatarUploadUrl(personId: PersonId): Promise<{ path: string; url: string }> {
+    const path = `avatars/${personId}/${randomUUID()}.jpg`;
+    const { data, error } = await this.client.storage.from(BUCKET).createSignedUploadUrl(path);
+    if (error) throw error;
+    return { path: data.path, url: data.signedUrl };
+  }
+
+  async deleteFile(path: string): Promise<void> {
+    const { error } = await this.client.storage.from(BUCKET).remove([path]);
+    if (error) throw error;
   }
 
   async deleteForTask(taskId: TaskId): Promise<void> {

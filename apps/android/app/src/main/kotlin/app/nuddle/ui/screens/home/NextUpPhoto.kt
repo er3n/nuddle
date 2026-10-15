@@ -25,7 +25,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import app.nuddle.R
 import app.nuddle.ui.TestTags
-import app.nuddle.ui.components.Avatar
+import app.nuddle.ui.components.PersonAvatar
 import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.theme.DurtTheme
@@ -96,7 +96,9 @@ internal fun ColumnScope.ReRequested(task: NextUpUi) {
     val from = task.from
     if (task.note != null && from != null) {
         Row(horizontalArrangement = Arrangement.spacedBy(dimens.space10), verticalAlignment = Alignment.Top) {
-            Box(Modifier.clearAndSetSemantics { }) { Avatar(from.name, colors.avatarOthers.first(), dimens.avatarCard) }
+            Box(
+                Modifier.clearAndSetSemantics { },
+            ) { PersonAvatar(from.personId, from.name, colors.avatarOthers.first(), dimens.avatarCard) }
             Text(
                 task.note,
                 style = DurtTheme.type.body,

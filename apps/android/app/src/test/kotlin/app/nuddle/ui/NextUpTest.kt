@@ -77,7 +77,7 @@ class NextUpTest {
         val later = selfTask("later", "2026-10-13T09:00:00+03:00")
         val card = nextUp(listOf(later, fromSibel), Cast.EREN_ID, mapOf(Cast.SIBEL_ID to sibelConnection()), now, istanbul)
         assertEquals("from-sibel", card?.taskId)
-        assertEquals(FromUi("Sibel", WrittenText.Today("14:32"), Cast.SIBEL_PHONE), card?.from)
+        assertEquals(FromUi("Sibel", WrittenText.Today("14:32"), Cast.SIBEL_PHONE, Cast.SIBEL_ID), card?.from)
     }
 
     @Test

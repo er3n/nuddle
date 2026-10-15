@@ -114,7 +114,7 @@ Six-box CodeInput, resend countdown, autofill hint. SMS variant until WhatsApp e
 WhatsApp copy for later: WhatsApp'ına baktın mı? | Kod WhatsApp'a gelince klavyenin üstünde otomatik çıkar, dokunman yeter. | SMS ile dene
 
 ### 0e Name · `Name.png`
-Avatar placeholder with camera badge (photo optional, MVP shows initials only). When invited, prefilled with the inviter's name for you.
+Avatar placeholder with camera badge (photo optional; the picture is set later on Profile 5a, NUD-72). When invited, prefilled with the inviter's name for you.
 **Copy:** Sana ne diyelim? | Eşleştiğin kişiler seni bu isimle görür, görevlerde de bu isimle anılırsın. | Adın | Sibel seni "Eren" diye eklemişti. Değiştirebilirsin. | Fotoğraf isteğe bağlı. Yoksa baş harfin görünür. | Devam
 
 ### 0f Consent (invited) · `Consent.png`
@@ -235,8 +235,9 @@ Sender home with the new task marked "Yeni" and the UndoToast.
 ## 5 · Profile, full home, sender side
 
 ### 5a Profile and settings · `Profile.png`
-**Copy:** Profil | Düzenle | Bizimkiler | Eşin | + Birini davet et | Dürtme | Benim işlerimde tanıdıklarımı kullanabilirsin | Her şeyi kaçırırsam bir yakınıma haber verebilirsin. | Başkalarının işleri için bana haber verilebilir | Bir tanıdığım işini kaçırırsa bana söyleyebilirsin. | Sessiz saatler | Kimse dürtülmez | 23:00 – 07:00 | İzinler | Bildirimler | Alarmlar ve hatırlatıcılar | Tam ekran alarm | Kapalı · Düzelt | Çıkış yap | Hesabı sil
+**Copy:** Profil | Düzenle | Fotoğraf | Galeriden seç | Fotoğrafı kaldır | Bizimkiler | Eşin | + Birini davet et | Dürtme | Benim işlerimde tanıdıklarımı kullanabilirsin | Her şeyi kaçırırsam bir yakınıma haber verebilirsin. | Başkalarının işleri için bana haber verilebilir | Bir tanıdığım işini kaçırırsa bana söyleyebilirsin. | Sessiz saatler | Kimse dürtülmez | 23:00 – 07:00 | İzinler | Bildirimler | Alarmlar ve hatırlatıcılar | Tam ekran alarm | Kapalı · Düzelt | Çıkış yap | Hesabı sil
 Note: the canvas shows "23:00 – 07:00" with an en dash. Use "23:00-07:00" or "23:00 ile 07:00" in strings; never an em dash.
+Since NUD-72 the avatar at the top opens the picture sheet ("Fotoğraf"): "Galeriden seç" opens the system photo picker and uploads the picture; "Fotoğrafı kaldır" shows the initial again. Connections see the picture after their next sync.
 
 ### 5b Person detail · `PersonDetail.png`
 **Copy:** Eşin · [3 aydır] bağlısınız | Bu bağlantı | İlişki | Sibel'in işleri için bana haber verilebilir | Sibel bir işi kaçırırsa sana da söyleyebilirim. | Birlikte | Birbirinize yazdığınız | [24] görev | Zamanında biten | [%88] | Bağlantıyı kaldır | Sibel'e bildirim gitmez. Açık görevleriniz iptal olur.

@@ -228,6 +228,9 @@ components:
           type: boolean
         notifyMeForOthersTasks:
           type: boolean
+        avatarPath:
+          type: string
+          nullable: true
       required:
         - id
         - phone
@@ -265,6 +268,9 @@ components:
           description: ISO 8601 with offset
         notifyMe:
           type: boolean
+        avatarPath:
+          type: string
+          nullable: true
       required:
         - personId
         - displayName
@@ -724,6 +730,34 @@ components:
           format: uuid
       required:
         - taskId
+    AvatarUploadUrlResult:
+      type: object
+      properties:
+        path:
+          type: string
+        url:
+          type: string
+      required:
+        - path
+        - url
+    AvatarViewUrlResult:
+      type: object
+      properties:
+        url:
+          type: string
+        avatarPath:
+          type: string
+      required:
+        - url
+        - avatarPath
+    AvatarViewUrlRequest:
+      type: object
+      properties:
+        personId:
+          type: string
+          format: uuid
+      required:
+        - personId
     RegisterCommand:
       type: object
       properties:
@@ -1225,6 +1259,21 @@ components:
       required:
         - idempotencyKey
         - inviteId
+    SetAvatarCommand:
+      type: object
+      properties:
+        idempotencyKey:
+          type: string
+          format: uuid
+          description: Client generated UUIDv7; a replay returns the first result (ADR 0006)
+        avatarPath:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 200
+      required:
+        - idempotencyKey
+        - avatarPath
     UpdateSettingsCommand:
       type: object
       properties:
@@ -1702,6 +1751,78 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "409":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/avatar/upload-url:
+    post:
+      operationId: createAvatarUploadUrl
+      summary: A signed upload URL for my profile picture; set_avatar with its path makes it mine (NUD-72)
+      tags:
+        - photos
+      security:
+        - bearer: []
+      responses:
+        "200":
+          description: Upload URL and the path to send with set_avatar
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvatarUploadUrlResult"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/avatar/view-url:
+    post:
+      operationId: createAvatarViewUrl
+      summary: A short-lived signed URL to my picture or a connection's (NUD-72)
+      tags:
+        - photos
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvatarViewUrlRequest"
+      responses:
+        "200":
+          description: Where to load the picture from
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvatarViewUrlResult"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
           description: Error with a DRT code
           content:
             application/json:
@@ -2868,6 +2989,63 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Ok"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/commands/set_avatar:
+    post:
+      operationId: setAvatar
+      summary: "My profile picture: an uploaded path, or null for the initial (NUD-72)"
+      tags:
+        - commands
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetAvatarCommand"
+      responses:
+        "200":
+          description: The result; a replay with the same key returns it again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
         "400":
           description: Error with a DRT code
           content:

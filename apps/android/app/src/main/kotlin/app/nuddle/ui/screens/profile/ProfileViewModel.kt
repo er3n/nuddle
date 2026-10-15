@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import app.nuddle.api.model.EdgeType
 import app.nuddle.data.AccountRepository
 import app.nuddle.data.AuthRepository
+import app.nuddle.data.avatar.AvatarRepository
 import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.InviteDao
@@ -46,13 +47,14 @@ class ProfileViewModel
         private val permissions: PermissionReader,
         private val account: AccountRepository,
         private val auth: AuthRepository,
+        avatars: AvatarRepository,
         ids: IdGenerator,
     ) : ViewModel() {
         private val granted = MutableStateFlow(permissions.read())
         private val switches = MutableStateFlow(Switches())
 
         /** The settings sheets; the route wires its callbacks straight to it. */
-        internal val sheets = ProfileSheetHolder(viewModelScope, account, auth, ids)
+        internal val sheets = ProfileSheetHolder(viewModelScope, account, auth, avatars, ids)
 
         /** After Çıkış yap or Hesabımı sil: this phone holds nothing of the person any more. */
         val signedOut: Flow<Unit> = sheets.signedOut
@@ -98,6 +100,9 @@ class ProfileViewModel
 
         fun onEditName() = sheets.show(ProfileSheet.Rename(state.value?.name.orEmpty()))
 
+        /** The avatar on top (NUD-72). */
+        fun onPicture() = sheets.show(ProfileSheet.Picture(hasPicture = state.value?.hasPicture == true))
+
         fun onQuietHours() {
             val current = state.value ?: return
             sheets.show(ProfileSheet.Quiet(current.quietStart, current.quietEnd))
@@ -117,6 +122,7 @@ private fun uiState(
 ) = ProfileUiState(
     name = me.displayName,
     phone = TurkishPhone.display(me.phone),
+    hasPicture = me.avatarPath != null,
     people =
         people
             .filter { it.status == "active" }

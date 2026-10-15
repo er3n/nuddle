@@ -16,6 +16,11 @@ import app.nuddle.data.LocalWipe
 import app.nuddle.data.OutboxApprovals
 import app.nuddle.data.TaskCloser
 import app.nuddle.data.TaskRepository
+import app.nuddle.data.avatar.ApiAvatarRepository
+import app.nuddle.data.avatar.AvatarRefresher
+import app.nuddle.data.avatar.AvatarRepository
+import app.nuddle.data.avatar.AvatarSync
+import app.nuddle.data.avatar.AvatarUploads
 import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.InviteDao
 import app.nuddle.data.db.NuddleDatabase
@@ -144,4 +149,18 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun approvals(impl: OutboxApprovals): Approvals
+}
+
+/** Profile pictures (NUD-72): picked on Profile, uploaded through WorkManager, fetched after a sync. */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class AvatarModule {
+    @Binds
+    abstract fun avatarRepository(impl: ApiAvatarRepository): AvatarRepository
+
+    @Binds
+    abstract fun avatarRefresher(impl: AvatarSync): AvatarRefresher
+
+    @Binds
+    abstract fun avatarUploads(impl: WorkManagerScheduling): AvatarUploads
 }

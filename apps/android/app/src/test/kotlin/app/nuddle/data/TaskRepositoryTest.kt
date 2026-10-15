@@ -81,6 +81,7 @@ class TaskRepositoryTest {
                         testJson,
                         { emptySet() },
                         RecordingTaskAcks(),
+                        { },
                     ),
                 closer =
                     object : TaskCloser {

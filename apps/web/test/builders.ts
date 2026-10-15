@@ -17,6 +17,7 @@ export function aPerson(name: string, overrides: Partial<Person> = {}): Person {
     quietHours: { start: "23:00", end: "07:00", timeZone: "Europe/Istanbul" },
     useConnectionsForMyTasks: true,
     notifyMeForOthersTasks: true,
+    avatarPath: null,
     pokeProfile: null,
     deletedAt: null,
     ...overrides,

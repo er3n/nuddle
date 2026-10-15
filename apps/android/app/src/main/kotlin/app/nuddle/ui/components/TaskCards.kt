@@ -51,6 +51,8 @@ data class TaskUi(
     val status: PillStatus,
     val personName: String,
     val personColor: Color,
+    /** For their profile picture (NUD-72); null shows the initial. */
+    val personId: String? = null,
 )
 
 @Composable
@@ -161,7 +163,7 @@ fun TaskRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(dimens.space12),
     ) {
-        Box(Modifier.clearAndSetSemantics { }) { Avatar(task.personName, task.personColor, dimens.avatarList) }
+        Box(Modifier.clearAndSetSemantics { }) { PersonAvatar(task.personId, task.personName, task.personColor, dimens.avatarList) }
         Column(Modifier.weight(1f).clearAndSetSemantics { }) {
             Text(task.title, style = DurtTheme.type.bodyStrong, color = colors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(line, style = DurtTheme.type.caption, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)

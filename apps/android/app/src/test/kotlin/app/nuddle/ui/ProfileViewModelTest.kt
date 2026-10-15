@@ -9,6 +9,7 @@ import app.nuddle.domain.QuietHours
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeAccountRepository
 import app.nuddle.testing.FakeAuthRepository
+import app.nuddle.testing.FakeAvatarRepository
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.FakePermissions
 import app.nuddle.testing.InMemoryConnectionDao
@@ -43,7 +44,7 @@ class ProfileViewModelTest {
     private val account = FakeAccountRepository()
     private val auth = FakeAuthRepository()
     private val vm by lazy {
-        ProfileViewModel(sessions, connections, invites, permissions, account, auth, IdGenerator(FakeClock()))
+        ProfileViewModel(sessions, connections, invites, permissions, account, auth, FakeAvatarRepository(), IdGenerator(FakeClock()))
     }
 
     private suspend fun signedIn() = sessions.saveMe("Eren", QuietHours.default(TimeZone.of("Europe/Istanbul")))
