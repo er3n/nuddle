@@ -27,7 +27,7 @@ import kotlin.time.Instant
 @Config(sdk = [36])
 class PokeNotificationsTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
-    private val notifications = AndroidPokeNotifications(app, FakeClock(), TimeZone.of("Europe/Istanbul"))
+    private val notifications = AndroidPokeNotifications(app, FakeClock(), TimeZone.of("Europe/Istanbul"), AlarmVolume(app))
 
     @Before
     fun setUp() {

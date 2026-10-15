@@ -46,7 +46,20 @@ object EventTypes {
     const val POKE_FIRED = "poke_fired"
     const val POKE_LOST = "poke_lost"
     const val HUMAN_NOTIFIED = "human_notified"
+    const val DELIVERED = "delivered"
+    const val SEEN = "seen"
 }
+
+/** How far my task to someone got: sent, on their phone, or seen by them (NUD-68, the sender's tick). */
+enum class Delivery { Sent, Reached, Seen }
+
+/** The tick from a task's events. */
+fun List<TaskEventEntity>.delivery(): Delivery =
+    when {
+        any { it.type == EventTypes.SEEN } -> Delivery.Seen
+        any { it.type == EventTypes.DELIVERED } -> Delivery.Reached
+        else -> Delivery.Sent
+    }
 
 /** Events since the task last got a deadline (created, or a new time): the pokes of this round. Oldest first. */
 fun List<TaskEventEntity>.sinceLastDeadline(): List<TaskEventEntity> {

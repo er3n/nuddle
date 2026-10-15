@@ -14,6 +14,8 @@ import kotlinx.datetime.format
 import kotlinx.datetime.format.char
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
+import kotlin.math.ceil
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 internal val HOUR_MINUTE =
@@ -31,14 +33,19 @@ sealed interface DeadlineText {
     val time: String
     val moment: Boolean
 
+    /** Minutes until the time when it is within the hour, for "35 dk kaldı" on home (NUD-68); null otherwise. */
+    val minutesLeft: Int?
+
     data class Today(
         override val time: String,
         override val moment: Boolean = false,
+        override val minutesLeft: Int? = null,
     ) : DeadlineText
 
     data class Tomorrow(
         override val time: String,
         override val moment: Boolean = false,
+        override val minutesLeft: Int? = null,
     ) : DeadlineText
 
     /** `month` is 1 to 12. Wording for deadlines after tomorrow: open-questions#27. */
@@ -47,8 +54,12 @@ sealed interface DeadlineText {
         val month: Int,
         override val time: String,
         override val moment: Boolean = false,
+        override val minutesLeft: Int? = null,
     ) : DeadlineText
 }
+
+/** Home counts down only the last hour; further out the clock time says enough. */
+private const val COUNTDOWN_MINUTES = 60
 
 /** When someone else wrote a task: "14:32" today, "Dün 14:32", otherwise "12 Ekim 14:32" (open-questions#34). */
 sealed interface WrittenText {
@@ -178,12 +189,25 @@ fun deadlineText(
 ): DeadlineText {
     val local = deadline.toLocalDateTime(timeZone)
     val time = local.time.format(HOUR_MINUTE)
+    val left = minutesLeft(deadline, now)
     return when (now.toLocalDateTime(timeZone).date.daysUntil(local.date)) {
-        0 -> DeadlineText.Today(time, moment)
-        1 -> DeadlineText.Tomorrow(time, moment)
-        else -> DeadlineText.OnDate(local.date.day, local.date.month.number, time, moment)
+        0 -> DeadlineText.Today(time, moment, left)
+        1 -> DeadlineText.Tomorrow(time, moment, left)
+        else -> DeadlineText.OnDate(local.date.day, local.date.month.number, time, moment, left)
     }
 }
+
+/** Whole minutes up to [deadline], rounded up, when it is ahead and at most an hour away. */
+internal fun minutesLeft(
+    deadline: Instant,
+    now: Instant,
+): Int? {
+    val left = deadline - now
+    if (!left.isPositive() || left > COUNTDOWN_MINUTES.minutes) return null
+    return ceil(left.inWholeSeconds / SECONDS_PER_MINUTE).toInt().coerceAtLeast(1)
+}
+
+private const val SECONDS_PER_MINUTE = 60.0
 
 /** The time a task shows: its moment for an `at` task, otherwise its deadline (ADR 0017). */
 fun TaskEntity.timeText(

@@ -3,6 +3,7 @@ package app.nuddle.ui.screens.home
 import androidx.compose.runtime.Immutable
 import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.TaskStatus
+import app.nuddle.data.Delivery
 import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.db.shownTime
@@ -23,6 +24,8 @@ data class SentUi(
     val awaitingApproval: Boolean = false,
     /** I asked for another photo (4g). */
     val reRequested: Boolean = false,
+    /** On their phone, or seen by them: the tick (NUD-68). */
+    val delivery: Delivery = Delivery.Sent,
 )
 
 /** My tasks to others that are still going: to do, a photo waiting for me, asked again. */
@@ -39,6 +42,8 @@ fun sentTasks(
     connections: Map<String, ConnectionEntity>,
     now: Instant,
     timeZone: TimeZone,
+    /** Per task: how far it got (NUD-68); a task not in it counts as only sent. */
+    deliveries: Map<String, Delivery> = emptyMap(),
 ): List<SentUi> =
     tasks
         .filter { it.senderId == me && it.recipientId != me && it.status in SENT_STATUSES }
@@ -55,5 +60,6 @@ fun sentTasks(
                 toName = to.displayName,
                 awaitingApproval = task.status == TaskStatus.AWAITING_APPROVAL.value,
                 reRequested = task.status == TaskStatus.REJECTED.value,
+                delivery = deliveries[task.id] ?: Delivery.Sent,
             )
         }

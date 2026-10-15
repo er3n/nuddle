@@ -281,6 +281,28 @@ describe("scenarios: task lifecycle", () => {
     expect(world.task(taskId).status).toBe("MISSED");
   });
 
+  it("the sender's tick (NUD-68): reached, then seen, each once, and Sibel's phone has both", async () => {
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.trashToEren);
+    expect(await sibel.acknowledge(taskId, false)).toEqual({ ok: false, error: "not_recipient" });
+
+    expect(await eren.acknowledge(taskId, false)).toEqual({ ok: true });
+    expect(world.push.to("sibel").at(-1)).toMatchObject({
+      taskId,
+      hint: "sync",
+      event: "delivered",
+    });
+    expect(await eren.acknowledge(taskId, true)).toEqual({ ok: true });
+    expect(await eren.acknowledge(taskId, true)).toEqual({ ok: true });
+
+    const logged = world.eventsOf(taskId).map((e) => e.type);
+    expect(logged.filter((t) => t === "delivered" || t === "seen")).toEqual(["delivered", "seen"]);
+    await sibel.phone.sync();
+    const sibelSaw = sibel.phone.events.filter((e) => e.taskId === taskId).map((e) => e.type);
+    expect(sibelSaw).toEqual(expect.arrayContaining(["delivered", "seen"]));
+    expect(world.task(taskId).status).toBe("SCHEDULED");
+  });
+
   it("missed, then 'Süreyi uzat' (5d): poking starts again for the new deadline", async () => {
     const { world, sibel, eren } = await sibelAndEren();
     const taskId = await writeTask(sibel, TEXT.trashToEren);

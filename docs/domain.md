@@ -69,6 +69,7 @@ All of these live in pure functions that receive `now` from an injected `Clock` 
 
 | Rule | Value |
 |---|---|
+| "Yarın" after midnight | Between 00:00 and 05:00 in the sender's time zone, "yarın" means the day that starts when they wake up, which is today's date (NUD-68). The extractor applies it; the 2b chips and the detail keep calendar days. |
 | Quiet hours | Default 23:00-07:00 in the recipient's time zone, editable. No channel fires inside the window, full screen included. Checked when planning on the server and again on the device right before ringing. |
 | Deadline inside quiet hours | The plan moves pokes earlier so the last one lands before quiet hours start. |
 | Auto-approve | 3 hours after the photo is sent. |
@@ -136,7 +137,9 @@ Each device step also gets a `lost_poke_check` timer at planned time + 5 minutes
 
 ## Task events (proposed vocabulary)
 
-`created`, `edited`, `plan_generated`, `poke_fired` (planned, actual, level), `poke_lost`, `snoozed`, `done`, `photo_sent`, `approved` (manual or auto), `re_requested` (note), `dropped` (note), `missed`, `cancelled` (reason), `human_notified`, `permission_missing`.
+`created`, `edited`, `plan_generated`, `poke_fired` (planned, actual, level), `poke_lost`, `snoozed`, `done`, `photo_sent`, `approved` (manual or auto), `re_requested` (note), `dropped` (note), `missed`, `cancelled` (reason), `human_notified`, `permission_missing`, `delivered`, `seen`.
+
+`delivered` and `seen` are the sender's tick (NUD-68). The recipient's phone sends the `acknowledge` command once a sync stored an open task to them (`seen: false`) and once the task was on screen there (`seen: true`, ux/screens.md, Quality pass). The server logs each at most once per task, `seen` adds `delivered` when it is missing, and the sender's phone syncs. Nothing is logged for a task to self or a closed task. Neither changes the status, the plan or a timer.
 
 ## LLM task extraction
 

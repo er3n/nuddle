@@ -423,6 +423,20 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
     },
   );
 
+  app.openapi(
+    command(
+      "acknowledge",
+      "acknowledge",
+      "Recipient's phone: the task reached it, or the recipient has seen it",
+      s.AcknowledgeCommand,
+      s.TaskCommandResult,
+    ),
+    async (c) => {
+      const b = c.req.valid("json");
+      return c.json(await svc.acknowledge(deps, await person(c.get("caller")), b), 200);
+    },
+  );
+
   taskCommand("done", "done", "Recipient: Bitti", s.DoneCommand, (b) => ({
     type: "done",
     ...(b.cameraUnavailable === undefined ? {} : { cameraUnavailable: b.cameraUnavailable }),

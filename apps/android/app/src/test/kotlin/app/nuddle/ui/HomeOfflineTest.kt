@@ -21,12 +21,15 @@ import app.nuddle.testing.InMemoryQueuedWriteDao
 import app.nuddle.testing.InMemorySessionStore
 import app.nuddle.testing.InMemorySetupStore
 import app.nuddle.testing.InMemoryTaskDao
+import app.nuddle.testing.InMemoryTaskEventDao
 import app.nuddle.testing.MainDispatcherRule
 import app.nuddle.testing.RecordingErrorReporter
+import app.nuddle.testing.RecordingTaskAcks
 import app.nuddle.testing.aSession
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.screens.home.HomeViewModel
 import app.nuddle.ui.screens.home.QueuedUi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -73,6 +76,9 @@ class HomeOfflineTest {
             errors,
             clock,
             istanbul,
+            InMemoryTaskEventDao(),
+            { flowOf(Unit) },
+            RecordingTaskAcks(),
         )
     }
 

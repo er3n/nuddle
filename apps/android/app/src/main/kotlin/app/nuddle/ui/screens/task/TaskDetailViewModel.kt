@@ -6,14 +6,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.Reachability
+import app.nuddle.data.Delivery
 import app.nuddle.data.DoneNotes
 import app.nuddle.data.TaskCloser
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.WriteOutcome
 import app.nuddle.data.db.ConnectionDao
+import app.nuddle.data.db.PokeStepDao
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEventDao
+import app.nuddle.data.delivery
 import app.nuddle.data.session.SessionStore
+import app.nuddle.data.session.TaskAcks
 import app.nuddle.domain.IdGenerator
 import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.DeadlineText
@@ -101,6 +105,10 @@ data class TaskDetailUiState(
     val drop: DropUi? = null,
     /** The 5d deadline sheet, while open. */
     val newDeadline: NewDeadlineUi? = null,
+    /** My task to someone: on their phone, or seen by them (NUD-68). */
+    val delivery: Delivery? = null,
+    /** "09:00": a task to me that has not rung yet starts poking then (NUD-68). */
+    val pokeStartsAt: String? = null,
 ) {
     val actions: List<DetailAction> get() = actionsFor(side, status, photo)
     val editable: Boolean get() = editable(side, status)
@@ -114,7 +122,9 @@ class TaskDetailViewModel
         taskDao: TaskDao,
         connectionDao: ConnectionDao,
         eventDao: TaskEventDao,
+        stepDao: PokeStepDao,
         sessions: SessionStore,
+        private val acks: TaskAcks,
         doneNotes: DoneNotes,
         closer: TaskCloser,
         private val tasks: TaskRepository,
@@ -146,6 +156,9 @@ class TaskDetailViewModel
         /** 7f over the detail. */
         val drop = DropSheetHolder()
 
+        /** The detail of a task to me is on screen: its sender sees "gördü" (NUD-68). */
+        private val seen = SeenOnce(taskId, acks, viewModelScope)
+
         /** Yeni zaman ver and Süreyi uzat (5d). */
         val newDeadline = NewDeadlineHolder(taskId, tasks, ids, clock, timeZone, viewModelScope)
 
@@ -164,16 +177,21 @@ class TaskDetailViewModel
             combine(
                 taskDao.observeAll().map { all -> all.firstOrNull { it.id == taskId } },
                 connectionDao.observeAll(),
-                eventDao.observeAll().map { all -> all.filter { it.taskId == taskId } },
+                combine(
+                    eventDao.observeAll().map { all -> all.filter { it.taskId == taskId } },
+                    stepDao.observeAll().map { all -> all.filter { it.taskId == taskId } },
+                    ::Pair,
+                ),
                 combine(sessions.session.map { it?.personId }, sessions.displayName, ::Pair),
                 sheets,
-            ) { task, connections, events, (me, myName), sheets ->
+            ) { task, connections, (events, steps), (me, myName), sheets ->
                 val shown = if (task == null || me == null) null else detailOf(task, me)
                 if (task == null || me == null || shown == null) {
                     closeChannel.trySend(Unit)
                     return@combine null
                 }
                 val (side, status) = shown
+                if (side == DetailSide.ToMe) seen.tell()
                 val now = clock.now()
                 val byId = connections.associateBy { it.personId }
                 val to = byId[task.recipientId]
@@ -220,6 +238,11 @@ class TaskDetailViewModel
                     saveFailed = local.saveFailed,
                     drop = sheets.drop,
                     newDeadline = sheets.newDeadline,
+                    delivery = events.delivery().takeIf { side == DetailSide.Mine },
+                    pokeStartsAt =
+                        pokeStart(steps, task.planVersion, now)
+                            ?.takeIf { side != DetailSide.Mine && status == DetailStatus.Scheduled && task.snoozedUntil == null }
+                            ?.hourMinute(),
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 

@@ -76,6 +76,7 @@ deadline
 - Parts of the day: sabah 09:00, öğlen 12:00, öğleden sonra 15:00, akşam 19:00, gece 22:00.
 - "9dan önce", "10a kadar": that hour. An hour 1-6 with no part of day is afternoon (13:00-18:00); 7-12 with no part of day is the morning hour as written ("10da" is 10:00, never 22:00), even when that makes it tomorrow.
 - A day with no time means 19:00 that day. A time with no day means today if still ahead, otherwise tomorrow.
+- After midnight, before 05:00, the sender has not slept yet: "yarın" ("yarın sabah", "yarın akşam") means the day that starts when they wake up, which is today's date. "Yarın sabah 9" at 00:40 on the 12th is the 12th 09:00, not the 13th.
 - Relative times ("2 saat içinde", "20 dakika sonra") count from the sender's local time.
 - A weekday means its next occurrence after today.
 - No time and no day at all: null and add "deadline" to missing.
@@ -98,7 +99,8 @@ missing
 Worked examples (sender's local time Sunday 21:00, connections Eren: spouse, Ayşe: parent)
 - "babamı yarın ara": the sender calls; babam is only the object. recipient "self", deadline tomorrow 19:00, timing "by".
 - "annem 11de ilacını içsin": annem means Ayşe; 11 has no part of day, so 11:00, which has passed today, so tomorrow 11:00; timing "at".
-- "eren saat 3te markete gitsin": 3 is afternoon, 15:00, passed today, so tomorrow 15:00; timing "at".`;
+- "eren saat 3te markete gitsin": 3 is afternoon, 15:00, passed today, so tomorrow 15:00; timing "at".
+- At 00:40 on Monday: "eren yarın sabah 9da ekmek alsın": the sender has not slept, so yarın is Monday; Monday 09:00, timing "at".`;
 
 function weekday(t: Date, timeZone: string): string {
   return new Intl.DateTimeFormat("en-US", { timeZone, weekday: "long" }).format(t);

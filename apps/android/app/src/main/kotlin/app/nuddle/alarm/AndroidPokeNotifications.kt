@@ -44,6 +44,7 @@ class AndroidPokeNotifications
         @param:ApplicationContext private val context: Context,
         private val clock: Clock,
         private val timeZone: TimeZone,
+        private val volume: AlarmVolume,
     ) : PokeNotifications {
         override fun show(
             task: TaskEntity,
@@ -93,6 +94,7 @@ class AndroidPokeNotifications
             }
             // The poke takes over from the note that the task arrived ("Zamanı gelince seni dürterim", 4b).
             manager.cancel(NotificationIds.note(task.id))
+            if (!silent) volume.raise()
             manager.notify(notificationId(task.id), builder.build())
         }
 
@@ -106,6 +108,7 @@ class AndroidPokeNotifications
 
         override fun cancel(taskId: String) {
             NotificationManagerCompat.from(context).cancel(notificationId(taskId))
+            if (showing().isEmpty()) volume.restore()
         }
 
         // Each poke is in a group of its own task (NotificationIds.pokeGroup), which names the task.

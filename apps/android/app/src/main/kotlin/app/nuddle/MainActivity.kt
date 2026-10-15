@@ -11,6 +11,8 @@ import androidx.compose.runtime.getValue
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import app.nuddle.alarm.AlarmVolume
+import app.nuddle.alarm.PokeNotifications
 import app.nuddle.data.InviteLinks
 import app.nuddle.data.sync.Syncer
 import app.nuddle.ui.TestTagsRoot
@@ -29,6 +31,10 @@ class MainActivity : ComponentActivity() {
     private val start: StartViewModel by viewModels()
 
     @Inject lateinit var syncer: Syncer
+
+    @Inject lateinit var pokes: PokeNotifications
+
+    @Inject lateinit var alarmVolume: AlarmVolume
 
     /** The code of an invite link that opened the app, until home has acted on it. */
     private val inviteCode = MutableStateFlow<String?>(null)
@@ -67,6 +73,8 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         lifecycleScope.launch { syncer.sync() }
+        // A poke swiped away rang at a raised alarm volume; with none left, the person's own level comes back (NUD-68).
+        if (pokes.showing().isEmpty()) alarmVolume.restore()
     }
 
     /** singleTop: a link opened while the app runs arrives here. */
