@@ -4,8 +4,11 @@ import android.Manifest
 import android.app.Application
 import android.app.Notification
 import android.app.NotificationManager
+import android.graphics.Bitmap
 import androidx.core.content.getSystemService
 import androidx.test.core.app.ApplicationProvider
+import app.nuddle.data.avatar.AvatarFiles
+import app.nuddle.data.photo.toJpeg
 import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeStep
 import app.nuddle.testing.Cast
@@ -17,8 +20,11 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
@@ -27,7 +33,8 @@ import kotlin.time.Instant
 @Config(sdk = [36])
 class PokeNotificationsTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
-    private val notifications = AndroidPokeNotifications(app, FakeClock(), TimeZone.of("Europe/Istanbul"), AlarmVolume(app))
+    private val avatars = AvatarFiles(File(app.cacheDir, "avatars-test").apply { deleteRecursively() })
+    private val notifications = AndroidPokeNotifications(app, FakeClock(), TimeZone.of("Europe/Istanbul"), AlarmVolume(app), avatars)
 
     @Before
     fun setUp() {
@@ -53,6 +60,20 @@ class PokeNotificationsTest {
         assertEquals(setOf(Cast.TASK_ID), notifications.showing())
         notifications.cancel(Cast.TASK_ID)
         assertEquals(emptySet(), notifications.showing())
+    }
+
+    @Test
+    fun `the sender's cached picture is the large icon, none without one or on a task to self (NUD-80)`() {
+        assertNull(show(seq = 1).getLargeIcon())
+        app.getSystemService<NotificationManager>()!!.cancelAll()
+
+        avatars.save(Cast.SIBEL_ID, "avatars/sibel/1.jpg", Bitmap.createBitmap(8, 6, Bitmap.Config.ARGB_8888).toJpeg())
+        assertNotNull(show(seq = 1).getLargeIcon())
+        app.getSystemService<NotificationManager>()!!.cancelAll()
+
+        val step = PokeStep(Cast.TASK_ID, 1, 1, Instant.parse("2026-10-12T08:00:00+03:00"), PokeLevel.SOUND)
+        notifications.show(aTask().copy(recipientId = Cast.SIBEL_ID), step, PokeLevel.SOUND)
+        assertNull(shadowOf(app.getSystemService<NotificationManager>()).allNotifications.single().getLargeIcon())
     }
 
     @Test

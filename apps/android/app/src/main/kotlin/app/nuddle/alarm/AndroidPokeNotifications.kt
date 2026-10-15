@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -12,8 +13,10 @@ import androidx.core.content.ContextCompat
 import app.nuddle.MainActivity
 import app.nuddle.R
 import app.nuddle.api.model.FinishMode
+import app.nuddle.data.avatar.AvatarFiles
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.db.isMoment
+import app.nuddle.data.photo.circled
 import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeRules
 import app.nuddle.domain.PokeStep
@@ -45,6 +48,7 @@ class AndroidPokeNotifications
         private val clock: Clock,
         private val timeZone: TimeZone,
         private val volume: AlarmVolume,
+        private val avatars: AvatarFiles,
     ) : PokeNotifications {
         override fun show(
             task: TaskEntity,
@@ -69,6 +73,7 @@ class AndroidPokeNotifications
                     .setSmallIcon(R.drawable.ic_notification)
                     .setColor(ContextCompat.getColor(context, R.color.poke))
                     .setContentTitle(title)
+                    .setLargeIcon(senderPicture(task))
                     .setContentText(
                         if (notice) {
                             context.getString(R.string.home_finish_notice)
@@ -122,6 +127,14 @@ class AndroidPokeNotifications
                 .activeNotifications
                 .mapNotNull { it.notification.group?.let(NotificationIds::taskOfPokeGroup) }
                 .toSet()
+
+        /** The sender's cached picture as a circle (components.md 7, NUD-80); none for a task to self or without one. */
+        private fun senderPicture(task: TaskEntity) =
+            avatars
+                .of(task.senderId)
+                .takeIf { task.senderId != task.recipientId && it.exists() }
+                ?.let { BitmapFactory.decodeFile(it.path) }
+                ?.circled()
 
         /**
          * At most three actions (docs/ux/components.md, 7): Bitti, Ertele, Bugün olmaz. Ertele shows the length of the
