@@ -45,6 +45,7 @@ Start the backend scenario suite with: task to self, task to other with done, ph
 - `evals/extraction/golden.jsonl`: about 30 cases to start. Each has raw text, sender time zone, a fixed `now`, the sender's connections, and the expected recipient, title, detail, deadline, finish mode, and whether a question is expected.
 - Cover relative times ("akşama", "yarın sabah", "9dan önce", "cuma akşama kadar"), numbers in words ("bin lira"), self tasks, ambiguous recipients, missing deadline.
 - `mise run eval` runs it against the real provider (OpenRouter, model from `OPENROUTER_MODEL`) and prints a score. Run when the prompt or model changes. Not part of CI.
+- Real use is the best source of cases: `mise run golden:export` writes every production task with what the LLM was given and answered and what happened (ADR 0019). A case taken from it keeps the text and the expected result and changes names where needed (the repo is public).
 
 ## Android UI tests
 
@@ -141,3 +142,4 @@ The full set runs on demand. Because the repo is public, standard GitHub-hosted 
 | `mise run e2e:sync` | two-person set on two emulators | before merging a change to sync, the outbox, alarms or notifications |
 | `mise run e2e` | full E2E set | nightly or on demand |
 | `mise run eval` | LLM golden set | when prompt or model changes |
+| `mise run golden:export` | Every production task with its LLM calls, read-only, to git-ignored `golden/` (ADR 0019) | when building eval cases from real use |

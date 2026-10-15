@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveExtraction, type Extraction } from "../../src/domain/extraction";
 import { FixtureExtractor } from "../../src/infra/llm/fixture-extractor";
+import type { LlmExchange } from "../../src/domain/ports";
 import { buildPrompt, OpenRouterExtractor } from "../../src/infra/llm/openrouter-extractor";
 
 const now = new Date("2026-10-11T20:00:00+03:00");
@@ -228,6 +229,31 @@ describe("OpenRouterExtractor", () => {
     const fakeFetch: typeof fetch = () => Promise.resolve(new Response("no", { status: 401 }));
     const extractor = new OpenRouterExtractor({ apiKey: "k", model: "m", fetch: fakeFetch });
     await expect(extractor.extract(input)).rejects.toThrow("status 401");
+  });
+
+  it("tells the call log what went to the model and what came back, as text when it is not JSON (ADR 0019)", async () => {
+    const answering =
+      (content: string): typeof fetch =>
+      () =>
+        Promise.resolve(
+          new Response(JSON.stringify({ choices: [{ message: { content } }] }), { status: 200 }),
+        );
+    const seen: LlmExchange[] = [];
+    await new OpenRouterExtractor({
+      apiKey: "k",
+      model: "m/x",
+      fetch: answering(JSON.stringify(complete)),
+    }).extract(input, (x) => seen.push(x));
+    expect(seen[0]).toMatchObject({ model: "m/x", prompt: buildPrompt(input), output: complete });
+    expect(seen[0]?.system).toContain("recipient");
+
+    const broken = new OpenRouterExtractor({
+      apiKey: "k",
+      model: "m",
+      fetch: answering("not json"),
+    });
+    await expect(broken.extract(input, (x) => seen.push(x))).rejects.toThrow();
+    expect(seen[1]?.output).toBe("not json");
   });
 
   it("lists connections with their relationship", () => {

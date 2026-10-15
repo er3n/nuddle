@@ -64,6 +64,13 @@
       "when": 1792070182543,
       "tag": "20261015131622_task_event_ack",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792073407747,
+      "tag": "20261015141007_llm_calls",
+      "breakpoints": true
     }
   ]
 }

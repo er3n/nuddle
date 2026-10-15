@@ -15,13 +15,14 @@ import {
 import { resolveExtraction, type Extraction, type MissingField } from "../domain/extraction";
 import { afterWrongCode, lockedUntil } from "../domain/otp-attempts";
 import { humanChannelAllowed } from "../domain/plan-pokes";
-import { addMs, DAY } from "../domain/time";
+import { addMs, DAY, HOUR } from "../domain/time";
 import {
   checkPlan,
   HISTORY_DAYS,
   HISTORY_TASKS,
   historyItem,
   type PlannerInput,
+  type PlanProposal,
 } from "../domain/planner";
 import {
   deriveReachability,
@@ -84,6 +85,8 @@ import {
   findTask,
   inSyncReadTx,
   insertEvents,
+  deleteLlmCallsOf,
+  linkAskedExtraction,
   insertInvite,
   inWriteTx,
   lockOpenAction,
@@ -112,6 +115,7 @@ import {
 } from "../infra/db/store";
 import type { AppDeps } from "./deps";
 import { ApiError } from "./errors";
+import { errorText, LlmCall } from "./llm-log";
 
 interface Effects {
   pushes: readonly PushMessage[];
@@ -246,7 +250,20 @@ async function refinePlan(deps: AppDeps, taskId: TaskId, version: number): Promi
         ),
       ),
     };
-    const proposal = await planner.plan(input);
+    const call = new LlmCall(deps, {
+      kind: "plan",
+      personId: recipient.id,
+      taskId,
+      planVersion: version,
+      input,
+    });
+    let proposal: PlanProposal;
+    try {
+      proposal = await planner.plan(input, call.sink);
+    } catch (error) {
+      await call.record("failed", { error: errorText(error) });
+      throw error;
+    }
     const steps = checkPlan(proposal, {
       task,
       recipient,
@@ -257,6 +274,7 @@ async function refinePlan(deps: AppDeps, taskId: TaskId, version: number): Promi
     });
     if (!steps) {
       console.warn("poke planner: no valid plan, keeping v0", taskId, proposal.reason);
+      await call.record("rejected", { error: "checkPlan left no device step" });
       return;
     }
     const out = await inWriteTx(deps.db, async (tx) => {
@@ -269,7 +287,12 @@ async function refinePlan(deps: AppDeps, taskId: TaskId, version: number): Promi
       await persistOutcome(tx, o, txNow);
       return o;
     });
-    if (!out) return;
+    if (!out) {
+      // The task moved on (a new version, closed) while the model was thinking.
+      await call.record("stale");
+      return;
+    }
+    await call.record("adopted", { adoptedVersion: out.plan.version });
     console.info("poke planner: plan adopted", taskId, out.plan.version, proposal.reason);
     for (const p of out.pushes) {
       try {
@@ -442,20 +465,28 @@ export async function writeTask(
   }
   const now = deps.clock.now();
   const connections = await activeConnections(deps.db, caller.id);
+  const extractionInput = {
+    text: input.text,
+    now,
+    timeZone: caller.quietHours.timeZone,
+    senderName: caller.displayName,
+    connections: connections.map((c) => ({
+      name: c.person.displayName,
+      relationship: c.edge.type,
+    })),
+  };
+  const call = new LlmCall(deps, {
+    kind: "extraction",
+    personId: caller.id,
+    writeKey: input.idempotencyKey,
+    input: extractionInput,
+  });
   let extraction: Extraction;
   try {
-    extraction = await deps.extractor.extract({
-      text: input.text,
-      now,
-      timeZone: caller.quietHours.timeZone,
-      senderName: caller.displayName,
-      connections: connections.map((c) => ({
-        name: c.person.displayName,
-        relationship: c.edge.type,
-      })),
-    });
+    extraction = await deps.extractor.extract(extractionInput, call.sink);
   } catch (error) {
     console.error("extraction failed", error);
+    await call.record("failed", { error: errorText(error) });
     throw new ApiError("upstream_failed", "extraction failed");
   }
   const resolved = resolveExtraction(
@@ -466,9 +497,11 @@ export async function writeTask(
     input.text,
   );
   if (resolved.kind === "chat") {
+    await call.record("chat");
     return { kind: "chat", taskId: null, question: null, draft: null, reply: resolved.reply };
   }
   if (resolved.kind === "ask") {
+    await call.record("ask", { error: `asked ${resolved.question}` });
     const { recipient, title, detail, deadline, timing, missAfterMinutes, finishMode } = extraction;
     return {
       kind: "ask",
@@ -477,22 +510,30 @@ export async function writeTask(
       draft: { recipient, title, detail, deadline, timing, missAfterMinutes, finishMode },
     };
   }
-  return runCommand(deps, caller.id, "write_task", input.idempotencyKey, async (tx, txNow) => {
-    const created = await createTaskTx(
-      tx,
-      deps,
-      caller.id,
-      { ...resolved, rawText: input.text },
-      txNow,
-    );
-    const result: WriteTaskResult = {
-      kind: "created",
-      taskId: created.result.taskId,
-      question: null,
-      draft: null,
-    };
-    return { result, effects: created.effects };
-  });
+  const written = await runCommand(
+    deps,
+    caller.id,
+    "write_task",
+    input.idempotencyKey,
+    async (tx, txNow) => {
+      const created = await createTaskTx(
+        tx,
+        deps,
+        caller.id,
+        { ...resolved, rawText: input.text },
+        txNow,
+      );
+      const result: WriteTaskResult = {
+        kind: "created",
+        taskId: created.result.taskId,
+        question: null,
+        draft: null,
+      };
+      return { result, effects: created.effects };
+    },
+  );
+  await call.record("create", { taskId: written.taskId });
+  return written;
 }
 
 /** The preview (2b) after its one question: create with explicit fields. */
@@ -502,9 +543,20 @@ export async function createTask(
   input: NewTask & { idempotencyKey: string },
 ): Promise<{ taskId: TaskId; status: TaskStatus; planVersion: number }> {
   const { idempotencyKey, ...task } = input;
-  return runCommand(deps, caller.id, "create_task", idempotencyKey, (tx, now) =>
-    createTaskTx(tx, deps, caller.id, task, now),
-  );
+  return runCommand(deps, caller.id, "create_task", idempotencyKey, async (tx, now) => {
+    const created = await createTaskTx(tx, deps, caller.id, task, now);
+    // The extraction that asked the question this preview answered now has its task (ADR 0019).
+    if (task.rawText) {
+      await linkAskedExtraction(
+        tx,
+        caller.id,
+        task.rawText,
+        created.result.taskId,
+        addMs(now, -HOUR),
+      );
+    }
+    return created;
+  });
 }
 
 /** A sender or recipient action on one task (docs/domain.md, Task states). */
@@ -775,6 +827,7 @@ export async function deleteAccount(
       deletePhotosFor.push(...e.deletePhotosFor);
     }
     await deleteDevicesOf(tx, caller.id);
+    await deleteLlmCallsOf(tx, caller.id);
     await touchEdgesTo(tx, caller.id);
     return { result: { ok: true as const }, effects: { pushes, deletePhotosFor } };
   });

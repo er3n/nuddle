@@ -58,7 +58,7 @@ export function e2eRoutes(deps: AppDeps, e2e: { clock: OffsetClock }): Hono<AppE
 
   r.post("/reset", async (c) => {
     await deps.db.execute(
-      sql`truncate idempotency_keys, devices, scheduled_actions, poke_steps, task_events, tasks, invites, edges, people`,
+      sql`truncate llm_calls, idempotency_keys, devices, scheduled_actions, poke_steps, task_events, tasks, invites, edges, people`,
     );
     e2e.clock.reset();
     return c.json({ ok: true });
@@ -70,7 +70,7 @@ export function e2eRoutes(deps: AppDeps, e2e: { clock: OffsetClock }): Hono<AppE
    */
   r.post("/reset-tasks", async (c) => {
     await deps.db.execute(
-      sql`truncate idempotency_keys, scheduled_actions, poke_steps, task_events, tasks`,
+      sql`truncate llm_calls, idempotency_keys, scheduled_actions, poke_steps, task_events, tasks`,
     );
     e2e.clock.reset();
     return c.json({ ok: true });

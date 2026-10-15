@@ -2,7 +2,7 @@
 // rules afterwards, so the prompt states them only to waste fewer steps.
 import { z } from "zod";
 import type { PlannerInput, PlanProposal } from "../../domain/planner";
-import type { PokePlanner } from "../../domain/ports";
+import type { ExchangeSink, PokePlanner } from "../../domain/ports";
 import { toLocalIso } from "../../domain/time";
 import { completeJson, type OpenRouterOptions } from "./openrouter";
 
@@ -105,8 +105,9 @@ export function buildPlannerPrompt(input: PlannerInput): string {
 export class OpenRouterPlanner implements PokePlanner {
   constructor(private readonly options: OpenRouterOptions & { timeoutMs?: number }) {}
 
-  async plan(input: PlannerInput): Promise<PlanProposal> {
+  async plan(input: PlannerInput, onExchange?: ExchangeSink): Promise<PlanProposal> {
     const json = await completeJson(this.options, {
+      ...(onExchange ? { onExchange } : {}),
       system: RULES,
       user: buildPlannerPrompt(input),
       name: "poke_plan",

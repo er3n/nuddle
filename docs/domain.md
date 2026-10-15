@@ -16,6 +16,7 @@ Items marked **(proposed)** are reasonable defaults that were not explicitly dec
 | Poke step | `poke_steps` **(proposed table)** | The plan: ordered steps with planned time and level, versioned per task. Never exposed to clients except the recipient's device, which needs times and levels to set alarms. |
 | Scheduled action | `scheduled_actions` | Server-side timers: deadline check, approval timeout, human channel check, lost poke check, missed card expiry. Executed by `tick(now)`. |
 | Device | `devices` **(proposed table)** | Person, Firebase Installation ID (FID, ADR 0015), platform, app version, last seen, permission summary (notifications, exact alarm, full screen, channel states). Source of reachability. |
+| LLM call | `llm_calls` | One extraction or planner call: the person, the task once there is one, the input, the prompts as sent, the answer, the outcome, the error and the latency (ADR 0019). Never exposed to clients; deleted with the account. |
 | Idempotency key | `idempotency_keys` **(proposed table)** | Command key, caller, stored result. Replayed commands return the stored result (ADR 0006). |
 | Photo | Supabase Storage + row on the task event | Private bucket, path per task. Deleted when the task closes. |
 
