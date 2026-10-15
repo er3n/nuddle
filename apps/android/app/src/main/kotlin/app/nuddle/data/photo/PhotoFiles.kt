@@ -45,6 +45,15 @@ class PhotoFiles(
         return PendingPhoto(key, Instant.fromEpochMilliseconds(taken))
     }
 
+    /** The tasks whose photo waits here for the server. */
+    fun pendingTaskIds(): Set<String> =
+        dir
+            .listFiles { file -> file.extension == "jpg" }
+            ?.map { it.nameWithoutExtension }
+            ?.filter { pending(it) != null }
+            ?.toSet()
+            .orEmpty()
+
     fun delete(taskId: String) {
         of(taskId).delete()
         metaOf(taskId).delete()

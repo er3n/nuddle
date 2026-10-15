@@ -44,6 +44,9 @@ class PokeAlarmTest {
     private val clock = FakeClock(Instant.parse("2026-10-12T08:00:00+03:00"))
     private val scheduler = RecordingScheduler()
     private val notifications = RecordingNotifications()
+
+    /** The pokes a re-arm takes away, apart from the ones Bitti, Ertele and Bugün olmaz take. */
+    private val rearmNotifications = RecordingNotifications()
     private val fullScreen = FakeFullScreen()
     private val sessions = InMemorySessionStore(aSession())
     private val drainer = RecordingDrainer()
@@ -60,7 +63,7 @@ class PokeAlarmTest {
         sessions.quiet = QuietHours.default(TimeZone.of("Europe/Istanbul"))
         val ids = IdGenerator(clock)
         val outbox = Outbox(db.outbox(), testJson, clock, drainer)
-        alarms = PokeAlarms(db.tasks(), db.pokeSteps(), scheduler, clock)
+        alarms = PokeAlarms(db.tasks(), db.pokeSteps(), scheduler, clock, rearmNotifications)
         firing =
             PokeFiring(
                 alarms,
@@ -364,6 +367,41 @@ class PokeAlarmTest {
             val task = db.tasks().get(Cast.TASK_ID)!!
             assertEquals(1, task.snoozesUsed)
             assertEquals((clock.now() + 5.minutes).toEpochMilliseconds(), task.snoozedUntil)
+        }
+
+    @Test
+    fun `a sync after Ertele keeps the snoozed ring until the server's new plan comes (NUD-64)`() =
+        runTest {
+            givenPlan()
+            alarms.rearm()
+            firing.fire(key(0))
+            actions.snooze(key(0))
+
+            alarms.rearm()
+            assertEquals(clock.now() + 15.minutes, scheduler.scheduled[key(0)]?.plannedAt)
+
+            // The server's plan after the snooze is the next version; the old step does not ring as well.
+            db.tasks().upsert(listOf(db.tasks().get(Cast.TASK_ID)!!.copy(planVersion = 3)))
+            alarms.applyPlan(Cast.TASK_ID, 3, listOf(aStep(0, "2026-10-12T08:15:00+03:00", planVersion = 3)))
+            alarms.rearm()
+            assertEquals(setOf(AlarmKey(Cast.TASK_ID, 3, 0)), scheduler.scheduled.keys)
+        }
+
+    @Test
+    fun `a task that closes in a sync takes the poke that rang for it off the screen (NUD-64)`() =
+        runTest {
+            givenPlan()
+            alarms.rearm()
+            rearmNotifications.show(db.tasks().get(Cast.TASK_ID)!!, alarms.step(key(0))!!, PokeLevel.SOUND)
+            alarms.rearm()
+            assertTrue(rearmNotifications.cancelled.isEmpty())
+
+            // The sync that brings the cancel replaces the plan with the cancelled version's, which has no steps.
+            db.tasks().upsert(listOf(aTask(status = "CANCELLED", planVersion = 3)))
+            alarms.applyPlan(Cast.TASK_ID, 3, emptyList())
+            alarms.rearm()
+            assertEquals(listOf(Cast.TASK_ID), rearmNotifications.cancelled)
+            assertTrue(scheduler.scheduled.isEmpty())
         }
 
     @Test

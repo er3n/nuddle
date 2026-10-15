@@ -8,6 +8,7 @@ import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.InMemoryMissedRingStore
 import app.nuddle.testing.InMemorySessionStore
+import app.nuddle.testing.RecordingNotifications
 import app.nuddle.testing.RecordingScheduler
 import app.nuddle.testing.aSession
 import app.nuddle.testing.aStep
@@ -42,7 +43,7 @@ class MissedRingCheckTest {
         db = inMemoryDatabase()
         val istanbul = TimeZone.of("Europe/Istanbul")
         sessions.quiet = QuietHours.default(istanbul)
-        val alarms = PokeAlarms(db.tasks(), db.pokeSteps(), scheduler, clock)
+        val alarms = PokeAlarms(db.tasks(), db.pokeSteps(), scheduler, clock, RecordingNotifications())
         check = MissedRingCheck({ stoppedAt }, db.tasks(), db.pokeSteps(), alarms, store, sessions, clock, istanbul)
     }
 
@@ -83,7 +84,7 @@ class MissedRingCheckTest {
                     { stoppedAt },
                     db.tasks(),
                     db.pokeSteps(),
-                    PokeAlarms(db.tasks(), db.pokeSteps(), scheduler, clock),
+                    PokeAlarms(db.tasks(), db.pokeSteps(), scheduler, clock, RecordingNotifications()),
                     again,
                     sessions,
                     clock,

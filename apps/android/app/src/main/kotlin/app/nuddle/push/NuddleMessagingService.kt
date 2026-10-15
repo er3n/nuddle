@@ -1,6 +1,7 @@
 package app.nuddle.push
 
 import android.annotation.SuppressLint
+import android.util.Log
 import app.nuddle.data.outbox.WorkManagerScheduling
 import app.nuddle.data.sync.Syncer
 import com.google.firebase.messaging.FirebaseMessagingService
@@ -40,7 +41,10 @@ class NuddleMessagingService : FirebaseMessagingService() {
      * alarms (NUD-62). A sync that fails or runs out of time is queued.
      */
     override fun onMessageReceived(message: RemoteMessage) {
-        runBlocking { syncOnPush(syncer, PUSH_SYNC_MS) { work.syncSoon() } }
+        // Hints carry no personal data (an event name and a task id); E2E runs read this line from logcat.
+        Log.i(TAG, "push ${message.data["event"]} ${message.data["taskId"]} priority ${message.priority}")
+        val synced = runBlocking { syncOnPush(syncer, PUSH_SYNC_MS) { work.syncSoon() } }
+        Log.i(TAG, if (synced) "synced on push" else "sync on push failed or slow, queued")
     }
 
     /** FCM can reach this install by [fid] now (ADR 0015). */
@@ -54,15 +58,21 @@ class NuddleMessagingService : FirebaseMessagingService() {
     }
 }
 
+private const val TAG = "NuddlePush"
+
 /** Within the ~10 s a high priority FCM message keeps the process alive, with room to spare. */
 private const val PUSH_SYNC_MS = 8_000L
 
-/** Syncs within [timeoutMs]; a failed or too slow sync goes to [queue] so it still happens (NUD-62). */
+/**
+ * Syncs within [timeoutMs]; a failed or too slow sync goes to [queue] so it still happens (NUD-62). Returns whether it
+ * synced in time.
+ */
 internal suspend fun syncOnPush(
     syncer: Syncer,
     timeoutMs: Long,
     queue: () -> Unit,
-) {
+): Boolean {
     val synced = withTimeoutOrNull(timeoutMs) { syncer.sync() } ?: false
     if (!synced) queue()
+    return synced
 }

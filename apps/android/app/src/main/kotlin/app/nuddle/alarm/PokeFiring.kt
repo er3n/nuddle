@@ -40,6 +40,9 @@ interface PokeNotifications {
     )
 
     fun cancel(taskId: String)
+
+    /** The tasks whose poke notification is up now. */
+    fun showing(): Set<String>
 }
 
 /** Whether the system currently lets the app open a full screen intent (Android 14+ can revoke it). */

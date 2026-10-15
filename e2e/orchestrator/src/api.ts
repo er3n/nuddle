@@ -74,10 +74,15 @@ export class Phone {
 
   /** A task to self, as the preview's "Kur" sends it; returns the task id. */
   async createTaskToSelf(title: string, deadline: Date): Promise<string> {
+    return this.createTask(this.session.personId, title, deadline);
+  }
+
+  /** A task to [recipientId] (myself or a connection), as the preview's "Kur" sends it; returns the task id. */
+  async createTask(recipientId: string, title: string, deadline: Date): Promise<string> {
     const r = await this.client.POST("/api/v1/commands/create_task", {
       body: {
         idempotencyKey: uuidv7(),
-        recipientId: this.session.personId,
+        recipientId,
         title,
         detail: null,
         deadline: deadline.toISOString(),
@@ -86,5 +91,36 @@ export class Phone {
       },
     });
     return unwrap("create_task", r).taskId;
+  }
+
+  async task(taskId: string): Promise<SyncTask | undefined> {
+    return (await this.tasks()).find((t) => t.id === taskId);
+  }
+
+  /** The connection called [name], as sync gives it to this person. */
+  async connection(name: string): Promise<SyncConnection> {
+    const found = (await this.connections()).find((c) => c.displayName === name);
+    if (!found) throw new Error(`no connection called ${name}`);
+    return found;
+  }
+
+  /** The sender's task detail (7c): a new deadline, how it ends kept. */
+  async editDeadline(taskId: string, deadline: Date): Promise<void> {
+    unwrap(
+      "edit",
+      await this.client.POST("/api/v1/commands/edit", {
+        body: { idempotencyKey: uuidv7(), taskId, deadline: deadline.toISOString() },
+      }),
+    );
+  }
+
+  /** The sender takes the task back (7d). */
+  async cancel(taskId: string): Promise<void> {
+    unwrap(
+      "cancel",
+      await this.client.POST("/api/v1/commands/cancel", {
+        body: { idempotencyKey: uuidv7(), taskId, note: null },
+      }),
+    );
   }
 }

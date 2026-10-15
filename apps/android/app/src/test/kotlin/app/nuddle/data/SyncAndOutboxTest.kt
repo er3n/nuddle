@@ -4,10 +4,14 @@ import app.nuddle.api.SyncApi
 import app.nuddle.api.model.DoneCommand
 import app.nuddle.data.api.RawCommandApi
 import app.nuddle.data.db.NuddleDatabase
+import app.nuddle.data.db.OutboxEntity
 import app.nuddle.data.db.PokeStepEntity
 import app.nuddle.data.outbox.Outbox
 import app.nuddle.data.outbox.OutboxSender
+import app.nuddle.data.photo.PendingPhoto
+import app.nuddle.data.photo.PhotoFiles
 import app.nuddle.data.sync.AlarmRearmer
+import app.nuddle.data.sync.LocalPendingChanges
 import app.nuddle.data.sync.SyncRepository
 import app.nuddle.domain.IdGenerator
 import app.nuddle.testing.Cast
@@ -32,6 +36,7 @@ import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -73,6 +78,9 @@ class SyncAndOutboxTest {
 
     private val announcer = RecordingAnnouncer()
 
+    /** Tasks with a change this phone has not sent yet. */
+    private var unsent = emptySet<String>()
+
     private fun syncRepository() =
         SyncRepository(
             api = server.retrofit().create(SyncApi::class.java),
@@ -84,6 +92,7 @@ class SyncAndOutboxTest {
             alarms = alarms,
             announcer = announcer,
             json = testJson,
+            pending = { unsent },
         )
 
     private val sibelConnection =
@@ -128,6 +137,51 @@ class SyncAndOutboxTest {
             server.enqueue(json(200, syncBody))
             assertTrue(syncRepository().sync())
             assertEquals(null, db.tasks().get(Cast.TASK_ID)!!.remindAt)
+        }
+
+    @Test
+    fun `a sync before my Bitti is sent keeps it done here, the sync after takes the server's (NUD-64)`() =
+        runTest {
+            db.tasks().upsert(listOf(aTask(status = "DONE", planVersion = 2)))
+            unsent = setOf(Cast.TASK_ID)
+            server.enqueue(json(200, syncBody))
+            assertTrue(syncRepository().sync())
+            assertEquals("DONE", db.tasks().get(Cast.TASK_ID)!!.status)
+
+            unsent = emptySet()
+            server.enqueue(json(200, syncBody.replace("\"status\":\"SCHEDULED\"", "\"status\":\"CANCELLED\"")))
+            assertTrue(syncRepository().sync())
+            assertEquals("CANCELLED", db.tasks().get(Cast.TASK_ID)!!.status)
+        }
+
+    @Test
+    fun `a sync before my Ertele is sent keeps the snooze here (NUD-64)`() =
+        runTest {
+            val until = Instant.parse("2026-10-12T08:45:00+03:00").toEpochMilliseconds()
+            db.tasks().upsert(listOf(aTask(planVersion = 2).copy(snoozesUsed = 1, snoozedUntil = until)))
+            unsent = setOf(Cast.TASK_ID)
+            server.enqueue(json(200, syncBody))
+            assertTrue(syncRepository().sync())
+            val task = db.tasks().get(Cast.TASK_ID)!!
+            assertEquals(1, task.snoozesUsed)
+            assertEquals(until, task.snoozedUntil)
+        }
+
+    @Test
+    fun `an unsent Bitti or Ertele and an uploading photo are local changes, a fired report is not (NUD-64)`() =
+        runTest {
+            val photos = PhotoFiles(createTempDirectory().toFile())
+            photos.save("photo-task", byteArrayOf(1), PendingPhoto("k", Instant.parse("2026-10-12T08:00:00+03:00")))
+            listOf(
+                OutboxEntity("k1", "done", """{"idempotencyKey":"k1","taskId":"done-task"}""", 1),
+                OutboxEntity("k2", "snooze", """{"idempotencyKey":"k2","taskId":"snoozed-task"}""", 2),
+                OutboxEntity("k3", "report_fired", """{"idempotencyKey":"k3","taskId":"fired-task"}""", 3),
+            ).forEach { db.outbox().enqueue(it) }
+
+            assertEquals(
+                setOf("done-task", "snoozed-task", "photo-task"),
+                LocalPendingChanges(db.outbox(), photos, testJson).taskIds(),
+            )
         }
 
     @Test
@@ -385,6 +439,7 @@ class SyncAndOutboxTest {
                     alarms,
                     announcer,
                     testJson,
+                    { emptySet() },
                 )
             val waiting = mine.replace("\"status\":\"SCHEDULED\"", "\"status\":\"AWAITING_APPROVAL\"")
             server.enqueue(json(200, mine))

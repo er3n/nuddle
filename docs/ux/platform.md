@@ -23,6 +23,7 @@ Min SDK 26, target the current SDK (35+). The app is declared to Play as an alar
 - On `BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`, `TIME_SET` and `TIMEZONE_CHANGED`, all pending alarms are re-set from Room.
 - On fire, a `BroadcastReceiver` re-checks quiet hours and plan version, then shows the notification for the level. For `FULL_SCREEN` the notification opens `PokeActivity` via `setFullScreenIntent` (`showWhenLocked`, `turnScreenOn`).
 - Bitti, Ertele and Bugün olmaz apply locally first (remaining alarms cancelled), then go to the server via the WorkManager outbox. Poking stops immediately even offline.
+- A task that closes elsewhere (the sender cancels, it is missed, the connection is removed) loses its alarms and its poke at the next sync: a poke notification that is up goes, and an open full screen poke closes. A snoozed ring survives a sync until the server's shifted plan replaces it (NUD-64).
 - Quiet hours are checked when the server plans and again on the device before ringing.
 
 ## Notification channels

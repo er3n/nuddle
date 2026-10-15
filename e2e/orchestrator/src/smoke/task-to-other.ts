@@ -29,11 +29,9 @@ export function taskToOtherExtractions(now: Date): Record<string, unknown> {
   };
 }
 
-export async function taskToOther(run: RunContext, databaseUrl: string): Promise<void> {
-  const { sibel, eren } = devices;
-
+/** As for Sibel in smoke 1: default quiet hours would swallow the poke window of a run at night. */
+export async function erenQuietHours(run: RunContext, databaseUrl: string): Promise<void> {
   await run.step("eren-quiet-hours", async () => {
-    // As for Sibel in smoke 1: default quiet hours would swallow the poke window of a run at night.
     const db = postgres(databaseUrl, { max: 1, onnotice: () => undefined });
     try {
       await db`update people p set quiet_hours_start = s.quiet_hours_start, quiet_hours_end = s.quiet_hours_end
@@ -42,6 +40,12 @@ export async function taskToOther(run: RunContext, databaseUrl: string): Promise
       await db.end();
     }
   });
+}
+
+export async function taskToOther(run: RunContext, databaseUrl: string): Promise<void> {
+  const { sibel, eren } = devices;
+
+  await erenQuietHours(run, databaseUrl);
 
   await run.step("write-task-to-eren", async (dir) => {
     await sibel.wakeAndUnlock();

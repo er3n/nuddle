@@ -1,10 +1,11 @@
-// E2E orchestrator (docs/testing.md, Orchestrator; ADR 0012). `mise run e2e:smoke` runs the smoke set:
+// E2E orchestrator (docs/testing.md, Orchestrator; ADR 0012). `mise run e2e:smoke` runs the smoke set,
+// `mise run e2e:sync` the two-person set (NUD-64):
 //   1. local Supabase, both emulators (fixed ports first: Gradle can take ports from the ephemeral range)
 //   2. a fresh `nuddle_e2e` database and the backend in E2E mode on :3000
 //   3. the e2e build installed clean on both emulators, logcat streaming
 //   4. the smoke flows, screenshots of both devices after every step
 // Prints the run folder first, stops itself after a hard timeout, exits non-zero on failure.
-// Usage: tsx src/run.ts --set smoke [--cold]
+// Usage: tsx src/run.ts --set smoke|sync [--cold] [--cases 3,4]
 import type { ChildProcess } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -21,16 +22,18 @@ import { repoRoot, RunContext } from "./context";
 import { allDevices } from "./devices";
 import { run, waitFor } from "./proc";
 import { invite } from "./smoke/invite";
-import { smokeExtractions, taskToSelf } from "./smoke/task-to-self";
-import { taskToOther, taskToOtherExtractions } from "./smoke/task-to-other";
+import { signUpSibel, smokeExtractions, taskToSelf } from "./smoke/task-to-self";
+import { erenQuietHours, taskToOther, taskToOtherExtractions } from "./smoke/task-to-other";
 import { photoTask, photoTaskExtractions } from "./smoke/photo-task";
 import { dropTask, dropTaskExtractions } from "./smoke/drop-task";
 import { missedRing } from "./smoke/missed-ring";
 import { offline } from "./smoke/offline";
 import { voice } from "./smoke/voice";
 import { removeConnection } from "./smoke/remove-connection";
+import { twoPerson, twoPersonExtractions } from "./sync/two-person";
 
-const TIMEOUT_MS = 30 * 60_000;
+const SETS = ["smoke", "sync"] as const;
+type SetName = (typeof SETS)[number];
 const APK = join(
   repoRoot,
   "apps",
@@ -48,12 +51,18 @@ const { values } = parseArgs({
   options: {
     set: { type: "string", default: "smoke" },
     cold: { type: "boolean", default: false },
+    /** The two-person cases to run, e.g. "3,4" (sync set only). */
+    cases: { type: "string" },
   },
 });
-if (values.set !== "smoke") {
-  console.error(`unknown set "${values.set}"; only "smoke" exists yet`);
+function chosenSet(name: string | undefined): SetName {
+  const found = SETS.find((s) => s === name);
+  if (found !== undefined) return found;
+  console.error(`unknown set "${String(name)}"; one of ${SETS.join(", ")}`);
   process.exit(2);
 }
+const set = chosenSet(values.set);
+const TIMEOUT_MS: Record<SetName, number> = { smoke: 30 * 60_000, sync: 45 * 60_000 };
 
 const ctx = new RunContext(new Date());
 console.log(`run folder: ${ctx.dir}`);
@@ -70,21 +79,21 @@ function finish(status: "passed" | "failed" | "timed out", error?: string): neve
   cleanup();
   ctx.writeJson("result.json", {
     status,
-    set: values.set,
+    set,
     startedAt,
     finishedAt: new Date().toISOString(),
     ...(error === undefined ? {} : { error }),
     push: "fcm",
     steps: ctx.steps,
   });
-  ctx.log(`${values.set}: ${status.toUpperCase()}`);
+  ctx.log(`${set}: ${status.toUpperCase()}`);
   console.log(`run folder: ${ctx.dir}`);
   process.exit(status === "passed" ? 0 : 1);
 }
 
 const hardStop = setTimeout(() => {
-  finish("timed out", `hard timeout after ${String(TIMEOUT_MS / 60_000)} minutes`);
-}, TIMEOUT_MS);
+  finish("timed out", `hard timeout after ${String(TIMEOUT_MS[set] / 60_000)} minutes`);
+}, TIMEOUT_MS[set]);
 hardStop.unref();
 process.on("SIGINT", () => finish("failed", "interrupted"));
 process.on("SIGTERM", () => finish("failed", "terminated"));
@@ -126,6 +135,7 @@ async function main(): Promise<void> {
           ...taskToOtherExtractions(new Date()),
           ...photoTaskExtractions(new Date()),
           ...dropTaskExtractions(new Date()),
+          ...twoPersonExtractions(new Date()),
         },
         null,
         2,
@@ -156,6 +166,16 @@ async function main(): Promise<void> {
     }
   });
 
+  if (set === "sync") {
+    await signUpSibel(ctx, databaseUrl);
+    await invite(ctx, databaseUrl);
+    await erenQuietHours(ctx, databaseUrl);
+    await twoPerson(
+      ctx,
+      values.cases === undefined ? undefined : new Set(values.cases.split(",").map(Number)),
+    );
+    return;
+  }
   await taskToSelf(ctx, databaseUrl);
   await invite(ctx, databaseUrl);
   await taskToOther(ctx, databaseUrl);

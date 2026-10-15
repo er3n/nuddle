@@ -32,6 +32,7 @@ import app.nuddle.ui.screens.poke.PokeUiState
 import app.nuddle.ui.screens.poke.SnoozeUi
 import app.nuddle.ui.theme.DurtTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
@@ -122,6 +123,11 @@ class PokeActivity : ComponentActivity() {
                             SnoozeUi(it.until.hourMinute(timeZone), it.last)
                         },
                 )
+        }
+        // Closed on the other phone or on the server while it is up (cancelled, missed): the poke goes (NUD-64).
+        LaunchedEffect(key) {
+            tasks.observe(key.taskId).first { it == null || !it.toLocalState().open }
+            finish()
         }
         LightSystemBarIcons()
         val current = state ?: return
