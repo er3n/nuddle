@@ -1,6 +1,7 @@
 package app.nuddle.ui.screens.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,8 +15,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import app.nuddle.R
@@ -28,6 +31,8 @@ import app.nuddle.ui.components.BackBar
 import app.nuddle.ui.components.GroupDivider
 import app.nuddle.ui.components.InlineAlert
 import app.nuddle.ui.components.LineRow
+import app.nuddle.ui.components.MY_AVATAR
+import app.nuddle.ui.components.PersonAvatar
 import app.nuddle.ui.components.SettingsGroup
 import app.nuddle.ui.components.TextLink
 import app.nuddle.ui.components.ToggleRow
@@ -67,7 +72,7 @@ fun ProfileScreen(
     val dimens = DurtTheme.dimens
     ScreenLayout(background = DurtTheme.colors.background, modifier = modifier.testTag(TestTags.PROFILE_SCREEN)) {
         BackBar(title = stringResource(R.string.profile_title), onBack = callbacks.onBack)
-        Me(state, callbacks.onEditName)
+        Me(state, callbacks.onEditName, callbacks.onPicture)
         if (state.failed) InlineAlert(stringResource(R.string.profile_failed_title), stringResource(R.string.profile_failed_body))
         People(state, callbacks)
         SettingsGroup(stringResource(R.string.profile_poking)) {
@@ -120,15 +125,27 @@ fun ProfileScreen(
 private fun Me(
     state: ProfileUiState,
     onEditName: () -> Unit,
+    onPicture: () -> Unit,
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
+    val changePicture = stringResource(R.string.cd_profile_picture)
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = dimens.space4),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(dimens.space14),
     ) {
-        Avatar(state.name, colors.avatarSelf, dimens.avatarProfile)
+        PersonAvatar(
+            MY_AVATAR,
+            state.name,
+            colors.avatarSelf,
+            dimens.avatarProfile,
+            modifier =
+                Modifier
+                    .clip(CircleShape)
+                    .clickable(onClickLabel = changePicture, role = Role.Button, onClick = onPicture)
+                    .testTag(TestTags.PROFILE_PICTURE),
+        )
         Column(Modifier.weight(1f)) {
             Text(state.name, style = DurtTheme.type.brand, color = colors.ink)
             Text(state.phone, style = DurtTheme.type.caption, color = colors.textSecondary)
@@ -155,7 +172,7 @@ private fun People(
             LineRow(
                 label = person.name,
                 value = stringResource(person.relationship.yours),
-                leading = { Avatar(person.name, colors.avatarFor(person.personId), dimens.avatarInline) },
+                leading = { PersonAvatar(person.personId, person.name, colors.avatarFor(person.personId), dimens.avatarInline) },
                 onClick = { callbacks.onOpenPerson(person.personId) },
                 modifier = Modifier.testTag(TestTags.profilePerson(person.name)),
             )

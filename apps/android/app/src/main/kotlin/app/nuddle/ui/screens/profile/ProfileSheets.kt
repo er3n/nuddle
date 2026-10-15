@@ -40,6 +40,7 @@ import app.nuddle.ui.components.DurtBottomSheet
 import app.nuddle.ui.components.DurtBottomSheetContent
 import app.nuddle.ui.components.InlineAlert
 import app.nuddle.ui.components.SheetAction
+import app.nuddle.ui.components.TextLink
 import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.screens.BigTextField
 import app.nuddle.ui.theme.DurtTheme
@@ -65,6 +66,14 @@ private fun partsOf(
         destructive: Boolean = false,
     ) = SheetAction(text, callbacks.onConfirm, destructive = destructive, enabled = enabled && !sheet.busy, loading = sheet.busy)
     return when (sheet) {
+        is ProfileSheet.Picture -> {
+            SheetParts(
+                title = stringResource(R.string.picture_title),
+                description = stringResource(R.string.picture_body),
+                primary = action(stringResource(R.string.picture_pick)),
+            ) { PictureActions(sheet, callbacks) }
+        }
+
         is ProfileSheet.Rename -> {
             SheetParts(
                 title = stringResource(R.string.rename_title),
@@ -115,6 +124,24 @@ internal fun ColumnScope.Failed(sheet: ProfileSheet) {
     if (sheet.failed) InlineAlert(stringResource(R.string.profile_failed_title), stringResource(R.string.profile_failed_body))
 }
 
+/** Under "Galeriden seç": the way back to the initial, only while there is a picture (NUD-72). */
+@Composable
+private fun ColumnScope.PictureActions(
+    sheet: ProfileSheet.Picture,
+    callbacks: ProfileSheetCallbacks,
+) {
+    if (sheet.hasPicture) {
+        TextLink(
+            text = stringResource(R.string.picture_remove),
+            onClick = callbacks.onRemovePicture,
+            color = DurtTheme.colors.danger,
+            style = DurtTheme.type.bodySmallStrong,
+            modifier = Modifier.testTag(TestTags.PICTURE_REMOVE),
+        )
+    }
+    Failed(sheet)
+}
+
 @Composable
 private fun ColumnScope.RenameField(
     sheet: ProfileSheet.Rename,
@@ -149,4 +176,10 @@ internal fun ProfileSheetPreviewOf(
 @Composable
 private fun RenameSheetPreview() {
     ProfileSheetPreviewOf(ProfileSheet.Rename("Eren"))
+}
+
+@PreviewScreens
+@Composable
+private fun PictureSheetPreview() {
+    ProfileSheetPreviewOf(ProfileSheet.Picture(hasPicture = true))
 }

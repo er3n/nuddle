@@ -1,7 +1,9 @@
 package app.nuddle.ui.screens.profile
 
+import android.net.Uri
 import app.nuddle.data.AccountRepository
 import app.nuddle.data.AuthRepository
+import app.nuddle.data.avatar.AvatarRepository
 import app.nuddle.domain.IdGenerator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
@@ -23,6 +25,7 @@ internal class ProfileSheetHolder(
     private val scope: CoroutineScope,
     private val account: AccountRepository,
     private val auth: AuthRepository,
+    private val avatars: AvatarRepository,
     private val ids: IdGenerator,
 ) {
     val open = MutableStateFlow<OpenSheet?>(null)
@@ -50,14 +53,41 @@ internal class ProfileSheetHolder(
     /** Swipe, scrim or Vazgeç; not while the sheet's command is on its way. */
     fun onDismiss() = open.update { if (it?.sheet?.busy == true) it else null }
 
+    /** The picker came back (NUD-72): the picture is mine on screen at once and goes out in the background. */
+    fun onPicked(uri: Uri?) {
+        val current = open.value ?: return
+        val sheet = current.sheet as? ProfileSheet.Picture ?: return
+        // Nothing picked: the sheet stays for another try.
+        if (uri == null || sheet.busy) return
+        open.value = current.copy(sheet = sheet.copy(busy = true, failed = false))
+        scope.launch {
+            val ok = avatars.pick(uri)
+            open.value = if (ok) null else current.copy(sheet = sheet.copy(busy = false, failed = true))
+        }
+    }
+
+    /** "Fotoğrafı kaldır": the initial again, once the server knows. */
+    fun onRemovePicture() {
+        val current = open.value ?: return
+        val sheet = current.sheet as? ProfileSheet.Picture ?: return
+        if (sheet.busy) return
+        open.value = current.copy(sheet = sheet.copy(busy = true, failed = false))
+        scope.launch {
+            val ok = avatars.remove()
+            open.value = if (ok) null else current.copy(sheet = sheet.copy(busy = false, failed = true))
+        }
+    }
+
     fun onConfirm() {
         val current = open.value ?: return
         val sheet = current.sheet
-        if (sheet.busy) return
+        // The picture sheet's primary action opens the system picker, which only the route can do.
+        if (sheet.busy || sheet is ProfileSheet.Picture) return
         open.value = current.copy(sheet = sheet.withBusy(busy = true, failed = false))
         scope.launch {
             val ok =
                 when (sheet) {
+                    is ProfileSheet.Picture -> true
                     is ProfileSheet.Rename -> auth.register(sheet.name.trim())
                     is ProfileSheet.Quiet -> account.setQuietHours(sheet.start, sheet.end)
                     is ProfileSheet.LogOut -> account.logOut(current.key)
@@ -74,6 +104,7 @@ private fun ProfileSheet.withBusy(
     failed: Boolean,
 ): ProfileSheet =
     when (this) {
+        is ProfileSheet.Picture -> copy(busy = busy, failed = failed)
         is ProfileSheet.Rename -> copy(busy = busy, failed = failed)
         is ProfileSheet.Quiet -> copy(busy = busy, failed = failed)
         is ProfileSheet.LogOut -> copy(busy = busy, failed = failed)

@@ -1,6 +1,7 @@
 package app.nuddle.testing
 
 import android.graphics.Bitmap
+import android.net.Uri
 import app.nuddle.alarm.FullScreenPermission
 import app.nuddle.alarm.PokeNotifications
 import app.nuddle.api.model.EdgeType
@@ -17,6 +18,7 @@ import app.nuddle.data.TaskCloser
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.VerifyOutcome
 import app.nuddle.data.WriteOutcome
+import app.nuddle.data.avatar.AvatarRepository
 import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.InviteDao
@@ -618,6 +620,22 @@ class FakeAccountRepository : AccountRepository {
     override suspend fun logOut(idempotencyKey: String) = answer("logOut $idempotencyKey")
 
     override suspend fun deleteAccount(idempotencyKey: String) = answer("delete $idempotencyKey")
+}
+
+class FakeAvatarRepository : AvatarRepository {
+    val picked = mutableListOf<Uri>()
+    var removed = 0
+    var ok = true
+
+    override suspend fun pick(uri: Uri): Boolean {
+        picked += uri
+        return ok
+    }
+
+    override suspend fun remove(): Boolean {
+        removed++
+        return ok
+    }
 }
 
 class InMemoryMissedRingStore : MissedRingStore {

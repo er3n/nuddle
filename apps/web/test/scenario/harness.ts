@@ -83,6 +83,11 @@ export class SimPhone {
   /** `taskId|version|seq` of alarms already handled (rung or skipped). */
   private readonly handled = new Set<string>();
   private cursor = "0";
+  /** What the last sync answered: what the app would store (connections, me). */
+  lastSync: {
+    me: { avatarPath?: string | null };
+    connections: { personId: string; avatarPath?: string | null }[];
+  } | null = null;
   /** Snoozes used per task, as the last sync said. */
   private readonly snoozes = new Map<TaskId, number>();
   /** Task events the phone has synced, oldest first: what the app builds cards, the bell and 7a from. */
@@ -138,6 +143,7 @@ export class SimPhone {
       "sync",
     );
     this.cursor = data.cursor;
+    this.lastSync = data;
     this.device = { ...this.device, lastSeenAt: this.world.clock.now() };
     for (const task of data.tasks) {
       this.snoozes.set(task.id, task.snoozesUsed ?? 0);
@@ -391,6 +397,23 @@ export class Client {
       "decline_invite",
     );
     await this.world.refresh();
+  }
+
+  /** Profile picture (NUD-72): the upload URL, then the path made mine. */
+  async avatarUploadUrl(): Promise<{ path: string; url: string }> {
+    return ok(await this.api.POST("/api/v1/avatar/upload-url"), "avatar/upload-url");
+  }
+
+  async setAvatar(avatarPath: string | null): Promise<ApiResult<{ avatarPath?: string | null }>> {
+    const r = await this.api.POST("/api/v1/commands/set_avatar", {
+      body: { idempotencyKey: uuidv7(), avatarPath },
+    });
+    await this.world.refresh();
+    return r;
+  }
+
+  async avatarViewUrl(personId: PersonId): Promise<ApiResult<{ url: string; avatarPath: string }>> {
+    return this.api.POST("/api/v1/avatar/view-url", { body: { personId } });
   }
 
   /** Quiet hours (7g) and the human channel switches (5a). */

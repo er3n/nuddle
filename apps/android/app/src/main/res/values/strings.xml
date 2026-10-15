@@ -567,6 +567,11 @@
     <!-- 5a: profile and settings (open-questions#37) -->
     <string name="profile_title">Profil</string>
     <string name="profile_edit">Düzenle</string>
+    <string name="cd_profile_picture">Fotoğrafını değiştir</string>
+    <string name="picture_title">Fotoğrafın</string>
+    <string name="picture_body">Eşleştiğin kişiler seni bu fotoğrafla görür. Yoksa baş harfin görünür.</string>
+    <string name="picture_pick">Galeriden seç</string>
+    <string name="picture_remove">Fotoğrafı kaldır</string>
     <string name="profile_people">Bizimkiler</string>
     <string name="profile_invite">+ Birini davet et</string>
     <string name="profile_pending">Bekliyor</string>

@@ -34,6 +34,8 @@ export interface Person {
   useConnectionsForMyTasks: boolean;
   /** "Başkalarının işleri için bana haber verilebilir" */
   notifyMeForOthersTasks: boolean;
+  /** The profile picture's path in the private bucket; null shows the initial (NUD-72). */
+  avatarPath: string | null;
   /** How this person responds to pokes, written by the LLM (ADR 0020); null until 10 tasks closed. */
   pokeProfile: PokeProfile | null;
   deletedAt: Date | null;

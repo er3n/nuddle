@@ -99,6 +99,7 @@ class SyncAndOutboxTest {
             json = testJson,
             pending = { unsent },
             acks = acks,
+            avatars = { },
         )
 
     private val sibelConnection =
@@ -481,6 +482,7 @@ class SyncAndOutboxTest {
                     testJson,
                     { emptySet() },
                     RecordingTaskAcks(),
+                    { },
                 )
             val waiting = mine.replace("\"status\":\"SCHEDULED\"", "\"status\":\"AWAITING_APPROVAL\"")
             server.enqueue(json(200, mine))

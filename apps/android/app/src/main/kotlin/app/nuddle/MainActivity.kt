@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -14,11 +15,14 @@ import androidx.lifecycle.lifecycleScope
 import app.nuddle.alarm.AlarmVolume
 import app.nuddle.alarm.PokeNotifications
 import app.nuddle.data.InviteLinks
+import app.nuddle.data.avatar.AvatarFiles
 import app.nuddle.data.sync.Syncer
 import app.nuddle.ui.TestTagsRoot
+import app.nuddle.ui.components.LocalAvatars
 import app.nuddle.ui.nav.NuddleNavHost
 import app.nuddle.ui.nav.Routes
 import app.nuddle.ui.nav.StartViewModel
+import app.nuddle.ui.rememberAvatarImages
 import app.nuddle.ui.theme.DurtTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +39,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var pokes: PokeNotifications
 
     @Inject lateinit var alarmVolume: AlarmVolume
+
+    @Inject lateinit var avatarFiles: AvatarFiles
 
     /** The code of an invite link that opened the app, until home has acted on it. */
     private val inviteCode = MutableStateFlow<String?>(null)
@@ -53,16 +59,19 @@ class MainActivity : ComponentActivity() {
             val route by start.startRoute.collectAsStateWithLifecycle()
             val code by inviteCode.collectAsStateWithLifecycle()
             val open by openRoute.collectAsStateWithLifecycle()
+            val avatars by rememberAvatarImages(avatarFiles)
             DurtTheme {
                 TestTagsRoot {
-                    route?.let {
-                        NuddleNavHost(
-                            startRoute = it,
-                            inviteCode = code,
-                            onInviteCodeTake = { inviteCode.value = null },
-                            openRoute = open,
-                            onOpenRouteTake = { openRoute.value = null },
-                        )
+                    CompositionLocalProvider(LocalAvatars provides avatars) {
+                        route?.let {
+                            NuddleNavHost(
+                                startRoute = it,
+                                inviteCode = code,
+                                onInviteCodeTake = { inviteCode.value = null },
+                                openRoute = open,
+                                onOpenRouteTake = { openRoute.value = null },
+                            )
+                        }
                     }
                 }
             }

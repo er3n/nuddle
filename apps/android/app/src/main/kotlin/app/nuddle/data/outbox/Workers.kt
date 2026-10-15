@@ -12,6 +12,8 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import app.nuddle.data.avatar.AvatarUploader
+import app.nuddle.data.avatar.AvatarUploads
 import app.nuddle.data.photo.PhotoUploader
 import app.nuddle.data.photo.PhotoUploads
 import app.nuddle.data.sync.SyncRepository
@@ -80,10 +82,28 @@ class PhotoUploadWorker
         }
     }
 
+/** Uploads the picked profile picture (5a, NUD-72); retried with backoff until the server has it or refuses it. */
+@HiltWorker
+class AvatarUploadWorker
+    @AssistedInject
+    constructor(
+        @Assisted context: Context,
+        @Assisted params: WorkerParameters,
+        private val uploader: AvatarUploader,
+    ) : CoroutineWorker(context, params) {
+        override suspend fun doWork(): Result =
+            when (uploader.upload()) {
+                SendOutcome.SENT -> Result.success()
+                SendOutcome.RETRY -> Result.retry()
+                SendOutcome.DROP -> Result.failure()
+            }
+    }
+
 class WorkManagerScheduling(
     private val workManager: WorkManager,
 ) : OutboxDrainer,
-    PhotoUploads {
+    PhotoUploads,
+    AvatarUploads {
     private val online = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
     override fun drainSoon() {
@@ -115,6 +135,16 @@ class WorkManagerScheduling(
         }
 
     private fun photoWork(taskId: String) = "photo-$taskId"
+
+    override fun uploadSoon() {
+        val request =
+            OneTimeWorkRequestBuilder<AvatarUploadWorker>()
+                .setConstraints(online)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
+                .build()
+        // A newer pick replaces the waiting try; only the latest picture goes out.
+        workManager.enqueueUniqueWork("avatar", ExistingWorkPolicy.REPLACE, request)
+    }
 
     /** Signing out: nothing queued for this person runs any more. */
     fun cancelAll() {

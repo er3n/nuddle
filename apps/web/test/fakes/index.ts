@@ -12,7 +12,7 @@ import type {
   PokePlanner,
   PushSender,
 } from "../../src/domain/ports";
-import type { PushMessage, TaskId } from "../../src/domain/types";
+import type { PersonId, PushMessage, TaskId } from "../../src/domain/types";
 import type { AuthGateway, Session } from "../../src/infra/auth/supabase-auth";
 
 export class FakeClock implements Clock {
@@ -67,8 +67,24 @@ export class RecordingOtpSender implements OtpSender {
 export class FakePhotoStorage implements PhotoStorage {
   readonly stored = new Map<TaskId, string[]>();
   readonly deleted: TaskId[] = [];
+  /** Profile pictures handed out per person, and the single files deleted (NUD-72). */
+  readonly avatars = new Map<PersonId, string[]>();
+  readonly deletedFiles: string[] = [];
   /** A Storage outage: deletes fail until it is set back. */
   failing = false;
+
+  createAvatarUploadUrl(personId: PersonId): Promise<{ path: string; url: string }> {
+    const paths = this.avatars.get(personId) ?? [];
+    const path = `avatars/${personId}/${String(paths.length + 1)}.jpg`;
+    this.avatars.set(personId, [...paths, path]);
+    return Promise.resolve({ path, url: `https://storage.test/upload/${path}` });
+  }
+
+  deleteFile(path: string): Promise<void> {
+    if (this.failing) return Promise.reject(new Error("storage unavailable"));
+    this.deletedFiles.push(path);
+    return Promise.resolve();
+  }
 
   createUploadUrl(taskId: TaskId): Promise<{ path: string; url: string }> {
     const paths = this.stored.get(taskId) ?? [];

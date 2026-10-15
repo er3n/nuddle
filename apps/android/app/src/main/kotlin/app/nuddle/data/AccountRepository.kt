@@ -30,6 +30,7 @@ internal fun Me.toProfile() =
         quietHours = QuietHours.parse(quietHours.start, quietHours.end, quietHours.timeZone),
         useConnectionsForMyTasks = useConnectionsForMyTasks,
         notifyMeForOthersTasks = notifyMeForOthersTasks,
+        avatarPath = avatarPath,
     )
 
 /** Everything this phone keeps for the signed-in person goes: alarms, notifications, queued work, the database. */

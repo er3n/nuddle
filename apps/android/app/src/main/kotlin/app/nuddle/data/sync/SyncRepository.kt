@@ -13,6 +13,9 @@ import app.nuddle.api.model.Timing
 import app.nuddle.data.EventTypes
 import app.nuddle.data.api.ApiResult
 import app.nuddle.data.api.apiCall
+import app.nuddle.data.avatar.AvatarRef
+import app.nuddle.data.avatar.AvatarRefresher
+import app.nuddle.data.avatar.ME
 import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.InviteDao
@@ -104,6 +107,7 @@ class SyncRepository
         private val json: Json,
         private val pending: PendingChanges,
         private val acks: TaskAcks,
+        private val avatars: AvatarRefresher,
     ) : Syncer {
         /**
          * One sync at a time in the process: a push, the app coming to the front and a write can ask at once (NUD-59),
@@ -121,6 +125,11 @@ class SyncRepository
             val me = response.me
             sessions.saveMe(me.toProfile())
             connections.upsert(response.connections.map(SyncConnection::toEntity))
+            // Pictures whose path changed are fetched; a missing one is tried again next time (NUD-72).
+            avatars.refresh(
+                listOf(AvatarRef(ME, session.personId, me.avatarPath)) +
+                    response.connections.map { AvatarRef(it.personId, it.personId, it.avatarPath) },
+            )
             // Compared with what this phone had before the sync; a full sync (cursor null) is old news.
             val news = if (cursor == null) emptyList() else news(response.tasks, session.personId)
             val unreached =
@@ -261,6 +270,7 @@ internal fun SyncConnection.toEntity() =
         phone = phone,
         connectedAt = connectedAt?.let { Instant.parse(it).toEpochMilliseconds() },
         notifyMe = notifyMe ?: true,
+        avatarPath = avatarPath,
     )
 
 internal fun SyncSentInvite.toEntity() =

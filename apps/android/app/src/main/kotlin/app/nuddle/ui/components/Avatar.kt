@@ -1,16 +1,21 @@
 package app.nuddle.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -23,9 +28,10 @@ import app.nuddle.ui.uppercaseForUi
 private const val INITIAL_SCALE = 0.4f
 
 /**
- * First letter on a colored circle, Space Grotesk 700 at about 40% of the size (docs/ux/components.md, 9).
- * No photos in the MVP. The user's own avatar is always `ink`, except on a dark screen (0g), where it is a white
- * circle with an `ink` letter ([letterColor]). Decorative: callers describe the person.
+ * The person's picture cropped to a circle when there is one (NUD-72), else their first letter on a colored
+ * circle, Space Grotesk 700 at about 40% of the size (docs/ux/components.md, 9). The user's own avatar is always
+ * `ink`, except on a dark screen (0g), where it is a white circle with an `ink` letter ([letterColor]).
+ * Decorative: callers describe the person.
  */
 @Composable
 fun Avatar(
@@ -34,6 +40,7 @@ fun Avatar(
     size: Dp,
     modifier: Modifier = Modifier,
     letterColor: Color = DurtTheme.colors.surface,
+    image: ImageBitmap? = null,
 ) {
     val initial = name.trim().take(1).uppercaseForUi()
     // The initial scales with the circle, not with the font scale: it must always fit.
@@ -42,16 +49,21 @@ fun Avatar(
         modifier =
             modifier
                 .size(size)
+                .clip(CircleShape)
                 .background(color, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = initial,
-            color = letterColor,
-            fontFamily = SpaceGrotesk,
-            fontWeight = FontWeight.Bold,
-            fontSize = fontSize,
-        )
+        if (image != null) {
+            Image(image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        } else {
+            Text(
+                text = initial,
+                color = letterColor,
+                fontFamily = SpaceGrotesk,
+                fontWeight = FontWeight.Bold,
+                fontSize = fontSize,
+            )
+        }
     }
 }
 
@@ -71,6 +83,9 @@ private fun AvatarPreview() {
             Avatar("Sibel", sibel, dimens.avatarCard)
             Avatar("Sibel", sibel, dimens.avatarInline)
             Avatar("Eren", DurtTheme.colors.avatarSelf, dimens.avatarSmall)
+            Avatar("Sibel", sibel, dimens.avatarProfile, image = ImageBitmap(PREVIEW_PICTURE, PREVIEW_PICTURE))
         }
     }
 }
+
+private const val PREVIEW_PICTURE = 64

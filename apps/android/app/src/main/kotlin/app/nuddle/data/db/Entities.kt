@@ -60,6 +60,8 @@ data class ConnectionEntity(
     val connectedAt: Long? = null,
     /** My "Sibel'in işleri için bana haber verilebilir" switch (5b). */
     @ColumnInfo(defaultValue = "1") val notifyMe: Boolean = true,
+    /** Their profile picture's path on the server; the picture is cached per path (NUD-72). Null: the initial. */
+    val avatarPath: String? = null,
 )
 
 /**

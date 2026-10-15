@@ -37,6 +37,7 @@ class DataStoreSessionStore
             val phone = stringPreferencesKey("phone")
             val useConnections = booleanPreferencesKey("use_connections_for_my_tasks")
             val notifyMeForOthers = booleanPreferencesKey("notify_me_for_others_tasks")
+            val avatarPath = stringPreferencesKey("avatar_path")
             val deviceId = stringPreferencesKey("device_id")
             val syncCursor = stringPreferencesKey("sync_cursor")
         }
@@ -72,6 +73,7 @@ class DataStoreSessionStore
                     quietHours = readQuietHours(prefs) ?: return@map null,
                     useConnectionsForMyTasks = prefs[Keys.useConnections] ?: true,
                     notifyMeForOthersTasks = prefs[Keys.notifyMeForOthers] ?: true,
+                    avatarPath = prefs[Keys.avatarPath],
                 )
             }
 
@@ -84,6 +86,7 @@ class DataStoreSessionStore
                 it[Keys.quietZone] = profile.quietHours.timeZone.id
                 it[Keys.useConnections] = profile.useConnectionsForMyTasks
                 it[Keys.notifyMeForOthers] = profile.notifyMeForOthersTasks
+                profile.avatarPath?.let { path -> it[Keys.avatarPath] = path } ?: it.remove(Keys.avatarPath)
             }
         }
 

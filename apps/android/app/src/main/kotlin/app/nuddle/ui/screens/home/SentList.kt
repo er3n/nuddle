@@ -8,6 +8,7 @@ import app.nuddle.R
 import app.nuddle.data.Delivery
 import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.ComposeState
+import app.nuddle.ui.components.MY_AVATAR
 import app.nuddle.ui.components.PillStatus
 import app.nuddle.ui.components.TaskRow
 import app.nuddle.ui.components.TaskUi
@@ -49,6 +50,7 @@ internal fun SentRow(
                     },
                 personName = task.toName,
                 personColor = colors.avatarFor(task.toId),
+                personId = task.toId,
             ),
         onClick = onOpen,
         highlighted = isFresh,
@@ -79,6 +81,7 @@ internal fun QueuedRow(
                 status = PillStatus.Queued,
                 personName = myName,
                 personColor = DurtTheme.colors.avatarFor(myName),
+                personId = MY_AVATAR,
             ),
         onClick = null,
         modifier = Modifier.testTag(TestTags.HOME_QUEUED),

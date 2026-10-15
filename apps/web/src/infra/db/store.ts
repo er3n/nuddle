@@ -115,12 +115,22 @@ export function toPerson(r: PersonRow): Person {
     },
     useConnectionsForMyTasks: r.useConnectionsForMyTasks,
     notifyMeForOthersTasks: r.notifyMeForOthersTasks,
+    avatarPath: r.avatarPath,
     pokeProfile:
       r.pokeProfile !== null && r.pokeProfileAt !== null
         ? { text: r.pokeProfile, writtenAt: r.pokeProfileAt, tasksSeen: r.pokeProfileTasks }
         : null,
     deletedAt: r.deletedAt,
   };
+}
+
+/** The person's profile picture, or none (NUD-72). */
+export async function saveAvatarPath(
+  ex: Executor,
+  personId: PersonId,
+  avatarPath: string | null,
+): Promise<void> {
+  await ex.update(people).set({ avatarPath }).where(eq(people.id, personId));
 }
 
 /** The person's new poke profile (ADR 0020). */
@@ -286,6 +296,7 @@ export async function markPersonDeleted(tx: Tx, person: Person): Promise<void> {
       pokeProfile: null,
       pokeProfileAt: null,
       pokeProfileTasks: 0,
+      avatarPath: null,
     })
     .where(eq(people.id, person.id));
 }
