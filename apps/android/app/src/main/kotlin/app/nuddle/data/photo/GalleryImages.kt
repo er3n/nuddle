@@ -38,7 +38,10 @@ class ContentGalleryImages
         private fun decodeScaled(uri: Uri): Bitmap? {
             val resolver = context.contentResolver
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) } ?: return null
+            // A bounds-only decode returns no bitmap by design; the size says whether the picture was readable.
+            val probe = resolver.openInputStream(uri) ?: return null
+            probe.use { BitmapFactory.decodeStream(it, null, bounds) }
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
             var sample = 1
             while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= PHOTO_MAX_SIDE) sample *= 2
             val options = BitmapFactory.Options().apply { inSampleSize = sample }
