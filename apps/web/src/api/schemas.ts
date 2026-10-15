@@ -48,7 +48,8 @@ const Note = z.string().max(500).nullable();
 const TaskStatus = z
   .enum(["SCHEDULED", "AWAITING_APPROVAL", "REJECTED", "DONE", "DROPPED", "MISSED", "CANCELLED"])
   .openapi("TaskStatus");
-const FinishMode = z.enum(["done", "photo"]).openapi("FinishMode");
+/** `notice`: a one-time message, delivered once and closed by "Tamam" or its time passing (NUD-79). */
+const FinishMode = z.enum(["done", "photo", "notice"]).openapi("FinishMode");
 /** `by`: done by the deadline. `at`: a moment, the deadline is a grace after it (ADR 0017). */
 const Timing = z.enum(["at", "by"]).openapi("Timing");
 /** How long after the moment an `at` task is missed; the server keeps it between 15 and 720. */

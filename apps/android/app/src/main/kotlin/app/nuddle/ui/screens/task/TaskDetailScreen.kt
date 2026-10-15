@@ -111,6 +111,7 @@ private val DetailAction.label: Int
         when (this) {
             DetailAction.DoneEarly -> R.string.home_done_early
             DetailAction.TakePhoto -> R.string.home_done_photo
+            DetailAction.Ok -> R.string.poke_ok
             DetailAction.NewPhoto -> R.string.rerequest_new_photo
             DetailAction.CantToday -> R.string.poke_cant_today
             DetailAction.DidItLater -> R.string.issue_did_it_later
@@ -131,6 +132,7 @@ private fun DetailAction.kind(first: Boolean): DurtButtonKind =
             setOf(
                 DetailAction.DoneEarly,
                 DetailAction.TakePhoto,
+                DetailAction.Ok,
                 DetailAction.NewPhoto,
                 DetailAction.DidItLater,
             )

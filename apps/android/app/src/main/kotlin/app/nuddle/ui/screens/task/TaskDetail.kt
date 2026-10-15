@@ -50,6 +50,9 @@ fun detailOf(
 enum class DetailAction {
     DoneEarly,
     TakePhoto,
+
+    /** "Tamam" on a one-time message (NUD-79): the done command, the only answer. */
+    Ok,
     NewPhoto,
     CantToday,
     DidItLater,
@@ -66,13 +69,22 @@ fun actionsFor(
     side: DetailSide,
     status: DetailStatus,
     photo: Boolean,
+    notice: Boolean = false,
 ): List<DetailAction> {
-    val done = if (photo) DetailAction.TakePhoto else DetailAction.DoneEarly
-    return when (side) {
-        DetailSide.ToMe -> toMeActions(status, done)
-        DetailSide.ToSelf -> toSelfActions(status, done)
-        DetailSide.Mine -> mineActions(status)
-    }
+    val done =
+        when {
+            notice -> DetailAction.Ok
+            photo -> DetailAction.TakePhoto
+            else -> DetailAction.DoneEarly
+        }
+    val actions =
+        when (side) {
+            DetailSide.ToMe -> toMeActions(status, done)
+            DetailSide.ToSelf -> toSelfActions(status, done)
+            DetailSide.Mine -> mineActions(status)
+        }
+    // A one-time message is not postponed (NUD-79).
+    return if (notice) actions.filterNot { it == DetailAction.CantToday } else actions
 }
 
 private fun toMeActions(

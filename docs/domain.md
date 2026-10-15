@@ -70,6 +70,9 @@ A repeating task (ADR 0021) is a series of one-off occurrences: the rule (`every
 ## Recipient's start
 
 The recipient may move when the pokes begin without touching the sender's deadline (`set_start`, NUD-78): a time between now and the task's time. On an `at` task it becomes the lead (the moment minus the start, within the lead limit); on a `by` task it is stored as `poke_from`, the earliest the plan window may open, with quiet hours still applying. A new plan version follows at once (v0, then the LLM with `startAt` from it) and `task_events` gets `start_set`. The sender is not told; the deadline and the missed rule are unchanged.
+## One-time messages
+
+A message to pass on with nothing to do ("erene 3'te seni seviyorum de", "baban seni alabilir de") is a task with finish mode `notice` (NUD-79): the title is the message, timing `at`, the time given or the next five-minute mark, grace 60 minutes. Its plan is one SOUND step at the time (at once when the time is within five minutes): no escalation, no HUMAN, no LLM plan. "Tamam" (the done command) closes it; the deadline passing closes it as done, never missed; snooze, can't today and a photo are refused (`wrong_finish_mode`). The sender sees the delivery ticks as for any task.
 
 ## Time rules
 

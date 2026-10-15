@@ -31,6 +31,8 @@ import type { DeviceLevel, Edge, Person, PokeLevel, PokeStep, Task, TaskEvent } 
 const POKE_WINDOW_MS = 60 * MINUTE;
 const MIN_WINDOW_MS = 2 * MINUTE;
 const HUMAN_OFFSET_MS = 5 * MINUTE;
+/** A one-time message due within this long goes out at once (NUD-79): "yemek hazır" does not wait. */
+const NOTICE_NOW_MS = 5 * MINUTE;
 
 const ladder: readonly { level: DeviceLevel; offsetMs: number }[] = [
   { level: "SILENT", offsetMs: 60 * MINUTE },
@@ -50,7 +52,7 @@ const AT_HUMAN_AFTER_MS = 30 * MINUTE;
 
 export interface PlanPokesInput {
   task: Pick<Task, "deadline" | "senderId" | "recipientId"> &
-    Partial<Pick<Task, "timing" | "remindAt" | "leadMinutes" | "pokeFrom">>;
+    Partial<Pick<Task, "timing" | "remindAt" | "leadMinutes" | "pokeFrom" | "finishMode">>;
   recipient: Pick<Person, "quietHours" | "useConnectionsForMyTasks">;
   /** The human channel in the MVP is the sender (docs/product.md, Human channel). */
   sender: Pick<Person, "notifyMeForOthersTasks">;
@@ -136,6 +138,14 @@ function planAt(input: PlanPokesInput, remindAt: Date): PokeStep[] {
 
 export function planPokes(input: PlanPokesInput): PokeStep[] {
   const { task, recipient, now } = input;
+  // A one-time message (NUD-79): delivered once at its time, no escalation, no HUMAN.
+  if (task.finishMode === "notice") {
+    const due = (task.remindAt ?? task.deadline).getTime();
+    const at = new Date(due - now.getTime() <= NOTICE_NOW_MS ? now.getTime() : due);
+    return at.getTime() < task.deadline.getTime()
+      ? [{ seq: 1, plannedAt: at, level: "SOUND", firedAt: null }]
+      : [];
+  }
   if (task.timing === "at" && task.remindAt) return planAt(input, task.remindAt);
   const window = pokeWindow(task.deadline, recipient, now, task.pokeFrom ?? null);
   if (!window) return [];

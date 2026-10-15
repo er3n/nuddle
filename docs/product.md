@@ -105,7 +105,7 @@ In code and docs the domain verb is **poke** (`Poke`, `PokeLevel`, `PokeActivity
 
 ### Bell and communication
 - The bell is the in-app inbox: invites, approvals, permission warnings, pokes that did not ring, finished tasks, "can't reach" news, event history.
-- No in-app chat. Cards have Call and Message icons. Message opens the system app chooser. WhatsApp is not assumed.
+- No in-app chat. Cards have Call and Message icons. Message opens the system app chooser. WhatsApp is not assumed. A one-time message ("sibele 3'te seni seviyorum de", NUD-79) is not chat: it has a time, is delivered once as a poke, and ends with "Tamam" or when its time passes.
 
 ### Error states
 - No internet: pokes still ring locally, changes are queued and sent when the connection returns.

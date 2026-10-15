@@ -24,7 +24,12 @@ internal data class OpenPreview(
 ) {
     /** What Kur or Gönder creates: the finish mode the sheet shows for someone else, the draft's for self. */
     val chosenFinishMode: FinishMode
-        get() = if (ui.toOther) (if (ui.photo) FinishMode.PHOTO else FinishMode.DONE) else finishMode
+        get() =
+            when {
+                ui.notice -> FinishMode.NOTICE
+                ui.toOther -> if (ui.photo) FinishMode.PHOTO else FinishMode.DONE
+                else -> finishMode
+            }
 
     val deadline: Instant? get() = knownDeadline ?: ui.selected?.at
 }

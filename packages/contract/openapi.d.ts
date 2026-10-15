@@ -906,7 +906,7 @@ export interface components {
         /** @enum {string} */
         Timing: "at" | "by";
         /** @enum {string} */
-        FinishMode: "done" | "photo";
+        FinishMode: "done" | "photo" | "notice";
         /** @enum {string} */
         TaskStatus: "SCHEDULED" | "AWAITING_APPROVAL" | "REJECTED" | "DONE" | "DROPPED" | "MISSED" | "CANCELLED";
         RepeatRule: {

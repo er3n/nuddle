@@ -115,11 +115,12 @@ internal fun DetailRows(
             label = stringResource(R.string.task_finish_label),
             value =
                 when {
+                    state.notice -> stringResource(R.string.home_finish_notice)
                     from == null -> stringResource(if (state.photo) R.string.task_finish_photo else R.string.task_finish_done)
                     state.photo -> stringResource(R.string.home_finish_photo_from, from.name)
                     else -> stringResource(R.string.home_finish_done)
                 },
-            onClick = { callbacks.onEdit(EditRow.Finish) }.takeIf { state.editable },
+            onClick = { callbacks.onEdit(EditRow.Finish) }.takeIf { state.editable && !state.notice },
             modifier = Modifier.testTag(TestTags.TASK_EDIT_FINISH),
         )
     }

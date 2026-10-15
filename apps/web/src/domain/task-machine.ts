@@ -537,7 +537,9 @@ function eventFor(
     case "re_request":
       return [event(task, actorId, "re_requested", { note: cmd.note }, now)];
     case "deadline_passed":
-      return [event(task, null, "missed", {}, now)];
+      return task.finishMode === "notice"
+        ? [event(task, null, "done", { notice: true }, now)]
+        : [event(task, null, "missed", {}, now)];
     case "account_deleted":
     case "connection_removed":
       return [
@@ -585,6 +587,8 @@ export function applyCommand(
   let snooze: Snooze | null = null;
   switch (cmd.type) {
     case "snooze":
+      // A one-time message (NUD-79) is not postponed; "Tamam" is the only answer.
+      if (task.finishMode === "notice") return { ok: false, error: "wrong_finish_mode" };
       snooze = nextSnooze(task, ctx);
       if (!snooze) return { ok: false, error: "snooze_not_allowed" };
       break;
@@ -651,11 +655,16 @@ export function applyCommand(
     case "replan":
       break;
     case "cant_today":
+      if (task.finishMode === "notice") return { ok: false, error: "wrong_finish_mode" };
+      break;
+    case "deadline_passed":
+      // A message's time passing is not a miss: it was delivered or it is over (NUD-79).
+      if (task.finishMode === "notice") target = "DONE";
+      break;
     case "cancel":
     case "approve":
     case "re_request":
     case "sender_handles":
-    case "deadline_passed":
     case "approval_timeout":
       break;
   }

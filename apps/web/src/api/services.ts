@@ -201,6 +201,8 @@ async function refinePlan(deps: AppDeps, taskId: TaskId, version: number): Promi
     const now = deps.clock.now();
     const task = await findTask(deps.db, taskId);
     if (!task || task.planVersion !== version || !isOpen(task.status)) return;
+    // A one-time message has one step and no plan to improve (NUD-79).
+    if (task.finishMode === "notice") return;
     const sender = await findPerson(deps.db, task.senderId);
     const recipient = await findPerson(deps.db, task.recipientId);
     if (!sender || !recipient) return;

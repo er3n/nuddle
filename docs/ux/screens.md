@@ -43,7 +43,7 @@ Changed on 2026-10-15 after the phone test: long titles wrapped into the buttons
 
 | My side | Status | Actions |
 |---|---|---|
-| To me | Kurulu | Şimdiden bitti (Bitti, çek on a photo task), Bugün yapamayacağım (7f), Ara and Mesaj |
+| To me | Kurulu | Şimdiden bitti (Bitti, çek on a photo task), Bugün yapamayacağım (7f), Ara and Mesaj. A one-time message (NUD-79): only Tamam |
 | To me | Tekrar istendi | The sender's note; Yeni fotoğraf çek, Bugün yapamayacağım, Ara and Mesaj |
 | To me | Onay bekleniyor | The 4e message; no action |
 | To me | Kaçırıldı | Sonradan yaptım, Ara, Listeden kaldır |

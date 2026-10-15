@@ -61,6 +61,7 @@ class AndroidPokeNotifications
             val channel = if (silent) NotificationChannels.POKE_SILENT else NotificationChannels.POKE_ALARM
             val title = task.detail?.let { context.getString(R.string.separator_dot, task.title, it) } ?: task.title
             val timeLeft = PokeRules.timeLeft(clock.now(), Instant.fromEpochMilliseconds(task.deadline))
+            val notice = task.finishMode == FinishMode.NOTICE.value
             val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
             val builder =
                 NotificationCompat
@@ -69,7 +70,9 @@ class AndroidPokeNotifications
                     .setColor(ContextCompat.getColor(context, R.color.poke))
                     .setContentTitle(title)
                     .setContentText(
-                        if (task.isMoment) {
+                        if (notice) {
+                            context.getString(R.string.home_finish_notice)
+                        } else if (task.isMoment) {
                             context.getString(R.string.poke_moment_now)
                         } else {
                             context.getString(R.string.poke_time_left_sentence, context.timeLeftText(timeLeft))
@@ -84,6 +87,7 @@ class AndroidPokeNotifications
                         step,
                         SnoozeRules.next(task.snoozesUsed, clock.now(), Instant.fromEpochMilliseconds(task.deadline)),
                         photo = task.finishMode == FinishMode.PHOTO.value,
+                        notice = notice,
                     )
             val manager = NotificationManagerCompat.from(context)
             if (fullScreen) {
@@ -127,7 +131,10 @@ class AndroidPokeNotifications
             step: PokeStep,
             snooze: Snooze?,
             photo: Boolean,
+            notice: Boolean,
         ): NotificationCompat.Builder {
+            // A one-time message (NUD-79): "Tamam" and nothing else.
+            if (notice) return addAction(0, context.getString(R.string.poke_ok), action(PokeIntents.ACTION_DONE, step))
             // A photo task ends with the photo: Bitti opens the camera (4d) instead of closing the task.
             val done =
                 if (photo) {

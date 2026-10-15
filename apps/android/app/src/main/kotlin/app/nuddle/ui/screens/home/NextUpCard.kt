@@ -154,6 +154,7 @@ private fun ToDo(task: NextUpUi) {
             label = stringResource(R.string.home_finish_label),
             value =
                 when {
+                    task.notice -> stringResource(R.string.home_finish_notice)
                     !task.photo -> stringResource(R.string.home_finish_done)
                     from == null -> stringResource(R.string.home_finish_photo)
                     else -> stringResource(R.string.home_finish_photo_from, from.name)

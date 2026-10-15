@@ -9,7 +9,8 @@ export type TaskId = string;
 export type TaskStatus =
   "SCHEDULED" | "AWAITING_APPROVAL" | "REJECTED" | "DONE" | "DROPPED" | "MISSED" | "CANCELLED";
 
-export type FinishMode = "done" | "photo";
+/** `notice`: a one-time message (NUD-79): delivered once, "Tamam" closes it, the deadline closes it too. */
+export type FinishMode = "done" | "photo" | "notice";
 
 /** `by`: done by the deadline. `at`: a moment (`remindAt`); the deadline is the moment plus a grace (ADR 0017). */
 export type Timing = "at" | "by";

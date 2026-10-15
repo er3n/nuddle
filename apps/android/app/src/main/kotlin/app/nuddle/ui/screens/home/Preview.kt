@@ -68,6 +68,8 @@ data class PreviewUi(
     /** 4a, a task to someone else: "Fotoğrafla, sen onayla" is chosen; [photoSuggested] when the text was about money. */
     val photo: Boolean = false,
     val photoSuggested: Boolean = false,
+    /** A one-time message (NUD-79): no "Nasıl bitsin?" choice, Tamam closes it. */
+    val notice: Boolean = false,
     /** 4a: how far pokes reach the recipient now; null for a task to self. */
     val reach: Reachability? = null,
 ) {
@@ -103,6 +105,8 @@ data class UndoUi(
     val detail: String?,
     val deadline: DeadlineText,
     val photo: Boolean,
+    /** A one-time message (NUD-79), kept through Düzenle. */
+    val notice: Boolean = false,
     /** The recipient's name (4i, "Gönderildi"); null for a task to self (2a, "Kuruldu"). */
     val to: String? = null,
 )
@@ -172,6 +176,7 @@ fun undoFor(
         detail = task.detail,
         deadline = task.timeText(now, timeZone),
         photo = task.finishMode == FinishMode.PHOTO.value,
+        notice = task.finishMode == FinishMode.NOTICE.value,
         to = to,
     )
 
@@ -205,7 +210,13 @@ fun previewFor(
     val title = draft.title ?: return null
     val photo = draft.finishMode == FinishMode.PHOTO
     val repeat = draft.repeat?.let { RepeatUi(it.every.value, it.days.orEmpty(), it.time) }
-    val base = previewFor(rawText, title, draft.detail, quiet, now).copy(photo = photo, photoSuggested = photo, repeat = repeat)
+    val base =
+        previewFor(rawText, title, draft.detail, quiet, now).copy(
+            photo = photo,
+            photoSuggested = photo,
+            repeat = repeat,
+            notice = draft.finishMode == FinishMode.NOTICE,
+        )
     return when (ask.question) {
         WriteTaskResult.Question.DEADLINE -> {
             when (val recipient = recipientNamed(draft.recipient, connections) ?: return null) {
