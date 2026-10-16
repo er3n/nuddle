@@ -38,6 +38,7 @@ Use only these. They work the same for you, the human and CI.
 | `mise run test` | Full suite before a PR |
 | `mise run e2e:smoke` | Two-emulator smoke set before merging |
 | `mise run tick` | Run server timers once locally |
+| `mise run android:bundle` | Signed prod release bundle for Play (needs the upload key on the machine) |
 | `mise run contract:gen` | Regenerate `packages/contract/openapi.yaml` |
 | `mise run eval` | LLM golden sets: extraction and poke plans (needs an API key) |
 | `mise run stories` | 100 everyday sentences through the real extractor and planner, for judging plans (needs an API key) |

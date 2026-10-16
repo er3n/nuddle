@@ -124,6 +124,12 @@ description = "Android unit, UI, accessibility, Konsist and screenshot tests (Ro
 dir = "apps/android"
 run = "./gradlew --console=plain :app:testDevDebugUnitTest -Proborazzi.test.record=true"
 
+[tasks."android:bundle"]
+description = "Signed prod release bundle for Play (needs the upload key, docs/human-checklist.md)"
+# Output: apps/android/app/build/outputs/bundle/prodRelease/app-prod-release.aab
+dir = "apps/android"
+run = "./gradlew --console=plain :app:bundleProdRelease"
+
 [tasks."test:fast"]
 description = "Fast loop after every change (target under a minute)"
 depends = ["lint:eslint", "lint:typecheck", "test:unit"]

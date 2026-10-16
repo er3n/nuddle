@@ -48,7 +48,13 @@ Things only the human can do: accounts, payments, logins, secrets, production pu
 
 - [ ] Register `app.nuddle` (prod) in Firebase (in `nuddle-app-er3n` or a separate project: decide then), put its `google-services.json` in `apps/android/app/src/prod/` (git-ignored), and give Vercel a service account of that project (moved from stage 7, NUD-11).
 
-- [ ] Google Play Console account. Declare the app as an alarm app (`USE_EXACT_ALARM`, full screen intent). Upload an early closed test build to learn the policy outcome.
+- [ ] Google Play Console account. Personal account on `dokukoza@gmail.com`, created 2026-10-16 (the 2024 account on another address was closed for inactivity). A new personal account needs a closed test with at least 12 testers opted in for 14 days in a row before production access; the beta families are that test.
+- [ ] Play upload key, created on your machine and never shown to the agent:
+  - `mkdir -p -m 700 ~/.nuddle/release && keytool -genkeypair -v -keystore ~/.nuddle/release/upload.jks -alias upload -keyalg RSA -keysize 4096 -validity 10000`
+  - Add to `~/.gradle/gradle.properties` (not the repo's): `nuddle.upload.storeFile=<absolute path to upload.jks>`, `nuddle.upload.storePassword=...`, `nuddle.upload.keyAlias=upload`, `nuddle.upload.keyPassword=...`.
+  - Keep a copy of `upload.jks` and both passwords in your password manager. Play App Signing holds the real signing key; a lost upload key can be reset in Play Console, but it takes days.
+  - `mise run android:bundle` builds `apps/android/app/build/outputs/bundle/prodRelease/app-prod-release.aab`. Raise `versionCode` in `apps/android/app/build.gradle.kts` before each upload after the first.
+- [ ] Declare the app as an alarm app (`USE_EXACT_ALARM`, full screen intent) and justify `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` with the same core function (ringing on time). Upload an early closed test build to learn the policy outcome.
 - [ ] SMS provider account (WhatsApp Business authentication template later). Configure sender, add credentials to env (`TWILIO_*` and, with the signed prod app, `SMS_RETRIEVER_HASH` in Vercel Production).
 - [ ] Privacy notice and terms (KVKK): name the cross-border transfer (Supabase Frankfurt, Vercel, Firebase, the LLM provider via OpenRouter: written texts, and for poke planning past task titles, outcomes and connection names, ADR 0017), photo retention (deleted when the task closes), account deletion.
 - [ ] Invite links open the app (App Links): put the SHA-256 fingerprint of the release signing certificate (Play App Signing key, and the upload key if you test sideloaded builds) into Vercel Production as `ANDROID_APP_LINK_FINGERPRINTS` (comma separated), redeploy, then check `https://nuddle.app/.well-known/assetlinks.json`. Approve the `durtmobil.com` redirect to `nuddle.app` when the agent proposes it (open-questions #13).
