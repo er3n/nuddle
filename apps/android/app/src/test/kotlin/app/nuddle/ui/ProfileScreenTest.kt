@@ -8,8 +8,11 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import app.nuddle.api.model.EdgeType
 import app.nuddle.domain.GrantedPermissions
 import app.nuddle.domain.SetupStep
+import app.nuddle.ui.screens.home.DeadlineText
+import app.nuddle.ui.screens.home.PendingInviteUi
 import app.nuddle.ui.screens.profile.ProfileCallbacks
 import app.nuddle.ui.screens.profile.ProfileScreen
 import app.nuddle.ui.screens.profile.ProfileSheet
@@ -89,5 +92,16 @@ class ProfileScreenTest {
         show(previewProfile.copy(people = emptyList(), sheet = ProfileSheet.Delete()))
         compose.onNodeWithText("Sana yazılan açık işler iptal olur, yazana haber veririm.").assertDoesNotExist()
         compose.onNodeWithText("Geri alınamaz.").assertExists()
+    }
+
+    @Test
+    fun `a pending row opens its invite (NUD-100)`() {
+        val invite = PendingInviteUi("i1", "abc", "Ahmet", EdgeType.OTHER, DeadlineText.Today("16:36"))
+        var opened: PendingInviteUi? = null
+        compose.setContent {
+            DurtTheme { ProfileScreen(previewProfile.copy(pending = listOf(invite)), ProfileCallbacks(onOpenInvite = { opened = it })) }
+        }
+        compose.onNodeWithTag("${TestTags.PROFILE_PENDING}.Ahmet").performScrollTo().performClick()
+        assertEquals(invite, opened)
     }
 }

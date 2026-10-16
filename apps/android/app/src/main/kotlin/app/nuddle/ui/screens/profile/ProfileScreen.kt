@@ -39,6 +39,8 @@ import app.nuddle.ui.components.ToggleRow
 import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.screens.ScreenLayout
+import app.nuddle.ui.screens.home.DeadlineText
+import app.nuddle.ui.screens.home.PendingInviteUi
 import app.nuddle.ui.screens.home.asYours
 import app.nuddle.ui.theme.DurtTheme
 import app.nuddle.ui.theme.avatarFor
@@ -178,12 +180,14 @@ private fun People(
             )
             GroupDivider()
         }
-        state.pending.forEach { name ->
+        state.pending.forEach { invite ->
             LineRow(
-                label = name,
+                label = invite.name,
                 value = stringResource(R.string.profile_pending),
                 valueColor = colors.textTertiary,
-                leading = { Avatar(name, colors.textMuted, dimens.avatarInline) },
+                leading = { Avatar(invite.name, colors.textMuted, dimens.avatarInline) },
+                onClick = { callbacks.onOpenInvite(invite) },
+                modifier = Modifier.testTag("${TestTags.PROFILE_PENDING}.${invite.name}"),
             )
             GroupDivider()
         }
@@ -271,7 +275,7 @@ private fun ProfileScreenAloneFailedPreview() {
         ProfileScreen(
             previewProfile.copy(
                 people = emptyList(),
-                pending = listOf("Defne"),
+                pending = listOf(PendingInviteUi("i1", "abc", "Defne", EdgeType.CHILD, DeadlineText.Today("16:36"))),
                 useConnectionsForMyTasks = false,
                 permissions = GrantedPermissions(notifications = false, exactAlarm = false, fullScreen = true),
                 failed = true,

@@ -5,17 +5,19 @@ import androidx.lifecycle.viewModelScope
 import app.nuddle.api.model.EdgeType
 import app.nuddle.data.AccountRepository
 import app.nuddle.data.AuthRepository
+import app.nuddle.data.InviteRepository
 import app.nuddle.data.avatar.AvatarRepository
 import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.InviteDao
-import app.nuddle.data.db.InviteEntity
 import app.nuddle.data.session.Profile
 import app.nuddle.data.session.SessionStore
 import app.nuddle.domain.GrantedPermissions
 import app.nuddle.domain.IdGenerator
 import app.nuddle.domain.PermissionReader
 import app.nuddle.domain.TurkishPhone
+import app.nuddle.ui.screens.home.PendingInviteUi
+import app.nuddle.ui.screens.home.pendingInvites
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +27,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
 import javax.inject.Inject
+import kotlin.time.Clock
 
 private const val STOP_TIMEOUT_MS = 5_000L
 
@@ -48,13 +52,16 @@ class ProfileViewModel
         private val account: AccountRepository,
         private val auth: AuthRepository,
         avatars: AvatarRepository,
+        inviteRepository: InviteRepository,
         ids: IdGenerator,
+        private val clock: Clock,
+        private val timeZone: TimeZone,
     ) : ViewModel() {
         private val granted = MutableStateFlow(permissions.read())
         private val switches = MutableStateFlow(Switches())
 
         /** The settings sheets; the route wires its callbacks straight to it. */
-        internal val sheets = ProfileSheetHolder(viewModelScope, account, auth, avatars, ids)
+        internal val sheets = ProfileSheetHolder(viewModelScope, account, auth, avatars, inviteRepository, ids)
 
         /** After Çıkış yap or Hesabımı sil: this phone holds nothing of the person any more. */
         val signedOut: Flow<Unit> = sheets.signedOut
@@ -67,7 +74,9 @@ class ProfileViewModel
                 perms,
                 (sw, open),
                 ->
-                me?.let { uiState(it, people, sent, perms, sw).copy(sheet = open?.sheet) }
+                me?.let {
+                    uiState(it, people, pendingInvites(sent, clock.now(), timeZone), perms, sw).copy(sheet = open?.sheet)
+                }
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
         /** Back from system settings: the permission rows show what is true now. */
@@ -108,6 +117,9 @@ class ProfileViewModel
             sheets.show(ProfileSheet.Quiet(current.quietStart, current.quietEnd))
         }
 
+        /** A "Bekliyor" row (NUD-100). */
+        fun onOpenInvite(invite: PendingInviteUi) = sheets.show(ProfileSheet.Invite(invite))
+
         fun onLogOut() = sheets.show(ProfileSheet.LogOut())
 
         fun onDelete() = sheets.show(ProfileSheet.Delete())
@@ -116,7 +128,7 @@ class ProfileViewModel
 private fun uiState(
     me: Profile,
     people: List<ConnectionEntity>,
-    invites: List<InviteEntity>,
+    pending: List<PendingInviteUi>,
     permissions: GrantedPermissions,
     switches: Switches,
 ) = ProfileUiState(
@@ -128,7 +140,7 @@ private fun uiState(
             .filter { it.status == "active" }
             .sortedBy { it.connectedAt ?: 0 }
             .map { PersonRowUi(it.personId, it.displayName, EdgeType.decode(it.relationship) ?: EdgeType.OTHER) },
-    pending = invites.filter { it.sent && it.status == "open" }.map { it.name },
+    pending = pending,
     useConnectionsForMyTasks = switches.useConnections ?: me.useConnectionsForMyTasks,
     notifyMeForOthersTasks = switches.notifyMe ?: me.notifyMeForOthersTasks,
     quietStart = me.quietHours.start,

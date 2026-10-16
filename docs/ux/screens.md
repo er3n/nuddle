@@ -154,6 +154,7 @@ Pick a contact (single contact picker) or type a number, then choose the relatio
 "Daveti gönder" opens the system share sheet. Afterwards the UI says "paylaşıldı".
 
 ### 1g Home, invite pending · `HomeInviteSent.png`
+On home only while nobody is connected yet, as in the PNG. Once someone is connected, the card stays off home: its "Bekliyor" row on profile (5a) opens the same content in a sheet (NUD-100, after the first internal test).
 **Copy:** Sibel'in katılması bekleniyor | Davet 14:32'de paylaşıldı · Eşin olarak | Sibel katılınca haber veririm. Link kaybolsa bile numarasıyla kayıt olduğunda davet ona ulaşır. | Tekrar paylaş | İptal et | Henüz görev yok | Sibel'i beklerken kendine yazabilirsin. | Yeni görev
 
 ## 2 · Writing a task and setup
@@ -239,6 +240,7 @@ Sender home with the new task marked "Yeni" and the UndoToast.
 ### 5a Profile and settings · `Profile.png`
 **Copy:** Profil | Düzenle | Fotoğraf | Galeriden seç | Fotoğrafı kaldır | Bizimkiler | Eşin | + Birini davet et | Dürtme | Benim işlerimde tanıdıklarımı kullanabilirsin | Her şeyi kaçırırsam bir yakınıma haber verebilirsin. | Başkalarının işleri için bana haber verilebilir | Bir tanıdığım işini kaçırırsa bana söyleyebilirsin. | Sessiz saatler | Kimse dürtülmez | 23:00 – 07:00 | İzinler | Bildirimler | Alarmlar ve hatırlatıcılar | Tam ekran alarm | Kapalı · Düzelt | Çıkış yap | Hesabı sil
 Note: the canvas shows "23:00 – 07:00" with an en dash. Use "23:00-07:00" or "23:00 ile 07:00" in strings; never an em dash.
+An open invite I sent is a row under Bizimkiler with "Bekliyor"; a tap opens a sheet with the 1g content: "Sibel henüz katılmadı", when it was shared and as what, the body, "Tekrar paylaş" (the system share sheet with the same link) and "İptal et" (NUD-100).
 Since NUD-72 the avatar at the top opens the picture sheet ("Fotoğraf"): "Galeriden seç" opens the system photo picker and uploads the picture; "Fotoğrafı kaldır" shows the initial again. Connections see the picture after their next sync.
 
 ### 5b Person detail · `PersonDetail.png`

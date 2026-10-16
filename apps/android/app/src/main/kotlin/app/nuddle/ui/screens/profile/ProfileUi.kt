@@ -3,6 +3,7 @@ package app.nuddle.ui.screens.profile
 import app.nuddle.api.model.EdgeType
 import app.nuddle.domain.GrantedPermissions
 import app.nuddle.domain.SetupStep
+import app.nuddle.ui.screens.home.PendingInviteUi
 import kotlinx.datetime.LocalTime
 
 /** An active connection in "Bizimkiler": what they are to me (5a). */
@@ -18,8 +19,8 @@ data class ProfileUiState(
     /** Display form, "+90 532 123 45 67". */
     val phone: String,
     val people: List<PersonRowUi>,
-    /** Invites still open: the name I typed for them. */
-    val pending: List<String>,
+    /** Invites still open, under the name I typed for them; a tap opens the invite (NUD-100). */
+    val pending: List<PendingInviteUi>,
     val useConnectionsForMyTasks: Boolean,
     val notifyMeForOthersTasks: Boolean,
     val quietStart: LocalTime,
@@ -61,6 +62,13 @@ sealed interface ProfileSheet {
         override val failed: Boolean = false,
     ) : ProfileSheet
 
+    /** A "Bekliyor" row (NUD-100): the pending invite card of 1g, with Tekrar paylaş and İptal et. */
+    data class Invite(
+        val invite: PendingInviteUi,
+        override val busy: Boolean = false,
+        override val failed: Boolean = false,
+    ) : ProfileSheet
+
     /** 7h. */
     data class LogOut(
         override val busy: Boolean = false,
@@ -79,6 +87,7 @@ data class ProfileCallbacks(
     val onEditName: () -> Unit = {},
     val onPicture: () -> Unit = {},
     val onOpenPerson: (String) -> Unit = {},
+    val onOpenInvite: (PendingInviteUi) -> Unit = {},
     val onInvite: () -> Unit = {},
     val onUseConnections: (Boolean) -> Unit = {},
     val onNotifyMe: (Boolean) -> Unit = {},
@@ -96,4 +105,6 @@ data class ProfileSheetCallbacks(
     val onDismiss: () -> Unit = {},
     /** "Fotoğrafı kaldır" on the picture sheet (NUD-72). */
     val onRemovePicture: () -> Unit = {},
+    /** "İptal et" on the pending invite sheet (NUD-100). */
+    val onRevokeInvite: () -> Unit = {},
 )

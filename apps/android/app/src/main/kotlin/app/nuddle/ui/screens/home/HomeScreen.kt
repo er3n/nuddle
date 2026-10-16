@@ -171,7 +171,8 @@ fun HomeScreen(
             color = colors.ink,
             modifier = Modifier.semantics { heading() },
         )
-        val waiting = state.pendingInvite
+        // Once someone is connected the card lives behind "Bekliyor" on profile (NUD-100).
+        val waiting = state.pendingInvite?.takeUnless { state.connected }
         if (waiting != null) {
             PendingInviteCard(state.myName, waiting, { pendingInvite.onReshare(waiting) }, { pendingInvite.onRevoke(waiting) })
         }

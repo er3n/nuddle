@@ -7,6 +7,7 @@ import app.nuddle.testing.FakeAccountRepository
 import app.nuddle.testing.FakeAuthRepository
 import app.nuddle.testing.FakeAvatarRepository
 import app.nuddle.testing.FakeClock
+import app.nuddle.testing.FakeInviteRepository
 import app.nuddle.testing.FakePermissions
 import app.nuddle.testing.InMemoryConnectionDao
 import app.nuddle.testing.InMemoryInviteDao
@@ -44,7 +45,10 @@ class ProfilePictureViewModelTest {
             FakeAccountRepository(),
             FakeAuthRepository(),
             avatars,
+            FakeInviteRepository(),
             IdGenerator(FakeClock()),
+            FakeClock(),
+            TimeZone.of("Europe/Istanbul"),
         )
     }
 
