@@ -11,6 +11,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.nuddle.data.InviteLinks
 import app.nuddle.ui.screens.profile.ProfileCallbacks
 import app.nuddle.ui.screens.profile.ProfileScreen
 import app.nuddle.ui.screens.profile.ProfileSheet
@@ -48,6 +49,7 @@ fun ProfileRoute(
                 onEditName = viewModel::onEditName,
                 onPicture = viewModel::onPicture,
                 onOpenPerson = onOpenPerson,
+                onOpenInvite = viewModel::onOpenInvite,
                 onInvite = onInvite,
                 onUseConnections = viewModel::onUseConnections,
                 onNotifyMe = viewModel::onNotifyMe,
@@ -62,14 +64,24 @@ fun ProfileRoute(
                 onQuietEdge = viewModel.sheets::onQuietEdge,
                 onQuietTime = viewModel.sheets::onQuietTime,
                 onConfirm = {
-                    if (current.sheet is ProfileSheet.Picture) {
-                        pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    } else {
-                        viewModel.sheets.onConfirm()
+                    when (val sheet = current.sheet) {
+                        is ProfileSheet.Picture -> {
+                            pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        }
+
+                        // Tekrar paylaş: the system share sheet with the same link (1g).
+                        is ProfileSheet.Invite -> {
+                            activity?.shareInvite(InviteLinks.of(sheet.invite.code))
+                        }
+
+                        else -> {
+                            viewModel.sheets.onConfirm()
+                        }
                     }
                 },
                 onDismiss = viewModel.sheets::onDismiss,
                 onRemovePicture = viewModel.sheets::onRemovePicture,
+                onRevokeInvite = viewModel.sheets::onRevokeInvite,
             ),
     )
 }

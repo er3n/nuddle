@@ -161,6 +161,10 @@ object TestTags {
     const val PROFILE_EDIT = "profile.edit"
     const val PROFILE_PICTURE = "profile.picture"
     const val PICTURE_REMOVE = "picture.remove"
+    const val PENDING_INVITE_REVOKE = "pendingInvite.revoke"
+
+    /** A "Bekliyor" row on profile is this plus "." and the name (NUD-100). */
+    const val PROFILE_PENDING = "profile.pending"
     const val PROFILE_INVITE = "profile.invite"
     const val PROFILE_USE_CONNECTIONS = "profile.useConnections"
     const val PROFILE_NOTIFY_ME = "profile.notifyMe"

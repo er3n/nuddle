@@ -11,6 +11,7 @@ import app.nuddle.testing.FakeAccountRepository
 import app.nuddle.testing.FakeAuthRepository
 import app.nuddle.testing.FakeAvatarRepository
 import app.nuddle.testing.FakeClock
+import app.nuddle.testing.FakeInviteRepository
 import app.nuddle.testing.FakePermissions
 import app.nuddle.testing.InMemoryConnectionDao
 import app.nuddle.testing.InMemoryInviteDao
@@ -43,8 +44,21 @@ class ProfileViewModelTest {
     private val permissions = FakePermissions()
     private val account = FakeAccountRepository()
     private val auth = FakeAuthRepository()
+    private val inviteRepository = FakeInviteRepository()
     private val vm by lazy {
-        ProfileViewModel(sessions, connections, invites, permissions, account, auth, FakeAvatarRepository(), IdGenerator(FakeClock()))
+        ProfileViewModel(
+            sessions,
+            connections,
+            invites,
+            permissions,
+            account,
+            auth,
+            FakeAvatarRepository(),
+            inviteRepository,
+            IdGenerator(FakeClock()),
+            FakeClock(),
+            TimeZone.of("Europe/Istanbul"),
+        )
     }
 
     private suspend fun signedIn() = sessions.saveMe("Eren", QuietHours.default(TimeZone.of("Europe/Istanbul")))
@@ -68,7 +82,7 @@ class ProfileViewModelTest {
             val state = vm.state.value!!
             assertEquals("Eren" to "+90 532 123 45 67", state.name to state.phone)
             assertEquals(listOf(PersonRowUi(Cast.SIBEL_ID, "Sibel", EdgeType.SPOUSE)), state.people)
-            assertEquals(listOf("Defne"), state.pending)
+            assertEquals(listOf("Defne"), state.pending.map { it.name })
             assertEquals(LocalTime(23, 0) to LocalTime(7, 0), state.quietStart to state.quietEnd)
         }
 
@@ -163,5 +177,23 @@ class ProfileViewModelTest {
             vm.sheets.onConfirm()
             vm.sheets.onDismiss()
             assertEquals(ProfileSheet.Delete(busy = true), vm.state.value!!.sheet)
+        }
+
+    @Test
+    fun `a pending row opens its invite, and İptal et revokes it and closes the sheet`() =
+        runTest(main.dispatcher) {
+            signedIn()
+            invites.upsert(listOf(InviteEntity("i1", "c1", true, "Ahmet", "+905320000009", null, "Ahmet", "other", "open", 1)))
+            watch()
+            val row =
+                vm.state.value!!
+                    .pending
+                    .single()
+            vm.onOpenInvite(row)
+            assertEquals(ProfileSheet.Invite(row), vm.state.value!!.sheet)
+
+            vm.sheets.onRevokeInvite()
+            assertEquals(listOf("i1"), inviteRepository.revoked)
+            assertNull(vm.state.value!!.sheet)
         }
 }

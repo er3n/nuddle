@@ -54,11 +54,18 @@ fun pendingInvite(
     invites: List<InviteEntity>,
     now: Instant,
     timeZone: TimeZone,
-): PendingInviteUi? =
+): PendingInviteUi? = pendingInvites(invites, now, timeZone).lastOrNull()
+
+/** Every sent invite still open, oldest first: the "Bekliyor" rows on profile (5a, NUD-100). */
+fun pendingInvites(
+    invites: List<InviteEntity>,
+    now: Instant,
+    timeZone: TimeZone,
+): List<PendingInviteUi> =
     invites
         .filter { it.sent && it.status == SyncSentInvite.Status.OPEN.value }
-        .maxByOrNull { it.createdAt }
-        ?.let { invite ->
+        .sortedBy { it.createdAt }
+        .map { invite ->
             PendingInviteUi(
                 inviteId = invite.id,
                 code = invite.code,
@@ -80,6 +87,15 @@ internal val EdgeType.asYours: Int?
             EdgeType.OTHER -> null
         }
 
+/** "Davet paylaşıldı · Bugün 16:36 · Eşin olarak" (1g); without the last part for "Diğer". */
+@Composable
+internal fun pendingInviteSubline(invite: PendingInviteUi): String {
+    val shared = stringResource(R.string.pending_invite_shared, invite.sharedAt.text())
+    return invite.relationship.asYours?.let {
+        stringResource(R.string.separator_dot, shared, stringResource(R.string.pending_invite_as, stringResource(it)))
+    } ?: shared
+}
+
 @Composable
 internal fun PendingInviteCard(
     myName: String,
@@ -90,12 +106,7 @@ internal fun PendingInviteCard(
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
     val shape = RoundedCornerShape(dimens.radiusXl)
-    val shared = stringResource(R.string.pending_invite_shared, invite.sharedAt.text())
-    val subline =
-        invite.relationship.asYours?.let {
-            stringResource(R.string.separator_dot, shared, stringResource(R.string.pending_invite_as, stringResource(it)))
-        }
-            ?: shared
+    val subline = pendingInviteSubline(invite)
     Column(
         modifier =
             Modifier

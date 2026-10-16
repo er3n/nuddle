@@ -576,6 +576,24 @@ class TestTagsTest {
     }
 
     @Test
+    fun `with someone connected the pending invite stays off home (NUD-100)`() {
+        val invite = PendingInviteUi("i1", "abc", "Ahmet", EdgeType.OTHER, DeadlineText.Today("16:36"))
+        content {
+            HomeScreen(
+                state = HomeUiState(myName = "Eren", connected = true, pendingInvite = invite),
+                onBell = {},
+                onProfile = {},
+                onInvite = {},
+                onComposeTextChange = {},
+                onComposeSend = {},
+                onVoiceStart = {},
+                onVoiceEnd = {},
+            )
+        }
+        compose.onNodeWithTag(TestTags.HOME_PENDING_INVITE).assertDoesNotExist()
+    }
+
+    @Test
     fun `consent after sign-in`() {
         content {
             ConsentScreen(

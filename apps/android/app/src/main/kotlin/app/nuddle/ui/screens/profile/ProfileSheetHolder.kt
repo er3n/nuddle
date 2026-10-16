@@ -3,6 +3,7 @@ package app.nuddle.ui.screens.profile
 import android.net.Uri
 import app.nuddle.data.AccountRepository
 import app.nuddle.data.AuthRepository
+import app.nuddle.data.InviteRepository
 import app.nuddle.data.avatar.AvatarRepository
 import app.nuddle.domain.IdGenerator
 import kotlinx.coroutines.CoroutineScope
@@ -26,6 +27,7 @@ internal class ProfileSheetHolder(
     private val account: AccountRepository,
     private val auth: AuthRepository,
     private val avatars: AvatarRepository,
+    private val invites: InviteRepository,
     private val ids: IdGenerator,
 ) {
     val open = MutableStateFlow<OpenSheet?>(null)
@@ -78,16 +80,28 @@ internal class ProfileSheetHolder(
         }
     }
 
+    /** "İptal et" on the pending invite sheet; the row goes once the server knows (NUD-100). */
+    fun onRevokeInvite() {
+        val current = open.value ?: return
+        val sheet = current.sheet as? ProfileSheet.Invite ?: return
+        if (sheet.busy) return
+        open.value = current.copy(sheet = sheet.copy(busy = true, failed = false))
+        scope.launch {
+            val ok = invites.revoke(sheet.invite.inviteId, current.key)
+            open.value = if (ok) null else current.copy(sheet = sheet.copy(busy = false, failed = true))
+        }
+    }
+
     fun onConfirm() {
         val current = open.value ?: return
         val sheet = current.sheet
-        // The picture sheet's primary action opens the system picker, which only the route can do.
-        if (sheet.busy || sheet is ProfileSheet.Picture) return
+        // The picture sheet opens the system picker and the invite sheet the share sheet, which only the route can do.
+        if (sheet.busy || sheet is ProfileSheet.Picture || sheet is ProfileSheet.Invite) return
         open.value = current.copy(sheet = sheet.withBusy(busy = true, failed = false))
         scope.launch {
             val ok =
                 when (sheet) {
-                    is ProfileSheet.Picture -> true
+                    is ProfileSheet.Picture, is ProfileSheet.Invite -> true
                     is ProfileSheet.Rename -> auth.register(sheet.name.trim())
                     is ProfileSheet.Quiet -> account.setQuietHours(sheet.start, sheet.end)
                     is ProfileSheet.LogOut -> account.logOut(current.key)
@@ -105,6 +119,7 @@ private fun ProfileSheet.withBusy(
 ): ProfileSheet =
     when (this) {
         is ProfileSheet.Picture -> copy(busy = busy, failed = failed)
+        is ProfileSheet.Invite -> copy(busy = busy, failed = failed)
         is ProfileSheet.Rename -> copy(busy = busy, failed = failed)
         is ProfileSheet.Quiet -> copy(busy = busy, failed = failed)
         is ProfileSheet.LogOut -> copy(busy = busy, failed = failed)

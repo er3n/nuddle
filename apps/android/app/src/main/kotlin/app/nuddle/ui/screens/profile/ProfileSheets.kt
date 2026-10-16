@@ -35,6 +35,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import app.nuddle.R
+import app.nuddle.api.model.EdgeType
 import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.DurtBottomSheet
 import app.nuddle.ui.components.DurtBottomSheetContent
@@ -43,6 +44,9 @@ import app.nuddle.ui.components.SheetAction
 import app.nuddle.ui.components.TextLink
 import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.screens.BigTextField
+import app.nuddle.ui.screens.home.DeadlineText
+import app.nuddle.ui.screens.home.PendingInviteUi
+import app.nuddle.ui.screens.home.pendingInviteSubline
 import app.nuddle.ui.theme.DurtTheme
 import kotlinx.datetime.LocalTime
 
@@ -88,6 +92,14 @@ private fun partsOf(
                 description = stringResource(R.string.quiet_body),
                 primary = action(stringResource(R.string.action_save), enabled = sheet.start != sheet.end),
             ) { QuietPicker(sheet, callbacks) }
+        }
+
+        is ProfileSheet.Invite -> {
+            SheetParts(
+                title = stringResource(R.string.pending_invite_title, sheet.invite.name),
+                description = pendingInviteSubline(sheet.invite),
+                primary = action(stringResource(R.string.pending_invite_reshare)),
+            ) { InviteActions(sheet, callbacks) }
         }
 
         is ProfileSheet.LogOut -> {
@@ -142,6 +154,27 @@ private fun ColumnScope.PictureActions(
     Failed(sheet)
 }
 
+/** The pending invite sheet (NUD-100): what happens when they join, and "İptal et" under it. */
+@Composable
+private fun ColumnScope.InviteActions(
+    sheet: ProfileSheet.Invite,
+    callbacks: ProfileSheetCallbacks,
+) {
+    Text(
+        stringResource(R.string.pending_invite_body, sheet.invite.name),
+        style = DurtTheme.type.bodySmall,
+        color = DurtTheme.colors.textBody,
+    )
+    TextLink(
+        text = stringResource(R.string.pending_invite_revoke),
+        onClick = { if (!sheet.busy) callbacks.onRevokeInvite() },
+        color = DurtTheme.colors.danger,
+        style = DurtTheme.type.bodySmallStrong,
+        modifier = Modifier.testTag(TestTags.PENDING_INVITE_REVOKE),
+    )
+    Failed(sheet)
+}
+
 @Composable
 private fun ColumnScope.RenameField(
     sheet: ProfileSheet.Rename,
@@ -176,6 +209,14 @@ internal fun ProfileSheetPreviewOf(
 @Composable
 private fun RenameSheetPreview() {
     ProfileSheetPreviewOf(ProfileSheet.Rename("Eren"))
+}
+
+@PreviewScreens
+@Composable
+private fun InviteSheetPreview() {
+    ProfileSheetPreviewOf(
+        ProfileSheet.Invite(PendingInviteUi("i1", "abc", "Ahmet", EdgeType.OTHER, DeadlineText.Today("16:36"))),
+    )
 }
 
 @PreviewScreens
