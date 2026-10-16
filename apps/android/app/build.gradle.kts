@@ -56,8 +56,8 @@ android {
         minSdk = 26
         // One below compileSdk so Robolectric (UI tests, screenshots) runs at the target level.
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.1.1"
     }
 
     flavorDimensions += "env"

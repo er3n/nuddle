@@ -1,9 +1,7 @@
 package app.nuddle.ui.nav
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.nuddle.ui.screens.home.NewDeadlineCallbacks
@@ -24,8 +22,7 @@ fun TaskDetailRoute(
     viewModel: TaskDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val back by rememberUpdatedState(onBack)
-    LaunchedEffect(viewModel) { viewModel.close.collect { back() } }
+    BackOnClose(viewModel.close, onBack)
     val current = state ?: return
     TaskDetailScreen(
         state = current,
