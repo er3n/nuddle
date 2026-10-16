@@ -1,7 +1,7 @@
 // OpenRouter's OpenAI-compatible chat completions API with structured output, shared by the task
 // extractor and the poke planner (docs/architecture.md, LLM; ADR 0017).
 import { z } from "zod";
-import type { ExchangeSink } from "../../domain/ports";
+import type { ExchangeSink, LlmUsage } from "../../domain/ports";
 
 const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -18,7 +18,25 @@ export interface OpenRouterOptions {
 
 const completionSchema = z.object({
   choices: z.array(z.object({ message: z.object({ content: z.string() }) })).min(1),
+  // Usage accounting (ADR 0024): `cost` is what OpenRouter charged in USD.
+  usage: z
+    .object({
+      prompt_tokens: z.number(),
+      completion_tokens: z.number(),
+      cost: z.number().optional(),
+    })
+    .optional(),
 });
+
+function usageOf(completion: z.infer<typeof completionSchema>): LlmUsage | null {
+  const u = completion.usage;
+  if (!u) return null;
+  return {
+    promptTokens: u.prompt_tokens,
+    completionTokens: u.completion_tokens,
+    costUsd: u.cost ?? null,
+  };
+}
 
 /** One chat completion constrained to `schema`; returns the parsed JSON content. */
 export async function completeJson(
@@ -52,6 +70,7 @@ export async function completeJson(
         json_schema: { name: request.name, strict: true, schema: request.schema },
       },
       ...(options.reasoning === false ? { reasoning: { enabled: false } } : {}),
+      usage: { include: true },
     }),
     ...(request.signal ? { signal: request.signal } : {}),
   });
@@ -60,7 +79,12 @@ export async function completeJson(
   }
   const completion = completionSchema.parse(await response.json());
   const content = completion.choices[0]?.message.content ?? "";
-  const exchange = { model: options.model, system: request.system, prompt: request.user };
+  const exchange = {
+    model: options.model,
+    system: request.system,
+    prompt: request.user,
+    usage: usageOf(completion),
+  };
   let parsed: unknown;
   try {
     parsed = JSON.parse(stripCodeFence(content));

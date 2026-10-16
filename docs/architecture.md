@@ -112,6 +112,8 @@ The app shows the code on the unrecoverable error screen (6f) and sends it to Cr
 | DRT-1006 | `invalid_otp` | 401 | Wrong or expired code (`details.remainingAttempts`), or an unknown refresh token |
 | DRT-1007 | `forbidden` | 403 | Reserved |
 | DRT-1008 | `otp_locked` | 429 | Too many wrong codes for the phone: no code is checked or sent until `details.retryAt` (screen 6c) |
+| DRT-1009 | `otp_limit` | 429 | Too many codes sent to the phone, or to everyone, in the last 24 hours: none is sent until `details.retryAt` (ADR 0024) |
+| DRT-1010 | `write_limit` | 429 | The caller wrote too many texts in the last 24 hours: nothing is extracted until `details.retryAt` (ADR 0024) |
 | DRT-4001 | `wrong_status` | 409 | The task's status does not allow the command |
 | DRT-4002 | `not_sender` | 403 | Only the sender can do this |
 | DRT-4003 | `not_recipient` | 403 | Only the recipient can do this |
@@ -151,3 +153,12 @@ Production wiring (stage 7):
 ## Costs (rough, to confirm)
 
 Beta: Supabase free, Vercel hobby, Firebase free, LLM usage small. Launch: Supabase Pro ~25 USD + Vercel Pro ~20 USD per month plus usage. Note that Supabase free projects pause after a week of inactivity; the per-minute `pg_cron` job keeps it active.
+
+Per task: two LLM calls (extraction and plan), each kept in `llm_calls` with its tokens and what OpenRouter charged (`cost_usd`, ADR 0024); the cost of a task is the sum over its rows, and `mise run golden:export` carries them. Per sign-in: one SMS, 0.0305 USD to Turkey (open-questions #45).
+
+### Cost guardrails (ADR 0024)
+
+What one person, a bug or an attacker can spend is bounded twice:
+
+- **In code**, counted over the last 24 hours (`apps/web/src/domain/cost-caps.ts`, open-questions #54): extractions per writer (`write_limit` over the cap), plans and profiles per person (plan v0 over the cap), sign-in codes per phone and in total (the Send SMS hook sends nothing over the cap; `otp_limit` from `/v1/auth/otp`). Supabase Auth's own SMS limits (per hour for the project, seconds between codes to one phone) are in `supabase/cloud/auth.json`.
+- **Outside the code**, set by the human (`human-checklist.md`, Cost limits): a prepaid OpenRouter credit with a limit on the key and no auto top-up; Twilio SMS Geo permissions to Turkey only, no auto-recharge and a low balance alert; Vercel spend management with a cap that pauses the project. These hold even if the code is wrong.

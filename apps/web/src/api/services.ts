@@ -18,6 +18,13 @@ import {
   type Extraction,
   type MissingField,
 } from "../domain/extraction";
+import {
+  capReachedUntil,
+  capWindowStart,
+  laterOf,
+  SMS_PHONE_DAILY_CAP,
+  SMS_TOTAL_DAILY_CAP,
+} from "../domain/cost-caps";
 import { afterWrongCode, lockedUntil } from "../domain/otp-attempts";
 import { humanChannelAllowed } from "../domain/plan-pokes";
 import { profileIsStale, RECENT_TASKS, type ProfileInput } from "../domain/profile";
@@ -101,7 +108,7 @@ import {
   deleteInvitesOf,
   deletionPreviewOf,
   deleteLlmCallsOf,
-  deleteOtpAttemptsOf,
+  deleteSignInRecordsOf,
   insertScheduledAction,
   purgePerson,
   linkAskedExtraction,
@@ -131,10 +138,12 @@ import {
   upsertEdges,
   upsertPerson,
   type Tx,
+  insertSmsSend,
+  smsSendWindow,
 } from "../infra/db/store";
 import type { AppDeps } from "./deps";
 import { ApiError } from "./errors";
-import { errorText, LlmCall } from "./llm-log";
+import { errorText, LlmCall, llmCapReachedUntil } from "./llm-log";
 
 interface Effects {
   pushes: readonly PushMessage[];
@@ -312,6 +321,14 @@ async function refinePlan(deps: AppDeps, taskId: TaskId, version: number): Promi
       planVersion: version,
       input,
     });
+    // Over the recipient's daily cap the model is not asked and v0 stays (ADR 0024).
+    const capped = await llmCapReachedUntil(deps, recipient.id, "plan");
+    if (capped) {
+      console.warn("poke planner: daily cap reached, keeping v0", taskId, recipient.id);
+      await call.record("capped", { error: `daily cap until ${capped.toISOString()}` });
+      await writeStaleProfile();
+      return;
+    }
     let proposal: PlanProposal;
     try {
       proposal = await planner.plan(input, call.sink);
@@ -382,6 +399,11 @@ async function writeProfile(
     history,
   };
   const call = new LlmCall(deps, { kind: "profile", personId: recipient.id, input });
+  const capped = await llmCapReachedUntil(deps, recipient.id, "profile");
+  if (capped) {
+    await call.record("capped", { error: `daily cap until ${capped.toISOString()}` });
+    return null;
+  }
   try {
     const text = await profiler.profile(input, call.sink);
     const profile: PokeProfile = { text, writtenAt: now, tasksSeen: closed };
@@ -554,6 +576,13 @@ export async function writeTask(
   if (prior) {
     if (prior.command !== "write_task") throw new ApiError("idempotency_key_reused");
     return prior.result as WriteTaskResult;
+  }
+  // Over the writer's daily cap nothing reaches the model (ADR 0024).
+  const writeWait = await llmCapReachedUntil(deps, caller.id, "extraction");
+  if (writeWait) {
+    throw new ApiError("write_limit", "too many texts in the last 24 hours", {
+      retryAt: writeWait.toISOString(),
+    });
   }
   const now = deps.clock.now();
   const connections = await activeConnections(deps.db, caller.id);
@@ -1040,7 +1069,7 @@ export async function deleteAccount(
     const r = deleteAccountDomain(caller, await edgesTouching(tx, caller.id), contexts, now);
     await markPersonDeleted(tx, r.person);
     await deleteInvitesOf(tx, caller.id, caller.phone);
-    await deleteOtpAttemptsOf(tx, caller.phone);
+    await deleteSignInRecordsOf(tx, caller.phone);
     await insertScheduledAction(tx, r.purge, now);
     await upsertEdges(tx, r.edges, now);
     const pushes: PushMessage[] = [];
@@ -1429,6 +1458,41 @@ const otpLocked = (until: Date) =>
 export async function refuseWhileOtpLocked(deps: AppDeps, phone: string): Promise<void> {
   const until = lockedUntil(await findOtpAttempts(deps.db, phone), deps.clock.now());
   if (until) throw otpLocked(until);
+}
+
+/** When the next code to the phone may go out, over the cap per phone or in total (ADR 0024). */
+async function smsCapReachedUntil(deps: AppDeps, phone: string): Promise<Date | null> {
+  const now = deps.clock.now();
+  const since = capWindowStart(now);
+  const perPhone = await smsSendWindow(deps.db, phone, since);
+  const total = await smsSendWindow(deps.db, null, since);
+  return laterOf(
+    capReachedUntil(perPhone, SMS_PHONE_DAILY_CAP, now),
+    capReachedUntil(total, SMS_TOTAL_DAILY_CAP, now),
+  );
+}
+
+/** No code is asked for over the daily SMS caps; the hook checks them again (ADR 0024). */
+export async function refuseOverSmsCaps(deps: AppDeps, phone: string): Promise<void> {
+  const until = await smsCapReachedUntil(deps, phone);
+  if (until) {
+    throw new ApiError("otp_limit", "too many codes in the last 24 hours", {
+      retryAt: until.toISOString(),
+    });
+  }
+}
+
+/**
+ * The Send SMS hook's code to the provider, unless a daily cap is reached (ADR 0024). Every place
+ * a sign-in starts ends here, so the caps hold even for a request that skipped our API. Returns
+ * whether it was sent.
+ */
+export async function sendSignInCode(deps: AppDeps, phone: string, code: string): Promise<boolean> {
+  if (await smsCapReachedUntil(deps, phone)) return false;
+  await deps.otp.send(phone, code);
+  const now = deps.clock.now();
+  await insertSmsSend(deps.db, randomUUID(), phone, now, capWindowStart(now));
+  return true;
 }
 
 /** The session for a right code; a wrong one counts, and the last one starts the wait. */

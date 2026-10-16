@@ -7,7 +7,7 @@ import { z } from "zod";
 import type { AppDeps } from "./deps";
 import { ApiError } from "./errors";
 import type { AppEnv } from "./routes";
-import { deleteAccountByPhone, deletionPreview, runTick } from "./services";
+import { deleteAccountByPhone, deletionPreview, runTick, sendSignInCode } from "./services";
 
 function sameSecret(given: string, expected: string): boolean {
   const a = Buffer.from(given);
@@ -69,7 +69,10 @@ export function internalRoutes(deps: AppDeps): Hono<AppEnv> {
       ? payload.user.phone
       : `+${payload.user.phone}`;
     try {
-      await deps.otp.send(phone, payload.sms.otp);
+      if (!(await sendSignInCode(deps, phone, payload.sms.otp))) {
+        console.warn("otp send refused: daily SMS cap reached");
+        return c.json({ error: { http_code: 429, message: "too many codes" } }, 429);
+      }
     } catch (error) {
       console.error("otp send failed", error);
       return c.json({ error: { http_code: 500, message: "could not send the code" } }, 500);

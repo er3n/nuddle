@@ -82,6 +82,7 @@ case "${1:-}" in
     jq '{site_url, disable_signup, external_phone_enabled, external_email_enabled,
       sms_test_numbers: ((.sms_test_otp // "") | split(",") | map(select(. != "")) | length),
       sms_test_otp_valid_until,
+      sms_max_frequency, rate_limit_sms_sent,
       hook_send_sms_enabled, hook_send_sms_uri,
       hook_send_sms_secret_set: ((.hook_send_sms_secrets // "") != "")}' "$tmp/response"
     ;;

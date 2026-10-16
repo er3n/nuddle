@@ -7,6 +7,7 @@ import type { RepeatRule } from "../../domain/repeat";
 import {
   bigint,
   boolean,
+  doublePrecision,
   index,
   jsonb,
   pgEnum,
@@ -346,7 +347,23 @@ export const llmCalls = pgTable(
     outcome: text("outcome").notNull(),
     error: text("error"),
     latencyMs: bigint("latency_ms", { mode: "number" }).notNull(),
+    // What the call used, as the provider reported it (ADR 0024); null when it did not.
+    promptTokens: bigint("prompt_tokens", { mode: "number" }),
+    completionTokens: bigint("completion_tokens", { mode: "number" }),
+    costUsd: doublePrecision("cost_usd"),
     createdAt: createdAt(),
   },
   (t) => [index("llm_calls_task_idx").on(t.taskId), index("llm_calls_person_idx").on(t.personId)],
+);
+
+// Every sign-in code the Send SMS hook handed to the provider, for the daily caps per phone and in
+// total (ADR 0024). Rows older than the window are deleted when a new code is sent.
+export const smsSends = pgTable(
+  "sms_sends",
+  {
+    id: uuid("id").primaryKey(),
+    phone: text("phone").notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("sms_sends_sent_at_idx").on(t.sentAt), index("sms_sends_phone_idx").on(t.phone)],
 );

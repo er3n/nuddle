@@ -64,6 +64,16 @@ Things only the human can do: accounts, payments, logins, secrets, production pu
 - [ ] Physical test phones: at least one Xiaomi and one Samsung, plus your own.
 - [ ] Run the manual checklist in `testing.md` on each beta build.
 
+## Cost limits (ADR 0024)
+
+The code caps each person; these cap the whole bill if the code is wrong. Check them again before the beta and at the global launch.
+
+- [ ] OpenRouter: pay by prepaid credit only, no auto top-up. On the production key set a credit limit (for the beta about 10 USD a month), and an alert e-mail when the balance is low.
+- [ ] Twilio: SMS Geo permissions allow only Turkey (open-questions #45). Auto-recharge off. A balance alert (Console, Billing, Usage triggers) at a level you would notice, for example 5 USD, and a usage trigger on SMS count per day.
+- [ ] Vercel: Settings, Billing, Spend Management on, with a monthly amount and "pause projects" when it is reached (Pro plan; on Hobby the free limits stop the project).
+- [ ] Supabase: Spend cap on (the default on Pro) so usage above the plan stops instead of billing.
+- [ ] Apply the Supabase Auth SMS limits in `supabase/cloud/auth.json`: `mise exec -- supabase/cloud/configure.sh auth` (NUD-97).
+
 ## Before the global launch
 
 - [ ] Trademark check for Nuddle (US/EU) and the status of `nuddle.com`.

@@ -674,6 +674,42 @@ export class World {
   }
 
   /**
+   * Earlier LLM calls about the person, as a busy day would leave them, for the daily caps
+   * (ADR 0024). `at` defaults to the scenario clock.
+   */
+  async fillLlmCalls(
+    person: Client,
+    kind: "extraction" | "plan" | "profile",
+    count: number,
+    at: Date = this.clock.now(),
+  ): Promise<void> {
+    const { db } = (await this.ready).database;
+    await db.insert(schema.llmCalls).values(
+      Array.from({ length: count }, () => ({
+        id: randomUUID(),
+        kind,
+        personId: person.uuid,
+        input: {},
+        outcome: "filled",
+        latencyMs: 0,
+        createdAt: at,
+      })),
+    );
+  }
+
+  /** Sign-in codes the Send SMS hook sent to the person's number (ADR 0024). */
+  async fillSmsSends(person: Client, count: number): Promise<void> {
+    const { db } = (await this.ready).database;
+    await db.insert(schema.smsSends).values(
+      Array.from({ length: count }, () => ({
+        id: randomUUID(),
+        phone: person.person.phone,
+        sentAt: this.clock.now(),
+      })),
+    );
+  }
+
+  /**
    * How many rows in each table still hold the person's id or phone, by table (NUD-89). Task rows
    * count once per task the person sent or received; events and steps count through them.
    */
@@ -726,6 +762,9 @@ export class World {
       ),
       otpAttempts: await count(
         db.select().from(schema.otpAttempts).where(eq(schema.otpAttempts.phone, phone)),
+      ),
+      smsSends: await count(
+        db.select().from(schema.smsSends).where(eq(schema.smsSends.phone, phone)),
       ),
     };
     return Object.fromEntries(Object.entries(counts).filter(([, n]) => n > 0));

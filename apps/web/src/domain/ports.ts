@@ -26,6 +26,15 @@ export interface LlmExchange {
   prompt: string;
   /** The answer, parsed when it was JSON, otherwise the text as it came. */
   output: unknown;
+  /** Tokens and cost as the provider reported them (ADR 0024); null when it did not. */
+  usage?: LlmUsage | null;
+}
+
+/** What one call used. `costUsd` is what the provider charged, null when it did not say. */
+export interface LlmUsage {
+  promptTokens: number;
+  completionTokens: number;
+  costUsd: number | null;
 }
 
 /** Told about the exchange once the model answered; fakes without a model never call it. */

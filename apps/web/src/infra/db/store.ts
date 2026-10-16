@@ -14,7 +14,9 @@ import {
   inArray,
   isNotNull,
   isNull,
+  lt,
   lte,
+  min,
   ne,
   notInArray,
   or,
@@ -22,6 +24,7 @@ import {
 } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import type { Invite, InviteStatus } from "../../domain/connections";
+import type { CapWindow, LlmCallKind } from "../../domain/cost-caps";
 import { noAttempts, type OtpAttempts } from "../../domain/otp-attempts";
 import type { Device, PermissionSummary } from "../../domain/reachability";
 import type { ClaimedAction } from "../../domain/tick";
@@ -48,6 +51,7 @@ import {
   people,
   pokeSteps,
   scheduledActions,
+  smsSends,
   taskEvents,
   tasks,
 } from "./schema";
@@ -1008,10 +1012,60 @@ export interface LlmCallRow {
   outcome: string;
   error: string | null;
   latencyMs: number;
+  promptTokens: number | null;
+  completionTokens: number | null;
+  costUsd: number | null;
+  createdAt: Date;
 }
 
 export async function insertLlmCall(ex: Executor, row: LlmCallRow): Promise<void> {
   await ex.insert(llmCalls).values(row);
+}
+
+/** A person's LLM calls of one kind after a time, without those a cap stopped (ADR 0024). */
+export async function llmCallWindow(
+  ex: Executor,
+  personId: PersonId,
+  kind: LlmCallKind,
+  since: Date,
+): Promise<CapWindow> {
+  const [row] = await ex
+    .select({ count: sql<number>`count(*)::int`, oldest: min(llmCalls.createdAt) })
+    .from(llmCalls)
+    .where(
+      and(
+        eq(llmCalls.personId, personId),
+        eq(llmCalls.kind, kind),
+        gt(llmCalls.createdAt, since),
+        ne(llmCalls.outcome, "capped"),
+      ),
+    );
+  return { count: row?.count ?? 0, oldest: row?.oldest ?? null };
+}
+
+/** Sign-in codes sent after a time, to one phone or (null) to all (ADR 0024). */
+export async function smsSendWindow(
+  ex: Executor,
+  phone: string | null,
+  since: Date,
+): Promise<CapWindow> {
+  const [row] = await ex
+    .select({ count: sql<number>`count(*)::int`, oldest: min(smsSends.sentAt) })
+    .from(smsSends)
+    .where(and(gt(smsSends.sentAt, since), phone === null ? undefined : eq(smsSends.phone, phone)));
+  return { count: row?.count ?? 0, oldest: row?.oldest ?? null };
+}
+
+/** One code handed to the provider; rows from before the window are no longer needed. */
+export async function insertSmsSend(
+  ex: Executor,
+  id: string,
+  phone: string,
+  now: Date,
+  windowStart: Date,
+): Promise<void> {
+  await ex.delete(smsSends).where(lt(smsSends.sentAt, windowStart));
+  await ex.insert(smsSends).values({ id, phone, sentAt: now });
 }
 
 /**
@@ -1079,8 +1133,10 @@ export async function deleteInvitesOf(tx: Tx, personId: PersonId, phone: string)
     .where(or(eq(invites.inviterId, personId), eq(invites.inviteePhone, phone)));
 }
 
-export async function deleteOtpAttemptsOf(tx: Tx, phone: string): Promise<void> {
+/** The phone's wrong-code count and the codes sent to it (ADR 0011, 0024). */
+export async function deleteSignInRecordsOf(tx: Tx, phone: string): Promise<void> {
   await tx.delete(otpAttempts).where(eq(otpAttempts.phone, phone));
+  await tx.delete(smsSends).where(eq(smsSends.phone, phone));
 }
 
 export async function insertScheduledAction(
