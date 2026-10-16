@@ -146,7 +146,7 @@ Consent content opened from the bell, with Reddet instead of Şimdi değil.
 **Copy:** Davet · 2 sa önce | (same as 0f) | İzin ver | Reddet | Reddedersen Sibel'e bildirim gitmez.
 
 ### 1e Invite, first open · `InviteCreate.png`
-Pick a contact (single contact picker) or type a number, then choose the relationship (mandatory, nothing preselected).
+Pick a contact (single contact picker) or type a number, then choose the relationship (mandatory, nothing preselected). "Numarayı elle yaz" shows two inputs, each with a visible label above it as on 0c: Adı | Telefon numarası (NUD-99).
 **Copy:** Birini davet et | Kimi? | Rehberden seç | Sadece seçtiğin kişiyi görürüz | Numarayı elle yaz | Senin neyin? | Eşim · Annem / Babam · Çocuğum · Kardeşim · Ev arkadaşım · Diğer | Zorunlu. Kime, ne zaman haber vereceğime buna göre karar veririm. | Daveti gönder | Kişiyi ve ilişkiyi seçince aktif olur.
 
 ### 1f Invite, ready · `InviteReady.png`
