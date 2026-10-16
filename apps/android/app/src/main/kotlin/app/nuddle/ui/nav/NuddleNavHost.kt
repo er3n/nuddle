@@ -4,12 +4,14 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -119,10 +121,18 @@ fun NuddleNavHost(
     onInviteCodeTake: () -> Unit = {},
     openRoute: String? = null,
     onOpenRouteTake: () -> Unit = {},
+    onRouteChange: (String) -> Unit = {},
 ) {
     val nav = rememberNavController()
     val takeInviteCode by rememberUpdatedState(onInviteCodeTake)
     val takeOpenRoute by rememberUpdatedState(onOpenRouteTake)
+    val routeChange by rememberUpdatedState(onRouteChange)
+    // The route pattern (`task/{taskId}`), never the arguments, for the breadcrumbs (ADR 0023).
+    DisposableEffect(nav) {
+        val listener = NavController.OnDestinationChangedListener { _, destination, _ -> destination.route?.let(routeChange) }
+        nav.addOnDestinationChangedListener(listener)
+        onDispose { nav.removeOnDestinationChangedListener(listener) }
+    }
     NavHost(navController = nav, startDestination = startRoute) {
         composable(Routes.WELCOME) {
             LightSystemBarIcons()

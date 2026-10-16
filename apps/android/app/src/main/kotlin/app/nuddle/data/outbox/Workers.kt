@@ -17,14 +17,38 @@ import app.nuddle.data.avatar.AvatarUploads
 import app.nuddle.data.photo.PhotoUploader
 import app.nuddle.data.photo.PhotoUploads
 import app.nuddle.data.sync.SyncRepository
+import app.nuddle.domain.Diagnostics
 import app.nuddle.domain.SendOutcome
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.concurrent.TimeUnit
 
 private const val BACKOFF_SECONDS = 30L
+
+/**
+ * WorkManager catches what a worker throws and only marks the work failed, so nothing would reach Crashlytics: the
+ * error is recorded first, then thrown on (ADR 0023). Cancellation is WorkManager stopping the work, not an error.
+ *
+ * Reason for the suppression: whatever the worker threw must be recorded before WorkManager swallows it, and it is
+ * thrown on unchanged.
+ */
+@Suppress("TooGenericExceptionCaught")
+internal suspend fun <T> Diagnostics.reportingFailures(
+    worker: String,
+    block: suspend () -> T,
+): T =
+    try {
+        block()
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (error: Exception) {
+        log("worker $worker failed")
+        record(error)
+        throw error
+    }
 
 /** Drains the outbox whenever there is a network, with exponential backoff (ADR 0006). */
 @HiltWorker
@@ -35,16 +59,21 @@ class OutboxWorker
         @Assisted params: WorkerParameters,
         private val sender: OutboxSender,
         private val sync: SyncRepository,
+        private val diagnostics: Diagnostics,
     ) : CoroutineWorker(context, params) {
         /**
          * Then a sync: the server's answer replaces what the phone set locally, also when the server refused it (a
          * Bitti for a task the sender had just cancelled), without waiting for a push (NUD-64).
          */
-        override suspend fun doWork(): Result {
-            if (!sender.drain()) return Result.retry()
-            sync.sync()
-            return Result.success()
-        }
+        override suspend fun doWork(): Result =
+            diagnostics.reportingFailures("outbox") {
+                if (!sender.drain()) {
+                    diagnostics.log("outbox retry")
+                    return@reportingFailures Result.retry()
+                }
+                sync.sync()
+                Result.success()
+            }
     }
 
 /** Pulls `GET /api/v1/sync`; FCM data messages only say "sync now" (docs/architecture.md, Push). */
@@ -55,8 +84,10 @@ class SyncWorker
         @Assisted context: Context,
         @Assisted params: WorkerParameters,
         private val sync: SyncRepository,
+        private val diagnostics: Diagnostics,
     ) : CoroutineWorker(context, params) {
-        override suspend fun doWork(): Result = if (sync.sync()) Result.success() else Result.retry()
+        override suspend fun doWork(): Result =
+            diagnostics.reportingFailures("sync") { if (sync.sync()) Result.success() else Result.retry() }
     }
 
 /** Uploads a kept photo (4d, 6e); retried with backoff until the server has it or refuses it. */
@@ -67,10 +98,13 @@ class PhotoUploadWorker
         @Assisted context: Context,
         @Assisted params: WorkerParameters,
         private val uploader: PhotoUploader,
+        private val diagnostics: Diagnostics,
     ) : CoroutineWorker(context, params) {
         override suspend fun doWork(): Result {
             val taskId = inputData.getString(KEY_TASK) ?: return Result.failure()
-            return when (uploader.upload(taskId)) {
+            val outcome = diagnostics.reportingFailures("photo") { uploader.upload(taskId) }
+            diagnostics.log("photo upload $taskId $outcome")
+            return when (outcome) {
                 SendOutcome.SENT -> Result.success()
                 SendOutcome.RETRY -> Result.retry()
                 SendOutcome.DROP -> Result.failure()
@@ -90,9 +124,10 @@ class AvatarUploadWorker
         @Assisted context: Context,
         @Assisted params: WorkerParameters,
         private val uploader: AvatarUploader,
+        private val diagnostics: Diagnostics,
     ) : CoroutineWorker(context, params) {
         override suspend fun doWork(): Result =
-            when (uploader.upload()) {
+            when (diagnostics.reportingFailures("avatar") { uploader.upload() }) {
                 SendOutcome.SENT -> Result.success()
                 SendOutcome.RETRY -> Result.retry()
                 SendOutcome.DROP -> Result.failure()

@@ -33,7 +33,7 @@ Android app (Kotlin, Compose)                       Vercel
 | Auth | Supabase Auth, phone OTP, reached through our API (`/api/v1/auth/*`). Send SMS hook calls our endpoint, which sends via SMS (Twilio) and later a WhatsApp template. Supabase issues the JWT, the API verifies it against Supabase's JWKS; the person id is the JWT `sub` (ADR 0011, 0014). |
 | Storage | Supabase Storage, private bucket, signed upload URLs. Photos deleted when the task closes, and again by a `photo_cleanup` timer 15 minutes later that keeps retrying until Storage answers (NUD-25). |
 | Scheduler | `scheduled_actions` table + pure `tick(now)`. In the cloud, `pg_cron` calls `POST /api/internal/tick` every minute via `pg_net`. Locally, `mise run tick` (ADR 0007). |
-| Push | FCM data messages, sent with `firebase-admin`. Crashlytics and App Distribution from the same Firebase project. One project, debug build registered as `app.nuddle.debug`. |
+| Push | FCM data messages, sent with `firebase-admin`. Crashlytics (crashes, plus breadcrumbs and non-fatal reports without personal data, ADR 0023) and App Distribution from the same Firebase project. One project, debug build registered as `app.nuddle.debug`. |
 | LLM | Behind two ports: `TaskExtractor` (text to task) and `PokePlanner` (task and history to poke plan, run after the response, ADR 0017). Default provider: OpenRouter (OpenAI-compatible API, one key, model switched by config). Env: `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`. Model: `deepseek/deepseek-v4.1-flash` (decided 2026-10-11, no model comparison in the MVP). |
 | Contract | zod schemas in `apps/web` → `packages/contract/openapi.yaml` (committed) → Kotlin client generated at build time (ADR 0008). |
 | Region | Vercel functions `fra1`, Supabase `eu-central-1`. KVKK: cross-border transfer must be named in the privacy notice. |
@@ -74,7 +74,7 @@ nuddle/
 - `apps/web/src/domain` is pure: no imports from `infra`, `api`, Drizzle, Hono, `fetch`, or wall clock. It receives `now` and data, returns decisions.
 - `apps/web/src/api` validates input with zod, calls domain, persists through `infra`, returns zod-typed output.
 - Android `domain` package has no `android.*` imports. Screens are stateless composables taking `UiState` and callbacks; ViewModels are never passed into screens.
-- External services sit behind interfaces with fakes: `Clock`, `PushSender`, `OtpSender`, `TaskExtractor`, `PhotoStorage` (web); `Clock`, `AlarmScheduler`, `PushReceiver` boundary (Android).
+- External services sit behind interfaces with fakes: `Clock`, `PushSender`, `OtpSender`, `TaskExtractor`, `PhotoStorage` (web); `Clock`, `AlarmScheduler`, `Diagnostics`, `PushReceiver` boundary (Android).
 
 ## Sync model (ADR 0006)
 

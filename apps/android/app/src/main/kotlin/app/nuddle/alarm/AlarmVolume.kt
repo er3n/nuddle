@@ -3,6 +3,7 @@ package app.nuddle.alarm
 import android.content.Context
 import android.media.AudioManager
 import androidx.core.content.edit
+import app.nuddle.domain.Diagnostics
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
@@ -15,6 +16,7 @@ class AlarmVolume
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
+        private val diagnostics: Diagnostics = Diagnostics.None,
     ) {
         private val audio get() = context.getSystemService(AudioManager::class.java)
         private val prefs get() = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -42,7 +44,7 @@ class AlarmVolume
             level: Int,
         ) {
             // Some phones refuse volume changes in Do Not Disturb; the poke then rings at the person's own level.
-            runCatching { audio.setStreamVolume(AudioManager.STREAM_ALARM, level, 0) }
+            runCatching { audio.setStreamVolume(AudioManager.STREAM_ALARM, level, 0) }.onFailure(diagnostics::record)
         }
 
         private companion object {

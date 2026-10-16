@@ -2,6 +2,7 @@ package app.nuddle.data.outbox
 
 import app.nuddle.data.db.OutboxDao
 import app.nuddle.data.db.OutboxEntity
+import app.nuddle.domain.Diagnostics
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -24,6 +25,7 @@ class Outbox
         private val json: Json,
         private val clock: Clock,
         private val drainer: OutboxDrainer,
+        private val diagnostics: Diagnostics = Diagnostics.None,
     ) {
         suspend fun <T> enqueue(
             command: String,
@@ -39,6 +41,7 @@ class Outbox
                     createdAt = clock.now().toEpochMilliseconds(),
                 ),
             )
+            diagnostics.log("queued $command $idempotencyKey")
             drainer.drainSoon()
         }
     }

@@ -7,9 +7,11 @@ import app.nuddle.api.DevicesApi
 import app.nuddle.api.PhotosApi
 import app.nuddle.api.SyncApi
 import app.nuddle.data.api.AuthInterceptor
+import app.nuddle.data.api.DiagnosticsInterceptor
 import app.nuddle.data.api.RawCommandApi
 import app.nuddle.data.api.TokenAuthenticator
 import app.nuddle.data.session.SessionStore
+import app.nuddle.domain.Diagnostics
 import dagger.Lazy
 import dagger.Module
 import dagger.Provides
@@ -41,16 +43,21 @@ object NetworkModule {
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
 
-    private fun baseClient(): OkHttpClient.Builder =
+    /** Diagnostics first, so its breadcrumb is the final answer after a token refresh (ADR 0023). */
+    private fun baseClient(diagnostics: Diagnostics): OkHttpClient.Builder =
         OkHttpClient
             .Builder()
             .callTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .addInterceptor(DiagnosticsInterceptor(diagnostics))
 
     /** Sign-in calls carry no token and never trigger a refresh. */
     @Provides
     @Singleton
     @Named("public")
-    fun publicRetrofit(json: Json): Retrofit = retrofit(baseClient().build(), json)
+    fun publicRetrofit(
+        json: Json,
+        diagnostics: Diagnostics,
+    ): Retrofit = retrofit(baseClient(diagnostics).build(), json)
 
     @Provides
     @Singleton
@@ -64,9 +71,10 @@ object NetworkModule {
         json: Json,
         sessions: SessionStore,
         authApi: Lazy<AuthApi>,
+        diagnostics: Diagnostics,
     ): Retrofit {
         val client =
-            baseClient()
+            baseClient(diagnostics)
                 .addInterceptor(AuthInterceptor(sessions))
                 .authenticator(TokenAuthenticator(sessions) { authApi.get() })
                 .build()
@@ -93,7 +101,7 @@ object NetworkModule {
     @Provides
     @Singleton
     @Named("storage")
-    fun storageClient(): OkHttpClient = baseClient().build()
+    fun storageClient(diagnostics: Diagnostics): OkHttpClient = baseClient(diagnostics).build()
 
     @Provides
     @Singleton

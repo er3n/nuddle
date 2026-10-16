@@ -18,6 +18,7 @@ import app.nuddle.data.session.MissedRingStore
 import app.nuddle.data.session.SessionStore
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.AlarmScheduler
+import app.nuddle.domain.Diagnostics
 import app.nuddle.domain.FireDecision
 import app.nuddle.domain.IdGenerator
 import app.nuddle.domain.PokeLevel
@@ -65,6 +66,7 @@ class PokeFiring
         private val clock: Clock,
         private val timeZone: TimeZone,
         private val missedRings: MissedRingStore,
+        private val diagnostics: Diagnostics = Diagnostics.None,
     ) {
         suspend fun fire(key: AlarmKey) {
             val step = alarms.step(key) ?: return
@@ -72,6 +74,7 @@ class PokeFiring
             val now = clock.now()
             val quietHours = sessions.quietHours() ?: QuietHours.default(timeZone)
             val decision = PokeRules.decideFire(step, task?.toLocalState(), quietHours, now, fullScreen.granted())
+            diagnostics.log("poke ${key.taskId} v${key.planVersion} #${key.seq} ${decision.breadcrumb()}")
             if (decision !is FireDecision.Ring || task == null) return
             notifications.show(task, step, decision.level)
             steps.markFired(key.taskId, key.planVersion, key.seq, now.toEpochMilliseconds())
@@ -99,6 +102,12 @@ class PokeFiring
         }
     }
 
+private fun FireDecision.breadcrumb(): String =
+    when (this) {
+        is FireDecision.Ring -> "ring $level" + if (permissionMissing) " permission_missing" else ""
+        is FireDecision.Skip -> "skip $reason"
+    }
+
 /**
  * Bitti, Ertele and Bugün olmaz from the notification or the full screen poke. Applied locally first (alarms stop
  * at once, even offline), then sent through the outbox (docs/ux/platform.md, Alarms and pokes).
@@ -114,6 +123,7 @@ class PokeActions
         private val ids: IdGenerator,
         private val clock: Clock,
         private val doneNotes: DoneNotes,
+        private val diagnostics: Diagnostics = Diagnostics.None,
     ) : TaskCloser {
         /** Bitti on the poke: the done note on home says which poke this was (domain.md, Done note). */
         suspend fun done(key: AlarmKey) {
@@ -128,6 +138,7 @@ class PokeActions
             taskId: String,
             cameraUnavailable: Boolean,
         ) {
+            diagnostics.log("done $taskId")
             close(taskId, TaskStatus.DONE)
             val id = ids.next()
             // A photo task without a usable camera falls back to plain Bitti (docs/domain.md, Task states). doneAt lets a
@@ -144,6 +155,7 @@ class PokeActions
 
         override suspend fun photoTaken(taskId: String) {
             val task = tasks.get(taskId) ?: return
+            diagnostics.log("photo taken $taskId")
             close(taskId, if (task.senderId == task.recipientId) TaskStatus.DONE else TaskStatus.AWAITING_APPROVAL)
         }
 
@@ -152,6 +164,7 @@ class PokeActions
             taskId: String,
             note: String?,
         ) {
+            diagnostics.log("cancel $taskId")
             close(taskId, TaskStatus.CANCELLED)
             val id = ids.next()
             outbox.enqueue("cancel", id, CancelCommand(idempotencyKey = id, taskId = taskId, note = note), CancelCommand.serializer())
@@ -168,6 +181,7 @@ class PokeActions
             taskId: String,
             note: String?,
         ) {
+            diagnostics.log("cant_today $taskId")
             close(taskId, TaskStatus.DROPPED)
             val id = ids.next()
             outbox.enqueue(
@@ -187,6 +201,7 @@ class PokeActions
             val task = tasks.get(key.taskId) ?: return
             val now = clock.now()
             val snooze = SnoozeRules.next(task.snoozesUsed, now, Instant.fromEpochMilliseconds(task.deadline)) ?: return
+            diagnostics.log("snooze ${key.taskId}")
             notifications.cancel(key.taskId)
             val step = alarms.step(key) ?: return
             scheduler.schedule(step.copy(plannedAt = snooze.until))

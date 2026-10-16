@@ -19,6 +19,7 @@ import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.isMoment
 import app.nuddle.domain.AlarmKey
+import app.nuddle.domain.Diagnostics
 import app.nuddle.domain.PokeRules
 import app.nuddle.domain.SnoozeRules
 import app.nuddle.ui.TestTagsRoot
@@ -58,6 +59,8 @@ private val HOUR_MINUTE =
 class PokeActivity : ComponentActivity() {
     @Inject lateinit var tasks: TaskDao
 
+    @Inject lateinit var diagnostics: Diagnostics
+
     @Inject lateinit var connections: ConnectionDao
 
     @Inject lateinit var alarms: PokeAlarms
@@ -77,6 +80,7 @@ class PokeActivity : ComponentActivity() {
             finish()
             return
         }
+        diagnostics.log("poke screen ${key.taskId}")
         setContent { DurtTheme { TestTagsRoot { PokeRoute(key) } } }
     }
 

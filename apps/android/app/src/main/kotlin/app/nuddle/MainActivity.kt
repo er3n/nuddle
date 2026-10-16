@@ -17,6 +17,8 @@ import app.nuddle.alarm.PokeNotifications
 import app.nuddle.data.InviteLinks
 import app.nuddle.data.avatar.AvatarFiles
 import app.nuddle.data.sync.Syncer
+import app.nuddle.domain.Diagnostics
+import app.nuddle.domain.routeShown
 import app.nuddle.ui.TestTagsRoot
 import app.nuddle.ui.components.LocalAvatars
 import app.nuddle.ui.nav.NuddleNavHost
@@ -42,6 +44,8 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var avatarFiles: AvatarFiles
 
+    @Inject lateinit var diagnostics: Diagnostics
+
     /** The code of an invite link that opened the app, until home has acted on it. */
     private val inviteCode = MutableStateFlow<String?>(null)
 
@@ -50,6 +54,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        diagnostics.log("main start ${opener(intent)}")
         if (savedInstanceState == null) {
             inviteCode.value = InviteLinks.codeOf(intent?.dataString)
             openRoute.value = intent?.getStringExtra(EXTRA_ROUTE)
@@ -70,6 +75,7 @@ class MainActivity : ComponentActivity() {
                                 onInviteCodeTake = { inviteCode.value = null },
                                 openRoute = open,
                                 onOpenRouteTake = { openRoute.value = null },
+                                onRouteChange = diagnostics::routeShown,
                             )
                         }
                     }
@@ -89,12 +95,26 @@ class MainActivity : ComponentActivity() {
     /** singleTop: a link opened while the app runs arrives here. */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        diagnostics.log("main intent ${opener(intent)}")
         InviteLinks.codeOf(intent.dataString)?.let { inviteCode.value = it }
         intent.getStringExtra(EXTRA_ROUTE)?.let { openRoute.value = it }
     }
 
     companion object {
         private const val EXTRA_ROUTE = "route"
+
+        /**
+         * What opened the activity, for the breadcrumbs (ADR 0023): a screen a poke asked for (its route holds only a
+         * task id), an invite link (never the link, which carries the code), or the launcher.
+         */
+        private fun opener(intent: Intent?): String {
+            val route = intent?.getStringExtra(EXTRA_ROUTE)
+            return when {
+                route != null -> "route $route"
+                intent?.data != null -> "link"
+                else -> "launcher"
+            }
+        }
 
         /** Opens the camera (4d) for [taskId]: Bitti on the poke or its notification for a photo task. */
         fun takePhoto(

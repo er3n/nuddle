@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.util.Log
 import app.nuddle.data.outbox.WorkManagerScheduling
 import app.nuddle.data.sync.Syncer
+import app.nuddle.domain.Diagnostics
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
@@ -32,6 +33,8 @@ class NuddleMessagingService : FirebaseMessagingService() {
 
     @Inject lateinit var syncer: Syncer
 
+    @Inject lateinit var diagnostics: Diagnostics
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /**
@@ -43,7 +46,9 @@ class NuddleMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         // Hints carry no personal data (an event name and a task id); E2E runs read this line from logcat.
         Log.i(TAG, "push ${message.data["event"]} ${message.data["taskId"]} priority ${message.priority}")
+        diagnostics.log("push ${message.data["event"]} ${message.data["taskId"]}")
         val synced = runBlocking { syncOnPush(syncer, PUSH_SYNC_MS) { work.syncSoon() } }
+        if (!synced) diagnostics.log("push sync queued")
         Log.i(TAG, if (synced) "synced on push" else "sync on push failed or slow, queued")
     }
 

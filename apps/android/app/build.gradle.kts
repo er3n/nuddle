@@ -29,6 +29,12 @@ val uploadKeyPassword = uploadKeyValue("nuddle.upload.keyPassword", "NUDDLE_UPLO
 val hasUploadKey =
     listOf(uploadStoreFile, uploadStorePassword, uploadKeyAlias, uploadKeyPassword).all { !it.isNullOrBlank() }
 
+/** Crashlytics collection and the app's breadcrumbs and non-fatals (ADR 0023) are on or off together. */
+fun com.android.build.api.dsl.ProductFlavor.crashReports(enabled: Boolean) {
+    manifestPlaceholders["crashlyticsEnabled"] = "$enabled"
+    buildConfigField("boolean", "CRASH_REPORTS", "$enabled")
+}
+
 android {
     namespace = "app.nuddle"
     compileSdk = 37
@@ -71,7 +77,7 @@ android {
             buildConfigField("boolean", "INJECTED_PHOTO", "false")
             buildConfigField("boolean", "INJECTED_SPEECH", "false")
             buildConfigField("boolean", "FAKE_TIME", "false")
-            manifestPlaceholders["crashlyticsEnabled"] = "true"
+            crashReports(true)
         }
         create("e2e") {
             dimension = "env"
@@ -85,8 +91,8 @@ android {
             buildConfigField("boolean", "INJECTED_SPEECH", "true")
             // Time is the orchestrator's to move, on the phone as on the server (docs/testing.md, Fake time).
             buildConfigField("boolean", "FAKE_TIME", "true")
-            // Smoke runs are not crashes worth a report (NUD-39).
-            manifestPlaceholders["crashlyticsEnabled"] = "false"
+            // Smoke runs are not crashes worth a report, nor are their breadcrumbs (NUD-39, ADR 0023).
+            crashReports(false)
         }
         create("prod") {
             dimension = "env"
@@ -96,7 +102,7 @@ android {
             buildConfigField("boolean", "INJECTED_PHOTO", "false")
             buildConfigField("boolean", "INJECTED_SPEECH", "false")
             buildConfigField("boolean", "FAKE_TIME", "false")
-            manifestPlaceholders["crashlyticsEnabled"] = "true"
+            crashReports(true)
         }
     }
 
