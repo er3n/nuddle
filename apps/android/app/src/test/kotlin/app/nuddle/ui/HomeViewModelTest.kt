@@ -304,6 +304,8 @@ class HomeViewModelTest {
                         TaskDraft("Temizlikçi için para çek", "1.000 TL", FinishMode.PHOTO, recipient = "sibel"),
                     ),
                 )
+                // With Sibel connected home opens setup once by itself (NUD-103); the task to her adds none.
+                awaitItem()
                 val preview = vm.state.value?.preview!!
                 assertEquals("Sibel", preview.to)
                 assertEquals(Reachability.SOUND, preview.reach)
@@ -476,6 +478,8 @@ class HomeViewModelTest {
             connectionDao.upsert(listOf(sibelConnection()))
             vm.openSetup.test {
                 ready()
+                // With someone connected home opens setup once by itself (NUD-103); the task below adds none.
+                awaitItem()
                 taskDao.upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SIBEL_ID)))
                 vm.onComposeTextChange("sibel yarın 9dan önce 1000 tl çeksin")
                 vm.onComposeSend()

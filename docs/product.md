@@ -95,7 +95,7 @@ In code and docs the domain verb is **poke** (`Poke`, `PokeLevel`, `PokeActivity
 - AI pre-check of photos is out of the MVP.
 
 ### Permissions and setup
-- **When:** for an invited user, right after "İzin ver" on the consent screen (social consent and technical permission are the same decision). For a self-only user, at their first task.
+- **When:** for an invited user, right after "İzin ver" on the consent screen (social consent and technical permission are the same decision). For a self-only user, at their first task. On an install that never ran setup (a reinstall, or the move from a sideloaded build to Play), once someone is connected (NUD-103).
 - **Show first:** "Bir dene" plays a sample full screen poke after 3 seconds (labeled "DENEME"), then settings follow. "Denemeden kur" skips the demo.
 - **Steps:** notifications (system dialog, cannot be skipped), alarms and reminders (exact alarm, labeled "Gerekli", effectively mandatory; skipping only via a small link "Alarmsız devam et, dürtmeler geç çalabilir"), full screen.
 - **No battery setting in setup.** On stock Android `setAlarmClock` is not held back by Doze. Only aggressive OEM managers (Xiaomi, Huawei, Oppo, Vivo, partly Samsung) cause trouble.
