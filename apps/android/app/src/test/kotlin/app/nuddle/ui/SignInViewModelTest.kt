@@ -158,6 +158,19 @@ class SignInViewModelTest {
             assertEquals(60, vm.state.value.resendInSeconds)
         }
 
+    @OptIn(ExperimentalCoroutinesApi::class) // Reason: advanceTimeBy is how virtual time moves (ADR 0009).
+    @Test
+    fun `a new code makes the SMS reader listen again`() =
+        runTest(main.dispatcher) {
+            val vm = codeViewModel()
+            assertEquals(0, vm.codesSent.value)
+            advanceTimeBy(60.seconds)
+            runCurrent()
+
+            vm.onResend()
+            assertEquals(1, vm.codesSent.value)
+        }
+
     @Test
     fun `the name screen registers the trimmed name, then the session starts`() =
         runTest(main.dispatcher) {

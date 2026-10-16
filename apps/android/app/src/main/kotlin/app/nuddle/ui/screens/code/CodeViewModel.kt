@@ -45,6 +45,11 @@ class CodeViewModel
         private val done = Channel<SignedInDestination>(Channel.BUFFERED)
         val signedIn: Flow<SignedInDestination> = done.receiveAsFlow()
 
+        private val sends = MutableStateFlow(0)
+
+        /** Counts the codes sent from this screen, so the SMS reader listens again after a resend. */
+        val codesSent: StateFlow<Int> = sends.asStateFlow()
+
         private var countdown: Job? = null
 
         init {
@@ -99,9 +104,18 @@ class CodeViewModel
             mutableState.update { it.copy(code = "", wrongCode = false, unreachable = false) }
             viewModelScope.launch {
                 when (val outcome = auth.sendOtp(phone)) {
-                    SendOtpOutcome.Sent -> startCountdown()
-                    is SendOtpOutcome.Locked -> locked(outcome.until)
-                    SendOtpOutcome.Failed -> mutableState.update { it.copy(unreachable = true) }
+                    SendOtpOutcome.Sent -> {
+                        sends.update { it + 1 }
+                        startCountdown()
+                    }
+
+                    is SendOtpOutcome.Locked -> {
+                        locked(outcome.until)
+                    }
+
+                    SendOtpOutcome.Failed -> {
+                        mutableState.update { it.copy(unreachable = true) }
+                    }
                 }
             }
         }
