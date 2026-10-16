@@ -151,7 +151,12 @@ type ScheduledActionKind =
   | "missed_expiry"
   | "permission_request_cooldown"
   /** Deletes a closed task's photos again in case the delete right after closing failed (NUD-25). */
-  | "photo_cleanup";
+  | "photo_cleanup"
+  /**
+   * Deletes what is left of a deleted account a week later: every task with the person, its
+   * events and plans, the connections and the person row (NUD-89). No task; `payload.personId`.
+   */
+  | "account_purge";
 
 export interface ScheduledAction {
   kind: ScheduledActionKind;

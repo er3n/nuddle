@@ -167,6 +167,28 @@ describe("tick(now)", () => {
     });
     expect(completed).toEqual([{ kind: "noop" }]);
   });
+
+  it("purges a deleted account without loading a task (NUD-89)", async () => {
+    const completed: ActionResult[] = [];
+    await tick(now, {
+      claimDue: () =>
+        Promise.resolve([
+          {
+            id: "a1",
+            kind: "account_purge",
+            taskId: null,
+            dueAt: now,
+            payload: { personId: "eren" },
+          },
+        ]),
+      loadContext: () => Promise.reject(new Error("a purge has no task to load")),
+      complete: (_a, r) => {
+        completed.push(r);
+        return Promise.resolve();
+      },
+    });
+    expect(completed).toEqual([{ kind: "purge_account", personId: "eren" }]);
+  });
 });
 
 describe("reportFired", () => {

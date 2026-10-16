@@ -1,5 +1,6 @@
 // Scenario list from docs/testing.md (Scenario tests): invites, logout and account deletion.
 import { describe, expect, it } from "vitest";
+import { aPerson } from "../builders";
 import { at, emptyWorld, sibelAndEren, TEXT, writeTask } from "./fixtures";
 
 describe("scenarios: people", () => {
@@ -108,6 +109,62 @@ describe("scenarios: people", () => {
     // Sibel's own phone stops ringing for the cancelled task Eren wrote to her.
     await world.advanceTo(at("2026-10-12T20:00:00"));
     expect(sibel.phone.ringsFor(toSibel)).toEqual([]);
+  });
+
+  it("account deletion erases the number and name at once and every task a week later", async () => {
+    const { world, sibel, eren } = await sibelAndEren();
+    await writeTask(sibel, TEXT.trashToEren);
+    await writeTask(eren, TEXT.breadToSibel);
+    const done = await writeTask(sibel, TEXT.photoToEren);
+    const sibelsOwn = await writeTask(sibel, TEXT.selfSport);
+    await world.advanceTo(at("2026-10-12T08:31:00"));
+    await eren.sendPhoto(done);
+    await sibel.command(done, { type: "approve" });
+    await eren.invite(aPerson("Defne").phone, "child", "Defne");
+
+    await eren.deleteAccount();
+
+    expect(world.person("eren")).toMatchObject({ phone: `deleted:${eren.uuid}`, displayName: "" });
+    expect(await world.deletedAuthUsers()).toEqual([eren.uuid]);
+    // The tasks stay for a week so Sibel's phone syncs the cancels; the number and invites go now.
+    const now = await world.rowsHolding(eren);
+    expect(Object.keys(now).sort()).toEqual(
+      ["edges", "idempotencyKeys", "people", "pokeSteps", "taskEvents", "tasks"].sort(),
+    );
+    expect(world.pendingActions().filter((a) => a.kind === "account_purge")).toHaveLength(1);
+
+    await world.advanceTo(at("2026-10-19T08:32:00"));
+
+    expect(await world.rowsHolding(eren)).toEqual({});
+    expect(world.edgesOf("sibel")).toEqual([]);
+    // Sibel's own task is not Eren's to delete.
+    expect(world.task(sibelsOwn).senderId).toBe("sibel");
+  });
+
+  it("the same number signs up again right after deleting and starts empty", async () => {
+    const { world, eren } = await sibelAndEren();
+    await writeTask(eren, TEXT.breadToSibel);
+    await eren.deleteAccount();
+
+    const again = await world.addPerson("Eren");
+
+    expect(again.uuid).not.toBe(eren.uuid);
+    expect(Object.keys(await world.rowsHolding(again)).sort()).toEqual(
+      ["devices", "idempotencyKeys", "people"].sort(),
+    );
+    expect(await again.write(TEXT.breadToSibel)).toEqual({ kind: "ask", question: "recipient" });
+  });
+
+  it("an auth user Supabase failed to delete goes with the purge", async () => {
+    const { world, eren } = await sibelAndEren();
+    await world.failNextAuthDelete();
+
+    await eren.deleteAccount();
+    expect(await world.deletedAuthUsers()).toEqual([]);
+
+    await world.advanceTo(at("2026-10-19T20:01:00"));
+    expect(await world.deletedAuthUsers()).toEqual([eren.uuid]);
+    expect(await world.rowsHolding(eren)).toEqual({});
   });
 
   it("quiet hours change: the open task is replanned to end before them, nothing rings inside", async () => {

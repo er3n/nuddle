@@ -1,7 +1,8 @@
 // Invites, connections and account deletion (docs/domain.md, Entities; docs/product.md,
 // Connections and Identity). Pure functions returning the new rows and push hints.
 import { applyCommand, type Outcome, type TaskContext } from "./task-machine";
-import type { Edge, EdgeType, Person, PersonId, PushMessage, Task } from "./types";
+import { addMs, DAY } from "./time";
+import type { Edge, EdgeType, Person, PersonId, PushMessage, ScheduledAction, Task } from "./types";
 
 export type InviteStatus = "open" | "accepted" | "declined" | "revoked" | "expired";
 
@@ -106,15 +107,29 @@ export function inviteStatusForInviter(invite: Invite): Exclude<InviteStatus, "d
 }
 
 export interface Deleted {
+  /** Phone and name erased: the number is free for a new sign-up at once. */
   person: Person;
   edges: Edge[];
   /** One outcome per task that was still open; the other side is told. */
   cancelled: Outcome[];
+  /** Deletes the tasks, connections and the person row once the other side has seen the cancels. */
+  purge: ScheduledAction;
 }
 
 /**
- * Delete an account: connections are removed and every task the person sends or receives that
- * is not closed yet is cancelled. Hard deletion of rows and photos is the persistence layer's job.
+ * How long the tasks of a deleted account stay, so the other side's phones sync the cancels
+ * before the rows go: sync has no deletions (ADR 0006, NUD-89).
+ */
+const ACCOUNT_PURGE_DELAY_MS = 7 * DAY;
+
+/** What stands in for the phone of a deleted account until the purge; never a valid number. */
+const deletedPhone = (id: PersonId): string => `deleted:${id}`;
+
+/**
+ * Delete an account (docs/product.md, Identity): the phone and name are erased, connections are
+ * removed and every task the person sends or receives that is not closed yet is cancelled. The
+ * rest goes a week later with `account_purge`. Deleting files and the other personal rows is the
+ * persistence layer's job.
  */
 export function deleteAccount(
   person: Person,
@@ -128,11 +143,23 @@ export function deleteAccount(
     if (r.ok) cancelled.push(r.value);
   }
   return {
-    person: { ...person, deletedAt: now },
+    person: {
+      ...person,
+      phone: deletedPhone(person.id),
+      displayName: "",
+      avatarPath: null,
+      deletedAt: now,
+    },
     edges: edges
       .filter((e) => e.fromPersonId === person.id || e.toPersonId === person.id)
       .map((e) => ({ ...e, status: "removed" })),
     cancelled,
+    purge: {
+      kind: "account_purge",
+      taskId: null,
+      dueAt: addMs(now, ACCOUNT_PURGE_DELAY_MS),
+      payload: { personId: person.id },
+    },
   };
 }
 
