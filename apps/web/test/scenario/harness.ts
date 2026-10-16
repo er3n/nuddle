@@ -7,7 +7,7 @@
 // after every action, so assertions stay synchronous. People are named in snapshots and pushes
 // ("sibel", "eren") instead of their UUIDs, so scenarios read like the docs.
 import { randomUUID } from "node:crypto";
-import { asc } from "drizzle-orm";
+import { asc, eq, inArray, or } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { afterEach } from "vitest";
 import type { MissingField } from "../../src/domain/extraction";
@@ -38,7 +38,7 @@ import * as schema from "../../src/infra/db/schema";
 import { toPerson, toTask } from "../../src/infra/db/store";
 import { FixtureExtractor, type FixtureExtraction } from "../../src/infra/llm/fixture-extractor";
 import { aPerson, allPermissions } from "../builders";
-import { FakeClock, FakePhotoStorage, RecordingPushSender } from "../fakes";
+import { FakeAuthGateway, FakeClock, FakePhotoStorage, RecordingPushSender } from "../fakes";
 import { startTestServer, TICK_SECRET, type ApiClient, type TestServer } from "../support/server";
 
 /** Sunday 2026-10-11 20:00 in Istanbul. */
@@ -671,6 +671,75 @@ export class World {
     const { db } = (await this.ready).database;
     const rows = await db.select().from(schema.llmCalls).orderBy(asc(schema.llmCalls.createdAt));
     return rows.map((r) => ({ ...r, personId: this.nameOf(r.personId) }));
+  }
+
+  /**
+   * How many rows in each table still hold the person's id or phone, by table (NUD-89). Task rows
+   * count once per task the person sent or received; events and steps count through them.
+   */
+  async rowsHolding(person: Client): Promise<Record<string, number>> {
+    const { db } = (await this.ready).database;
+    const id = person.uuid;
+    const phone = person.person.phone;
+    const theirTasks = db
+      .select({ id: schema.tasks.id })
+      .from(schema.tasks)
+      .where(or(eq(schema.tasks.senderId, id), eq(schema.tasks.recipientId, id)));
+    const count = async (rows: Promise<unknown[]>) => (await rows).length;
+    const counts: Record<string, number> = {
+      people: await count(
+        db
+          .select()
+          .from(schema.people)
+          .where(or(eq(schema.people.id, id), eq(schema.people.phone, phone))),
+      ),
+      tasks: await count(
+        db
+          .select()
+          .from(schema.tasks)
+          .where(or(eq(schema.tasks.senderId, id), eq(schema.tasks.recipientId, id))),
+      ),
+      taskEvents: await count(
+        db.select().from(schema.taskEvents).where(inArray(schema.taskEvents.taskId, theirTasks)),
+      ),
+      pokeSteps: await count(
+        db.select().from(schema.pokeSteps).where(inArray(schema.pokeSteps.taskId, theirTasks)),
+      ),
+      edges: await count(
+        db
+          .select()
+          .from(schema.edges)
+          .where(or(eq(schema.edges.fromPersonId, id), eq(schema.edges.toPersonId, id))),
+      ),
+      invites: await count(
+        db
+          .select()
+          .from(schema.invites)
+          .where(or(eq(schema.invites.inviterId, id), eq(schema.invites.inviteePhone, phone))),
+      ),
+      devices: await count(db.select().from(schema.devices).where(eq(schema.devices.personId, id))),
+      llmCalls: await count(
+        db.select().from(schema.llmCalls).where(eq(schema.llmCalls.personId, id)),
+      ),
+      idempotencyKeys: await count(
+        db.select().from(schema.idempotencyKeys).where(eq(schema.idempotencyKeys.callerId, id)),
+      ),
+      otpAttempts: await count(
+        db.select().from(schema.otpAttempts).where(eq(schema.otpAttempts.phone, phone)),
+      ),
+    };
+    return Object.fromEntries(Object.entries(counts).filter(([, n]) => n > 0));
+  }
+
+  /** The Supabase auth users deleted so far, by the person's server id. */
+  async deletedAuthUsers(): Promise<string[]> {
+    const auth = (await this.ready).deps.auth as FakeAuthGateway;
+    return [...auth.deletedUsers];
+  }
+
+  /** Makes the next auth user deletion fail, as a Supabase outage would. */
+  async failNextAuthDelete(): Promise<void> {
+    ((await this.ready).deps.auth as FakeAuthGateway).failNextDelete = true;
   }
 
   async refresh(): Promise<void> {

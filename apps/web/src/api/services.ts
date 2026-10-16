@@ -98,7 +98,11 @@ import {
   insertEvents,
   closedTaskCountOf,
   savePokeProfile,
+  deleteInvitesOf,
   deleteLlmCallsOf,
+  deleteOtpAttemptsOf,
+  insertScheduledAction,
+  purgePerson,
   linkAskedExtraction,
   insertInvite,
   inWriteTx,
@@ -138,6 +142,8 @@ interface Effects {
   deleteFiles?: readonly string[];
   /** New plan versions the LLM planner may improve after commit (ADR 0017). */
   replans?: readonly { taskId: TaskId; version: number }[];
+  /** Supabase auth users of a deleted account (NUD-89). */
+  deleteAuthUsers?: readonly PersonId[];
 }
 
 const noEffects: Effects = { pushes: [], deletePhotosFor: [] };
@@ -180,6 +186,14 @@ async function afterCommit(deps: AppDeps, effects: Effects): Promise<void> {
   }
   for (const r of effects.replans ?? []) {
     await deps.background(() => refinePlan(deps, r.taskId, r.version));
+  }
+  for (const userId of effects.deleteAuthUsers ?? []) {
+    try {
+      await deps.auth.deleteUser(userId);
+    } catch (error) {
+      // The account_purge timer deletes it again before the rows go.
+      console.error("auth user deletion failed", userId, error);
+    }
   }
 }
 
@@ -1009,7 +1023,9 @@ export async function logOut(
 
 /**
  * Connections are removed and every unclosed task the person sends or receives is cancelled; the
- * other side is told (docs/product.md, Identity). The person row is kept with `deleted_at`.
+ * other side is told (docs/product.md, Identity). The phone, name, picture, devices, invites, LLM
+ * calls and the auth user go now, so the number can sign up again at once; the person row (with
+ * `deleted_at`) and the tasks go with `account_purge` a week later (NUD-89).
  */
 export async function deleteAccount(
   deps: AppDeps,
@@ -1022,6 +1038,9 @@ export async function deleteAccount(
     for (const task of open) contexts.push({ task, ctx: await taskContext(tx, task, now) });
     const r = deleteAccountDomain(caller, await edgesTouching(tx, caller.id), contexts, now);
     await markPersonDeleted(tx, r.person);
+    await deleteInvitesOf(tx, caller.id, caller.phone);
+    await deleteOtpAttemptsOf(tx, caller.phone);
+    await insertScheduledAction(tx, r.purge, now);
     await upsertEdges(tx, r.edges, now);
     const pushes: PushMessage[] = [];
     const deletePhotosFor: TaskId[] = [];
@@ -1037,7 +1056,10 @@ export async function deleteAccount(
     await touchEdgesTo(tx, caller.id);
     // The profile picture goes with the account (NUD-72).
     const deleteFiles = caller.avatarPath === null ? [] : [caller.avatarPath];
-    return { result: { ok: true as const }, effects: { pushes, deletePhotosFor, deleteFiles } };
+    return {
+      result: { ok: true as const },
+      effects: { pushes, deletePhotosFor, deleteFiles, deleteAuthUsers: [caller.id] },
+    };
   });
 }
 
@@ -1275,6 +1297,10 @@ class PgTickPort implements TickPort {
       await this.cleanUpPhotos(action, result.taskId, now);
       return;
     }
+    if (result.kind === "purge_account") {
+      await purgeAccountOnce(this.deps, action, result.personId, now);
+      return;
+    }
     const effects = await inWriteTx(this.deps.db, async (tx): Promise<Effects> => {
       // A task transition since the claim already finished this timer.
       if (!(await lockOpenAction(tx, action.id))) return noEffects;
@@ -1325,6 +1351,31 @@ async function cleanUpPhotosOnce(
   }
   await inWriteTx(deps.db, async (tx) => {
     if (await lockOpenAction(tx, action.id)) await markActionDone(tx, action.id, now);
+  });
+}
+
+/**
+ * The rest of a deleted account (NUD-89). The auth user goes first, again in case the delete
+ * right after the command failed; while Supabase does not answer the rows stay and the timer runs
+ * again later.
+ */
+async function purgeAccountOnce(
+  deps: AppDeps,
+  action: ClaimedAction,
+  personId: PersonId,
+  now: Date,
+): Promise<void> {
+  try {
+    await deps.auth.deleteUser(personId);
+  } catch (error) {
+    console.error("auth user deletion failed again", personId, error);
+    await rescheduleAction(deps.db, action.id, new Date(now.getTime() + PHOTO_CLEANUP_RETRY_MS));
+    return;
+  }
+  await inWriteTx(deps.db, async (tx) => {
+    if (!(await lockOpenAction(tx, action.id))) return;
+    await purgePerson(tx, personId);
+    await markActionDone(tx, action.id, now);
   });
 }
 

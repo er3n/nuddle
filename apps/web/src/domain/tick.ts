@@ -5,7 +5,7 @@
 import type { Device } from "./reachability";
 import { deriveReachability } from "./reachability";
 import { applyCommand, isOpen, type Outcome, type TaskContext } from "./task-machine";
-import type { PokePlan, PushMessage, ScheduledAction, Task, TaskEvent } from "./types";
+import type { PersonId, PokePlan, PushMessage, ScheduledAction, Task, TaskEvent } from "./types";
 
 export interface ClaimedAction extends ScheduledAction {
   id: string;
@@ -24,6 +24,8 @@ export type ActionResult =
   | { kind: "notify"; events: TaskEvent[]; pushes: PushMessage[] }
   /** Delete the task's photos; on failure the timer runs again later (NUD-25). */
   | { kind: "delete_photos"; taskId: Task["id"] }
+  /** Delete what is left of a deleted account (NUD-89). */
+  | { kind: "purge_account"; personId: PersonId }
   | { kind: "noop" };
 
 const noop: ActionResult = { kind: "noop" };
@@ -108,7 +110,17 @@ export function handleAction(action: ScheduledAction, ctx: ActionContext): Actio
       // The cooldown is enforced when a social permission request is made; the row only marks
       // when it ends. Social permission requests arrive with their feature slice.
       return noop;
+    case "account_purge":
+      // Has no task; `tick` handles it before loading one.
+      return noop;
   }
+}
+
+/** The purge of a deleted account, or null for an action that belongs to a task. */
+function personAction(action: ScheduledAction): ActionResult | null {
+  if (action.kind !== "account_purge") return null;
+  const personId = action.payload.personId;
+  return typeof personId === "string" ? { kind: "purge_account", personId } : noop;
 }
 
 /** Whether the recipient's task list still shows the task. Missed cards stay for one day. */
@@ -145,6 +157,11 @@ export interface TickPort {
 export async function tick(now: Date, port: TickPort): Promise<number> {
   const due = await port.claimDue(now);
   for (const action of due) {
+    const forPerson = personAction(action);
+    if (forPerson) {
+      await port.complete(action, forPerson);
+      continue;
+    }
     const ctx = await port.loadContext(action, now);
     await port.complete(action, ctx ? handleAction(action, ctx) : noop);
   }

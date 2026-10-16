@@ -128,6 +128,17 @@ describe("deleteAccount", () => {
     expect(r.edges.every((e) => e.status === "removed")).toBe(true);
     expect(r.cancelled.map((o) => o.task.id)).toEqual(["task-1"]);
   });
+
+  it("erases the phone and name at once and purges the rest a week later (NUD-89)", () => {
+    const r = deleteAccount({ ...eren, avatarPath: "avatars/eren/1.jpg" }, [], [], now);
+    expect(r.person).toMatchObject({ phone: "deleted:eren", displayName: "", avatarPath: null });
+    expect(r.purge).toEqual({
+      kind: "account_purge",
+      taskId: null,
+      dueAt: new Date("2026-10-18T20:00:00+03:00"),
+      payload: { personId: "eren" },
+    });
+  });
 });
 
 describe("person detail (5b)", () => {

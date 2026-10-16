@@ -33,6 +33,7 @@ import type {
   PokeLevel,
   PokePlan,
   PokeProfile,
+  ScheduledAction,
   Task,
   TaskEvent,
   TaskId,
@@ -291,10 +292,13 @@ export async function updatePersonSettings(
 }
 
 export async function markPersonDeleted(tx: Tx, person: Person): Promise<void> {
-  // The profile goes with the account (ADR 0020).
+  // The phone and name are erased at once and the profile goes with the account (ADR 0020); the
+  // row itself stays until the purge (NUD-89).
   await tx
     .update(people)
     .set({
+      phone: person.phone,
+      displayName: person.displayName,
       deletedAt: person.deletedAt,
       pokeProfile: null,
       pokeProfileAt: null,
@@ -1034,4 +1038,52 @@ export async function linkAskedExtraction(
 /** Deleting an account removes what the LLM was told about the person (ADR 0019). */
 export async function deleteLlmCallsOf(tx: Tx, personId: PersonId): Promise<void> {
   await tx.delete(llmCalls).where(eq(llmCalls.personId, personId));
+}
+
+// ---- account deletion (NUD-89) ----------------------------------------------------------------
+
+/** Invites the person sent and invites to their number: both hold a phone number. */
+export async function deleteInvitesOf(tx: Tx, personId: PersonId, phone: string): Promise<void> {
+  await tx
+    .delete(invites)
+    .where(or(eq(invites.inviterId, personId), eq(invites.inviteePhone, phone)));
+}
+
+export async function deleteOtpAttemptsOf(tx: Tx, phone: string): Promise<void> {
+  await tx.delete(otpAttempts).where(eq(otpAttempts.phone, phone));
+}
+
+export async function insertScheduledAction(
+  tx: Tx,
+  action: ScheduledAction,
+  now: Date,
+): Promise<void> {
+  await tx.insert(scheduledActions).values({ ...action, createdAt: now });
+}
+
+/**
+ * Everything left of a deleted account: each task the person sent or received with its events,
+ * plan steps, timers and LLM calls (the other side's too), the connections, the stored command
+ * results and the person row. Only for a person marked deleted; does nothing otherwise.
+ */
+export async function purgePerson(tx: Tx, personId: PersonId): Promise<void> {
+  const [person] = await tx.select().from(people).where(eq(people.id, personId)).for("update");
+  if (person?.deletedAt == null) return;
+  const theirs = tx
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(or(eq(tasks.senderId, personId), eq(tasks.recipientId, personId)));
+  await tx.delete(llmCalls).where(inArray(llmCalls.taskId, theirs));
+  await tx.delete(scheduledActions).where(inArray(scheduledActions.taskId, theirs));
+  await tx.delete(pokeSteps).where(inArray(pokeSteps.taskId, theirs));
+  await tx.delete(taskEvents).where(inArray(taskEvents.taskId, theirs));
+  await tx.delete(tasks).where(or(eq(tasks.senderId, personId), eq(tasks.recipientId, personId)));
+  await tx.delete(llmCalls).where(eq(llmCalls.personId, personId));
+  await tx
+    .delete(edges)
+    .where(or(eq(edges.fromPersonId, personId), eq(edges.toPersonId, personId)));
+  await tx.delete(idempotencyKeys).where(eq(idempotencyKeys.callerId, personId));
+  await tx.delete(devices).where(eq(devices.personId, personId));
+  await tx.delete(invites).where(eq(invites.inviterId, personId));
+  await tx.delete(people).where(eq(people.id, personId));
 }

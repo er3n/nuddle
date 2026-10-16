@@ -8,7 +8,7 @@ Items marked **(proposed)** are reasonable defaults that were not explicitly dec
 
 | Entity | Table | Notes |
 |---|---|---|
-| Person | `people` | id, phone (E.164, unique), display name, created/deleted timestamps, quiet hours (default 23:00-07:00, stored as local times + IANA time zone), the two human channel switches (both default `true`), the poke profile with when it was written and how many closed tasks it had seen (ADR 0020), the profile picture's path in the private bucket (`avatar_path`, NUD-72; the file goes with the account). The user is a person. |
+| Person | `people` | id, phone (E.164, unique), display name, created/deleted timestamps, quiet hours (default 23:00-07:00, stored as local times + IANA time zone), the two human channel switches (both default `true`), the poke profile with when it was written and how many closed tasks it had seen (ADR 0020), the profile picture's path in the private bucket (`avatar_path`, NUD-72; the file goes with the account). The user is a person. A deleted account keeps its row for a week with the phone replaced by `deleted:<id>` and an empty name (see Account deletion). |
 | Connection | `edges` | Directed pair (from, to) with `type` (`spouse`, `parent`, `child`, `sibling`, `roommate`, `other`) and learned statistics/weights. A 1:1 connection is two directed edges created together, because each side picks its own relationship ("Sibel senin neyin?") and weights are per direction. Status: `pending` (invite out), `active`, `removed`. `notify_me` (default `true`, **proposed**) is the from-person's switch on 5b, "Sibel'in işleri için bana haber verilebilir": the from-person may be told about the to-person's tasks. It narrows the person's own "Başkalarının işleri için bana haber verilebilir" switch for this one connection. |
 | Invite | `invites` **(proposed table)** | Inviter, invitee phone, chosen relationship, prefilled name, code for the link, status (`open`, `accepted`, `declined`, `revoked`, `expired`). Declining is stored but never shown to the inviter. |
 | Task | `tasks` | Sender, recipient (may equal sender), title, detail (e.g. amount), deadline, timing (`by`: done by the deadline; `at`: a moment, deadline is the moment plus a grace; ADR 0017), finish mode (`done` or `photo`), raw text the sender typed, status, plan version, and for a repeating task its rule and the series id its occurrences share (ADR 0021). |
@@ -63,6 +63,15 @@ Invariants:
 - The state machine is one exhaustive `switch` over a union type in TS and a `sealed` hierarchy in Kotlin. Adding a state must break the build everywhere it is not handled.
 
 UI mapping of each status (pill text, color, what each side sees) is in `ux/screens.md`.
+
+## Account deletion
+
+Deleting an account (NUD-89) has two steps, because sync only adds and updates rows and cannot remove one from the other side's phone (ADR 0006):
+
+1. **At once,** in the `delete_account` command: open tasks with the person are cancelled with reason `account_deleted` and the other side is told; connections become `removed`; the phone is replaced by `deleted:<id>` and the name emptied, so the number can sign up again right away as a new, empty person; the profile picture, poke profile, devices, invites the person sent or got, sign-in attempts and LLM calls are deleted; after commit the Supabase auth user is deleted.
+2. **A week later,** the `account_purge` timer (`ACCOUNT_PURGE_DELAY_MS`): every task the person sent or received with its events, plan steps, timers and LLM calls, the connections, the stored command results and the person row are deleted. It deletes the auth user again first and runs again later while Supabase does not answer.
+
+The week lets the other side's phones sync the cancels; copies on those phones stay there, out of view (closed, connection removed).
 
 ## Repeating tasks
 

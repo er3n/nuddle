@@ -108,6 +108,9 @@ export class FakePhotoStorage implements PhotoStorage {
 /** Supabase Auth for HTTP tests: code "123456" signs in, anything else is wrong. */
 export class FakeAuthGateway implements AuthGateway {
   readonly otpSentTo: string[] = [];
+  readonly deletedUsers: string[] = [];
+  /** Makes the next `deleteUser` throw, as a Supabase outage would. */
+  failNextDelete = false;
   private readonly users = new Map<string, string>();
 
   constructor(private readonly mint: (userId: string, phone: string) => Promise<string>) {}
@@ -137,6 +140,16 @@ export class FakeAuthGateway implements AuthGateway {
     const id = this.users.get(phone) ?? randomUUID();
     this.users.set(phone, id);
     return Promise.resolve(id);
+  }
+
+  deleteUser(userId: string): Promise<void> {
+    if (this.failNextDelete) {
+      this.failNextDelete = false;
+      return Promise.reject(new Error("auth unavailable"));
+    }
+    for (const [phone, id] of this.users) if (id === userId) this.users.delete(phone);
+    this.deletedUsers.push(userId);
+    return Promise.resolve();
   }
 }
 
