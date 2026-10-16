@@ -17,8 +17,10 @@ plugins {
 // The Play upload key lives outside the repo (CLAUDE.md rule 11, docs/human-checklist.md, Before the beta):
 // Gradle properties in ~/.gradle/gradle.properties on the dev machine, or environment variables in CI.
 // Without them the build still configures; only bundleProdRelease refuses to run.
-fun uploadKeyValue(property: String, env: String): String? =
-    providers.gradleProperty(property).orElse(providers.environmentVariable(env)).orNull
+fun uploadKeyValue(
+    property: String,
+    env: String,
+): String? = providers.gradleProperty(property).orElse(providers.environmentVariable(env)).orNull
 
 val uploadStoreFile = uploadKeyValue("nuddle.upload.storeFile", "NUDDLE_UPLOAD_STORE_FILE")
 val uploadStorePassword = uploadKeyValue("nuddle.upload.storePassword", "NUDDLE_UPLOAD_STORE_PASSWORD")
