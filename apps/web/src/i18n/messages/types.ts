@@ -80,7 +80,34 @@ export interface Messages {
     storeSoon: string;
     iphone: string;
   };
-  footer: { quietHours: string };
+  footer: { quietHours: string; privacy: string; deleteAccount: string };
   invite: { title: string; body: string; more: string };
   notFound: { title: string; home: string };
+  legal: Legal;
+}
+
+/** One part of a legal page: a heading, its paragraphs and an optional list after them. */
+interface LegalSection {
+  heading: string;
+  paragraphs: string[];
+  items?: string[];
+}
+
+interface LegalPage {
+  /** The browser tab title. */
+  metaTitle: string;
+  title: string;
+  updated: string;
+  intro: string;
+  sections: LegalSection[];
+}
+
+/** The privacy notice and the account deletion page (docs/human-checklist.md, Before the beta). */
+export interface Legal {
+  privacy: LegalPage;
+  deleteAccount: LegalPage;
+  /** Links back to the landing page. */
+  home: string;
+  /** Links to the same page in the other language, written in that language. */
+  otherLanguage: string;
 }

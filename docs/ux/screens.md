@@ -313,6 +313,6 @@ Web landing page for the domain (1440 wide, interactive in the canvas). Built in
 - Step 1's example is "Eren yarın 9'a kadar kirayı yatırsın." instead of "Temizlikçi yarın 9'da, para çekilsin.", which read badly.
 - Premium shows "Yakında" instead of a price and has no button until the price is decided (open-questions #10).
 - "Google Play'den indir" reads "Yakında Google Play'de" and links nowhere until the Play listing exists (`PLAY_STORE_URL` in `apps/web/src/landing/store.ts`).
-- The footer leaves out Gizlilik · Koşullar · İletişim until those pages exist (human checklist, before the beta).
+- The footer links to the privacy notice (`/privacy`, `/tr/privacy`) and the account deletion page (`/delete-account`, `/tr/delete-account`), labeled "Gizlilik" and "Hesabı sil" (NUD-85). Koşullar and İletişim are left out until those pages exist (human checklist, before the beta). The text of both pages is in `apps/web/src/i18n/messages/legal.*.ts`.
 - The hero badge counts the taps on the poke levels toy ("Bu sayfa seni 2 kez dürttü.").
 - The invite link page (`/i/{code}`) and the 404 use the same look.

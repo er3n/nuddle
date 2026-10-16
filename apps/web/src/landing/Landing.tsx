@@ -1,5 +1,5 @@
 // The landing page (docs/ux/screens.md, Landing; Landing.dc.html). One component for every locale.
-import { landingPath, locales, type Locale } from "../i18n/locales";
+import { landingPath, legalPath, locales, type Locale } from "../i18n/locales";
 import { messages } from "../i18n/messages";
 import type { Messages } from "../i18n/messages/types";
 import { cx } from "./cx";
@@ -308,7 +308,15 @@ export function Landing({ locale }: { locale: Locale }) {
               </span>{" "}
               · {m.domain}
             </span>
-            {/* TODO: privacy, terms and contact links once those pages exist (docs/human-checklist.md, beta). */}
+            {/* TODO: terms and contact links once those pages exist (docs/human-checklist.md, beta). */}
+            <span className={styles.footerLinks}>
+              <a href={legalPath.privacy[locale]} className={styles.footerLink}>
+                {m.footer.privacy}
+              </a>
+              <a href={legalPath.deleteAccount[locale]} className={styles.footerLink}>
+                {m.footer.deleteAccount}
+              </a>
+            </span>
             <span>{m.footer.quietHours}</span>
           </div>
         </footer>

@@ -9,6 +9,14 @@ const defaultLocale: Locale = "en";
 
 export const landingPath: Record<Locale, string> = { en: "/", tr: "/tr" };
 
+export type LegalPageName = "privacy" | "deleteAccount";
+
+/** The privacy notice and the account deletion page; Play links to both (NUD-85). */
+export const legalPath: Record<LegalPageName, Record<Locale, string>> = {
+  privacy: { en: "/privacy", tr: "/tr/privacy" },
+  deleteAccount: { en: "/delete-account", tr: "/tr/delete-account" },
+};
+
 /** Remembers the language a visitor picked with the language switch. */
 export const LOCALE_COOKIE = "locale";
 
