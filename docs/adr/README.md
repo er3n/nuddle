@@ -29,3 +29,4 @@ To change a decision: add a new ADR that supersedes the old one, set the old one
 | 0021 | A repeating task is a series of one-off occurrences |
 | 0022 | One review number with a fixed code in the cloud, kept outside the repo |
 | 0023 | The app leaves breadcrumbs and non-fatal reports in Crashlytics; never personal data |
+| 0024 | Daily caps per person on LLM calls and per phone on SMS; every LLM call keeps its tokens and cost |

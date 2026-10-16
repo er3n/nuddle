@@ -29,7 +29,9 @@ const rows = await sql<{ story: unknown }[]>`
       select json_agg(json_build_object(
         'kind', c.kind, 'at', c.created_at, 'outcome', c.outcome, 'error', c.error,
         'planVersion', c.plan_version, 'adoptedVersion', c.adopted_version, 'model', c.model,
-        'latencyMs', c.latency_ms, 'input', c.input, 'prompt', c.prompt, 'output', c.output
+        'latencyMs', c.latency_ms, 'input', c.input, 'prompt', c.prompt, 'output', c.output,
+        'promptTokens', c.prompt_tokens, 'completionTokens', c.completion_tokens,
+        'costUsd', c.cost_usd
       ) order by c.created_at)
       from llm_calls c where c.task_id = t.id), '[]'),
     'plans', coalesce((

@@ -704,7 +704,7 @@ export interface components {
                 /** @example DRT-4001 */
                 code: string;
                 /** @enum {string} */
-                name: "validation_failed" | "unauthorized" | "not_registered" | "not_found" | "idempotency_key_reused" | "invalid_otp" | "forbidden" | "otp_locked" | "wrong_status" | "not_sender" | "not_recipient" | "wrong_finish_mode" | "deadline_not_in_future" | "not_connected" | "recipient_unavailable" | "snooze_not_allowed" | "start_not_in_window" | "invite_not_open" | "wrong_invitee" | "self_invite" | "not_inviter" | "internal" | "upstream_failed";
+                name: "validation_failed" | "unauthorized" | "not_registered" | "not_found" | "idempotency_key_reused" | "invalid_otp" | "forbidden" | "otp_locked" | "otp_limit" | "write_limit" | "wrong_status" | "not_sender" | "not_recipient" | "wrong_finish_mode" | "deadline_not_in_future" | "not_connected" | "recipient_unavailable" | "snooze_not_allowed" | "start_not_in_window" | "invite_not_open" | "wrong_invitee" | "self_invite" | "not_inviter" | "internal" | "upstream_failed";
                 message: string;
                 requestId: string;
                 details?: {
@@ -2162,6 +2162,15 @@ export interface operations {
             };
             /** @description Error with a DRT code */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

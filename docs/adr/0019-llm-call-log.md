@@ -1,6 +1,6 @@
 # 0019 Every LLM call is kept with its input, answer and outcome
 
-Status: Accepted (2026-10-15).
+Status: Accepted (2026-10-15). Extended by 0024 (tokens and cost per call, `capped` outcome).
 
 ## Context
 The first review of production (2026-10-15) found that the planner fell back to plan v0 on 34 of 42 tasks, and nothing said why: Vercel's Hobby plan keeps runtime logs for one hour, and the database had the task and its events but not what the model was given or what it answered. Judging the plans, and turning real use into eval cases, needs exactly that record. The person asked for it to be kept (2026-10-15): "bu data bizim için golden".

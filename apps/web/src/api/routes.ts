@@ -25,7 +25,7 @@ const errors = (codes: readonly (400 | 401 | 403 | 404 | 409 | 422 | 429 | 502)[
     ]),
   );
 
-const commandErrors = errors([400, 401, 403, 404, 409, 422]);
+const commandErrors = [400, 401, 403, 404, 409, 422] as const;
 
 function command<I extends z.ZodType, O extends z.ZodType>(
   name: string,
@@ -33,6 +33,7 @@ function command<I extends z.ZodType, O extends z.ZodType>(
   summary: string,
   input: I,
   output: O,
+  moreErrors: readonly (429 | 502)[] = [],
 ) {
   return createRoute({
     method: "post",
@@ -47,7 +48,7 @@ function command<I extends z.ZodType, O extends z.ZodType>(
         description: "The result; a replay with the same key returns it again",
         content: json(output),
       },
-      ...commandErrors,
+      ...errors([...commandErrors, ...moreErrors]),
     },
   });
 }
@@ -88,6 +89,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
     async (c) => {
       const { phone } = c.req.valid("json");
       await svc.refuseWhileOtpLocked(deps, phone);
+      await svc.refuseOverSmsCaps(deps, phone);
       try {
         await deps.auth.sendOtp(phone);
       } catch (error) {
@@ -416,6 +418,8 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
       "Free text: create a task or ask one question",
       s.WriteTaskCommand,
       s.WriteTaskResult,
+      // write_limit over the daily cap (ADR 0024).
+      [429],
     ),
     async (c) =>
       c.json(await svc.writeTask(deps, await person(c.get("caller")), c.req.valid("json")), 200),

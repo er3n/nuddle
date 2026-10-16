@@ -68,6 +68,8 @@ components:
                 - invalid_otp
                 - forbidden
                 - otp_locked
+                - otp_limit
+                - write_limit
                 - wrong_status
                 - not_sender
                 - not_recipient
@@ -1998,6 +2000,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "422":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
           description: Error with a DRT code
           content:
             application/json:
