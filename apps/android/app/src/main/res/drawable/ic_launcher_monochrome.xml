@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Launcher icon for themed icons (Android 13+): the foreground's dot and rings as one opaque shape. The launcher
+    tints it, so only the alpha counts. Same geometry as ic_launcher_foreground.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="768"
+    android:viewportHeight="768">
+    <group
+        android:pivotX="256"
+        android:pivotY="256"
+        android:rotation="-12"
+        android:translateX="128"
+        android:translateY="128">
+        <path
+            android:pathData="M296,186 A100,100 0,0 1,296,326"
+            android:strokeWidth="26"
+            android:strokeColor="@color/ink"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M340,150 A150,150 0,0 1,340,362"
+            android:strokeWidth="24"
+            android:strokeColor="@color/ink"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M384,114 A200,200 0,0 1,384,398"
+            android:strokeWidth="22"
+            android:strokeColor="@color/ink"
+            android:strokeLineCap="round" />
+        <path
+            android:fillColor="@color/ink"
+            android:pathData="M122,256 A74,74 0,1 1,270,256 A74,74 0,1 1,122,256 Z" />
+    </group>
+</vector>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Launcher icon background: ink with the soft accent glow of the Play store icon. Same units as
+    ic_launcher_foreground (viewport 768, store icon offset 128): the glow centre is at 40% / 52% of the store icon,
+    radius 60% of it, accent at 42% fading out.
+-->
+<vector xmlns:aapt="http://schemas.android.com/aapt"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="768"
+    android:viewportHeight="768">
+    <path
+        android:fillColor="@color/ink"
+        android:pathData="M0,0h768v768h-768z" />
+    <path
+        android:fillAlpha="0.42"
+        android:pathData="M0,0h768v768h-768z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:centerX="332.8"
+                android:centerY="394.24"
+                android:endColor="@color/accent_clear"
+                android:gradientRadius="307.2"
+                android:startColor="@color/accent"
+                android:type="radial" />
+        </aapt:attr>
+    </path>
+</vector>
