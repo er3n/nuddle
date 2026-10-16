@@ -40,7 +40,7 @@ In code and docs the domain verb is **poke** (`Poke`, `PokeLevel`, `PokeActivity
 - Name is asked only on first sign-up. If an inviter typed a name, it comes prefilled.
 - No social login (so Apple's Sign in with Apple requirement is never triggered).
 - **Log out:** pokes stop ringing on that phone, the other side sees the person as unreachable. Data is kept and returns on the next sign-in with the same number.
-- **Delete account:** connections, tasks, photos and learned poke behavior are deleted. The other side's open tasks are cancelled and they are told. Irreversible.
+- **Delete account:** the phone number, name and profile picture, connections and invites, tasks, photos, learned poke behavior and the LLM call records are deleted (the privacy notice promises this, NUD-85). The other side's open tasks are cancelled and they are told. Irreversible.
 
 ### Connections (graph)
 - The only building block is a 1:1 connection. There is no group data structure. Assignments like "one of you", "the kids" are derived from the sender's own connection list.

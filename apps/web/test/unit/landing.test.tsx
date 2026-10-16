@@ -4,7 +4,8 @@ import { describe, expect, it } from "vitest";
 import { messages } from "../../src/i18n/messages";
 import { Invite } from "../../src/landing/Invite";
 import { Landing, StoreButton } from "../../src/landing/Landing";
-import { landingMetadata } from "../../src/landing/metadata";
+import { LegalPage, linked } from "../../src/landing/LegalPage";
+import { landingMetadata, legalMetadata } from "../../src/landing/metadata";
 import { nextLevel } from "../../src/landing/PokeDemo";
 
 const text = (html: string) =>
@@ -45,6 +46,15 @@ describe("Landing", () => {
     const html = renderToStaticMarkup(<Landing locale="tr" />);
     expect(text(html)).toContain("Yakında Google Play'de");
     expect(html).not.toContain("play.google.com");
+  });
+
+  it("links to the privacy notice and the account deletion page in its own language", () => {
+    const tr = renderToStaticMarkup(<Landing locale="tr" />);
+    expect(tr).toContain('href="/tr/privacy"');
+    expect(tr).toContain('href="/tr/delete-account"');
+    const en = renderToStaticMarkup(<Landing locale="en" />);
+    expect(en).toContain('href="/privacy"');
+    expect(en).toContain('href="/delete-account"');
   });
 });
 
@@ -88,5 +98,59 @@ describe("Invite", () => {
     const en = renderToStaticMarkup(<Invite locale="en" />);
     expect(text(en)).toContain("You've been invited to Nuddle.");
     expect(en).toContain('href="/"');
+  });
+});
+
+describe("LegalPage", () => {
+  it("names the cross-border transfer, photo retention and account deletion (NUD-85)", () => {
+    for (const locale of ["tr", "en"] as const) {
+      const page = text(renderToStaticMarkup(<LegalPage page="privacy" locale={locale} />));
+      for (const provider of ["Supabase", "Vercel", "Firebase", "Twilio", "OpenRouter"]) {
+        expect(page).toContain(provider);
+      }
+      expect(page).toContain("Frankfurt");
+      expect(page).toContain(
+        locale === "tr" ? "görev kapanınca silinir" : "deleted when the task closes",
+      );
+    }
+  });
+
+  it("gives a way to ask for deletion without the app", () => {
+    const tr = renderToStaticMarkup(<LegalPage page="deleteAccount" locale="tr" />);
+    expect(text(tr)).toContain("Uygulama olmadan");
+    expect(tr).toContain('href="mailto:privacy@nuddle.app"');
+    const en = renderToStaticMarkup(<LegalPage page="deleteAccount" locale="en" />);
+    expect(text(en)).toContain("Without the app");
+    expect(en).toContain('href="/tr/delete-account" hrefLang="tr" lang="tr"');
+  });
+
+  it("links the deletion page from the privacy notice in the same language", () => {
+    expect(renderToStaticMarkup(<LegalPage page="privacy" locale="tr" />)).toContain(
+      'href="/tr/delete-account"',
+    );
+    expect(renderToStaticMarkup(<LegalPage page="privacy" locale="en" />)).toContain(
+      'href="/delete-account"',
+    );
+  });
+
+  it("turns addresses and site paths in the text into links and leaves the rest", () => {
+    const html = renderToStaticMarkup(
+      <p>{linked("Yaz: a.b@nuddle.app. Ya da nuddle.app/tr/privacy, nuddle.app sadece.")}</p>,
+    );
+    expect(html).toContain('<a href="mailto:a.b@nuddle.app"');
+    expect(html).toContain('<a href="/tr/privacy"');
+    expect(html).toContain("</a>. Ya da");
+    expect(html).toContain("</a>, nuddle.app sadece.");
+  });
+
+  it("links each language version to the other for search engines", () => {
+    const m = legalMetadata("deleteAccount", "tr");
+    expect(m.title).toBe("Hesabını sil · dürt");
+    expect(m.alternates?.canonical).toBe("/tr/delete-account");
+    expect(m.alternates?.languages).toEqual({
+      en: "/delete-account",
+      tr: "/tr/delete-account",
+      "x-default": "/delete-account",
+    });
   });
 });

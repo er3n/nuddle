@@ -1,4 +1,5 @@
 // English for the global brand (Nuddle). Translated from tr.ts; keep the jokes, not the words.
+import { legalEn } from "./legal.en";
 import type { Messages } from "./types";
 
 export const en: Messages = {
@@ -180,11 +181,16 @@ export const en: Messages = {
     storeSoon: "Coming soon to Google Play",
     iphone: "An iPhone version is coming too. If we don't forget.",
   },
-  footer: { quietHours: "Nobody gets poked between 23:00 and 07:00." },
+  footer: {
+    quietHours: "Nobody gets poked between 23:00 and 07:00.",
+    privacy: "Privacy",
+    deleteAccount: "Delete account",
+  },
   invite: {
     title: "You've been invited to Nuddle.",
     body: "Install the app and sign in with the number you were invited on. The invite will be waiting for you.",
     more: "What is Nuddle?",
   },
   notFound: { title: "This page doesn't exist. We may have forgotten it too.", home: "Back home" },
+  legal: legalEn,
 };

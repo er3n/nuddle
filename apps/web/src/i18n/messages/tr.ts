@@ -1,4 +1,5 @@
 // Source language. Copy from docs/ux/source/Landing.dc.html; words follow docs/glossary.md.
+import { legalTr } from "./legal.tr";
 import type { Messages } from "./types";
 
 export const tr: Messages = {
@@ -169,11 +170,16 @@ export const tr: Messages = {
     storeSoon: "Yakında Google Play'de",
     iphone: "iPhone sürümü de gelecek. Unutmazsak.",
   },
-  footer: { quietHours: "23:00 - 07:00 arası kimse dürtülmez." },
+  footer: {
+    quietHours: "23:00 - 07:00 arası kimse dürtülmez.",
+    privacy: "Gizlilik",
+    deleteAccount: "Hesabı sil",
+  },
   invite: {
     title: "Seni dürt'e davet ettiler.",
     body: "Uygulamayı yükleyip davet edilen numarayla giriş yapınca davet seni bekliyor olacak.",
     more: "dürt nedir?",
   },
   notFound: { title: "Bu sayfa yok. Biz de unutmuş olabiliriz.", home: "Ana sayfaya dön" },
+  legal: legalTr,
 };
