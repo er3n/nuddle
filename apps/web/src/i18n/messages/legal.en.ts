@@ -123,6 +123,7 @@ export const legalEn: Legal = {
         heading: "Website",
         paragraphs: [
           "nuddle.app uses one cookie, only to remember the language you picked. There are no advertising or tracking cookies.",
+          "The promo video on the home page is hosted on YouTube. Until you press play the page loads nothing from YouTube; when you do, the video comes from youtube-nocookie.com under Google's own privacy rules.",
         ],
       },
       {

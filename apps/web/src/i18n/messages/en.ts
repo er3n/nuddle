@@ -13,6 +13,7 @@ export const en: Messages = {
   nav: {
     label: "Main menu",
     how: "How it works",
+    video: "Watch",
     levels: "Poke levels",
     pricing: "Pricing",
     download: "Get it for Android",
@@ -37,10 +38,11 @@ export const en: Messages = {
   },
   marquee: [
     "BUY BREAD",
-    "GET CASH",
+    "PAY THE RENT",
     "PAY THE BILL",
-    "TAKE OUT THE TRASH",
+    "TRASH EVERY TUESDAY",
     "CALL YOUR MOM",
+    "TAKE YOUR PILLS",
     "DRY CLEANING",
   ],
   story: {
@@ -77,13 +79,67 @@ export const en: Messages = {
       approved: "Approved",
     },
   },
+  video: {
+    title: "Nuddle in 28 seconds",
+    subtitle: "The rent is written once. Watch the rest.",
+    play: "Play the promo video",
+    watch: "Watch · 0:28",
+    posterAlt: "A frame from the video: poke 3, full screen, PAY THE RENT.",
+    note: "The video loads from YouTube when you play it.",
+  },
+  features: {
+    title: "Oh, and",
+    titleAccent: "there's more.",
+    items: [
+      {
+        tag: "Every day 09:00",
+        title: "Don't write it every day",
+        body: '"Mom takes her pills at 9 every day." Written once, poked every day. "Every Tuesday" and "weekday mornings" work too. "Not today" skips a day, a cancel ends it.',
+      },
+      {
+        tag: "Message",
+        title: "Don't forget to say it",
+        body: '"Tell Sam I love him at 3." Nothing to do: it rings once at that time and "OK" closes it. No nagging.',
+      },
+      {
+        tag: "Listening",
+        title: "Too lazy to type",
+        body: "Tap the mic and say it. What you say lands in the box, so you can fix it before you send.",
+      },
+      {
+        tag: "Remind me at 17:00",
+        title: "Not now, later",
+        body: "Whoever gets poked can move the time the pokes start. The deadline stays put, and so does the job.",
+      },
+      {
+        tag: "Snooze · 22:37",
+        title: "Even snoozing has rules",
+        body: "Snoozes are limited and shrink to fit the time left. The button says when it rings again, and when it's the last one.",
+      },
+      {
+        tag: "✓✓ Seen",
+        title: "The sender knows too",
+        body: 'Did it arrive, was it seen, how many pokes: "Poked 3 times, last at 18:15." The plan stays hidden, only what happened is told.',
+      },
+      {
+        tag: "Profile picture",
+        title: "You know who it's from",
+        body: "Pick your picture from the gallery. The sender's face shows on the poke notification, so you know Mom's poke from across the room.",
+      },
+      {
+        tag: "To yourself",
+        title: "Write to yourself too",
+        body: "No one in Your people yet? Fine. A task to yourself gets poked just as stubbornly.",
+      },
+    ],
+  },
   steps: {
     title: "Three steps.",
     titleSecondLine: "Zero excuses.",
     items: [
       {
-        title: "Write it once",
-        body: '"Alex pays the rent by 9 tomorrow." Who, what, by when: the AI works out the rest. No forms, no date pickers, no patience test.',
+        title: "Write it or say it once",
+        body: '"Alex pays the rent by 9 tomorrow." Who, what, by when: the AI works out the rest. "At 3" is a moment, "by 9" is a deadline. No forms, no date pickers, no patience test.',
       },
       {
         title: "They get poked",
@@ -127,7 +183,8 @@ export const en: Messages = {
       label: "Free",
       price: "$0",
       features: [
-        "Write tasks freely in the app",
+        "Write tasks freely in the app, or say them",
+        "Repeating tasks and one-time messages",
         "Adaptive pokes and a full screen alarm",
         "A photo if you want it, approved by the sender",
         "Your people: unlimited forgetful ones",
@@ -163,6 +220,16 @@ export const en: Messages = {
         question: "Does it start the night before?",
         answer:
           "It won't bother you tonight about something due tomorrow morning. It works out the right time on its own.",
+      },
+      {
+        question: "Do I have to write the same thing every day?",
+        answer:
+          'Write "at 9 every day", "every Tuesday" or "weekday mornings" and it repeats on its own. Not more than once a day, though. Let\'s not get carried away.',
+      },
+      {
+        question: "I'm busy right now. Can it poke me later?",
+        answer:
+          "You can move the time the pokes start. The deadline stays where it is, and the bread still gets bought.",
       },
       {
         question: "What if I upload an old photo from the gallery?",

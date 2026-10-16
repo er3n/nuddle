@@ -7,11 +7,13 @@ import { Landing, StoreButton } from "../../src/landing/Landing";
 import { LegalPage, linked } from "../../src/landing/LegalPage";
 import { landingMetadata, legalMetadata } from "../../src/landing/metadata";
 import { nextLevel } from "../../src/landing/PokeDemo";
+import { embedUrl, promoVideo } from "../../src/landing/PromoVideo";
 
 const text = (html: string) =>
   html
     .replace(/<[^>]+>/g, " ")
     .replace(/&#x27;/g, "'")
+    .replace(/&quot;/g, '"')
     .replace(/\s+/g, " ");
 
 describe("Landing", () => {
@@ -64,6 +66,48 @@ describe("Landing", () => {
     const en = renderToStaticMarkup(<Landing locale="en" />);
     expect(en).toContain('href="/privacy"');
     expect(en).toContain('href="/delete-account"');
+  });
+});
+
+describe("the promo video (NUD-94)", () => {
+  it("shows the video of the page's language", () => {
+    expect(renderToStaticMarkup(<Landing locale="tr" />)).toContain(
+      'src="/promo/durt-promo-tr.jpg"',
+    );
+    expect(renderToStaticMarkup(<Landing locale="en" />)).toContain(
+      'src="/promo/nuddle-promo-en.jpg"',
+    );
+    expect(promoVideo.tr.youtubeId).not.toBe(promoVideo.en.youtubeId);
+  });
+
+  it("loads nothing from YouTube before the play tap", () => {
+    for (const locale of ["tr", "en"] as const) {
+      const html = renderToStaticMarkup(<Landing locale={locale} />);
+      expect(html).not.toMatch(/youtube|ytimg|<iframe/);
+      expect(text(html)).toContain(messages[locale].video.note);
+    }
+  });
+
+  it("plays from YouTube's no-cookie domain", () => {
+    expect(embedUrl("nJILmwdDBzc")).toBe(
+      "https://www.youtube-nocookie.com/embed/nJILmwdDBzc?autoplay=1&rel=0&playsinline=1",
+    );
+  });
+});
+
+describe("the features since the first landing (NUD-94)", () => {
+  it("shows repeating tasks and one-time messages in the app's words (glossary)", () => {
+    const tr = text(renderToStaticMarkup(<Landing locale="tr" />));
+    expect(tr).toContain("Her gün 09:00");
+    expect(tr).toContain("Ertele · 22:37");
+    expect(tr).toContain('"Tamam" deyince kapanır');
+    expect(tr).not.toMatch(/kanıt|tekrar kuralı|\bseri\b/);
+    const en = text(renderToStaticMarkup(<Landing locale="en" />));
+    expect(en).toContain("Every day 09:00");
+  });
+
+  it("has the same features in every language", () => {
+    expect(messages.en.features.items).toHaveLength(messages.tr.features.items.length);
   });
 });
 

@@ -65,11 +65,11 @@ In code and docs the domain verb is **poke** (`Poke`, `PokeLevel`, `PokeActivity
 
 ### Writing a task
 - One input box. Who, what and when are extracted from free text by the LLM. "To whom" is never asked while typing.
-- Press-and-hold voice input is in the MVP.
+- Voice input is in the MVP: a tap on the mic dictates into the box (open-questions #40, NUD-48).
 - If the AI is confident, the task goes out immediately and a 5 second "Undo / Edit" toast appears. A preview opens only when information is missing or ambiguous, and it asks at most one question at a time.
 - A photo is never mandatory. For suitable tasks (money, payments) it is suggested and preselected, one tap changes it.
 - Tasks to yourself exist. A user without any connection can still use the app.
-- Recurring tasks are out of the MVP.
+- Repeating tasks ("her gün 9'da", "her salı", "hafta içi") are in, as a series of one-off occurrences (ADR 0021).
 
 ### Sender side and task lifecycle
 - The sender sees an ongoing task's detail: status, reachability level, recipient, deadline, detail, how it should finish. Tapping a row edits it; the change reaches the recipient with a short note.
@@ -118,7 +118,7 @@ In code and docs the domain verb is **poke** (`Poke`, `PokeLevel`, `PokeActivity
 
 ## Deliberately out of the MVP
 
-WhatsApp notification listening, widgets, recurring tasks, AI photo check, location triggers, group concept, role based permissions, showing the poke plan, in-app chat, a separate dispute flow, human channel to a third person (comes with graph logic), setting alarms in the system Clock app, dark theme, iOS.
+WhatsApp notification listening, widgets, AI photo check, location triggers, group concept, role based permissions, showing the poke plan, in-app chat, a separate dispute flow, human channel to a third person (comes with graph logic), setting alarms in the system Clock app, dark theme, iOS.
 
 ## Premium (later, not designed)
 
