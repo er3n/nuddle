@@ -43,6 +43,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -108,9 +109,18 @@ class HomeViewModel
 
         /**
          * Opens setup (2c to 2e) once the first task to self stands: the undo window is over, or Kur in the preview
-         * set it (docs/product.md, Permissions and setup).
+         * set it (docs/product.md, Permissions and setup). Also as soon as home knows someone connected, for an install
+         * that never ran setup: a reinstall of someone who mostly receives tasks would otherwise never see it (NUD-103).
+         * Checked again when home takes it: a request that waited while consent ran setup is stale by then.
          */
-        val openSetup: Flow<Unit> = setup.receiveAsFlow()
+        val openSetup: Flow<Unit> = setup.receiveAsFlow().filter { setupGate.needed() }
+
+        init {
+            viewModelScope.launch {
+                connectionDao.observeAll().first { all -> all.any { it.status == ACTIVE } }
+                if (setupGate.needed()) setup.send(Unit)
+            }
+        }
 
         /** The waiting done note, shown for 4 s while home is collected (domain.md, Done note). */
         private val doneNote: Flow<DoneNoteUi?> =
