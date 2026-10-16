@@ -7,6 +7,7 @@ import app.nuddle.data.AuthRepository
 import app.nuddle.data.SendOtpOutcome
 import app.nuddle.data.SessionStarter
 import app.nuddle.data.VerifyOutcome
+import app.nuddle.data.sync.Syncer
 import app.nuddle.domain.TurkishPhone
 import app.nuddle.ui.components.CODE_LENGTH
 import app.nuddle.ui.screens.hourMinute
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.TimeZone
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
@@ -36,6 +38,7 @@ class CodeViewModel
         savedState: SavedStateHandle,
         private val auth: AuthRepository,
         private val starter: SessionStarter,
+        private val syncer: Syncer,
         private val timeZone: TimeZone,
     ) : ViewModel() {
         private val phone: String = checkNotNull(savedState[ARG_PHONE])
@@ -80,7 +83,11 @@ class CodeViewModel
             viewModelScope.launch {
                 when (val outcome = auth.verify(phone, code)) {
                     is VerifyOutcome.SignedIn -> {
-                        if (outcome.registered) starter.start()
+                        if (outcome.registered) {
+                            starter.start()
+                            // Home opens with the tasks, not the empty state (NUD-105); offline or slow, it opens anyway.
+                            withTimeoutOrNull(FIRST_SYNC_WAIT) { syncer.sync() }
+                        }
                         done.send(if (outcome.registered) SignedInDestination.Home else SignedInDestination.Name)
                     }
 
@@ -137,5 +144,8 @@ class CodeViewModel
 
             /** The design shows a one minute wait before a new code (0d). */
             const val RESEND_AFTER_SECONDS = 60
+
+            /** How long the code screen keeps its spinner for the first sync before home opens anyway (NUD-105). */
+            val FIRST_SYNC_WAIT = 5.seconds
         }
     }
