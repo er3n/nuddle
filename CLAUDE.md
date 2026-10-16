@@ -1,6 +1,6 @@
 # Nuddle (dürt)
 
-A reminder app where someone says a task once and the person who forgets is poked until it is done. Android first (Kotlin + Compose), API on Vercel (Next.js + Hono), Supabase (Postgres, Auth, Storage). One-person team; most code is written by agents. Global brand Nuddle, Turkish store name "dürt", `applicationId` `app.nuddle`.
+A reminder app where someone says a task once and the person who forgets is poked until it is done. Android first (Kotlin + Compose), API on Vercel (Next.js + Hono), Supabase (Postgres, Auth, Storage). One-person team; most code is written by agents. Global brand Nuddle, Turkish brand "dürt" (Play store names in `docs/product.md`), `applicationId` `app.nuddle`.
 
 ## Source of truth
 
