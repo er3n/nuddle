@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { resolveExtraction, type Extraction } from "../../src/domain/extraction";
+import {
+  resolveExtraction,
+  withFirstOccurrence,
+  type Extraction,
+} from "../../src/domain/extraction";
 import { FixtureExtractor } from "../../src/infra/llm/fixture-extractor";
 import type { LlmExchange } from "../../src/domain/ports";
 import { buildPrompt, OpenRouterExtractor } from "../../src/infra/llm/openrouter-extractor";
@@ -261,5 +265,52 @@ describe("OpenRouterExtractor", () => {
 
   it("lists connections with their relationship", () => {
     expect(buildPrompt(input)).toContain("- Eren: spouse");
+  });
+});
+
+describe("withFirstOccurrence (NUD-83)", () => {
+  const tz = "Europe/Istanbul";
+  // Friday 07:23: the model wrote today 07:00, which has passed.
+  const friday = new Date("2026-10-16T07:23:00+03:00");
+  const wake: Extraction = {
+    ...complete,
+    recipient: "self",
+    title: "Kalk",
+    detail: null,
+    deadline: "2026-10-16T07:00:00+03:00",
+    timing: "at",
+    missAfterMinutes: 15,
+    finishMode: "done",
+    repeat: { every: "weekdays", time: "07:00" },
+  };
+  const text = "beni hafta içi her gün 7'de kaldır";
+
+  it("sets the deadline to the rule's next time after now and drops the deadline question", () => {
+    const got = withFirstOccurrence({ ...wake, missing: ["deadline"] }, text, friday, tz);
+    expect(got.deadline).toBe(new Date("2026-10-19T07:00:00+03:00").toISOString());
+    expect(got.missing).toEqual([]);
+    expect(got.repeat).toEqual({ every: "weekdays", time: "07:00" });
+    expect(resolveExtraction(got, { id: "sibel" }, connections, friday, text)).toMatchObject({
+      kind: "create",
+      deadline: new Date("2026-10-19T07:00:00+03:00"),
+      repeat: { every: "weekdays", time: "07:00" },
+    });
+  });
+
+  it("today when the rule's time is still ahead", () => {
+    const early = new Date("2026-10-16T06:40:00+03:00");
+    expect(withFirstOccurrence(wake, text, early, tz).deadline).toBe(
+      new Date("2026-10-16T07:00:00+03:00").toISOString(),
+    );
+  });
+
+  it("leaves a one-off alone, and drops a rule the text does not say", () => {
+    expect(withFirstOccurrence(complete, "eren yarın 9dan önce para çeksin", friday, tz)).toEqual({
+      ...complete,
+      repeat: null,
+    });
+    const invented = withFirstOccurrence(wake, "beni yarın 7de kaldır", friday, tz);
+    expect(invented.repeat).toBeNull();
+    expect(invented.deadline).toBe("2026-10-16T07:00:00+03:00");
   });
 });

@@ -1,6 +1,6 @@
 // LLM task extraction: the provider-neutral input/output and the post-processing that decides
 // between creating the task at once and asking exactly one question (docs/domain.md).
-import { repeatRuleOf, textSaysRepeat, type RepeatRule } from "./repeat";
+import { nextOccurrenceAt, repeatRuleOf, textSaysRepeat, type RepeatRule } from "./repeat";
 import type { EdgeType, FinishMode, PersonId, Timing } from "./types";
 
 export interface ExtractionInput {
@@ -59,6 +59,28 @@ export type Resolution =
 const normalize = (s: string): string => s.trim().toLocaleLowerCase("tr");
 
 /**
+ * A repeating task's first occurrence comes from the rule, not from the model (ADR 0021): the
+ * model wrote "today 07:00" at 07:23 and the server then asked for a time. When the text says the
+ * task repeats and the rule is sound, the deadline becomes the rule's next time after now and
+ * "deadline" leaves `missing`; a one-off, or a rule the text does not back, is returned as is.
+ */
+export function withFirstOccurrence(
+  e: Extraction,
+  text: string,
+  now: Date,
+  timeZone: string,
+): Extraction {
+  const repeat = textSaysRepeat(text) ? repeatRuleOf(e.repeat) : null;
+  if (repeat === null) return { ...e, repeat: null };
+  return {
+    ...e,
+    repeat,
+    deadline: nextOccurrenceAt(repeat, now, timeZone).toISOString(),
+    missing: e.missing.filter((m) => m !== "deadline"),
+  };
+}
+
+/**
  * The one connection whose name is a whole word of the text ("can yarın okula gitsin"), or null.
  * A word with a suffix ("eren'i ara", "erene yaz") is not the name, so an object is never taken
  * for the recipient. Used only when the model found no recipient (NUD-52: without reasoning it
@@ -107,6 +129,7 @@ export function resolveExtraction(
   }
   if (recipientId === null) return { kind: "ask", question: "recipient" };
 
+  // A repeating task's deadline was set from its rule by `withFirstOccurrence`, so it is ahead.
   const deadline = e.deadline === null ? null : new Date(e.deadline);
   if (
     deadline === null ||
