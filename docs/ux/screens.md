@@ -99,6 +99,8 @@ Added on 2026-10-15 after the first test with two phones. Wins over the rows, th
 Dark screen. Illustration: a stack of escalating pokes ("Ekmek al" 14:32, "Ekmek al!" 18:15, "EKMEK." on poke orange, then a green "Ekmek alındı · 19:02").
 **Copy:** dürt. | Bir kere söylenir. / Gerisini dürt halleder. | Biri bir kere yazar, unutan kişi iş bitene kadar dürtülür. Kaçıncı dürtmede uyandığını da öğrenir. | Telefonla başla | Devam ederek Kullanım Koşulları ve Gizlilik metnini kabul etmiş olursun.
 
+"Gizlilik" opens `https://nuddle.app/tr/privacy` in the browser (NUD-87). "Kullanım Koşulları" does nothing until the terms page exists (human checklist, before the beta).
+
 ### 0b Welcome, from an invite · `WelcomeInvite.png`
 Same as 0a with an inviter chip on top.
 **Copy:** Sibel seni dürt'e davet etti | Önce numaranla giriş yap, sonra Sibel'in davetine bakarız. | Telefonla başla
