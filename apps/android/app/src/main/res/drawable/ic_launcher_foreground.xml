@@ -1,11 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Placeholder launcher icon: the logo dot. The real icon comes with the store listing. -->
+<!--
+    Launcher icon foreground: the Play store icon (512 x 512) without its background. The logo dot and three poke
+    rings, the group turned -12 degrees. Paths are in store icon units: the viewport is 768 so the 512 icon fills the
+    72dp visible part of the 108dp canvas (offset 128). Everything stays within 29dp of the centre, inside the 66dp
+    safe zone.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path
-        android:fillColor="@color/accent"
-        android:pathData="M54,54m-14,0a14,14 0,1 1,28 0a14,14 0,1 1,-28 0" />
+    android:viewportWidth="768"
+    android:viewportHeight="768">
+    <group
+        android:pivotX="256"
+        android:pivotY="256"
+        android:rotation="-12"
+        android:translateX="128"
+        android:translateY="128">
+        <path
+            android:pathData="M296,186 A100,100 0,0 1,296,326"
+            android:strokeWidth="26"
+            android:strokeColor="@color/accent"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M340,150 A150,150 0,0 1,340,362"
+            android:strokeWidth="24"
+            android:strokeAlpha="0.7"
+            android:strokeColor="@color/poke_ring"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M384,114 A200,200 0,0 1,384,398"
+            android:strokeWidth="22"
+            android:strokeAlpha="0.38"
+            android:strokeColor="@color/poke_ring"
+            android:strokeLineCap="round" />
+        <path
+            android:fillColor="@color/accent"
+            android:pathData="M122,256 A74,74 0,1 1,270,256 A74,74 0,1 1,122,256 Z" />
+    </group>
 </vector>
