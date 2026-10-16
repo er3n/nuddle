@@ -6,8 +6,9 @@
 #
 #   secrets  generate TICK_SECRET and SEND_SMS_HOOK_SECRET (only the missing ones)
 #   auth     apply auth.json plus the Send SMS hook secret through the Management API
-#            (needs ~/.nuddle/prod/SUPABASE_ACCESS_TOKEN). Never `supabase config push`: it would
-#            enable the local test numbers in the cloud (ADR 0011).
+#            (needs ~/.nuddle/prod/SUPABASE_ACCESS_TOKEN), and the Play review number from
+#            ~/.nuddle/prod/PLAY_REVIEW_OTP when it exists (ADR 0022). Never `supabase config push`:
+#            it would enable the local test numbers in the cloud (ADR 0011).
 #   tick     store tick_url and tick_secret in Vault, which switches the nuddle-tick job on
 #            (needs `supabase link`; run it once production health is green)
 #   migrate [--dry-run]
@@ -53,7 +54,18 @@ case "${1:-}" in
   auth)
     need SUPABASE_ACCESS_TOKEN
     need SEND_SMS_HOOK_SECRET
-    jq --rawfile secret "$dir/SEND_SMS_HOOK_SECRET" '. + {hook_send_sms_secrets: $secret}' \
+    # The one Play review number (ADR 0022): "<digits>=<6 digits>" in PLAY_REVIEW_OTP, optional.
+    # An empty or missing file leaves the project with no test number.
+    review=""
+    if [[ -s "$dir/PLAY_REVIEW_OTP" ]]; then
+      review="$(tr -d '[:space:]' <"$dir/PLAY_REVIEW_OTP")"
+      if [[ ! "$review" =~ ^[1-9][0-9]{9,14}=[0-9]{6}$ ]]; then
+        echo "PLAY_REVIEW_OTP must be <phone digits without +>=<6 digits> (ADR 0022)" >&2
+        exit 1
+      fi
+    fi
+    jq --rawfile secret "$dir/SEND_SMS_HOOK_SECRET" --arg review "$review" \
+      '. + {hook_send_sms_secrets: $secret, sms_test_otp: $review}' \
       "$here/auth.json" >"$tmp/body"
     status="$(management_api PATCH /config/auth "$tmp/body")"
     if [[ "$status" != 2* ]]; then
@@ -63,8 +75,10 @@ case "${1:-}" in
     fi
     status="$(management_api GET /config/auth)"
     echo "auth config applied (HTTP $status). Read back:"
+    # Never the test numbers or codes themselves, only how many there are (ADR 0022).
     jq '{site_url, disable_signup, external_phone_enabled, external_email_enabled,
-      sms_test_otp, hook_send_sms_enabled, hook_send_sms_uri,
+      sms_test_numbers: ((.sms_test_otp // "") | split(",") | map(select(. != "")) | length),
+      hook_send_sms_enabled, hook_send_sms_uri,
       hook_send_sms_secret_set: ((.hook_send_sms_secrets // "") != "")}' "$tmp/response"
     ;;
 

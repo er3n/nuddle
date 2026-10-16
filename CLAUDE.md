@@ -59,7 +59,7 @@ Use only these. They work the same for you, the human and CI.
 8. **Screens are stateless.** A screen composable takes `UiState` and callbacks, never a ViewModel. Every component and screen state has a `@Preview`.
 9. **No hex values or magic numbers in screen code.** Everything comes from the theme built from `docs/ux/tokens.json`.
 10. **No baselines, no suppressions without a reason.** `eslint-disable` and `@Suppress` need a written justification.
-11. **The repo is public. Secrets never go in it.** Use `.env.local` (git-ignored), GitHub Actions secrets and Vercel/Supabase env. gitleaks runs on commit. `google-services.json` is not committed. Test OTP numbers exist only in the local Supabase config.
+11. **The repo is public. Secrets never go in it.** Use `.env.local` (git-ignored), GitHub Actions secrets and Vercel/Supabase env. gitleaks runs on commit. `google-services.json` is not committed. Test OTP numbers exist only in the local Supabase config, except the one Play review number, which lives in `~/.nuddle/prod` and never in the repo (ADR 0022).
 
 ## Tickets (Linear)
 
