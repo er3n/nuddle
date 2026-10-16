@@ -6,7 +6,7 @@ export const en: Messages = {
   brand: "nuddle",
   domain: "nuddle.app",
   meta: {
-    title: "Nuddle · Someone at home always forgets",
+    title: "Nuddle · Reminders and alarms for someone who always forgets",
     description:
       "You say it once. Nuddle pokes them until it is done, and remembers how many pokes it took.",
   },
@@ -132,6 +132,29 @@ export const en: Messages = {
         body: "No one in Your people yet? Fine. A task to yourself gets poked just as stubbornly.",
       },
     ],
+  },
+  medicine: {
+    title: "Medicine reminder:",
+    titleAccent: "mom won't forget.",
+    lead: '"Mom takes her blood pressure pill every day at 9." Say it once, and Nuddle pokes her every morning. You know whether she took it.',
+    items: [
+      {
+        tag: "Every day 09:00",
+        title: "Said once",
+        body: "It rings at the same time every day. No sticky notes on the fridge, no alarms to set. Cancel it when the course ends.",
+      },
+      {
+        tag: "Full screen",
+        title: "Hard to ignore",
+        body: 'Miss the notification and it gets louder, then a full screen alarm. It keeps poking until she taps "Done".',
+      },
+      {
+        tag: "✓ Done",
+        title: "You know too",
+        body: "When she takes it, you are told. When she doesn't, you see that too and can give her a call.",
+      },
+    ],
+    note: "Nuddle is a reminder app and gives no medical advice. Ask your doctor how to take your medicine.",
   },
   steps: {
     title: "Three steps.",

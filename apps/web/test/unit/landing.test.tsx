@@ -50,6 +50,15 @@ describe("Landing", () => {
     expect(html).not.toContain("play.google.com");
   });
 
+  it("spells out the medicine reminder, without medical advice (NUD-106)", () => {
+    const tr = text(renderToStaticMarkup(<Landing locale="tr" />));
+    expect(tr).toContain("İlaç hatırlatıcı: annen unutmasın.");
+    expect(tr).toContain("tıbbi tavsiye vermez");
+    const en = text(renderToStaticMarkup(<Landing locale="en" />));
+    expect(en).toContain("Medicine reminder: mom won't forget.");
+    expect(en).toContain("gives no medical advice");
+  });
+
   it("says a photo may come from the gallery (open-questions#48)", () => {
     const tr = text(renderToStaticMarkup(<Landing locale="tr" />));
     expect(tr).toContain("galeriden seçilir");

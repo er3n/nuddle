@@ -206,6 +206,31 @@ function Features({ m }: { m: Messages }) {
   );
 }
 
+function Medicine({ m }: { m: Messages }) {
+  return (
+    <section id="medicine" className={styles.light}>
+      <div className={styles.container}>
+        <h2 className={styles.sectionTitle}>
+          {m.medicine.title}
+          <br />
+          <span className={styles.pokeText}>{m.medicine.titleAccent}</span>
+        </h2>
+        <p className={styles.sectionLead}>{m.medicine.lead}</p>
+        <div className={styles.cards}>
+          {m.medicine.items.map((item) => (
+            <div key={item.title} className={styles.featureCard}>
+              <span className={styles.featureTag}>{item.tag}</span>
+              <h3 className={styles.stepTitle}>{item.title}</h3>
+              <p className={styles.stepBody}>{item.body}</p>
+            </div>
+          ))}
+        </div>
+        <p className={styles.sectionNote}>{m.medicine.note}</p>
+      </div>
+    </section>
+  );
+}
+
 function Levels({ locale, m }: { locale: Locale; m: Messages }) {
   return (
     <section id="levels" className={styles.dark}>
@@ -335,6 +360,7 @@ export function Landing({ locale }: { locale: Locale }) {
           </section>
           <Steps m={m} />
           <Features m={m} />
+          <Medicine m={m} />
           <Levels locale={locale} m={m} />
           <Excuses m={m} />
           <Pricing m={m} />
