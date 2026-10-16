@@ -499,6 +499,21 @@
   color: var(--dark-text-secondary);
 }
 
+/* Medicine reminder (NUD-106), on a light section */
+.sectionLead {
+  margin: 20px 0 0;
+  max-width: 640px;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--text-body);
+}
+
+.sectionNote {
+  margin: 24px 0 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
 /* Poke levels */
 
 .split {

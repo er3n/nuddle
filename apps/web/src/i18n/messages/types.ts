@@ -76,6 +76,15 @@ export interface Messages {
     note: string;
   };
   features: { title: string; titleAccent: string; items: Feature[] };
+  /** One everyday use spelled out for search: the medicine reminder (NUD-106). */
+  medicine: {
+    title: string;
+    titleAccent: string;
+    lead: string;
+    items: [Feature, Feature, Feature];
+    /** The app reminds; it gives no medical advice. */
+    note: string;
+  };
   steps: { title: string; titleSecondLine: string; items: [Titled, Titled, Titled] };
   levels: {
     title: string;

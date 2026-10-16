@@ -6,7 +6,7 @@ export const tr: Messages = {
   brand: "dürt",
   domain: "nuddle.app",
   meta: {
-    title: "dürt · Evde biri hep unutuyor",
+    title: "dürt · Hatırlatıcı ve alarm: evde biri hep unutuyor",
     description:
       "Sen bir kere yaz. dürt, o iş bitene kadar dürter. Kaç dürtmede öğrendiğini de hatırlar.",
   },
@@ -131,6 +131,29 @@ export const tr: Messages = {
         body: "Bizimkiler'de kimse yoksa da olur. Kendine yazdığın işi de aynı ısrarla dürter.",
       },
     ],
+  },
+  medicine: {
+    title: "İlaç hatırlatıcı:",
+    titleAccent: "annen unutmasın.",
+    lead: '"Annem her gün 9\'da tansiyon ilacını içsin." Bir kere yaz, dürt her sabah onu dürtsün. İçip içmediğini de sen bil.',
+    items: [
+      {
+        tag: "Her gün 09:00",
+        title: "Bir kere yazılır",
+        body: "Her gün aynı saatte çalar. Buzdolabına not, telefonda alarm kurmak yok. Bitince iptal edersin.",
+      },
+      {
+        tag: "Tam ekran",
+        title: "Görmezden gelinmez",
+        body: 'Bildirimi kaçırırsa ses yükselir, sonra tam ekran alarm gelir. "Bitti" diyene kadar dürter.',
+      },
+      {
+        tag: "✓ Bitti",
+        title: "Sen de bilirsin",
+        body: "İçince sana haber gelir. İçmediyse onu da görürsün, arayıp sorarsın.",
+      },
+    ],
+    note: "dürt bir hatırlatma uygulamasıdır, tıbbi tavsiye vermez. İlacın nasıl kullanılacağını doktoruna sor.",
   },
   steps: {
     title: "Üç adım.",
