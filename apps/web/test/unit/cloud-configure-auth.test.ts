@@ -63,7 +63,9 @@ describe("configure.sh auth", () => {
   it("sends no test number when there is no review file", async () => {
     const run = applyAuth();
     expect(run.status).toBe(0);
-    expect((await sentBody()).sms_test_otp).toBe("");
+    const body = await sentBody();
+    expect(body.sms_test_otp).toBe("");
+    expect(body).not.toHaveProperty("sms_test_otp_valid_until");
     expect(run.stdout).toContain('"sms_test_numbers": 0');
   });
 
@@ -71,7 +73,12 @@ describe("configure.sh auth", () => {
     await writeFile(join(prod, "PLAY_REVIEW_OTP"), "905550001122=246810\n");
     const run = applyAuth();
     expect(run.status).toBe(0);
-    expect((await sentBody()).sms_test_otp).toBe("905550001122=246810");
+    const body = await sentBody();
+    expect(body.sms_test_otp).toBe("905550001122=246810");
+    // Supabase refuses a test number without an expiry; it is 90 days from the run.
+    const days = (Date.parse(String(body.sms_test_otp_valid_until)) - Date.now()) / 86_400_000;
+    expect(days).toBeGreaterThan(89);
+    expect(days).toBeLessThanOrEqual(90);
     expect(run.stdout).toContain('"sms_test_numbers": 1');
     const printed = run.stdout + run.stderr;
     expect(printed).not.toContain("905550001122");

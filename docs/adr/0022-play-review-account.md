@@ -10,7 +10,7 @@ Google Play reviews every release and asks, under App access, how its reviewers 
 - **The number and code are never committed.** They live in `~/.nuddle/prod/PLAY_REVIEW_OTP` as one line, `<E.164 digits without +>=<6 digits>`. `supabase/cloud/configure.sh auth` adds them to `sms_test_otp` at apply time, like the Send SMS hook secret. `supabase/cloud/auth.json` keeps `sms_test_otp` empty, and a unit test keeps it so.
 - **Nothing prints them.** `configure.sh auth` rejects a malformed file, and its read-back shows only how many test numbers the project has, never the value.
 - **Applying it is a production change** (CLAUDE.md rule 6): the human runs `configure.sh auth`, or tells the agent to. The code is generated at random into the file and never printed; only the human reads it and types it into Play Console, App access. The agent never sees or enters the code.
-- **Revoking is one step:** empty the file and run `configure.sh auth` again; the project then has no test number.
+- **It expires.** Supabase takes a test number only with an expiry, so `configure.sh auth` sets it to 90 days from the run; running it again renews it. Revoking is one step: empty the file and run it again; the project then has no test number.
 - The review number is an ordinary account: it signs in, writes tasks to itself and gets poked. Supabase never calls the Send SMS hook for it, so no SMS is sent or paid for.
 
 ## Consequences

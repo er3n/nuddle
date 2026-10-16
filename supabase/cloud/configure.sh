@@ -64,8 +64,11 @@ case "${1:-}" in
         exit 1
       fi
     fi
+    # Supabase takes a test number only with an expiry; the review number lasts 90 days from
+    # this run and is renewed by running it again.
     jq --rawfile secret "$dir/SEND_SMS_HOOK_SECRET" --arg review "$review" \
-      '. + {hook_send_sms_secrets: $secret, sms_test_otp: $review}' \
+      '. + {hook_send_sms_secrets: $secret, sms_test_otp: $review}
+        + (if $review == "" then {} else {sms_test_otp_valid_until: (now + 90 * 86400 | todate)} end)' \
       "$here/auth.json" >"$tmp/body"
     status="$(management_api PATCH /config/auth "$tmp/body")"
     if [[ "$status" != 2* ]]; then
@@ -78,6 +81,7 @@ case "${1:-}" in
     # Never the test numbers or codes themselves, only how many there are (ADR 0022).
     jq '{site_url, disable_signup, external_phone_enabled, external_email_enabled,
       sms_test_numbers: ((.sms_test_otp // "") | split(",") | map(select(. != "")) | length),
+      sms_test_otp_valid_until,
       hook_send_sms_enabled, hook_send_sms_uri,
       hook_send_sms_secret_set: ((.hook_send_sms_secrets // "") != "")}' "$tmp/response"
     ;;
