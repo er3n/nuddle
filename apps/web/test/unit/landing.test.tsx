@@ -48,6 +48,15 @@ describe("Landing", () => {
     expect(html).not.toContain("play.google.com");
   });
 
+  it("says a photo may come from the gallery (open-questions#48)", () => {
+    const tr = text(renderToStaticMarkup(<Landing locale="tr" />));
+    expect(tr).toContain("galeriden seçilir");
+    expect(tr).not.toMatch(/yüklenemez|Kamera sadece/);
+    const en = text(renderToStaticMarkup(<Landing locale="en" />));
+    expect(en).toContain("picked from the gallery");
+    expect(en).not.toMatch(/no old photos|camera only opens/);
+  });
+
   it("links to the privacy notice and the account deletion page in its own language", () => {
     const tr = renderToStaticMarkup(<Landing locale="tr" />);
     expect(tr).toContain('href="/tr/privacy"');

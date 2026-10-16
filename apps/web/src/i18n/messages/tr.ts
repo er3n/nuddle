@@ -83,7 +83,7 @@ export const tr: Messages = {
       },
       {
         title: '"Bitti" de, gerekirse fotoğrafla',
-        body: 'Çoğu iş için "Bitti" yeter. Para gibi işlerde fotoğraf önerilir: uygulama içinden çekilir, galeriden eski fotoğraf yüklenemez, onayı yazan verir. "Aldım ya" devri kapandı.',
+        body: 'Çoğu iş için "Bitti" yeter. Para gibi işlerde fotoğraf önerilir: uygulamada çekilir ya da galeriden seçilir, onayı işi yazan verir. "Aldım ya" devri kapandı.',
       },
     ],
   },
@@ -155,7 +155,7 @@ export const tr: Messages = {
       },
       {
         question: "Galeriden eski fotoğraf yüklesem?",
-        answer: "Kamera sadece uygulama içinden açılır. Güzel deneme ama.",
+        answer: "Yükleyebilirsin. Ama onayı işi yazan verir, o da dünkü ekmeği tanır.",
       },
       {
         question: "iPhone var mı?",

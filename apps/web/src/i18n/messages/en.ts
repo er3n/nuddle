@@ -91,7 +91,7 @@ export const en: Messages = {
       },
       {
         title: 'Say "Done", add a photo if needed',
-        body: 'For most things "Done" is enough. For things like cash, a photo is suggested: taken inside the app, no old photos from the gallery, approved by whoever wrote the task. The "but I did get it" era is over.',
+        body: 'For most things "Done" is enough. For things like cash, a photo is suggested: taken in the app or picked from the gallery, approved by whoever wrote the task. The "but I did get it" era is over.',
       },
     ],
   },
@@ -166,7 +166,8 @@ export const en: Messages = {
       },
       {
         question: "What if I upload an old photo from the gallery?",
-        answer: "The camera only opens inside the app. Nice try, though.",
+        answer:
+          "You can. But whoever wrote the task approves it, and they know yesterday's bread when they see it.",
       },
       {
         question: "Is there an iPhone app?",
