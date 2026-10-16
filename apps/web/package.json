@@ -15,6 +15,7 @@
     "db:generate": "drizzle-kit generate",
     "contract:gen": "tsx scripts/contract-gen.ts",
     "golden:export": "tsx scripts/golden-export.ts",
+    "account:delete": "tsx scripts/account-delete.ts",
     "stories": "tsx scripts/stories-run.ts",
     "contract:lint": "redocly lint ../../packages/contract/openapi.yaml --config ../../redocly.yaml"
   },

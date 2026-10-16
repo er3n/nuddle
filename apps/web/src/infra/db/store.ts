@@ -1042,6 +1042,36 @@ export async function deleteLlmCallsOf(tx: Tx, personId: PersonId): Promise<void
 
 // ---- account deletion (NUD-89) ----------------------------------------------------------------
 
+/** What a deletion by phone would touch (NUD-88): the live person and their tasks by state. */
+export async function deletionPreviewOf(
+  ex: Executor,
+  phone: string,
+): Promise<{ person: Person; tasks: number; openTasks: number; connections: number } | null> {
+  const [row] = await ex
+    .select()
+    .from(people)
+    .where(and(eq(people.phone, phone), isNull(people.deletedAt)));
+  if (!row) return null;
+  const theirs = or(eq(tasks.senderId, row.id), eq(tasks.recipientId, row.id));
+  const [counts] = await ex
+    .select({
+      tasks: sql<number>`count(*)::int`,
+      openTasks: sql<number>`(count(*) filter (where ${tasks.status} not in ('DONE', 'CANCELLED')))::int`,
+    })
+    .from(tasks)
+    .where(theirs);
+  const [connected] = await ex
+    .select({ n: sql<number>`count(*)::int` })
+    .from(edges)
+    .where(and(eq(edges.fromPersonId, row.id), eq(edges.status, "active")));
+  return {
+    person: toPerson(row),
+    tasks: counts?.tasks ?? 0,
+    openTasks: counts?.openTasks ?? 0,
+    connections: connected?.n ?? 0,
+  };
+}
+
 /** Invites the person sent and invites to their number: both hold a phone number. */
 export async function deleteInvitesOf(tx: Tx, personId: PersonId, phone: string): Promise<void> {
   await tx

@@ -221,6 +221,12 @@ description = "Run server timers once locally"
 # Calls the running `mise run dev` server the way pg_cron does in the cloud (ADR 0007).
 run = "curl -fsS -X POST -H \"Authorization: Bearer $TICK_SECRET\" http://localhost:3000/api/internal/tick && echo"
 
+[tasks."account:delete"]
+description = "Delete an account by phone number for an email request; dry run unless --yes (NUD-88)"
+depends = ["_install"]
+# Local by default. `--prod` targets nuddle.app: only the human runs that (CLAUDE.md rule 6).
+run = "pnpm --filter @nuddle/web account:delete"
+
 [tasks."contract:gen"]
 description = "Regenerate packages/contract/openapi.yaml"
 depends = ["_install"]
