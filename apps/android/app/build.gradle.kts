@@ -14,9 +14,40 @@ plugins {
     alias(libs.plugins.detekt)
 }
 
+// The Play upload key lives outside the repo (CLAUDE.md rule 11, docs/human-checklist.md, Before the beta):
+// Gradle properties in ~/.gradle/gradle.properties on the dev machine, or environment variables in CI.
+// Without them the build still configures; only bundleProdRelease refuses to run.
+fun uploadKeyValue(property: String, env: String): String? =
+    providers.gradleProperty(property).orElse(providers.environmentVariable(env)).orNull
+
+val uploadStoreFile = uploadKeyValue("nuddle.upload.storeFile", "NUDDLE_UPLOAD_STORE_FILE")
+val uploadStorePassword = uploadKeyValue("nuddle.upload.storePassword", "NUDDLE_UPLOAD_STORE_PASSWORD")
+val uploadKeyAlias = uploadKeyValue("nuddle.upload.keyAlias", "NUDDLE_UPLOAD_KEY_ALIAS")
+val uploadKeyPassword = uploadKeyValue("nuddle.upload.keyPassword", "NUDDLE_UPLOAD_KEY_PASSWORD")
+val hasUploadKey =
+    listOf(uploadStoreFile, uploadStorePassword, uploadKeyAlias, uploadKeyPassword).all { !it.isNullOrBlank() }
+
 android {
     namespace = "app.nuddle"
     compileSdk = 37
+
+    signingConfigs {
+        if (hasUploadKey) {
+            create("upload") {
+                storeFile = file(checkNotNull(uploadStoreFile))
+                storePassword = uploadStorePassword
+                keyAlias = uploadKeyAlias
+                keyPassword = uploadKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            // Play App Signing re-signs with the app signing key; this only proves the upload came from us.
+            signingConfig = signingConfigs.findByName("upload")
+        }
+    }
 
     defaultConfig {
         applicationId = "app.nuddle"
@@ -206,4 +237,15 @@ dependencies {
     testImplementation(libs.konsist)
 
     detektPlugins(libs.compose.rules.detekt)
+}
+
+// An unsigned bundle is useless to Play; fail early with the fix instead of at upload time.
+tasks.matching { it.name == "bundleProdRelease" }.configureEach {
+    val signed = hasUploadKey
+    doFirst {
+        check(signed) {
+            "No Play upload key. Set nuddle.upload.* in ~/.gradle/gradle.properties " +
+                "(docs/human-checklist.md, Before the beta)."
+        }
+    }
 }
