@@ -131,12 +131,13 @@ fun NuddleNavHost(
             // An invite link opened while signed out: 0b with its preview (ADR 0016). The code stays for home, which
             // opens the consent screen after sign-in.
             LaunchedEffect(inviteCode) { inviteCode?.let(viewModel::onInviteLink) }
+            val activity = LocalActivity.current
             WelcomeScreen(
                 state = state,
                 onStart = { nav.navigate(Routes.PHONE) },
-                // Terms and privacy texts do not exist yet (docs/human-checklist.md, Before the beta).
+                // The terms text does not exist yet (docs/human-checklist.md, Before the beta).
                 onTerms = {},
-                onPrivacy = {},
+                onPrivacy = { activity?.openPage(WebPages.PRIVACY) },
             )
         }
         composable(Routes.PHONE) {

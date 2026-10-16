@@ -10,9 +10,12 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performFirstLinkClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.text.LinkAnnotation
 import app.nuddle.ui.components.CodeInput
 import app.nuddle.ui.components.UndoToast
 import app.nuddle.ui.screens.code.CodeScreen
@@ -55,6 +58,16 @@ class SignInScreensTest {
         content { WelcomeScreen(WelcomeUiState(), onStart = { started++ }, onTerms = {}, onPrivacy = {}) }
         compose.onNodeWithText("Telefonla başla").performClick()
         assertEquals(1, started)
+    }
+
+    @Test
+    fun `the privacy link in the welcome sentence opens the privacy notice`() {
+        var privacy = 0
+        var terms = 0
+        content { WelcomeScreen(WelcomeUiState(), onStart = {}, onTerms = { terms++ }, onPrivacy = { privacy++ }) }
+        compose.onNodeWithTag(TestTags.WELCOME_TERMS).performFirstLinkClick { (it.item as? LinkAnnotation.Clickable)?.tag == "privacy" }
+        assertEquals(1, privacy)
+        assertEquals(0, terms)
     }
 
     @Test
