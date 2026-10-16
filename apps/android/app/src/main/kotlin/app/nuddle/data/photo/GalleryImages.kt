@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.exifinterface.media.ExifInterface
+import app.nuddle.domain.Diagnostics
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -21,15 +22,18 @@ class ContentGalleryImages
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
+        private val diagnostics: Diagnostics = Diagnostics.None,
     ) : GalleryImages {
         override suspend fun read(uri: Uri): ByteArray? =
             withContext(Dispatchers.IO) {
                 try {
                     val bitmap = decodeScaled(uri) ?: return@withContext null
                     bitmap.toJpeg(rotationDegrees = rotationOf(uri))
-                } catch (_: IOException) {
+                } catch (error: IOException) {
+                    diagnostics.record(error)
                     null
-                } catch (_: SecurityException) {
+                } catch (error: SecurityException) {
+                    diagnostics.record(error)
                     null
                 }
             }

@@ -1,5 +1,5 @@
 // Source language. What is said here follows docs/product.md (Identity, Photo and approval),
-// docs/architecture.md (Stack) and ADR 0017, 0019; the human reviews it before it goes live.
+// docs/architecture.md (Stack) and ADR 0017, 0019, 0023; the human reviews it before it goes live.
 import { CONTROLLER, PRIVACY_EMAIL } from "../contact";
 import type { Legal } from "./types";
 
@@ -39,7 +39,7 @@ export const legalTr: Legal = {
           "Dürtme geçmişin: hangi dürtmenin ne zaman çaldığı, hangisinden sonra harekete geçtiğin, ertelemeler. Bundan, seni nasıl dürtmemiz gerektiğini anlatan kısa bir özet çıkarılır.",
           "Fotoğraflar: bir işi bitirdiğini göstermek için gönderdiğin fotoğraf.",
           "Ayarların: sessiz saatler, saat dilimi ve tanıdıklarına haber verilip verilemeyeceği.",
-          "Cihaz bilgileri: bildirim gönderebilmek için telefonun bildirim anahtarı, izinlerin açık olup olmadığı, dürtmelerin telefonda zamanında çalıp çalmadığı ve uygulama çökerse hata raporu (telefon modeli, Android sürümü, hata kaydı).",
+          "Cihaz bilgileri: bildirim gönderebilmek için telefonun bildirim anahtarı, izinlerin açık olup olmadığı, dürtmelerin telefonda zamanında çalıp çalmadığı ve uygulama çökerse ya da bir işlem hata verirse hata raporu (telefon modeli, Android sürümü, açık olan ekran, uygulamanın son adımları ve hata kaydı; görev metni, isim, numara ve fotoğraf içermez).",
         ],
       },
       {

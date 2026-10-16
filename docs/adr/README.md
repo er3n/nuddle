@@ -28,3 +28,4 @@ To change a decision: add a new ADR that supersedes the old one, set the old one
 | 0020 | The planner reads a rolling person profile plus a short recent history |
 | 0021 | A repeating task is a series of one-off occurrences |
 | 0022 | One review number with a fixed code in the cloud, kept outside the repo |
+| 0023 | The app leaves breadcrumbs and non-fatal reports in Crashlytics; never personal data |

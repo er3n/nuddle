@@ -3,6 +3,7 @@ package app.nuddle.alarm
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import app.nuddle.domain.Diagnostics
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -41,11 +42,14 @@ class PokeAlarmReceiver : BroadcastReceiver() {
 class PokeActionReceiver : BroadcastReceiver() {
     @Inject lateinit var actions: PokeActions
 
+    @Inject lateinit var diagnostics: Diagnostics
+
     override fun onReceive(
         context: Context,
         intent: Intent,
     ) {
         val key = PokeIntents.key(intent) ?: return
+        diagnostics.log("notification ${intent.action?.substringAfterLast('.')} ${key.taskId}")
         runAsync {
             when (intent.action) {
                 PokeIntents.ACTION_DONE -> actions.done(key)
@@ -61,11 +65,14 @@ class PokeActionReceiver : BroadcastReceiver() {
 class RearmReceiver : BroadcastReceiver() {
     @Inject lateinit var alarms: PokeAlarms
 
+    @Inject lateinit var diagnostics: Diagnostics
+
     override fun onReceive(
         context: Context,
         intent: Intent,
     ) {
         if (intent.action !in REARM_ACTIONS) return
+        diagnostics.log("rearm ${intent.action?.substringAfterLast('.')}")
         runAsync { alarms.rearm() }
     }
 

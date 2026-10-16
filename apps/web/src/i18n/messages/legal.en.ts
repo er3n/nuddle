@@ -38,7 +38,7 @@ export const legalEn: Legal = {
           "Your poke history: which poke rang when, after which one you acted, snoozes. From it a short summary of how you should be poked is written.",
           "Photos: the photo you send to show that a task is done.",
           "Your settings: quiet hours, time zone and whether people you know may be told.",
-          "Device data: your phone's notification key so we can reach it, whether permissions are on, whether pokes rang on time on the phone, and if the app crashes a crash report (phone model, Android version, error log).",
+          "Device data: your phone's notification key so we can reach it, whether permissions are on, whether pokes rang on time on the phone, and if the app crashes or an action fails, an error report (phone model, Android version, the screen that was open, the app's last steps and the error log; never task text, names, numbers or photos).",
         ],
       },
       {
