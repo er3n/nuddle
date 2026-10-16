@@ -112,6 +112,7 @@ WhatsApp copy for later: Kodu WhatsApp'tan gönder | SMS ile gönder
 
 ### 0d Code · `Otp.png`
 Six-box CodeInput, resend countdown, autofill hint. SMS variant until WhatsApp exists (NUD-9); after the one minute countdown "Yeni kod gönder" appears in its place.
+After a correct code for an existing account the code screen keeps its spinner until the first sync is in, at most 5 seconds, so home opens with the tasks instead of the empty state (NUD-105). A failed or slow sync opens home anyway.
 **Copy:** Mesajlarına baktın mı? | +90 532 123 45 67 numarasına 6 haneli kod gönderdik. Numarayı değiştir | Kod gelmedi mi? 0:42 sonra tekrar gönderebilirsin. | Kod SMS ile gelince klavyenin üstünde otomatik çıkar, dokunman yeter. | Yeni kod gönder
 WhatsApp copy for later: WhatsApp'ına baktın mı? | Kod WhatsApp'a gelince klavyenin üstünde otomatik çıkar, dokunman yeter. | SMS ile dene
 

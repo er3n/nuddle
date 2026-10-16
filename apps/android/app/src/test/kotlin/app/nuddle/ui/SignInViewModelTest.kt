@@ -5,6 +5,7 @@ import app.cash.turbine.test
 import app.nuddle.data.InvitePreview
 import app.nuddle.data.SendOtpOutcome
 import app.nuddle.data.VerifyOutcome
+import app.nuddle.data.sync.Syncer
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeAuthRepository
 import app.nuddle.testing.FakeInvitePreviews
@@ -16,7 +17,9 @@ import app.nuddle.ui.screens.name.NameUiState
 import app.nuddle.ui.screens.name.NameViewModel
 import app.nuddle.ui.screens.phone.PhoneViewModel
 import app.nuddle.ui.screens.welcome.WelcomeViewModel
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -35,6 +38,13 @@ class SignInViewModelTest {
 
     private val auth = FakeAuthRepository()
     private val starter = RecordingStarter()
+    private var syncs = 0
+    private var sync = Syncer { true }
+    private val syncer =
+        Syncer {
+            syncs++
+            sync.sync()
+        }
 
     private val istanbul = TimeZone.of("Europe/Istanbul")
 
@@ -42,7 +52,7 @@ class SignInViewModelTest {
     private val waitEnds = Instant.parse("2026-10-11T21:15:00+03:00")
 
     private fun codeViewModel() =
-        CodeViewModel(SavedStateHandle(mapOf(CodeViewModel.ARG_PHONE to Cast.EREN_PHONE)), auth, starter, istanbul)
+        CodeViewModel(SavedStateHandle(mapOf(CodeViewModel.ARG_PHONE to Cast.EREN_PHONE)), auth, starter, syncer, istanbul)
 
     @Test
     fun `phone screen sends the code only for a valid mobile number`() =
@@ -82,6 +92,7 @@ class SignInViewModelTest {
             }
             assertEquals(listOf(Cast.EREN_PHONE to "123456"), auth.verified)
             assertEquals(1, starter.starts)
+            assertEquals(1, syncs)
         }
 
     @Test
@@ -94,6 +105,51 @@ class SignInViewModelTest {
                 assertEquals(SignedInDestination.Name, awaitItem())
             }
             assertEquals(0, starter.starts)
+            assertEquals(0, syncs)
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class) // Reason: runCurrent lets sign-in reach the sync before it ends.
+    @Test
+    fun `home opens once the first sync is in, the code spinner stays until then (NUD-105)`() =
+        runTest(main.dispatcher) {
+            val synced = CompletableDeferred<Boolean>()
+            sync = Syncer { synced.await() }
+            val vm = codeViewModel()
+            vm.signedIn.test {
+                vm.onComplete("123456")
+                runCurrent()
+                expectNoEvents()
+                assertTrue(vm.state.value.verifying)
+                synced.complete(true)
+                assertEquals(SignedInDestination.Home, awaitItem())
+            }
+            assertEquals(1, syncs)
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class) // Reason: advanceTimeBy moves past the wait for a sync that does not answer.
+    @Test
+    fun `a sync that does not answer still opens home after the wait`() =
+        runTest(main.dispatcher) {
+            sync = Syncer { awaitCancellation() }
+            val vm = codeViewModel()
+            vm.signedIn.test {
+                vm.onComplete("123456")
+                advanceTimeBy(CodeViewModel.FIRST_SYNC_WAIT - 1.seconds)
+                expectNoEvents()
+                advanceTimeBy(2.seconds)
+                assertEquals(SignedInDestination.Home, awaitItem())
+            }
+        }
+
+    @Test
+    fun `a failed sync opens home at once`() =
+        runTest(main.dispatcher) {
+            sync = Syncer { false }
+            val vm = codeViewModel()
+            vm.signedIn.test {
+                vm.onComplete("123456")
+                assertEquals(SignedInDestination.Home, awaitItem())
+            }
         }
 
     @Test
