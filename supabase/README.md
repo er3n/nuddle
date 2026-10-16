@@ -15,7 +15,7 @@ Project `nuddle`, ref `hksqgdkbxalaixjghlvi`, `eu-central-1`. Agents never run t
 1. Link (asks for the database password): `mise exec -- supabase link --project-ref hksqgdkbxalaixjghlvi`
 2. Check what is applied (read-only): `mise exec -- supabase migration list --linked`
 3. Apply the migrations: `mise exec -- supabase db push --linked --dry-run`, then without `--dry-run`. **Never `--include-seed`**: `seed.sql` is local test data.
-4. Shared secrets and Auth settings: `mise exec -- supabase/cloud/configure.sh secrets`, then `mise exec -- supabase/cloud/configure.sh auth`. The second applies `cloud/auth.json` (phone sign-in, Send SMS hook to `https://nuddle.app/api/internal/otp-hook`, no test numbers) through the Management API. **Never `supabase config push` to the cloud project**: it would push `config.toml`, including the test numbers (ADR 0011).
+4. Shared secrets and Auth settings: `mise exec -- supabase/cloud/configure.sh secrets`, then `mise exec -- supabase/cloud/configure.sh auth`. The second applies `cloud/auth.json` (phone sign-in, Send SMS hook to `https://nuddle.app/api/internal/otp-hook`, no test numbers except the Play review number from `~/.nuddle/prod/PLAY_REVIEW_OTP` when that file exists, ADR 0022) through the Management API. **Never `supabase config push` to the cloud project**: it would push `config.toml`, including the test numbers (ADR 0011).
 5. After production health is green, the tick job (below): `mise exec -- supabase/cloud/configure.sh tick`
 
 ### New migrations (until the beta: the agent)
