@@ -3,7 +3,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { expect, it } from "vitest";
-import type { Extraction } from "../../src/domain/extraction";
+import { withFirstOccurrence, type Extraction } from "../../src/domain/extraction";
 import { repeatRuleOf, textSaysRepeat, type RepeatRule } from "../../src/domain/repeat";
 import type { EdgeType, FinishMode, Timing } from "../../src/domain/types";
 import { OpenRouterExtractor } from "../../src/infra/llm/openrouter-extractor";
@@ -98,7 +98,8 @@ it("extraction golden set", { timeout: 30 * 60_000 }, async () => {
       failures.push(`${c.id}: error ${String(error)}`);
       continue;
     }
-    const fields = score(c, got);
+    // The server sets a repeating task's first occurrence from the rule (NUD-83), so score that.
+    const fields = score(c, withFirstOccurrence(got, c.text, new Date(c.now), c.timeZone));
     for (const [field, ok] of Object.entries(fields)) {
       const t = totals.get(field) ?? { pass: 0, total: 0 };
       totals.set(field, { pass: t.pass + (ok ? 1 : 0), total: t.total + 1 });

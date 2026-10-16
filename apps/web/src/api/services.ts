@@ -12,12 +12,17 @@ import {
   removeConnection as removeConnectionDomain,
   revokeInvite,
 } from "../domain/connections";
-import { resolveExtraction, type Extraction, type MissingField } from "../domain/extraction";
+import {
+  resolveExtraction,
+  withFirstOccurrence,
+  type Extraction,
+  type MissingField,
+} from "../domain/extraction";
 import { afterWrongCode, lockedUntil } from "../domain/otp-attempts";
 import { humanChannelAllowed } from "../domain/plan-pokes";
 import { profileIsStale, RECENT_TASKS, type ProfileInput } from "../domain/profile";
 import type { PersonProfiler } from "../domain/ports";
-import { nextOccurrenceAt, repeatRuleOf, textSaysRepeat, type RepeatRule } from "../domain/repeat";
+import { nextOccurrenceAt, type RepeatRule } from "../domain/repeat";
 import { addMs, DAY, HOUR, MINUTE } from "../domain/time";
 import { pokeStartOf } from "../domain/timing";
 import {
@@ -555,7 +560,12 @@ export async function writeTask(
   });
   let extraction: Extraction;
   try {
-    extraction = await deps.extractor.extract(extractionInput, call.sink);
+    extraction = withFirstOccurrence(
+      await deps.extractor.extract(extractionInput, call.sink),
+      input.text,
+      now,
+      caller.quietHours.timeZone,
+    );
   } catch (error) {
     console.error("extraction failed", error);
     await call.record("failed", { error: errorText(error) });
@@ -589,7 +599,7 @@ export async function writeTask(
         missAfterMinutes,
         leadMinutes,
         finishMode,
-        repeat: textSaysRepeat(input.text) ? repeatRuleOf(extraction.repeat) : null,
+        repeat: extraction.repeat ?? null,
       },
     };
   }

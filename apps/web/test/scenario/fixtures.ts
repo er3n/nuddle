@@ -18,6 +18,7 @@ export const TEXT = {
   weeklyTrashToEren: "eren her salı akşam 7de çöpü çıkarsın",
   loveToEren: "erene 3te seni seviyorum de",
   dinnerToEren: "erene yemek hazır de",
+  weekdaysWakeSelf: "beni hafta içi her gün 7'de kaldır",
 } as const;
 
 const fixtures: Record<string, FixtureExtraction> = {
@@ -120,6 +121,19 @@ const fixtures: Record<string, FixtureExtraction> = {
     finishMode: "done",
     missing: [],
     repeat: { every: "week", days: [2], time: "19:00" },
+  },
+  // The model's first occurrence is wrong (today 07:00 is long past on Sunday 20:00, NUD-83);
+  // the server computes it from the rule: Monday 07:00.
+  [TEXT.weekdaysWakeSelf]: {
+    recipient: "self",
+    title: "Kalk",
+    detail: null,
+    deadline: "2026-10-11T07:00:00+03:00",
+    timing: "at",
+    missAfterMinutes: 15,
+    finishMode: "done",
+    missing: [],
+    repeat: { every: "weekdays", time: "07:00" },
   },
   // A one-time message (NUD-79): 15:00 has passed on Sunday 20:00, so tomorrow 15:00.
   [TEXT.loveToEren]: {

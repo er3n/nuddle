@@ -71,4 +71,14 @@ describe("scenarios: repeating tasks", () => {
     expect(await eren.command(taskId, { type: "done" })).toEqual({ ok: true });
     expect(world.tasksWrittenBy("sibel")).toHaveLength(1);
   });
+
+  it("the first occurrence comes from the rule, even when the model's time has passed (NUD-83)", async () => {
+    const { world, sibel } = await sibelAndEren();
+    // Sunday 20:00; the model said today 07:00. No question: Monday 07:00 from the weekdays rule.
+    const taskId = await writeTask(sibel, TEXT.weekdaysWakeSelf);
+    const task = world.task(taskId);
+    expect(task.repeat).toEqual({ every: "weekdays", time: "07:00" });
+    expect(task.remindAt).toEqual(at("2026-10-12T07:00:00"));
+    expect(task.seriesId).toBe(taskId);
+  });
 });
