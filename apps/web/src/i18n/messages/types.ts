@@ -5,6 +5,12 @@ interface Titled {
   body: string;
 }
 
+/** A feature card: the app's own words on top, then a title and a line about it. */
+interface Feature extends Titled {
+  /** Words as the app shows them ("Her gün 09:00", "Ertele · 22:37"). */
+  tag: string;
+}
+
 interface StoryPanel {
   time: string;
   caption: string;
@@ -19,6 +25,7 @@ export interface Messages {
   nav: {
     label: string;
     how: string;
+    video: string;
     levels: string;
     pricing: string;
     download: string;
@@ -56,6 +63,19 @@ export interface Messages {
       approved: string;
     };
   };
+  video: {
+    title: string;
+    subtitle: string;
+    /** The play button's label for screen readers. */
+    play: string;
+    /** Written on the play button, with the length of the video. */
+    watch: string;
+    /** Names the frame the poster shows, for screen readers. */
+    posterAlt: string;
+    /** Says the video comes from YouTube once it plays. */
+    note: string;
+  };
+  features: { title: string; titleAccent: string; items: Feature[] };
   steps: { title: string; titleSecondLine: string; items: [Titled, Titled, Titled] };
   levels: {
     title: string;

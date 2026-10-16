@@ -124,6 +124,7 @@ export const legalTr: Legal = {
         heading: "Web sitesi",
         paragraphs: [
           "nuddle.app sadece seçtiğin dili hatırlamak için bir çerez kullanır. Reklam ya da takip çerezi yoktur.",
+          "Ana sayfadaki tanıtım videosu YouTube'da durur. Oynat'a basana kadar sayfa YouTube'dan hiçbir şey yüklemez; bastığında video youtube-nocookie.com üzerinden, Google'ın kendi gizlilik kurallarıyla gelir.",
         ],
       },
       {

@@ -13,6 +13,7 @@ export const tr: Messages = {
   nav: {
     label: "Ana menü",
     how: "Nasıl çalışır",
+    video: "İzle",
     levels: "Dürtme seviyeleri",
     pricing: "Fiyat",
     download: "Android'e indir",
@@ -34,7 +35,15 @@ export const tr: Messages = {
     excuse: "Mesajı görmedim.",
     reply: "Tam ekranı da mı?",
   },
-  marquee: ["EKMEK AL", "PARA ÇEK", "FATURAYI ÖDE", "ÇÖPÜ AT", "ANNENİ ARA", "KURU TEMİZLEME"],
+  marquee: [
+    "EKMEK AL",
+    "KİRAYI YATIR",
+    "FATURAYI ÖDE",
+    "HER SALI ÇÖP",
+    "ANNENİ ARA",
+    "İLACINI İÇ",
+    "KURU TEMİZLEME",
+  ],
   story: {
     title: "Bir ekmeğin hikayesi",
     subtitle: "Gerçek olaylardan esinlenilmiştir. Maalesef.",
@@ -69,13 +78,67 @@ export const tr: Messages = {
       approved: "Onaylandı",
     },
   },
+  video: {
+    title: "28 saniyede dürt",
+    subtitle: "Kira bir kere yazılır. Gerisini izle.",
+    play: "Tanıtım videosunu oynat",
+    watch: "İzle · 0:28",
+    posterAlt: "Videodan bir kare: 3. dürtme, tam ekran, KİRAYI YATIR.",
+    note: "Oynatınca video YouTube'dan yüklenir.",
+  },
+  features: {
+    title: "Bir de",
+    titleAccent: "bunlar var.",
+    items: [
+      {
+        tag: "Her gün 09:00",
+        title: "Her gün yazma",
+        body: '"Annem her gün 9\'da ilacını içsin." Bir kere yazılır, her gün dürter. "Her salı" ve "hafta içi her sabah" da olur. "Bugün olmaz" o günü atlar, iptal edince biter.',
+      },
+      {
+        tag: "Mesaj",
+        title: "Söylemeyi unutma",
+        body: '"Sibel\'e 3\'te seni seviyorum de." Yapılacak bir iş yok: saati gelince bir kere çalar, "Tamam" deyince kapanır. Israr etmez.',
+      },
+      {
+        tag: "Dinliyorum",
+        title: "Yazmaya üşenene",
+        body: "Mikrofona dokun, söyle. Söylediğin kutuya yazılır, istersen düzeltip gönderirsin.",
+      },
+      {
+        tag: "Saat 17:00 olunca",
+        title: "Şimdi değil, sonra",
+        body: "Dürtülen, dürtmelerin başlayacağı saati kaydırabilir. Son zaman yerinde kalır, bahane kalmaz.",
+      },
+      {
+        tag: "Ertele · 22:37",
+        title: "Ertelemenin de hesabı var",
+        body: "Hakkı sınırlı, kalan süreye göre kısalır. Düğme ne zaman tekrar çalacağını söyler, son hakkı olduğunu da.",
+      },
+      {
+        tag: "✓✓ Gördü",
+        title: "Yazan da bilir",
+        body: 'Ulaştı mı, gördü mü, kaç kez dürtüldü: "3 kez dürttüm, en son 18:15." Plan gizli kalır, sadece olan söylenir.',
+      },
+      {
+        tag: "Profil fotoğrafı",
+        title: "Kimden geldiği belli",
+        body: "Fotoğrafını galeriden seç. Dürtme bildiriminde yazanın yüzü görünür, annenin dürtmesini uzaktan tanırsın.",
+      },
+      {
+        tag: "Kendine",
+        title: "Kendine de yaz",
+        body: "Bizimkiler'de kimse yoksa da olur. Kendine yazdığın işi de aynı ısrarla dürter.",
+      },
+    ],
+  },
   steps: {
     title: "Üç adım.",
     titleSecondLine: "Sıfır bahane.",
     items: [
       {
-        title: "Bir kere yaz",
-        body: '"Eren yarın 9\'a kadar kirayı yatırsın." Kime, ne, ne zamana kadar: gerisini yapay zeka çıkarır. Form yok, tarih seçici yok, sabır testi yok.',
+        title: "Bir kere yaz ya da söyle",
+        body: '"Eren yarın 9\'a kadar kirayı yatırsın." Kime, ne, ne zamana kadar: gerisini yapay zeka çıkarır. "3\'te" bir an, "9\'a kadar" bir son zamandır. Form yok, tarih seçici yok, sabır testi yok.',
       },
       {
         title: "O dürtülür",
@@ -116,7 +179,8 @@ export const tr: Messages = {
       label: "Ücretsiz",
       price: "0 TL",
       features: [
-        "Uygulama içinden serbest yazma",
+        "Uygulama içinden serbest yazma, istersen sesle",
+        "Tekrarlayan görevler ve tek seferlik mesajlar",
         "Adaptif dürtme ve tam ekran alarm",
         "İstersen fotoğraf, onayı yazan verir",
         "Bizimkiler: sınırsız unutkan",
@@ -152,6 +216,16 @@ export const tr: Messages = {
         question: "Bir akşam önceden mi başlar?",
         answer:
           "Yarın sabah yapılacak iş için seni bu akşam rahatsız etmez. Doğru saati kendisi hesaplar.",
+      },
+      {
+        question: "Her gün aynı şeyi yazmam mı gerekecek?",
+        answer:
+          '"Her gün 9\'da", "her salı" ya da "hafta içi her sabah" yaz, kendisi tekrarlar. Günde birden sık olmaz, o kadar da değil.',
+      },
+      {
+        question: "Şu an müsait değilim, sonra dürtse?",
+        answer:
+          "Dürtmelerin başlayacağı saati kaydırabilirsin. Son zaman yerinde kalır, ekmek yine alınır.",
       },
       {
         question: "Galeriden eski fotoğraf yüklesem?",

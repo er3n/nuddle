@@ -5,6 +5,7 @@ import type { Messages } from "../i18n/messages/types";
 import { cx } from "./cx";
 import styles from "./landing.module.css";
 import { PokeButton, PokeDemoProvider, PokedBadge, PokeLevels } from "./PokeDemo";
+import { PromoVideo } from "./PromoVideo";
 import { Story } from "./Story";
 import { PLAY_STORE_URL } from "./store";
 
@@ -46,6 +47,9 @@ function Header({ locale, m }: { locale: Locale; m: Messages }) {
       <nav aria-label={m.nav.label} className={styles.nav}>
         <a href="#how" className={styles.navLink}>
           {m.nav.how}
+        </a>
+        <a href="#video" className={styles.navLink}>
+          {m.nav.video}
         </a>
         <a href="#levels" className={styles.navLink}>
           {m.nav.levels}
@@ -158,6 +162,42 @@ function Steps({ m }: { m: Messages }) {
               <div className={styles.stepNumber}>{index + 1}</div>
               <h3 className={styles.stepTitle}>{step.title}</h3>
               <p className={styles.stepBody}>{step.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Video({ locale, m }: { locale: Locale; m: Messages }) {
+  return (
+    <section id="video" className={styles.dark}>
+      <div className={styles.container}>
+        <h2 className={styles.sectionTitle}>{m.video.title}</h2>
+        <p className={styles.videoLead}>{m.video.subtitle}</p>
+        <PromoVideo locale={locale} video={m.video} />
+        <p className={styles.videoNote}>{m.video.note}</p>
+      </div>
+    </section>
+  );
+}
+
+function Features({ m }: { m: Messages }) {
+  return (
+    <section id="features" className={styles.white}>
+      <div className={styles.container}>
+        <h2 className={styles.sectionTitle}>
+          {m.features.title}
+          <br />
+          <span className={styles.pokeText}>{m.features.titleAccent}</span>
+        </h2>
+        <div className={styles.cards}>
+          {m.features.items.map((feature) => (
+            <div key={feature.title} className={styles.featureCard}>
+              <span className={styles.featureTag}>{feature.tag}</span>
+              <h3 className={styles.stepTitle}>{feature.title}</h3>
+              <p className={styles.stepBody}>{feature.body}</p>
             </div>
           ))}
         </div>
@@ -285,6 +325,7 @@ export function Landing({ locale }: { locale: Locale }) {
         <main>
           <Hero locale={locale} m={m} />
           <Marquee items={m.marquee} />
+          <Video locale={locale} m={m} />
           <section id="story" className={styles.white}>
             <div className={styles.container}>
               <h2 className={styles.sectionTitle}>{m.story.title}</h2>
@@ -293,6 +334,7 @@ export function Landing({ locale }: { locale: Locale }) {
             </div>
           </section>
           <Steps m={m} />
+          <Features m={m} />
           <Levels locale={locale} m={m} />
           <Excuses m={m} />
           <Pricing m={m} />
