@@ -24,7 +24,8 @@ Turkish UI tagline: "Bir kere söylenir. Gerisini dürt halleder."
 | Thing | Value |
 |---|---|
 | Global brand | **Nuddle** (nudge + cuddle, invented word). Beta is ~20 families, then straight to global. |
-| Turkey | Store name **dürt** on Turkish devices. Same app, same code, only the localized store name differs. |
+| Turkey | Brand **dürt** on Turkish devices. Same app, same code, only the localized store name differs. |
+| Play store name | `Nuddle: Reminders That Nag` (en-US, the default listing) and `dürt: Hatırlatıcı ve Alarm` (tr-TR). The part after the colon carries search keywords; the brand stays Nuddle / dürt everywhere else (decided 2026-10-16). |
 | Domain | `nuddle.app` (canonical). `durtmobil.com` redirects to it. `nuddle.com` is taken. `durt.app` is free if wanted. |
 | Android `applicationId` | `app.nuddle` (permanent after first Play upload). Kotlin `namespace` is also `app.nuddle`. Debug builds use `app.nuddle.debug`. |
 | GitHub | public monorepo `er3n/nuddle` on the personal account (see ADR 0001). The `nuddle-app` org is kept as an option for a later transfer. |
