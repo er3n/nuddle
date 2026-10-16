@@ -135,6 +135,8 @@ private fun ColumnScope.Who(
         }
 
         state.typing -> {
+            // Visible labels as on 0c: without them the second field did not read as a phone number (NUD-99).
+            FieldLabel(stringResource(R.string.invite_name_label))
             BigTextField(
                 value = state.typedName,
                 onValueChange = callbacks.onTypedName,
@@ -142,6 +144,7 @@ private fun ColumnScope.Who(
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth().testTag(TestTags.INVITE_NAME),
             )
+            FieldLabel(stringResource(R.string.phone_label))
             BigTextField(
                 value = state.typedNumber,
                 onValueChange = callbacks.onTypedNumber,

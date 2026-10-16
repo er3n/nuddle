@@ -4,8 +4,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
 import app.nuddle.domain.TurkishPhone
 import app.nuddle.ui.screens.invite.InviteCallbacks
@@ -47,5 +49,12 @@ class InviteNumberInputTest {
         }
         "5320000002".forEach { compose.onNodeWithTag(TestTags.INVITE_NUMBER).performTextInput(it.toString()) }
         assertEquals("5320000002", typed)
+    }
+
+    @Test
+    fun `the typed name and number fields have visible labels`() {
+        compose.setContent { DurtTheme { InviteScreen(InviteUiState(typing = true), InviteCallbacks()) } }
+        compose.onNodeWithText("Adı").assertIsDisplayed()
+        compose.onNodeWithText("Telefon numarası").assertIsDisplayed()
     }
 }
