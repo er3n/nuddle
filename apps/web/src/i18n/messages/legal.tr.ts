@@ -84,7 +84,7 @@ export const legalTr: Legal = {
         items: [
           "Fotoğraflar görev kapanınca silinir.",
           "Diğer veriler hesabın açık kaldığı sürece saklanır.",
-          "Hesabını sildiğinde verilerin hemen silinir; neler silindiğini aşağıda anlatıyoruz.",
+          "Hesabını sildiğinde telefon numaran, adın ve profil fotoğrafın hemen, görevlerin ve geri kalan her şey 7 gün içinde silinir. Neler silindiğini aşağıda anlatıyoruz.",
           "Hata raporları, telefon numaranla eşleşmeden, Firebase'de en fazla 90 gün kalır.",
         ],
       },
@@ -143,7 +143,7 @@ export const legalTr: Legal = {
       {
         heading: "Uygulamadan",
         paragraphs: [
-          "Uygulamada Profil'i aç, en alttaki Hesabı sil'e dokun ve Hesabımı sil ile onayla. Hesabın o an silinir.",
+          "Uygulamada Profil'i aç, en alttaki Hesabı sil'e dokun ve Hesabımı sil ile onayla. Hesabın o an kapanır.",
         ],
       },
       {
@@ -164,8 +164,9 @@ export const legalTr: Legal = {
         ],
       },
       {
-        heading: "Ne kalır",
+        heading: "Ne zaman silinir",
         paragraphs: [
+          "Telefon numaran, adın, fotoğrafın, cihazların, davetlerin ve yapay zekâ kayıtların hemen silinir; aynı numarayla hemen yeniden kayıt olabilirsin. Görevlerin, bağlantıların ve dürtme geçmişin, karşı tarafın telefonu iptalleri alabilsin diye 7 gün daha sunucuda kalır ve sonra silinir. Karşı tarafın telefonunda daha önce gördükleri o telefonda kalabilir.",
           "Hata raporları, telefon numaranla eşleşmeden, Firebase'de en fazla 90 gün kalır ve sonra silinir. Başka hiçbir veri saklanmaz.",
         ],
       },

@@ -83,7 +83,7 @@ export const legalEn: Legal = {
         items: [
           "Photos are deleted when the task closes.",
           "Everything else is kept while your account is open.",
-          "When you delete your account, your data is deleted at once; what is deleted is listed below.",
+          "When you delete your account, your phone number, name and profile picture are deleted at once, your tasks and everything else within 7 days. What is deleted is listed below.",
           "Crash reports stay in Firebase for at most 90 days, not linked to your phone number.",
         ],
       },
@@ -142,7 +142,7 @@ export const legalEn: Legal = {
       {
         heading: "In the app",
         paragraphs: [
-          "Open Profile in the app, tap Hesabı sil (Delete account) at the bottom and confirm with Hesabımı sil. Your account is deleted at once.",
+          "Open Profile in the app, tap Hesabı sil (Delete account) at the bottom and confirm with Hesabımı sil. Your account is closed at once.",
         ],
       },
       {
@@ -163,8 +163,9 @@ export const legalEn: Legal = {
         ],
       },
       {
-        heading: "What stays",
+        heading: "When it is deleted",
         paragraphs: [
+          "Your phone number, name, picture, devices, invites and AI records are deleted at once; you can sign up again with the same number right away. Your tasks, connections and poke history stay on the server for 7 more days so the other person's phone receives the cancellations, and are then deleted. What the other person already saw on their phone may stay on that phone.",
           "Crash reports stay in Firebase for at most 90 days, not linked to your phone number, and are then deleted. No other data is kept.",
         ],
       },
