@@ -7,7 +7,7 @@ import { z } from "zod";
 import type { AppDeps } from "./deps";
 import { ApiError } from "./errors";
 import type { AppEnv } from "./routes";
-import { runTick } from "./services";
+import { deleteAccountByPhone, deletionPreview, runTick } from "./services";
 
 function sameSecret(given: string, expected: string): boolean {
   const a = Buffer.from(given);
@@ -20,15 +20,38 @@ const SendSmsHookPayload = z.object({
   sms: z.object({ otp: z.string().regex(/^\d{4,10}$/) }),
 });
 
+const DeleteAccountRequest = z.object({
+  phone: z.string().regex(/^\+\d{8,15}$/),
+  /** Without it nothing changes: the answer says what would be deleted. */
+  confirm: z.boolean().default(false),
+});
+
 export function internalRoutes(deps: AppDeps): Hono<AppEnv> {
   const r = new Hono<AppEnv>();
 
-  // pg_cron via pg_net every minute in the cloud; `mise run tick` locally.
-  r.post("/tick", async (c) => {
-    if (!sameSecret(c.req.header("authorization") ?? "", `Bearer ${deps.tickSecret}`)) {
+  const requireTickSecret = (header: string | undefined) => {
+    if (!sameSecret(header ?? "", `Bearer ${deps.tickSecret}`)) {
       throw new ApiError("unauthorized", "bad tick secret");
     }
+  };
+
+  // pg_cron via pg_net every minute in the cloud; `mise run tick` locally.
+  r.post("/tick", async (c) => {
+    requireTickSecret(c.req.header("authorization"));
     return c.json({ handled: await runTick(deps) });
+  });
+
+  // `mise run account:delete`: a deletion asked for by email without the app (NUD-88). The human
+  // runs it; the same secret as the tick, both are server-only operations.
+  r.post("/delete-account", async (c) => {
+    requireTickSecret(c.req.header("authorization"));
+    const parsed = DeleteAccountRequest.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) throw new ApiError("validation_failed", "phone must be E.164");
+    const { phone, confirm } = parsed.data;
+    const account = confirm
+      ? await deleteAccountByPhone(deps, phone)
+      : await deletionPreview(deps, phone);
+    return c.json({ account, deleted: confirm && account !== null });
   });
 
   // Supabase Auth Send SMS hook, signed with Standard Webhooks. Errors use the shape Supabase Auth

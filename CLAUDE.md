@@ -42,6 +42,7 @@ Use only these. They work the same for you, the human and CI.
 | `mise run contract:gen` | Regenerate `packages/contract/openapi.yaml` |
 | `mise run eval` | LLM golden sets: extraction and poke plans (needs an API key) |
 | `mise run stories` | 100 everyday sentences through the real extractor and planner, for judging plans (needs an API key) |
+| `mise run account:delete -- <phone> [--yes]` | Delete an account by phone for an email request; dry run without `--yes`. `--prod` is the human's (rule 6) |
 | `mise run golden:export` | Production task stories with their LLM calls, read-only, to git-ignored `golden/` |
 
 **Long-running commands** (Gradle builds, `test`, any E2E, emulator boot) must run in the background with a timeout. Do not block waiting on them. Poll the log file and keep working or report. Anything that may take more than 1-2 minutes counts as long.

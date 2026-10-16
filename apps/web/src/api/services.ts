@@ -99,6 +99,7 @@ import {
   closedTaskCountOf,
   savePokeProfile,
   deleteInvitesOf,
+  deletionPreviewOf,
   deleteLlmCallsOf,
   deleteOtpAttemptsOf,
   insertScheduledAction,
@@ -1061,6 +1062,41 @@ export async function deleteAccount(
       effects: { pushes, deletePhotosFor, deleteFiles, deleteAuthUsers: [caller.id] },
     };
   });
+}
+
+export interface DeletionPreview {
+  personId: PersonId;
+  displayName: string;
+  tasks: number;
+  openTasks: number;
+  connections: number;
+}
+
+/**
+ * A deletion requested by email without the app (NUD-88): what `deleteAccountByPhone` would
+ * touch, or null when no live account has that number.
+ */
+export async function deletionPreview(
+  deps: AppDeps,
+  phone: string,
+): Promise<DeletionPreview | null> {
+  const found = await deletionPreviewOf(deps.db, phone);
+  if (!found) return null;
+  const { person, ...counts } = found;
+  return { personId: person.id, displayName: person.displayName, ...counts };
+}
+
+/** The same deletion as in the app, for the account with this number (NUD-88). */
+export async function deleteAccountByPhone(
+  deps: AppDeps,
+  phone: string,
+): Promise<DeletionPreview | null> {
+  const preview = await deletionPreview(deps, phone);
+  if (!preview) return null;
+  await deleteAccount(deps, await requirePerson(deps, preview.personId), {
+    idempotencyKey: randomUUID(),
+  });
+  return preview;
 }
 
 // ---- settings and connections (5a, 5b, 7g) -------------------------------------------------
