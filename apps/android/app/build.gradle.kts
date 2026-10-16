@@ -223,6 +223,7 @@ dependencies {
     implementation(libs.firebase.messaging)
     implementation(libs.firebase.installations)
     implementation(libs.firebase.crashlytics)
+    implementation(libs.play.services.auth.api.phone)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test)

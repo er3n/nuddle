@@ -162,6 +162,11 @@ fun NuddleNavHost(
         ) {
             val viewModel: CodeViewModel = hiltViewModel()
             val state by viewModel.state.collectAsStateWithLifecycle()
+            val codesSent by viewModel.codesSent.collectAsStateWithLifecycle()
+            SmsCodeEffect(listen = codesSent) { code ->
+                viewModel.onCodeChange(code)
+                viewModel.onComplete(code)
+            }
             LaunchedEffect(viewModel) {
                 viewModel.signedIn.collect { destination ->
                     nav.replaceAll(if (destination == SignedInDestination.Home) Routes.HOME else Routes.NAME)
