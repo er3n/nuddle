@@ -25,7 +25,13 @@ internal fun DraftRows(
     val rows: List<@Composable () -> Unit> =
         listOfNotNull(
             if (preview.recipients.isEmpty()) {
-                { LineRow(label = stringResource(R.string.preview_to), value = preview.to ?: stringResource(R.string.home_to_self)) }
+                {
+                    LineRow(
+                        label = stringResource(R.string.preview_to),
+                        value = preview.to ?: stringResource(R.string.home_to_self),
+                        onClick = callbacks.onChangeRecipient.takeIf { preview.recipientOptions.isNotEmpty() },
+                    )
+                }
             } else {
                 null
             },

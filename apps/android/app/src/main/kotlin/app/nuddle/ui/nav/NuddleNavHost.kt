@@ -273,6 +273,7 @@ fun NuddleNavHost(
                         PreviewCallbacks(
                             onChoice = viewModel.previewSheet::onChoice,
                             onRecipient = viewModel.previewSheet::onRecipient,
+                            onChangeRecipient = viewModel.previewSheet::onChangeRecipient,
                             onPhoto = viewModel.previewSheet::onPhoto,
                             onTimePicked = viewModel.previewSheet::onTimePicked,
                             onToggleMoment = viewModel.previewSheet::onToggleMoment,

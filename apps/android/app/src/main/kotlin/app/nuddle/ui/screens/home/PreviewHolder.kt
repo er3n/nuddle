@@ -65,6 +65,11 @@ internal class PreviewHolder(
         }
     }
 
+    /** A tap on the Kime row (NUD-108): the "Kime?" choices of 4a open with the current one selected. */
+    fun onChangeRecipient() {
+        open.update { it?.copy(ui = it.ui.copy(recipients = it.ui.recipientOptions)) }
+    }
+
     /** A tap on the known time switches between a moment and a deadline (open-questions#43). */
     fun onToggleMoment() {
         open.update { current ->

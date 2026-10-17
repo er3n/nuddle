@@ -53,6 +53,8 @@ import kotlin.time.Instant
 data class PreviewCallbacks(
     val onChoice: (DeadlineChoice) -> Unit = {},
     val onRecipient: (RecipientChoice) -> Unit = {},
+    /** A tap on the Kime row when the text gave the recipient (NUD-108). */
+    val onChangeRecipient: () -> Unit = {},
     val onPhoto: (Boolean) -> Unit = {},
     val onTimePicked: (LocalTime) -> Unit = {},
     /** A tap on the known time: a moment ("19:48") or a deadline ("Son zaman 19:48"), open-questions#43. */
