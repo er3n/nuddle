@@ -57,8 +57,10 @@ data class PreviewUi(
     val sending: Boolean = false,
     /** Who it is for; null for a task to self ("Kendine") or while "Kime?" is unanswered. */
     val to: String? = null,
-    /** 4a: the answers to "Kime?" when the server asked it; empty otherwise. */
+    /** 4a: the answers to "Kime?" when the server asked it or the Kime row was tapped; empty otherwise. */
     val recipients: List<RecipientChoice> = emptyList(),
+    /** What a tap on the Kime row offers when only the deadline was asked (NUD-108); empty: the row is not tappable. */
+    val recipientOptions: List<RecipientChoice> = emptyList(),
     /** The chosen recipient; set from the text when only the deadline was asked. */
     val recipient: RecipientChoice? = RecipientChoice.Self,
     /** The deadline the text already gave, when the question was "Kime?"; then "Ne zamana kadar?" is not asked. */
@@ -223,6 +225,11 @@ fun previewFor(
 ): Pair<PreviewUi, Instant?>? {
     val draft = ask.draft ?: return null
     val title = draft.title ?: return null
+    val recipientChoices =
+        connections.map { RecipientChoice.Person(it.personId, it.displayName) }.takeIf { it.isNotEmpty() }?.let {
+            listOf(RecipientChoice.Self) +
+                it
+        }
     val photo = draft.finishMode == FinishMode.PHOTO
     val repeat = draft.repeat?.let { RepeatUi(it.every.value, it.days.orEmpty(), it.time) }
     val base =
@@ -234,23 +241,24 @@ fun previewFor(
         )
     return when (ask.question) {
         WriteTaskResult.Question.DEADLINE -> {
+            // The extraction may have the wrong person ("beni ara" read as to self): a tap on Kime changes it (NUD-108).
+            val asked = base.copy(recipientOptions = recipientChoices.orEmpty())
             when (val recipient = recipientNamed(draft.recipient, connections) ?: return null) {
                 RecipientChoice.Self -> {
-                    base to null
+                    asked to null
                 }
 
                 is RecipientChoice.Person -> {
                     val reach = connections.first { it.personId == recipient.personId }.reachability
-                    base.copy(recipient = recipient, to = recipient.name, reach = Reachability.decode(reach) ?: Reachability.NONE) to null
+                    asked.copy(recipient = recipient, to = recipient.name, reach = Reachability.decode(reach) ?: Reachability.NONE) to null
                 }
             }
         }
 
         WriteTaskResult.Question.RECIPIENT -> {
             val known = draft.deadline?.takeIf { it > now }
-            val people = connections.map { RecipientChoice.Person(it.personId, it.displayName) }
             base.copy(
-                recipients = listOf(RecipientChoice.Self) + people,
+                recipients = listOf(RecipientChoice.Self) + connections.map { RecipientChoice.Person(it.personId, it.displayName) },
                 recipient = null,
                 knownDeadline = known?.let { deadlineText(it, now, quiet.timeZone, draft.moment) },
                 missAfterMinutes = draft.missAfterMinutes,

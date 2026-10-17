@@ -165,7 +165,7 @@ ComposeBar focused with keyboard. Text that is not a task ("merhaba") gets the e
 **Copy:** Kime, ne, ne zaman. Yazınca mikrofon gönder butonuna dönüşür. | Yeni görev | (example input) 1000 tl çek
 
 ### 2b Preview, only when info is missing · `TaskPreview.png`
-Bottom sheet. Shows what was understood and asks exactly one question (here: the deadline). When the text gave the time of a moment task and the extraction judged a lead, the time row adds "ilk hatırlatma 17:10" after the time (NUD-82).
+Bottom sheet. Shows what was understood and asks exactly one question (here: the deadline). When the text gave the time of a moment task and the extraction judged a lead, the time row adds "ilk hatırlatma 17:10" after the time (NUD-82). When I have a connection, a tap on the Kime row opens the "Kime?" choices of 4a (Kendine and each connection, the current one selected), since the extraction can read the person wrong ("beni ara" as a task to self); picking someone turns the sheet into 4a with Gönder (NUD-108). Not while editing a task that was already sent: there Kime stays as written (open-questions #34).
 **Copy:** Yazdığın: "1000 tl çek" | Para çek | Kime | Kendine | Detay | 1.000 TL | Ne zamana kadar? | Bugün 19:00 | Yarın 09:00 (the canvas says "Bugün akşam" and "Yarın sabah"; open-questions #28) | Saat seç | Zamanı gelince seni dürterim. Gece 23:00 ile 07:00 arası asla. | Kur | Vazgeç
 
 ### 2c Setup: try first · `SetupDemo.png`
