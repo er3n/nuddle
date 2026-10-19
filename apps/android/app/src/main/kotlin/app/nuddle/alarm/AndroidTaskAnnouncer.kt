@@ -16,7 +16,9 @@ import app.nuddle.R
 import app.nuddle.api.model.FinishMode
 import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.TaskEntity
+import app.nuddle.data.db.isMoment
 import app.nuddle.data.sync.TaskAnnouncer
+import app.nuddle.data.sync.TaskClose
 import app.nuddle.ui.screens.home.DeadlineText
 import app.nuddle.ui.screens.home.deadlineText
 import app.nuddle.ui.screens.home.timeText
@@ -187,6 +189,85 @@ class AndroidTaskAnnouncer
             requestCode: Int,
             intent: Intent,
         ): PendingIntent = PendingIntent.getActivity(context, requestCode, intent, PendingIntent.FLAG_IMMUTABLE)
+
+        override fun closed(
+            task: TaskEntity,
+            otherName: String,
+            close: TaskClose,
+        ) {
+            val id = NotificationIds.closed(task.id)
+            val (title, text) = closedText(task, otherName, close)
+            // A task that is still on my list (5d, my dropped or missed task) opens; a closed one opens home.
+            val target =
+                when (close) {
+                    is TaskClose.Dropped, TaskClose.Missed -> MainActivity.task(context, task.id)
+                    else -> Intent(context, MainActivity::class.java)
+                }
+            val open = activity(id, target)
+            val builder =
+                NotificationCompat
+                    .Builder(context, NotificationChannels.TASKS)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setColor(ContextCompat.getColor(context, R.color.poke))
+                    .setContentTitle(title)
+                    .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                    .setContentIntent(open)
+                    .setAutoCancel(true)
+            text?.let { builder.setContentText(it) }
+            post(id, builder.build())
+        }
+
+        /** Title and line of a close (NUD-115): the words of the home row (7e) and the bell (7i). */
+        private fun closedText(
+            task: TaskEntity,
+            name: String,
+            close: TaskClose,
+        ): Pair<String, String?> {
+            val stopped = context.getString(R.string.issue_pokes_stopped)
+            val note = { it: String? -> it?.let { n -> context.getString(R.string.issue_note, n) } }
+            return when (close) {
+                is TaskClose.Cancelled -> {
+                    context.getString(R.string.issue_cancelled_title, name, task.title) to
+                        (note(close.note)?.let { context.getString(R.string.separator_dot, it, stopped) } ?: stopped)
+                }
+
+                TaskClose.Reassigned -> {
+                    context.getString(R.string.issue_reassigned_title, name, task.title) to stopped
+                }
+
+                TaskClose.Done -> {
+                    context.getString(R.string.bell_done_title, name, task.title) to context.getString(R.string.bell_said_done)
+                }
+
+                is TaskClose.Dropped -> {
+                    context.getString(R.string.bell_dropped_title, name, task.title) to note(close.note)
+                }
+
+                TaskClose.Missed -> {
+                    val line =
+                        when {
+                            task.finishMode == FinishMode.PHOTO.value && task.isMoment -> {
+                                context.getString(
+                                    R.string.issue_missed_photo_moment,
+                                )
+                            }
+
+                            task.finishMode == FinishMode.PHOTO.value -> {
+                                context.getString(R.string.issue_missed_photo)
+                            }
+
+                            task.isMoment -> {
+                                context.getString(R.string.issue_missed_done_moment, name)
+                            }
+
+                            else -> {
+                                context.getString(R.string.issue_missed_done, name)
+                            }
+                        }
+                    context.getString(R.string.close_missed_title, name, task.title) to line
+                }
+            }
+        }
 
         override fun withdrawCantReach(taskId: String) {
             NotificationManagerCompat.from(context).cancel(NotificationIds.reach(taskId))

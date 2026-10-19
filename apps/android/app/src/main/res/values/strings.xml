@@ -142,6 +142,7 @@
     <string name="issue_cancelled_title">%1$s iptal etti: \"%2$s\"</string>
     <string name="issue_reassigned_title">%1$s bu görevi başka birine verdi: \"%2$s\"</string>
     <string name="issue_pokes_stopped">Dürtmeler durdu</string>
+    <string name="close_missed_title">%1$s yetiştiremedi: \"%2$s\"</string>
     <string name="issue_note">Not: %1$s</string>
     <string name="issues_footer">Kaçırılan iş bir gün sonra listeden kalkar. Sayılar sadece seni daha iyi dürtmek için tutulur, kimseye karne olarak gösterilmez.</string>
     <string name="two_sentences">%1$s %2$s</string>
@@ -422,7 +423,7 @@
     <string name="bell_approved">Onayladın</string>
     <string name="bell_auto_approved">Kendiliğinden onaylandı</string>
     <string name="bell_dropped_title">%1$s bugün yapamayacak: \"%2$s\"</string>
-    <string name="bell_footer">Biten işler sadece burada yazı olarak durur, ayrıca bildirim göndermem. Fotoğraflı işler onayına düşer.</string>
+    <string name="bell_footer">Biten işler burada da yazar. Fotoğraflı işler onayına düşer.</string>
     <string name="inbox_no_older">Daha eski bildirim yok</string>
     <!-- 2g: warnings at the top of the bell (open-questions#38) -->
     <string name="bell_fix">Düzelt</string>

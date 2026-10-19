@@ -37,6 +37,7 @@ import app.nuddle.data.session.SessionStore
 import app.nuddle.data.session.SetupStore
 import app.nuddle.data.session.StoredSession
 import app.nuddle.data.sync.TaskAnnouncer
+import app.nuddle.data.sync.TaskClose
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.AlarmScheduler
 import app.nuddle.domain.GrantedPermissions
@@ -549,6 +550,17 @@ class RecordingAnnouncer : TaskAnnouncer {
 
     override fun withdrawCantReach(taskId: String) {
         reachWithdrawn += taskId
+    }
+
+    /** Task, the other side's name and how they closed it (NUD-115). */
+    val closes = mutableListOf<Triple<String, String, TaskClose>>()
+
+    override fun closed(
+        task: TaskEntity,
+        otherName: String,
+        close: TaskClose,
+    ) {
+        closes += Triple(task.id, otherName, close)
     }
 }
 
