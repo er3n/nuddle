@@ -209,31 +209,9 @@ class SyncRepository
                 val before = tasks.get(task.id)
                 if (task.senderId == task.recipientId || task.finishMode == FinishMode.NOTICE) return@mapNotNull null
                 if (before == null || before.status == task.status.value) return@mapNotNull null
-                val last = { type: String -> events.lastOrNull { it.taskId == task.id && it.type == type } }
+                val own = events.filter { it.taskId == task.id }
                 val close =
-                    when {
-                        task.recipientId == me && task.status == TaskStatus.CANCELLED && before.status in STILL_MINE -> {
-                            val cancel = last(EventTypes.CANCELLED)
-                            when (cancel?.reason) {
-                                SENDER_CANCELLED -> TaskClose.Cancelled(cancel.note)
-                                REASSIGNED -> TaskClose.Reassigned
-                                else -> null
-                            }
-                        }
-
-                        task.senderId == me && before.status in OPEN_STATUSES -> {
-                            when (task.status) {
-                                TaskStatus.DONE -> TaskClose.Done
-                                TaskStatus.DROPPED -> TaskClose.Dropped(last(EventTypes.DROPPED)?.note)
-                                TaskStatus.MISSED -> TaskClose.Missed
-                                else -> null
-                            }
-                        }
-
-                        else -> {
-                            null
-                        }
-                    }
+                    if (task.recipientId == me) closeToMe(task, before.status, own) else closeOfMine(task, before.status, own)
                 close?.let { task to it }
             }
 
@@ -394,7 +372,36 @@ internal fun SyncPlan.toEntities() =
         )
     }
 
-/** Statuses in which the recipient is still poked (docs/domain.md). */
+/** A task to me that the sender closed: a cancel or a new recipient, not one I closed here myself. */
+private fun closeToMe(
+    task: SyncTask,
+    before: String,
+    events: List<TaskEventEntity>,
+): TaskClose? {
+    if (task.status != TaskStatus.CANCELLED || before !in STILL_MINE) return null
+    val cancel = events.lastOrNull { it.type == EventTypes.CANCELLED }
+    return when (cancel?.reason) {
+        SENDER_CANCELLED -> TaskClose.Cancelled(cancel.note)
+        REASSIGNED -> TaskClose.Reassigned
+        else -> null
+    }
+}
+
+/** My task that the recipient closed while it was open: done, can't today or missed. */
+private fun closeOfMine(
+    task: SyncTask,
+    before: String,
+    events: List<TaskEventEntity>,
+): TaskClose? {
+    if (before !in OPEN_STATUSES) return null
+    return when (task.status) {
+        TaskStatus.DONE -> TaskClose.Done
+        TaskStatus.DROPPED -> TaskClose.Dropped(events.lastOrNull { it.type == EventTypes.DROPPED }?.note)
+        TaskStatus.MISSED -> TaskClose.Missed
+        else -> null
+    }
+}
+
 private const val SENDER_CANCELLED = "sender_cancelled"
 private const val REASSIGNED = "reassigned"
 
@@ -402,4 +409,5 @@ private const val REASSIGNED = "reassigned"
 private val STILL_MINE =
     setOf(TaskStatus.SCHEDULED.value, TaskStatus.REJECTED.value, TaskStatus.AWAITING_APPROVAL.value, TaskStatus.MISSED.value)
 
+/** Statuses in which the recipient is still poked (docs/domain.md). */
 internal val OPEN_STATUSES = setOf(TaskStatus.SCHEDULED.value, TaskStatus.REJECTED.value)

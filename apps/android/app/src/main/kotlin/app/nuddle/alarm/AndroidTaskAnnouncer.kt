@@ -224,7 +224,7 @@ class AndroidTaskAnnouncer
             close: TaskClose,
         ): Pair<String, String?> {
             val stopped = context.getString(R.string.issue_pokes_stopped)
-            val note = { it: String? -> it?.let { n -> context.getString(R.string.issue_note, n) } }
+            val note = { text: String? -> text?.let { context.getString(R.string.issue_note, it) } }
             return when (close) {
                 is TaskClose.Cancelled -> {
                     context.getString(R.string.issue_cancelled_title, name, task.title) to
