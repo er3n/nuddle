@@ -23,6 +23,7 @@ import org.robolectric.annotation.Config
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -74,6 +75,23 @@ class PokeNotificationsTest {
         val step = PokeStep(Cast.TASK_ID, 1, 1, Instant.parse("2026-10-12T08:00:00+03:00"), PokeLevel.SOUND)
         notifications.show(aTask().copy(recipientId = Cast.SIBEL_ID), step, PokeLevel.SOUND)
         assertNull(shadowOf(app.getSystemService<NotificationManager>()).allNotifications.single().getLargeIcon())
+    }
+
+    @Test
+    fun `SOUND and FULL_SCREEN ring until silenced, SILENT does not ring`() {
+        val manager = app.getSystemService<NotificationManager>()!!
+
+        fun insistent(level: PokeLevel): Boolean {
+            manager.cancelAll()
+            val step = PokeStep(Cast.TASK_ID, 1, 1, Instant.parse("2026-10-12T08:00:00+03:00"), level)
+            notifications.show(aTask(), step, level)
+            val flags = shadowOf(manager).allNotifications.single().flags
+            return flags and Notification.FLAG_INSISTENT != 0
+        }
+
+        assertTrue(insistent(PokeLevel.SOUND))
+        assertTrue(insistent(PokeLevel.FULL_SCREEN))
+        assertFalse(insistent(PokeLevel.SILENT))
     }
 
     @Test
