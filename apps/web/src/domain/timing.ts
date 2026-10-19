@@ -60,7 +60,7 @@ export function pickedTime(task: Pick<Task, "deadline" | "remindAt">): Date {
  * minute away left one poke and a miss seconds later; as a moment it rings the `at` ladder and is
  * missed only after the grace.
  */
-export const NEAR_BY_MS = 10 * MINUTE;
+const NEAR_BY_MS = 10 * MINUTE;
 
 /** The timing a picked time gets: `by` turns into `at` when the time is less than NEAR_BY_MS away. */
 export function timingFor(timing: Timing, time: Date, now: Date): Timing {
