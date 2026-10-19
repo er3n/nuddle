@@ -31,6 +31,7 @@ Code and docs are in English. The UI is Turkish first (`values/strings.xml`), En
 | Repeating task, series, occurrence | tekrarlayan görev, "Her gün 09:00" | ADR 0021. The UI never says "seri" or "tekrar kuralı"; it shows the rule as "Her gün 09:00", "Her salı 19:00", "Hafta içi 07:30". |
 | Quiet hours | Sessiz saatler | Default 23:00-07:00. |
 | Bell, inbox | zil, Bildirimler | In-app inbox. |
+| Announcement | "Nuddle'dan", channel "Nuddle'dan haberler" | A message from us to people, not about a task (ADR 0025). The UI shows its own title; never "duyuru" or "bildiri". |
 | Human channel | (never named in UI) | Telling another person when pokes fail. In MVP: the sender. |
 | Setup | Bir kerelik kurulum | Permission flow. |
 

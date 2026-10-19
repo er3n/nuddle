@@ -25,6 +25,11 @@ import {
   SMS_PHONE_DAILY_CAP,
   SMS_TOTAL_DAILY_CAP,
 } from "../domain/cost-caps";
+import {
+  announcementProblems,
+  announcementPushes,
+  type AnnouncementContent,
+} from "../domain/announcements";
 import { afterWrongCode, lockedUntil } from "../domain/otp-attempts";
 import { humanChannelAllowed } from "../domain/plan-pokes";
 import { profileIsStale, RECENT_TASKS, type ProfileInput } from "../domain/profile";
@@ -140,6 +145,9 @@ import {
   type Tx,
   insertSmsSend,
   smsSendWindow,
+  findAnnouncement,
+  livePeopleByPhone,
+  saveAnnouncement,
 } from "../infra/db/store";
 import type { AppDeps } from "./deps";
 import { ApiError } from "./errors";
@@ -1317,7 +1325,68 @@ export async function sync(
         s.level === "HUMAN" ? [] : [{ seq: s.seq, plannedAt: s.plannedAt, level: s.level }],
       ),
     })),
+    announcements: rows.announcements.map((a) => ({
+      id: a.id,
+      title: a.title,
+      summary: a.summary,
+      body: a.body,
+      button: a.button,
+      sentAt: a.sentAt,
+    })),
   };
+}
+
+// ---- announcements (ADR 0025) -----------------------------------------------------------------
+
+export interface AnnounceResult {
+  /** Problems with the file; nothing is stored or sent while there are any. */
+  problems: string[];
+  /** Numbers given with --to that belong to no live account. */
+  unknownPhones: string[];
+  /** People who get it now (and a notification); people who already had it are not counted. */
+  newRecipients: number;
+  /** People who already had it; they get the new text without a notification. */
+  alreadySent: number;
+  /** Whether the text differs from what was sent before under this slug. */
+  textChanged: boolean;
+  sent: boolean;
+}
+
+/** `mise run announce`: stores an announcement and tells the new recipients to sync. */
+export async function announce(
+  deps: AppDeps,
+  content: AnnouncementContent,
+  to: readonly string[] | "*",
+  confirm: boolean,
+): Promise<AnnounceResult> {
+  const problems = announcementProblems(content);
+  const people_ = await livePeopleByPhone(deps.db, to);
+  const known = new Set(people_.map((p) => p.phone));
+  const unknownPhones = to === "*" ? [] : to.filter((p) => !known.has(p));
+  const existing = await findAnnouncement(deps.db, content.slug);
+  const textChanged =
+    existing !== null && JSON.stringify(existing.content) !== JSON.stringify(content);
+  const fresh = people_.filter((p) => !(existing?.recipients.has(p.id) ?? false));
+  const preview = {
+    problems,
+    unknownPhones,
+    newRecipients: fresh.length,
+    alreadySent: existing?.recipients.size ?? 0,
+    textChanged,
+    sent: false,
+  };
+  if (!confirm || problems.length > 0) return preview;
+  const now = deps.clock.now();
+  const { added } = await inWriteTx(deps.db, (tx) =>
+    saveAnnouncement(
+      tx,
+      content,
+      people_.map((p) => p.id),
+      now,
+    ),
+  );
+  await afterCommit(deps, { pushes: announcementPushes(added), deletePhotosFor: [] });
+  return { ...preview, newRecipients: added.length, sent: true };
 }
 
 // ---- server timers --------------------------------------------------------------------------

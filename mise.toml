@@ -227,6 +227,12 @@ depends = ["_install"]
 # Local by default. `--prod` targets nuddle.app: only the human runs that (CLAUDE.md rule 6).
 run = "pnpm --filter @nuddle/web account:delete"
 
+[tasks.announce]
+description = "Send announcements/<slug>.md to --to numbers or * (everyone); dry run unless --yes (ADR 0025)"
+depends = ["_install"]
+# Local by default. `--prod` targets nuddle.app: only the human runs that (CLAUDE.md rule 6).
+run = "pnpm --filter @nuddle/web announce"
+
 [tasks."contract:gen"]
 description = "Regenerate packages/contract/openapi.yaml"
 depends = ["_install"]

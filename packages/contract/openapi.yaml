@@ -192,6 +192,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SyncPlan"
+        announcements:
+          type: array
+          items:
+            $ref: "#/components/schemas/SyncAnnouncement"
       required:
         - cursor
         - me
@@ -602,6 +606,41 @@ components:
         - SILENT
         - SOUND
         - FULL_SCREEN
+    SyncAnnouncement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        summary:
+          type: string
+        body:
+          type: string
+        button:
+          type: object
+          nullable: true
+          properties:
+            label:
+              type: string
+            target:
+              type: string
+          required:
+            - label
+            - target
+        sentAt:
+          type: string
+          format: date-time
+          example: 2026-10-12T09:00:00+03:00
+          description: ISO 8601 with offset
+      required:
+        - id
+        - title
+        - summary
+        - body
+        - button
+        - sentAt
     RegisterDeviceResult:
       type: object
       properties:

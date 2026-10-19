@@ -270,6 +270,42 @@ export const scheduledActions = pgTable(
   ],
 );
 
+// Messages from Nuddle (ADR 0025), written by `mise run announce` from `announcements/<slug>.md`.
+// Sending the same slug again updates the text.
+export const announcements = pgTable("announcements", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  // CommonMark; images by root-relative path under apps/web/public/announcements/<slug>/.
+  body: text("body").notNull(),
+  buttonLabel: text("button_label"),
+  // An app route or an https URL.
+  buttonTarget: text("button_target"),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+// Who got which announcement. The sync feed reads these rows; an update of the text bumps
+// change_seq of every row so phones get the new text.
+export const announcementRecipients = pgTable(
+  "announcement_recipients",
+  {
+    announcementId: uuid("announcement_id")
+      .notNull()
+      .references(() => announcements.id),
+    personId: uuid("person_id")
+      .notNull()
+      .references(() => people.id),
+    createdAt: createdAt(),
+    changeSeq: changeSeq(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.announcementId, t.personId] }),
+    index("announcement_recipients_person_idx").on(t.personId),
+  ],
+);
+
 // Source of reachability (docs/domain.md, Reachability).
 export const devices = pgTable(
   "devices",

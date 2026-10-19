@@ -24,6 +24,7 @@ If a screen and `product.md` disagree on behavior, `product.md` wins. Copy writt
 | `task/{id}/photo`, `task/{id}/approve` | 4d, 6e, 4f | Camera and approval |
 | `inbox` | 1c, 2g, 7b | The bell |
 | `invite`, `invite/ready` | 1e, 1f | Ends in the system share sheet |
+| `announcement/{id}` | (no canvas, ADR 0025) | An announcement from Nuddle: markdown and an optional button. From its notification or the bell |
 | `profile`, `person/{id}` | 5a, 5b, 7g, 7h, 7i | Settings sheets on top of profile |
 | `PokeActivity` | 3b, 2d (demo), 7f | Opened from a notification or alarm |
 | System notification | 3a, 4b, 7a | `NotificationCompat`, not Compose |
@@ -141,6 +142,10 @@ Same as 1a with a bell badge (1).
 
 ### 1c Bell · `Notifications.png`
 **Copy:** Bildirimler | Yeni | Sibel seni davet etti | Seni dürtmek için izin istiyor · 2 sa önce | Daveti gör | Daha eski bildirim yok
+
+**Announcements (ADR 0025, no canvas yet).** An unread announcement is an `InboxItem` under "Yeni" after the invites, unread dot on, in the badge: its title, then "Nuddle'dan · {ago}" with the summary. Opened ones go below in the day list by when they arrived, without the dot. Tapping opens `announcement/{id}`.
+
+**`announcement/{id}`.** Top bar with back and "Nuddle'dan". The title as a screen headline, the arrival day in `textMuted`, then the markdown body: headings, paragraphs, bold and italic, lists, links (`accent`, open the browser), images full width with rounded corners from the `radius` tokens. An optional primary button at the bottom with the announcement's label. An id that is not on the phone (not synced yet) shows the generic error state with "Geri".
 
 ### 1d Invite detail · `InviteDetail.png`
 Consent content opened from the bell, with Reddet instead of Şimdi değil.
