@@ -47,11 +47,13 @@ Changed on 2026-10-15 after the phone test: long titles wrapped into the buttons
 | To me | Tekrar istendi | The sender's note; Yeni fotoğraf çek, Bugün yapamayacağım, Ara and Mesaj |
 | To me | Onay bekleniyor | The 4e message; no action |
 | To me | Kaçırıldı | Sonradan yaptım, Ara, Listeden kaldır |
-| To self | Kurulu | Şimdiden bitti (Bitti, çek), Görevi iptal et; Son zaman and Nasıl bitsin can be edited (NUD-47) |
+| To self | Kurulu | Şimdiden bitti (Bitti, çek), Görevi iptal et; Kime, Son zaman and Nasıl bitsin can be edited (NUD-47, NUD-114) |
 | To self | Kaçırıldı | Sonradan yaptım, Listeden kaldır |
 | Mine to someone | Kurulu, Tekrar istendi | 7c as before: rows can be edited, Görevi iptal et (7d). Once a poke rang, a past-tense line under the sentence: "2 kez dürttüm, en son 09:10." (NUD-81); never the plan ahead |
 | Mine to someone | Bırakıldı | The 5d message; Yeni zaman ver, Ben hallederim |
 | Mine to someone | Kaçırıldı | The 5d message; Süreyi uzat, İptal et (no 7d sheet) |
+
+**Kime on a written task (NUD-114).** While the task is Kurulu and I have a connection, a tap on the Kime row opens the "Kime?" choices of 4a (Kendine and each connection, the current one selected). The sheet says "Görev seçtiğin kişiye geçer, dürtmeler ona başlar." and Kaydet does it: the task closes for the old person and starts for the new one with its own plan; the detail goes back to home, where the task shows under the new person. The old person's phone stops the pokes and shows "Sibel bu görevi başka birine verdi: "Çöpü at"" in the place of the "iptal etti" row, without the new person's name; nothing is shown for a task to self.
 
 The screen goes back by itself once the task leaves that list (done, cancelled, approved, handled). Yeni zaman ver and Süreyi uzat open the 5d deadline sheet over the detail.
 **Copy:** Bana | Gönderdiklerim | Sonra | Cevabını bekliyor | Devam eden | Bitenler zilde yazar. | Henüz kimseye görev yazmadın. | Kimden | Listeden kaldır | Kaldır
@@ -165,7 +167,7 @@ ComposeBar focused with keyboard. Text that is not a task ("merhaba") gets the e
 **Copy:** Kime, ne, ne zaman. Yazınca mikrofon gönder butonuna dönüşür. | Yeni görev | (example input) 1000 tl çek
 
 ### 2b Preview, only when info is missing · `TaskPreview.png`
-Bottom sheet. Shows what was understood and asks exactly one question (here: the deadline). When the text gave the time of a moment task and the extraction judged a lead, the time row adds "ilk hatırlatma 17:10" after the time (NUD-82). When I have a connection, a tap on the Kime row opens the "Kime?" choices of 4a (Kendine and each connection, the current one selected), since the extraction can read the person wrong ("beni ara" as a task to self); picking someone turns the sheet into 4a with Gönder (NUD-108). Not while editing a task that was already sent: there Kime stays as written (open-questions #34).
+Bottom sheet. Shows what was understood and asks exactly one question (here: the deadline). When the text gave the time of a moment task and the extraction judged a lead, the time row adds "ilk hatırlatma 17:10" after the time (NUD-82). When I have a connection, a tap on the Kime row opens the "Kime?" choices of 4a (Kendine and each connection, the current one selected), since the extraction can read the person wrong ("beni ara" as a task to self); picking someone turns the sheet into 4a with Gönder (NUD-108). On a task that was already written, Kime changes from the detail (7c, NUD-114).
 **Copy:** Yazdığın: "1000 tl çek" | Para çek | Kime | Kendine | Detay | 1.000 TL | Ne zamana kadar? | Bugün 19:00 | Yarın 09:00 (the canvas says "Bugün akşam" and "Yarın sabah"; open-questions #28) | Saat seç | Zamanı gelince seni dürterim. Gece 23:00 ile 07:00 arası asla. | Kur | Vazgeç
 
 ### 2c Setup: try first · `SetupDemo.png`

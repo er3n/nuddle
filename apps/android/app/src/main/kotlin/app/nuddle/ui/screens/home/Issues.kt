@@ -33,6 +33,8 @@ data class CancelledUi(
     val title: String,
     val byName: String,
     val note: String?,
+    /** Kime changed (NUD-114): the sender gave the task to someone else, unnamed here. */
+    val reassigned: Boolean = false,
 )
 
 enum class SentIssue { Dropped, Missed }
@@ -98,9 +100,9 @@ fun issues(
             .filter { now < Instant.fromEpochMilliseconds(it.statusChangedAt) + CANCELLED_ROW_TTL }
             .mapNotNull { task ->
                 val cancel = events[task.id].orEmpty().lastOrNull { it.type == EventTypes.CANCELLED }
-                if (cancel == null || cancel.reason != SENDER_CANCELLED) return@mapNotNull null
+                if (cancel == null || cancel.reason !in SHOWN_CANCELS) return@mapNotNull null
                 val by = connections[task.senderId] ?: return@mapNotNull null
-                CancelledUi(task.id, task.title, by.displayName, cancel.note)
+                CancelledUi(task.id, task.title, by.displayName, cancel.note, reassigned = cancel.reason == REASSIGNED)
             }
     val sent =
         newestFirst
@@ -131,3 +133,7 @@ fun issues(
 }
 
 private const val SENDER_CANCELLED = "sender_cancelled"
+private const val REASSIGNED = "reassigned"
+
+/** The cancels the recipient sees a row for: the sender took the task back, or gave it to someone else. */
+private val SHOWN_CANCELS = setOf(SENDER_CANCELLED, REASSIGNED)

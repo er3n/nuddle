@@ -95,6 +95,8 @@ internal fun DetailRows(
                     state.self -> stringResource(R.string.home_to_self)
                     else -> state.toName
                 },
+            onClick = { callbacks.onEdit(EditRow.Recipient) }.takeIf { state.recipientEditable },
+            modifier = Modifier.testTag(TestTags.TASK_EDIT_RECIPIENT),
         )
         GroupDivider()
         LineRow(

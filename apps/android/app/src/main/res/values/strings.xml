@@ -140,6 +140,7 @@
     <!-- The close button on a missed card: off my list only (NUD-49). -->
     <string name="issue_remove">Kaldır</string>
     <string name="issue_cancelled_title">%1$s iptal etti: \"%2$s\"</string>
+    <string name="issue_reassigned_title">%1$s bu görevi başka birine verdi: \"%2$s\"</string>
     <string name="issue_pokes_stopped">Dürtmeler durdu</string>
     <string name="issue_note">Not: %1$s</string>
     <string name="issues_footer">Kaçırılan iş bir gün sonra listeden kalkar. Sayılar sadece seni daha iyi dürtmek için tutulur, kimseye karne olarak gösterilmez.</string>
@@ -303,6 +304,7 @@
     <string name="task_edit_hint">Bir satıra dokunup değiştirebilirsin. %1$s değişikliği kısa bir notla görür.</string>
     <!-- No design copy: the sheet behind a tapped row, and a save that did not go through. -->
     <string name="task_edit_note">%1$s değişikliği kısa bir notla görür.</string>
+    <string name="task_reassign_note">Görev seçtiğin kişiye geçer, dürtmeler ona başlar.</string>
     <string name="task_edit_failed_title">Değişiklik gitmedi</string>
 
     <!-- 7d Cancel. open-questions#34: the design says "Eren\'e kısa bir not giderim"; rephrased so the name takes no suffix. -->

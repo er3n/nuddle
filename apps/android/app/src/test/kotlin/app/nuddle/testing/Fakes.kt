@@ -310,6 +310,16 @@ class FakeTaskRepository : TaskRepository {
         return editOutcome
     }
 
+    /** Every Kime change in the task detail (NUD-114): the task and its new recipient. */
+    val reassigns = mutableListOf<Pair<String, String>>()
+
+    /** A [app.nuddle.data.TaskReassigner]; the key only matters to the server. */
+    val reassigner =
+        app.nuddle.data.TaskReassigner { taskId, recipientId, _ ->
+            reassigns += taskId to recipientId
+            editOutcome
+        }
+
     /** The note of each cancel, in order; null for Geri al or a cancel without a reason. */
     val cancelNotes = mutableListOf<String?>()
 

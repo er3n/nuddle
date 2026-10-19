@@ -52,6 +52,7 @@ import app.nuddle.ui.screens.home.FromUi
 import app.nuddle.ui.screens.home.MissedUi
 import app.nuddle.ui.screens.home.NewDeadlineCallbacks
 import app.nuddle.ui.screens.home.NewDeadlineSheet
+import app.nuddle.ui.screens.home.RecipientChoice
 import app.nuddle.ui.screens.home.SentIssue
 import app.nuddle.ui.screens.home.SentIssueUi
 import app.nuddle.ui.screens.home.WrittenText
@@ -75,6 +76,8 @@ data class TaskDetailCallbacks(
     val onDeadlineChoice: (DeadlineChoice) -> Unit = {},
     val onTimePicked: (LocalTime) -> Unit = {},
     val onPhotoChoice: (Boolean) -> Unit = {},
+    /** Kime's sheet (NUD-114). */
+    val onRecipientChoice: (RecipientChoice) -> Unit = {},
     val onEditDismiss: () -> Unit = {},
     val onEditSave: () -> Unit = {},
     /** A button at the bottom (docs/ux/screens.md, Task detail). */

@@ -16,7 +16,7 @@ private fun TaskEventEntity.field(name: String): JsonPrimitive? =
 /** The optional note of `dropped`, `cancelled` and `re_requested`. */
 val TaskEventEntity.note: String? get() = field("note")?.contentOrNull?.takeIf { it.isNotBlank() }
 
-/** Why a task was cancelled: `sender_cancelled`, `sender_handles` or `account_deleted`. */
+/** Why a task was cancelled: `sender_cancelled`, `sender_handles`, `account_deleted` or `reassigned` (NUD-114). */
 val TaskEventEntity.reason: String? get() = field("reason")?.contentOrNull
 
 /** `approved` by the 3 hour timer rather than by the sender. */
