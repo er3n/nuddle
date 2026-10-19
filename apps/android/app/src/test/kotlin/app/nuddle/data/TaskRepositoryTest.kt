@@ -82,6 +82,7 @@ class TaskRepositoryTest {
                         { emptySet() },
                         RecordingTaskAcks(),
                         { },
+                        { _, _ -> },
                     ),
                 closer =
                     object : TaskCloser {

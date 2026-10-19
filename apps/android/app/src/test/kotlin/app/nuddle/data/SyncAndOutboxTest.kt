@@ -100,7 +100,11 @@ class SyncAndOutboxTest {
             pending = { unsent },
             acks = acks,
             avatars = { },
+            announcements = { synced, notify -> received += synced.map { it.id } to notify },
         )
+
+    /** What sync handed the announcement inbox (ADR 0025): ids and whether to notify. */
+    private val received = mutableListOf<Pair<List<String>, Boolean>>()
 
     private val sibelConnection =
         """
@@ -451,6 +455,28 @@ class SyncAndOutboxTest {
         }
 
     @Test
+    fun `announcements reach the inbox, notified only after the first sync (ADR 0025)`() =
+        runTest {
+            val withNews =
+                syncBody.replace(
+                    "\"connections\":[]",
+                    """"connections":[],"announcements":[{"id":"n1","title":"T","summary":"S","body":"B","button":null,
+                       "sentAt":"2026-10-19T10:00:00Z"}]""",
+                )
+            sessions.cursor = null
+            server.enqueue(json(200, withNews))
+            assertTrue(syncRepository().sync())
+            sessions.cursor = "40"
+            server.enqueue(json(200, withNews))
+            assertTrue(syncRepository().sync())
+            // An older server's sync has no announcements field.
+            server.enqueue(json(200, syncBody))
+            assertTrue(syncRepository().sync())
+
+            assertEquals(listOf(listOf("n1") to false, listOf("n1") to true, emptyList<String>() to true), received)
+        }
+
+    @Test
     fun `a task taken back before I looked withdraws its announcement`() =
         runTest {
             sessions.cursor = "40"
@@ -483,6 +509,7 @@ class SyncAndOutboxTest {
                     { emptySet() },
                     RecordingTaskAcks(),
                     { },
+                    { _, _ -> },
                 )
             val waiting = mine.replace("\"status\":\"SCHEDULED\"", "\"status\":\"AWAITING_APPROVAL\"")
             server.enqueue(json(200, mine))

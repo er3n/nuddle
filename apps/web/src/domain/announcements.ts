@@ -2,7 +2,7 @@
 import { parse as parseYaml } from "yaml";
 import type { PersonId, PushMessage } from "./types";
 
-export interface AnnouncementButton {
+interface AnnouncementButton {
   label: string;
   /** An app route the phone knows, or an https URL opened in the browser. */
   target: string;
@@ -19,7 +19,7 @@ export interface AnnouncementContent {
 }
 
 /** Routes an announcement's button may open in the app (docs/ux/platform.md, Navigation). */
-export const BUTTON_ROUTES = ["invite", "profile", "inbox"] as const;
+const BUTTON_ROUTES = ["invite", "profile", "inbox"] as const;
 
 export const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
 

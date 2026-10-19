@@ -696,4 +696,11 @@
     <string name="channel_tasks">Görevler ve onaylar</string>
     <string name="channel_reach_out">Ulaşılamayan kişi haberleri</string>
     <string name="channel_system">İzin ve kurulum uyarıları</string>
+    <string name="channel_news">Nuddle\'dan haberler</string>
+
+    <!-- Announcements (ADR 0025, screens.md announcement/{id}) -->
+    <string name="announcement_from">Nuddle\'dan</string>
+    <string name="announcement_missing">Bu haber bu telefona henüz gelmedi. Biraz sonra tekrar bak.</string>
+    <string name="markdown_bullet">•</string>
+    <string name="markdown_number">%1$d.</string>
 </resources>
