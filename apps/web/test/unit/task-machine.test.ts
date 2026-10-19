@@ -9,7 +9,7 @@ import {
   type Command,
   type TaskContext,
 } from "../../src/domain/task-machine";
-import { addMs, HOUR } from "../../src/domain/time";
+import { addMs, HOUR, MINUTE } from "../../src/domain/time";
 import type { Edge, Task, TaskEvent, TaskStatus } from "../../src/domain/types";
 import { aPerson, aTask } from "../builders";
 
@@ -495,6 +495,41 @@ describe("createTask", () => {
       { to: "eren", hint: "plan_changed", taskId: "task-1", event: "created" },
       { to: "sibel", hint: "sync", taskId: "task-1", event: "created" },
     ]);
+  });
+
+  it("a by time a minute away is a moment: rings the at ladder, missed only after the grace (NUD-116)", () => {
+    // Sema picked 16:58 at 16:57:44; the task was missed 15 seconds later after a single poke.
+    const r = createTask({ ...input, deadline: addMs(now, 1 * MINUTE) });
+    if (!r.ok) throw new Error(r.error);
+    const o = r.value;
+    expect(o.task).toMatchObject({
+      timing: "at",
+      remindAt: addMs(now, 1 * MINUTE),
+      deadline: addMs(now, 61 * MINUTE),
+    });
+    expect(o.plan.steps.map((s) => s.level).slice(0, 3)).toEqual([
+      "SOUND",
+      "FULL_SCREEN",
+      "FULL_SCREEN",
+    ]);
+
+    // Ten minutes away is still a deadline.
+    const later = createTask({ ...input, deadline: addMs(now, 10 * MINUTE) });
+    expect(later.ok && later.value.task).toMatchObject({ timing: "by", remindAt: null });
+  });
+
+  it("a new deadline two minutes away makes a by task a moment too (NUD-116)", () => {
+    const o = apply(
+      aTask().withStatus("MISSED").build(),
+      { type: "new_deadline", deadline: addMs(now, 2 * MINUTE) },
+      "sibel",
+    );
+    expect(o.task).toMatchObject({
+      status: "SCHEDULED",
+      timing: "at",
+      remindAt: addMs(now, 2 * MINUTE),
+      deadline: addMs(now, 62 * MINUTE),
+    });
   });
 
   it("creates an at task: the moment, the deadline after its grace, no poke before the moment", () => {

@@ -55,6 +55,32 @@ export function pickedTime(task: Pick<Task, "deadline" | "remindAt">): Date {
   return task.remindAt ?? task.deadline;
 }
 
+/**
+ * TODO(open-questions#55): a `by` time picked less than this far ahead is a moment (NUD-116). A deadline a
+ * minute away left one poke and a miss seconds later; as a moment it rings the `at` ladder and is
+ * missed only after the grace.
+ */
+export const NEAR_BY_MS = 10 * MINUTE;
+
+/** The timing a picked time gets: `by` turns into `at` when the time is less than NEAR_BY_MS away. */
+export function timingFor(timing: Timing, time: Date, now: Date): Timing {
+  return timing === "by" && time.getTime() - now.getTime() < NEAR_BY_MS ? "at" : timing;
+}
+
+/**
+ * A new time picked for an existing task (edit, new deadline): as `reschedule`, except that a `by`
+ * time less than NEAR_BY_MS away makes the task a moment with the default grace (NUD-116).
+ */
+export function retime(
+  task: Pick<Task, "timing" | "deadline" | "remindAt">,
+  time: Date,
+  now: Date,
+): Pick<Task, "timing" | "deadline" | "remindAt"> {
+  const timing = timingFor(task.timing, time, now);
+  if (timing === task.timing) return { timing, ...reschedule(task, time) };
+  return { timing, ...scheduleOf(timing, time, null) };
+}
+
 /** Move a task to a newly picked time; an `at` task keeps its grace. */
 export function reschedule(
   task: Pick<Task, "timing" | "deadline" | "remindAt">,

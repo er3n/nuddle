@@ -5,7 +5,7 @@ import { planPokes } from "./plan-pokes";
 import type { Reachability } from "./reachability";
 import { DAY, HOUR, MINUTE, addMs } from "./time";
 import type { RepeatRule } from "./repeat";
-import { leadMinutesOf, MAX_LEAD_MINUTES, reschedule, scheduleOf } from "./timing";
+import { leadMinutesOf, MAX_LEAD_MINUTES, retime, scheduleOf, timingFor } from "./timing";
 import type {
   CancelReason,
   DeviceLevel,
@@ -635,7 +635,7 @@ export function applyCommand(
         if (cmd.deadline.getTime() <= now.getTime()) {
           return { ok: false, error: "deadline_not_in_future" };
         }
-        Object.assign(next, reschedule(task, cmd.deadline));
+        Object.assign(next, retime(task, cmd.deadline, now));
       }
       if (cmd.detail !== undefined) next.detail = cmd.detail;
       if (cmd.finishMode !== undefined) next.finishMode = cmd.finishMode;
@@ -644,7 +644,7 @@ export function applyCommand(
       if (cmd.deadline.getTime() <= now.getTime()) {
         return { ok: false, error: "deadline_not_in_future" };
       }
-      Object.assign(next, reschedule(task, cmd.deadline));
+      Object.assign(next, retime(task, cmd.deadline, now));
       break;
     case "account_deleted":
     case "connection_removed":
@@ -832,15 +832,17 @@ export function createTask(input: CreateTaskInput): Result<Outcome> {
     return { ok: false, error: "deadline_not_in_future" };
   }
 
+  // A `by` time a few minutes away is a moment (NUD-116).
+  const timing = timingFor(input.timing ?? "by", input.deadline, now);
   const task: Task = {
     id: input.id,
     senderId: sender.id,
     recipientId: recipient.id,
     title: input.title,
     detail: input.detail,
-    timing: input.timing ?? "by",
-    ...scheduleOf(input.timing ?? "by", input.deadline, input.missAfterMinutes),
-    leadMinutes: leadMinutesOf(input.timing ?? "by", input.leadMinutes),
+    timing,
+    ...scheduleOf(timing, input.deadline, input.missAfterMinutes),
+    leadMinutes: leadMinutesOf(timing, input.leadMinutes),
     pokeFrom: null,
     finishMode: input.finishMode,
     rawText: input.rawText,
