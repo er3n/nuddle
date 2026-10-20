@@ -55,9 +55,9 @@ Things only the human can do: accounts, payments, logins, secrets, production pu
   - Keep a copy of `upload.jks` and both passwords in your password manager. Play App Signing holds the real signing key; a lost upload key can be reset in Play Console, but it takes days.
   - `mise run android:bundle` builds `apps/android/app/build/outputs/bundle/prodRelease/app-prod-release.aab`. Raise `versionCode` in `apps/android/app/build.gradle.kts` before each upload after the first.
 - [ ] Play uploads from the command line (ADR 0026, NUD-117), once:
-  - In Google Cloud project `intense-arbor-512208-g5`, enable the Google Play Android Developer API, create the service account `play-publisher` with no project roles, and download a JSON key.
+  - In Google Cloud project `nuddle-app-er3n`, enable the Google Play Android Developer API, create the service account `play-publisher` with no project roles, and download a JSON key.
   - `mv` the key to `~/.nuddle/release/play-service-account.json` and `chmod 600` it. It never goes into the repo.
-  - In Play Console (dokukoza@), Users and permissions, invite `play-publisher@intense-arbor-512208-g5.iam.gserviceaccount.com` with app permissions for `app.nuddle`: Release to testing tracks, Manage testing tracks and edit tester lists. No production rights.
+  - In Play Console (dokukoza@), Users and permissions, invite `play-publisher@nuddle-app-er3n.iam.gserviceaccount.com` with app permissions for `app.nuddle`: Release to testing tracks, Manage testing tracks and edit tester lists. No production rights.
   - From then on a release is: raise `versionCode`, write `apps/android/app/src/prod/play/release-notes/<locale>/default.txt`, `mise run android:publish`.
 - [ ] Declare the app as an alarm app (`USE_EXACT_ALARM`, full screen intent) and justify `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` with the same core function (ringing on time). Upload an early closed test build to learn the policy outcome.
 - [ ] SMS provider account (WhatsApp Business authentication template later). Configure sender, add credentials to env (`TWILIO_*` and, with the signed prod app, `SMS_RETRIEVER_HASH` in Vercel Production).

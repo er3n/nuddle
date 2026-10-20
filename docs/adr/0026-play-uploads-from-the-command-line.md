@@ -9,7 +9,7 @@ Every release so far was built with `mise run android:bundle` and dragged into P
 - **Gradle Play Publisher** (`com.github.triplet.play`) uploads through the Google Play Developer Publishing API. `mise run android:publish` runs `:app:publishProdReleaseBundle`: it builds the prod release bundle, signs it with the upload key and puts it on the **internal** track as a completed release.
 - Only the `prod` flavor publishes; `dev` and `e2e` are disabled.
 - Release notes are files in the repo: `apps/android/app/src/prod/play/release-notes/<locale>/default.txt` (tr-TR and en-US, the listing's languages). They are rewritten for every release.
-- The API acts as the service account `play-publisher@intense-arbor-512208-g5.iam.gserviceaccount.com`, in the Google Cloud project `intense-arbor-512208-g5` (where the Play Console API setup put it). Play Console grants it testing-track rights for `app.nuddle` only, never production. Its key lives outside the repo at `~/.nuddle/release/play-service-account.json`, or the path in the Gradle property `nuddle.play.serviceAccount` or `NUDDLE_PLAY_SERVICE_ACCOUNT` (CLAUDE.md rule 11).
+- The API acts as the service account `play-publisher@nuddle-app-er3n.iam.gserviceaccount.com`, in the Google Cloud project of the Firebase project `nuddle-app-er3n`. Play Console grants it testing-track rights for `app.nuddle` only, never production. Its key lives outside the repo at `~/.nuddle/release/play-service-account.json`, or the path in the Gradle property `nuddle.play.serviceAccount` or `NUDDLE_PLAY_SERVICE_ACCOUNT` (CLAUDE.md rule 11).
 - Closed testing and production stay promotions in Play Console (CLAUDE.md rule 6).
 
 ## Consequences
