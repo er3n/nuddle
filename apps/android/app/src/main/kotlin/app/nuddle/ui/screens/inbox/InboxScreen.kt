@@ -35,6 +35,9 @@ import app.nuddle.ui.components.BackBar
 import app.nuddle.ui.components.DurtButton
 import app.nuddle.ui.components.DurtButtonKind
 import app.nuddle.ui.components.DurtButtonSize
+import app.nuddle.ui.components.InboxItem
+import app.nuddle.ui.components.InboxTone
+import app.nuddle.ui.components.SettingsGroup
 import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.screens.ScreenLayout
@@ -50,10 +53,22 @@ data class InboxInviteUi(
     val ago: Ago,
 )
 
-/** 2g, 1c and 7b: warnings and invites under "Yeni", then my tasks to others by day. */
+/** A message from Nuddle in the bell (ADR 0025). */
+@Immutable
+data class InboxNewsUi(
+    val id: String,
+    val title: String,
+    val summary: String,
+    val ago: Ago,
+    val unread: Boolean,
+)
+
+/** 2g, 1c and 7b: warnings, invites and unread messages from Nuddle under "Yeni", then read messages, then my tasks to others by day. */
 @Immutable
 data class InboxUiState(
     val invites: List<InboxInviteUi> = emptyList(),
+    /** Messages from Nuddle, newest first. */
+    val news: List<InboxNewsUi> = emptyList(),
     /** A poke that did not ring and permissions that are off (2g). */
     val warnings: List<BellWarning> = emptyList(),
     /** My tasks to others from the last week, as text (7b). */
@@ -68,12 +83,14 @@ fun InboxScreen(
     modifier: Modifier = Modifier,
     onOpenTask: (taskId: String) -> Unit = {},
     onFix: (BellWarning) -> Unit = {},
+    onOpenNews: (announcementId: String) -> Unit = {},
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
     ScreenLayout(background = colors.background, modifier = modifier.testTag(TestTags.INBOX)) {
         BackBar(title = stringResource(R.string.inbox_title), onBack = onBack)
-        if (state.invites.isNotEmpty() || state.warnings.isNotEmpty()) {
+        val (unreadNews, readNews) = state.news.partition { it.unread }
+        if (state.invites.isNotEmpty() || state.warnings.isNotEmpty() || unreadNews.isNotEmpty()) {
             Text(
                 stringResource(R.string.inbox_new).uppercaseForUi(),
                 style = DurtTheme.type.overline,
@@ -82,6 +99,12 @@ fun InboxScreen(
             )
             BellWarningCards(state.warnings, onFix)
             state.invites.forEach { InviteCard(it, onOpen = { onOpenInvite(it) }) }
+            unreadNews.forEach { NewsItem(it, onOpenNews) }
+        }
+        if (readNews.isNotEmpty()) {
+            SettingsGroup(stringResource(R.string.announcement_from)) {
+                readNews.forEach { NewsItem(it, onOpenNews) }
+            }
         }
         BellList(state.days, onOpenTask)
         Text(
@@ -150,6 +173,41 @@ private fun InviteCard(
             kind = DurtButtonKind.Accent,
             size = DurtButtonSize.Medium,
             modifier = Modifier.testTag(TestTags.INBOX_OPEN_INVITE),
+        )
+    }
+}
+
+@Composable
+private fun NewsItem(
+    news: InboxNewsUi,
+    onOpen: (String) -> Unit,
+) {
+    InboxItem(
+        icon = DurtIcons.Bell,
+        title = news.title,
+        subtitle = news.summary,
+        time = agoText(news.ago),
+        unread = news.unread,
+        onClick = { onOpen(news.id) },
+        tone = InboxTone.Neutral,
+        modifier = Modifier.testTag(TestTags.INBOX_NEWS),
+    )
+}
+
+@PreviewScreens
+@Composable
+private fun InboxScreenNewsPreview() {
+    DurtTheme {
+        InboxScreen(
+            InboxUiState(
+                news =
+                    listOf(
+                        InboxNewsUi("n2", "Premium geldi", "SMS ile dürtme artık Premium'da.", Ago.Hours(2), unread = true),
+                        InboxNewsUi("n1", "Nuddle'a hoş geldin", "Bu bir deneme mesajı.", Ago.Days(3), unread = false),
+                    ),
+            ),
+            onBack = {},
+            onOpenInvite = {},
         )
     }
 }

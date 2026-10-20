@@ -24,6 +24,7 @@ If a screen and `product.md` disagree on behavior, `product.md` wins. Copy writt
 | `task/{id}/photo`, `task/{id}/approve` | 4d, 6e, 4f | Camera and approval |
 | `inbox` | 1c, 2g, 7b | The bell |
 | `invite`, `invite/ready` | 1e, 1f | Ends in the system share sheet |
+| `announcement/{id}` | (no canvas, ADR 0025) | An announcement from Nuddle: markdown and an optional button. From its notification or the bell |
 | `profile`, `person/{id}` | 5a, 5b, 7g, 7h, 7i | Settings sheets on top of profile |
 | `PokeActivity` | 3b, 2d (demo), 7f | Opened from a notification or alarm |
 | System notification | 3a, 4b, 7a | `NotificationCompat`, not Compose |
@@ -143,6 +144,10 @@ Same as 1a with a bell badge (1).
 
 ### 1c Bell · `Notifications.png`
 **Copy:** Bildirimler | Yeni | Sibel seni davet etti | Seni dürtmek için izin istiyor · 2 sa önce | Daveti gör | Daha eski bildirim yok
+
+**Announcements (ADR 0025, no canvas yet).** An unread announcement is an `InboxItem` (bell icon, neutral tone) under "Yeni" after the invites, unread dot on, counted in the badge: its title, its summary, how long ago. Opened ones sit in a "Nuddle'dan" group before the day list, without the dot. Tapping opens `announcement/{id}`.
+
+**`announcement/{id}`.** Back bar titled "Nuddle'dan". The title in `h1`, how long ago in `textMuted`, then the markdown body: headings (`h2`, `h3`, then `bodyStrong`), paragraphs in `body`, bold and italic, lists, quotes with a `border` bar, links in `link` and underlined (they open the browser; only http and https), pictures full width with `radiusM` corners. An optional primary button at the bottom with the announcement's label. An id that is not on the phone yet (a notification ahead of its sync) says "Bu haber bu telefona henüz gelmedi. Biraz sonra tekrar bak."
 
 ### 1d Invite detail · `InviteDetail.png`
 Consent content opened from the bell, with Reddet instead of Şimdi değil.

@@ -12,6 +12,7 @@ import app.nuddle.api.model.TaskEventType
 import app.nuddle.api.model.TaskStatus
 import app.nuddle.api.model.Timing
 import app.nuddle.data.EventTypes
+import app.nuddle.data.announcement.AnnouncementInbox
 import app.nuddle.data.api.ApiResult
 import app.nuddle.data.api.apiCall
 import app.nuddle.data.avatar.AvatarRef
@@ -120,8 +121,9 @@ sealed interface TaskClose {
 private val SYNC_LOCK = Mutex()
 
 /**
- * `GET /api/v1/sync?cursor=&deviceId=` (ADR 0006, 0014): stores `me`, connections, tasks, their events, invites and
- * received plans, moves the cursor, then re-arms alarms. The server is the source of truth; FCM only says when to call this.
+ * `GET /api/v1/sync?cursor=&deviceId=` (ADR 0006, 0014): stores `me`, connections, tasks, their events, invites,
+ * received plans and announcements (ADR 0025), moves the cursor, then re-arms alarms. The server is the source of
+ * truth; FCM only says when to call this.
  * A task from someone else that arrives in a later sync is announced once; a full sync (sign-in, reinstall) brings
  * old ones too, so it announces nothing.
  */
@@ -140,6 +142,7 @@ class SyncRepository
         private val pending: PendingChanges,
         private val acks: TaskAcks,
         private val avatars: AvatarRefresher,
+        private val announcements: AnnouncementInbox,
     ) : Syncer {
         /**
          * One sync at a time in the process: a push, the app coming to the front and a write can ask at once (NUD-59),
@@ -179,6 +182,8 @@ class SyncRepository
             events.upsert(response.events.map(SyncEvent::toEntity))
             invites.upsert(response.sentInvites.map(SyncSentInvite::toEntity) + response.receivedInvites.map(SyncReceivedInvite::toEntity))
             response.plans.forEach { plan -> alarms.applyPlan(plan.taskId, plan.version, plan.toEntities()) }
+            // A full sync brings every announcement this person ever got: old news, like old tasks.
+            announcements.receive(response.announcements.orEmpty(), notify = cursor != null)
             sessions.saveSyncCursor(response.cursor)
             alarms.rearm()
             // The sender's tick (NUD-68): tasks to me are on this phone now.

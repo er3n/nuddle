@@ -134,6 +134,12 @@ class MainActivity : ComponentActivity() {
             taskId: String,
         ): Intent = open(context, Routes.task(taskId))
 
+        /** Opens a message from Nuddle (ADR 0025): its notification. */
+        fun announcement(
+            context: Context,
+            announcementId: String,
+        ): Intent = open(context, Routes.announcement(announcementId))
+
         // The route is also the data URI, which keeps PendingIntents for different screens apart.
         private fun open(
             context: Context,

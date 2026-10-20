@@ -154,3 +154,24 @@ interface TaskEventDao {
     @Query("SELECT * FROM task_events ORDER BY at")
     fun observeAll(): Flow<List<TaskEventEntity>>
 }
+
+@Dao
+interface AnnouncementDao {
+    @Upsert
+    suspend fun upsert(announcements: List<AnnouncementEntity>)
+
+    @Query("SELECT * FROM announcements WHERE id = :id")
+    suspend fun get(id: String): AnnouncementEntity?
+
+    @Query("SELECT * FROM announcements WHERE id = :id")
+    fun observe(id: String): Flow<AnnouncementEntity?>
+
+    @Query("SELECT * FROM announcements ORDER BY sentAt DESC")
+    fun observeAll(): Flow<List<AnnouncementEntity>>
+
+    @Query("UPDATE announcements SET openedAt = :at WHERE id = :id AND openedAt IS NULL")
+    suspend fun markOpened(
+        id: String,
+        at: Long,
+    )
+}

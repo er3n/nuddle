@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.nuddle.api.model.SyncReceivedInvite
 import app.nuddle.data.InviteRepository
+import app.nuddle.data.db.AnnouncementDao
 import app.nuddle.data.db.InviteDao
 import app.nuddle.data.session.ConsentPrompts
 import app.nuddle.data.sync.Syncer
@@ -43,14 +44,16 @@ class HomeInvitesViewModel
         private val ids: IdGenerator,
         private val syncer: Syncer,
         private val warnings: BellWarningSource,
+        announcements: AnnouncementDao,
     ) : ViewModel() {
         private val all = inviteDao.observeAll()
         private val received = all.map(::openReceived)
 
-        /** Open invites to me and the bell's warnings (2g). */
+        /** Open invites to me, the bell's warnings (2g) and unread messages from Nuddle (ADR 0025). */
         val unread: StateFlow<Int> =
-            combine(received, warnings.warnings) { open, warned -> open.size + warned.size }
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), 0)
+            combine(received, warnings.warnings, announcements.observeAll()) { open, warned, news ->
+                open.size + warned.size + news.count { it.openedAt == null }
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), 0)
 
         /** Back on home, maybe from system settings: the permissions may have changed. */
         fun onResume() = warnings.refresh()

@@ -15,6 +15,9 @@ object NotificationChannels {
     const val REACH_OUT = "reach_out"
     const val SYSTEM = "system"
 
+    /** Messages from Nuddle (ADR 0025). Turned off, it only stops their notifications; never a missing permission. */
+    const val NEWS = "news"
+
     fun create(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
         val alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
@@ -55,6 +58,11 @@ object NotificationChannels {
                     context.getString(R.string.channel_system),
                     NotificationManager.IMPORTANCE_LOW,
                 ).apply { setSound(null, null) },
+                NotificationChannel(
+                    NEWS,
+                    context.getString(R.string.channel_news),
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                ),
             )
         manager.createNotificationChannels(channels)
     }
@@ -85,6 +93,9 @@ object NotificationIds {
     fun taskOfPokeGroup(group: String): String? = group.removePrefix(POKE_GROUP).takeIf { group.startsWith(POKE_GROUP) }
 
     private const val POKE_GROUP = "poke:"
+
+    /** A message from Nuddle (ADR 0025). */
+    fun news(announcementId: String): Int = "news:$announcementId".hashCode()
 
     /** 7a in a group of its own too, so it is not folded in silently next to a poke on the same phone. */
     fun reachGroup(taskId: String): String = "reach:$taskId"

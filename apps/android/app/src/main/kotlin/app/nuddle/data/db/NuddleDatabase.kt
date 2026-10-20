@@ -10,13 +10,14 @@ import androidx.room.RoomDatabase
  * 5: `tasks.photoSentAt` and `tasks.reRequestNote` (NUD-15). 6: `task_events` and `tasks.statusChangedAt` (NUD-16).
  * 7: `connections.connectedAt` and `connections.notifyMe` (NUD-17). 8: `queued_writes` (NUD-19).
  * 11: `connections.avatarPath` (NUD-72). 12: `tasks.repeatEvery`, `repeatDays`, `repeatTime` (NUD-77).
+ * 13: `announcements` (NUD-112).
  */
 @Database(
     entities = [
         TaskEntity::class, PokeStepEntity::class, OutboxEntity::class, InviteEntity::class, ConnectionEntity::class,
-        TaskEventEntity::class, QueuedWriteEntity::class,
+        TaskEventEntity::class, QueuedWriteEntity::class, AnnouncementEntity::class,
     ],
-    version = 12,
+    version = 13,
     autoMigrations = [
         AutoMigration(
             from = 1,
@@ -25,6 +26,7 @@ import androidx.room.RoomDatabase
         AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7),
         AutoMigration(from = 7, to = 8), AutoMigration(from = 8, to = 9), AutoMigration(from = 9, to = 10),
         AutoMigration(from = 10, to = 11), AutoMigration(from = 11, to = 12),
+        AutoMigration(from = 12, to = 13),
     ],
 )
 abstract class NuddleDatabase : RoomDatabase() {
@@ -41,4 +43,6 @@ abstract class NuddleDatabase : RoomDatabase() {
     abstract fun taskEvents(): TaskEventDao
 
     abstract fun queuedWrites(): QueuedWriteDao
+
+    abstract fun announcements(): AnnouncementDao
 }

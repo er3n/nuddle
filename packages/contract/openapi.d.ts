@@ -772,6 +772,7 @@ export interface components {
             tasks: components["schemas"]["SyncTask"][];
             events: components["schemas"]["SyncEvent"][];
             plans: components["schemas"]["SyncPlan"][];
+            announcements?: components["schemas"]["SyncAnnouncement"][];
         };
         Me: {
             /** Format: uuid */
@@ -968,6 +969,23 @@ export interface components {
         };
         /** @enum {string} */
         DeviceLevel: "SILENT" | "SOUND" | "FULL_SCREEN";
+        SyncAnnouncement: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            summary: string;
+            body: string;
+            button: {
+                label: string;
+                target: string;
+            } | null;
+            /**
+             * Format: date-time
+             * @description ISO 8601 with offset
+             * @example 2026-10-12T09:00:00+03:00
+             */
+            sentAt: string;
+        };
         RegisterDeviceResult: {
             /** Format: uuid */
             deviceId: string;

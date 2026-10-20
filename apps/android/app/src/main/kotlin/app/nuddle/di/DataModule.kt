@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import app.nuddle.BuildConfig
 import app.nuddle.alarm.AndroidLocalWipe
+import app.nuddle.alarm.AndroidNewsAnnouncer
 import app.nuddle.alarm.AndroidTaskAnnouncer
 import app.nuddle.alarm.PokeActions
 import app.nuddle.data.AccountRepository
@@ -18,11 +19,15 @@ import app.nuddle.data.OutboxApprovals
 import app.nuddle.data.TaskCloser
 import app.nuddle.data.TaskReassigner
 import app.nuddle.data.TaskRepository
+import app.nuddle.data.announcement.AnnouncementInbox
+import app.nuddle.data.announcement.NewsAnnouncer
+import app.nuddle.data.announcement.RoomAnnouncementInbox
 import app.nuddle.data.avatar.ApiAvatarRepository
 import app.nuddle.data.avatar.AvatarRefresher
 import app.nuddle.data.avatar.AvatarRepository
 import app.nuddle.data.avatar.AvatarSync
 import app.nuddle.data.avatar.AvatarUploads
+import app.nuddle.data.db.AnnouncementDao
 import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.InviteDao
 import app.nuddle.data.db.NuddleDatabase
@@ -87,6 +92,9 @@ object DatabaseModule {
 
     @Provides
     fun taskEvents(db: NuddleDatabase): TaskEventDao = db.taskEvents()
+
+    @Provides
+    fun announcements(db: NuddleDatabase): AnnouncementDao = db.announcements()
 }
 
 /** The in-app camera, or in the `e2e` flavor the photo the orchestrator put on the phone (NUD-29). */
@@ -173,4 +181,15 @@ abstract class AvatarModule {
 abstract class TaskEditModule {
     @Binds
     abstract fun taskReassigner(impl: ApiTaskReassigner): TaskReassigner
+}
+
+/** Messages from Nuddle (ADR 0025): stored from sync, shown on the `news` channel. */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class AnnouncementModule {
+    @Binds
+    abstract fun announcementInbox(impl: RoomAnnouncementInbox): AnnouncementInbox
+
+    @Binds
+    abstract fun newsAnnouncer(impl: AndroidNewsAnnouncer): NewsAnnouncer
 }

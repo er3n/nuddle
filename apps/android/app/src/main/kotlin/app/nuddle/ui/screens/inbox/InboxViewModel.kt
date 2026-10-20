@@ -3,6 +3,7 @@ package app.nuddle.ui.screens.inbox
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.nuddle.api.model.SyncReceivedInvite
+import app.nuddle.data.db.AnnouncementDao
 import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.InviteDao
 import app.nuddle.data.db.InviteEntity
@@ -41,6 +42,7 @@ class InboxViewModel
         private val bellWarnings: BellWarningSource,
         clock: Clock,
         timeZone: TimeZone,
+        announcements: AnnouncementDao,
     ) : ViewModel() {
         private val days =
             combine(
@@ -55,8 +57,19 @@ class InboxViewModel
                 invites.observeAll(),
                 days.onStart { emit(emptyList()) },
                 bellWarnings.warnings.onStart { emit(emptyList()) },
-            ) { all, days, warnings ->
+                announcements.observeAll(),
+            ) { all, days, warnings, news ->
                 InboxUiState(
+                    news =
+                        news.map {
+                            InboxNewsUi(
+                                id = it.id,
+                                title = it.title,
+                                summary = it.summary,
+                                ago = Ago.between(Instant.fromEpochMilliseconds(it.sentAt), clock.now()),
+                                unread = it.openedAt == null,
+                            )
+                        },
                     invites =
                         openReceived(all).map {
                             InboxInviteUi(it.id, it.name, Ago.between(Instant.fromEpochMilliseconds(it.createdAt), clock.now()))

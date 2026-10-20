@@ -235,6 +235,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
             version: p.version,
             steps: p.steps.map((st) => ({ ...st, plannedAt: iso(st.plannedAt) })),
           })),
+          announcements: r.announcements.map((a) => ({ ...a, sentAt: iso(a.sentAt) })),
         },
         200,
       );

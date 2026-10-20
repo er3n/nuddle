@@ -138,3 +138,22 @@ data class TaskEventEntity(
     /** Epoch milliseconds. */
     val at: Long,
 )
+
+/**
+ * A message from Nuddle as synced (SyncAnnouncement, ADR 0025). [openedAt] is this phone's own: a sync never
+ * changes it.
+ */
+@Entity(tableName = "announcements")
+data class AnnouncementEntity(
+    @PrimaryKey val id: String,
+    val title: String,
+    val summary: String,
+    /** CommonMark. */
+    val body: String,
+    val buttonLabel: String?,
+    val buttonTarget: String?,
+    /** Epoch milliseconds: when it reached me. */
+    val sentAt: Long,
+    /** Epoch milliseconds; null until the detail was opened here. */
+    val openedAt: Long? = null,
+)

@@ -19,7 +19,10 @@ import app.nuddle.data.TaskCloser
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.VerifyOutcome
 import app.nuddle.data.WriteOutcome
+import app.nuddle.data.announcement.NewsAnnouncer
 import app.nuddle.data.avatar.AvatarRepository
+import app.nuddle.data.db.AnnouncementDao
+import app.nuddle.data.db.AnnouncementEntity
 import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.InviteDao
@@ -722,5 +725,41 @@ class FakeInvitePreviews(
     override suspend fun load(code: String) {
         loaded += code
         current.value = previews[code]
+    }
+}
+
+class InMemoryAnnouncementDao : AnnouncementDao {
+    private val all = MutableStateFlow<Map<String, AnnouncementEntity>>(emptyMap())
+
+    override suspend fun upsert(announcements: List<AnnouncementEntity>) {
+        all.value += announcements.associateBy { it.id }
+    }
+
+    override suspend fun get(id: String): AnnouncementEntity? = all.value[id]
+
+    override fun observe(id: String): Flow<AnnouncementEntity?> = all.map { it[id] }
+
+    override fun observeAll(): Flow<List<AnnouncementEntity>> = all.map { it.values.sortedByDescending { a -> a.sentAt } }
+
+    override suspend fun markOpened(
+        id: String,
+        at: Long,
+    ) {
+        val a = all.value[id] ?: return
+        if (a.openedAt == null) all.value += id to a.copy(openedAt = at)
+    }
+}
+
+/** Announcement notifications posted and withdrawn, by id. */
+class RecordingNewsAnnouncer : NewsAnnouncer {
+    val announced = mutableListOf<String>()
+    val withdrawn = mutableListOf<String>()
+
+    override fun announce(announcement: AnnouncementEntity) {
+        announced += announcement.id
+    }
+
+    override fun withdraw(announcementId: String) {
+        withdrawn += announcementId
     }
 }
