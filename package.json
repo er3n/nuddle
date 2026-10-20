@@ -1,9 +1,9 @@
 {
   "name": "nuddle",
   "private": true,
-  "packageManager": "pnpm@10.34.6",
+  "packageManager": "pnpm@12.14.0",
   "engines": {
-    "node": "22.x"
+    "node": "24.x"
   },
   "scripts": {
     "prepare": "lefthook install"
