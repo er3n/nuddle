@@ -1,6 +1,7 @@
 package app.nuddle.data.sync
 
 import app.nuddle.api.SyncApi
+import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.SyncConnection
 import app.nuddle.api.model.SyncEvent
 import app.nuddle.api.model.SyncPlan
@@ -11,6 +12,7 @@ import app.nuddle.api.model.TaskEventType
 import app.nuddle.api.model.TaskStatus
 import app.nuddle.api.model.Timing
 import app.nuddle.data.EventTypes
+import app.nuddle.data.announcement.AnnouncementInbox
 import app.nuddle.data.api.ApiResult
 import app.nuddle.data.api.apiCall
 import app.nuddle.data.avatar.AvatarRef
@@ -26,6 +28,8 @@ import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.db.TaskEventDao
 import app.nuddle.data.db.TaskEventEntity
 import app.nuddle.data.level
+import app.nuddle.data.note
+import app.nuddle.data.reason
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.session.TaskAcks
 import app.nuddle.data.sinceLastDeadline
@@ -83,13 +87,43 @@ interface TaskAnnouncer {
 
     /** My task to someone else is no longer open: "cevap vermiyor" goes. */
     fun withdrawCantReach(taskId: String)
+
+    /** [otherName] closed a task between us (NUD-115): what happened, so it does not just vanish from a list. */
+    fun closed(
+        task: TaskEntity,
+        otherName: String,
+        close: TaskClose,
+    )
+}
+
+/** How the other side closed a task between us (NUD-115). */
+sealed interface TaskClose {
+    /** The sender took the task to me back, with the note of 7d if any. */
+    data class Cancelled(
+        val note: String?,
+    ) : TaskClose
+
+    /** The sender gave the task to me to someone else (NUD-114). */
+    data object Reassigned : TaskClose
+
+    /** My task: the recipient said Bitti. */
+    data object Done : TaskClose
+
+    /** My task: the recipient said Bugün olmaz, with the note of 7f if any. */
+    data class Dropped(
+        val note: String?,
+    ) : TaskClose
+
+    /** My task: its time passed and the recipient did not finish it. */
+    data object Missed : TaskClose
 }
 
 private val SYNC_LOCK = Mutex()
 
 /**
- * `GET /api/v1/sync?cursor=&deviceId=` (ADR 0006, 0014): stores `me`, connections, tasks, their events, invites and
- * received plans, moves the cursor, then re-arms alarms. The server is the source of truth; FCM only says when to call this.
+ * `GET /api/v1/sync?cursor=&deviceId=` (ADR 0006, 0014): stores `me`, connections, tasks, their events, invites,
+ * received plans and announcements (ADR 0025), moves the cursor, then re-arms alarms. The server is the source of
+ * truth; FCM only says when to call this.
  * A task from someone else that arrives in a later sync is announced once; a full sync (sign-in, reinstall) brings
  * old ones too, so it announces nothing.
  */
@@ -108,6 +142,7 @@ class SyncRepository
         private val pending: PendingChanges,
         private val acks: TaskAcks,
         private val avatars: AvatarRefresher,
+        private val announcements: AnnouncementInbox,
     ) : Syncer {
         /**
          * One sync at a time in the process: a push, the app coming to the front and a write can ask at once (NUD-59),
@@ -132,6 +167,8 @@ class SyncRepository
             )
             // Compared with what this phone had before the sync; a full sync (cursor null) is old news.
             val news = if (cursor == null) emptyList() else news(response.tasks, session.personId)
+            val closes =
+                if (cursor == null) emptyList() else closes(response.tasks, response.events.map(SyncEvent::toEntity), session.personId)
             val unreached =
                 if (cursor == null) {
                     emptySet()
@@ -145,6 +182,8 @@ class SyncRepository
             events.upsert(response.events.map(SyncEvent::toEntity))
             invites.upsert(response.sentInvites.map(SyncSentInvite::toEntity) + response.receivedInvites.map(SyncReceivedInvite::toEntity))
             response.plans.forEach { plan -> alarms.applyPlan(plan.taskId, plan.version, plan.toEntities()) }
+            // A full sync brings every announcement this person ever got: old news, like old tasks.
+            announcements.receive(response.announcements.orEmpty(), notify = cursor != null)
             sessions.saveSyncCursor(response.cursor)
             alarms.rearm()
             // The sender's tick (NUD-68): tasks to me are on this phone now.
@@ -155,8 +194,31 @@ class SyncRepository
             )
             tell(news, response.tasks, session.personId)
             tellUnreached(unreached, response.tasks, session.personId)
+            closes.forEach { (task, close) ->
+                val other = if (task.recipientId == session.personId) task.senderId else task.recipientId
+                connections.get(other)?.let { announcer.closed(task.toEntity(), it.displayName, close) }
+            }
             return true
         }
+
+        /**
+         * Tasks between me and someone else that the other side just closed (NUD-115). What I closed myself is already
+         * closed here, so it is never told back to me. A one-time message is left out: its ticks say enough.
+         */
+        private suspend fun closes(
+            synced: List<SyncTask>,
+            events: List<TaskEventEntity>,
+            me: String,
+        ): List<Pair<SyncTask, TaskClose>> =
+            synced.mapNotNull { task ->
+                val before = tasks.get(task.id)
+                if (task.senderId == task.recipientId || task.finishMode == FinishMode.NOTICE) return@mapNotNull null
+                if (before == null || before.status == task.status.value) return@mapNotNull null
+                val own = events.filter { it.taskId == task.id }
+                val close =
+                    if (task.recipientId == me) closeToMe(task, before.status, own) else closeOfMine(task, before.status, own)
+                close?.let { task to it }
+            }
 
         /**
          * What this phone did and has not sent yet stays as it is here: the status, whether it is on my list and the
@@ -314,6 +376,43 @@ internal fun SyncPlan.toEntities() =
             level = step.level.value,
         )
     }
+
+/** A task to me that the sender closed: a cancel or a new recipient, not one I closed here myself. */
+private fun closeToMe(
+    task: SyncTask,
+    before: String,
+    events: List<TaskEventEntity>,
+): TaskClose? {
+    if (task.status != TaskStatus.CANCELLED || before !in STILL_MINE) return null
+    val cancel = events.lastOrNull { it.type == EventTypes.CANCELLED }
+    return when (cancel?.reason) {
+        SENDER_CANCELLED -> TaskClose.Cancelled(cancel.note)
+        REASSIGNED -> TaskClose.Reassigned
+        else -> null
+    }
+}
+
+/** My task that the recipient closed while it was open: done, can't today or missed. */
+private fun closeOfMine(
+    task: SyncTask,
+    before: String,
+    events: List<TaskEventEntity>,
+): TaskClose? {
+    if (before !in OPEN_STATUSES) return null
+    return when (task.status) {
+        TaskStatus.DONE -> TaskClose.Done
+        TaskStatus.DROPPED -> TaskClose.Dropped(events.lastOrNull { it.type == EventTypes.DROPPED }?.note)
+        TaskStatus.MISSED -> TaskClose.Missed
+        else -> null
+    }
+}
+
+private const val SENDER_CANCELLED = "sender_cancelled"
+private const val REASSIGNED = "reassigned"
+
+/** A task to me that was still mine here: open, waiting for approval or missed, not one I closed myself. */
+private val STILL_MINE =
+    setOf(TaskStatus.SCHEDULED.value, TaskStatus.REJECTED.value, TaskStatus.AWAITING_APPROVAL.value, TaskStatus.MISSED.value)
 
 /** Statuses in which the recipient is still poked (docs/domain.md). */
 internal val OPEN_STATUSES = setOf(TaskStatus.SCHEDULED.value, TaskStatus.REJECTED.value)

@@ -24,6 +24,7 @@ If a screen and `product.md` disagree on behavior, `product.md` wins. Copy writt
 | `task/{id}/photo`, `task/{id}/approve` | 4d, 6e, 4f | Camera and approval |
 | `inbox` | 1c, 2g, 7b | The bell |
 | `invite`, `invite/ready` | 1e, 1f | Ends in the system share sheet |
+| `announcement/{id}` | (no canvas, ADR 0025) | An announcement from Nuddle: markdown and an optional button. From its notification or the bell |
 | `profile`, `person/{id}` | 5a, 5b, 7g, 7h, 7i | Settings sheets on top of profile |
 | `PokeActivity` | 3b, 2d (demo), 7f | Opened from a notification or alarm |
 | System notification | 3a, 4b, 7a | `NotificationCompat`, not Compose |
@@ -47,11 +48,13 @@ Changed on 2026-10-15 after the phone test: long titles wrapped into the buttons
 | To me | Tekrar istendi | The sender's note; Yeni fotoğraf çek, Bugün yapamayacağım, Ara and Mesaj |
 | To me | Onay bekleniyor | The 4e message; no action |
 | To me | Kaçırıldı | Sonradan yaptım, Ara, Listeden kaldır |
-| To self | Kurulu | Şimdiden bitti (Bitti, çek), Görevi iptal et; Son zaman and Nasıl bitsin can be edited (NUD-47) |
+| To self | Kurulu | Şimdiden bitti (Bitti, çek), Görevi iptal et; Kime, Son zaman and Nasıl bitsin can be edited (NUD-47, NUD-114) |
 | To self | Kaçırıldı | Sonradan yaptım, Listeden kaldır |
 | Mine to someone | Kurulu, Tekrar istendi | 7c as before: rows can be edited, Görevi iptal et (7d). Once a poke rang, a past-tense line under the sentence: "2 kez dürttüm, en son 09:10." (NUD-81); never the plan ahead |
 | Mine to someone | Bırakıldı | The 5d message; Yeni zaman ver, Ben hallederim |
 | Mine to someone | Kaçırıldı | The 5d message; Süreyi uzat, İptal et (no 7d sheet) |
+
+**Kime on a written task (NUD-114).** While the task is Kurulu and I have a connection, a tap on the Kime row opens the "Kime?" choices of 4a (Kendine and each connection, the current one selected). The sheet says "Görev seçtiğin kişiye geçer, dürtmeler ona başlar." and Kaydet does it: the task closes for the old person and starts for the new one with its own plan; the detail goes back to home, where the task shows under the new person. The old person's phone stops the pokes and shows "Sibel bu görevi başka birine verdi: "Çöpü at"" in the place of the "iptal etti" row, without the new person's name; nothing is shown for a task to self.
 
 The screen goes back by itself once the task leaves that list (done, cancelled, approved, handled). Yeni zaman ver and Süreyi uzat open the 5d deadline sheet over the detail.
 **Copy:** Bana | Gönderdiklerim | Sonra | Cevabını bekliyor | Devam eden | Bitenler zilde yazar. | Henüz kimseye görev yazmadın. | Kimden | Listeden kaldır | Kaldır
@@ -142,6 +145,10 @@ Same as 1a with a bell badge (1).
 ### 1c Bell · `Notifications.png`
 **Copy:** Bildirimler | Yeni | Sibel seni davet etti | Seni dürtmek için izin istiyor · 2 sa önce | Daveti gör | Daha eski bildirim yok
 
+**Announcements (ADR 0025, no canvas yet).** An unread announcement is an `InboxItem` (bell icon, neutral tone) under "Yeni" after the invites, unread dot on, counted in the badge: its title, its summary, how long ago. Opened ones sit in a "Nuddle'dan" group before the day list, without the dot. Tapping opens `announcement/{id}`.
+
+**`announcement/{id}`.** Back bar titled "Nuddle'dan". The title in `h1`, how long ago in `textMuted`, then the markdown body: headings (`h2`, `h3`, then `bodyStrong`), paragraphs in `body`, bold and italic, lists, quotes with a `border` bar, links in `link` and underlined (they open the browser; only http and https), pictures full width with `radiusM` corners. An optional primary button at the bottom with the announcement's label. An id that is not on the phone yet (a notification ahead of its sync) says "Bu haber bu telefona henüz gelmedi. Biraz sonra tekrar bak."
+
 ### 1d Invite detail · `InviteDetail.png`
 Consent content opened from the bell, with Reddet instead of Şimdi değil.
 **Copy:** Davet · 2 sa önce | (same as 0f) | İzin ver | Reddet | Reddedersen Sibel'e bildirim gitmez.
@@ -165,7 +172,7 @@ ComposeBar focused with keyboard. Text that is not a task ("merhaba") gets the e
 **Copy:** Kime, ne, ne zaman. Yazınca mikrofon gönder butonuna dönüşür. | Yeni görev | (example input) 1000 tl çek
 
 ### 2b Preview, only when info is missing · `TaskPreview.png`
-Bottom sheet. Shows what was understood and asks exactly one question (here: the deadline). When the text gave the time of a moment task and the extraction judged a lead, the time row adds "ilk hatırlatma 17:10" after the time (NUD-82). When I have a connection, a tap on the Kime row opens the "Kime?" choices of 4a (Kendine and each connection, the current one selected), since the extraction can read the person wrong ("beni ara" as a task to self); picking someone turns the sheet into 4a with Gönder (NUD-108). Not while editing a task that was already sent: there Kime stays as written (open-questions #34).
+Bottom sheet. Shows what was understood and asks exactly one question (here: the deadline). When the text gave the time of a moment task and the extraction judged a lead, the time row adds "ilk hatırlatma 17:10" after the time (NUD-82). When I have a connection, a tap on the Kime row opens the "Kime?" choices of 4a (Kendine and each connection, the current one selected), since the extraction can read the person wrong ("beni ara" as a task to self); picking someone turns the sheet into 4a with Gönder (NUD-108). On a task that was already written, Kime changes from the detail (7c, NUD-114).
 **Copy:** Yazdığın: "1000 tl çek" | Para çek | Kime | Kendine | Detay | 1.000 TL | Ne zamana kadar? | Bugün 19:00 | Yarın 09:00 (the canvas says "Bugün akşam" and "Yarın sabah"; open-questions #28) | Saat seç | Zamanı gelince seni dürterim. Gece 23:00 ile 07:00 arası asla. | Kur | Vazgeç
 
 ### 2c Setup: try first · `SetupDemo.png`
@@ -209,6 +216,14 @@ Sender side. Shows the extracted task, finish mode choice (photo preselected for
 
 ### 4b Notification to Eren · `OtherNotif.png`
 **Copy:** Sibel sana bir görev yazdı | Temizlikçi için para çek · yarın 09:00'dan önce. Bitince fotoğrafını istiyor. | Bir şey yapman gerekmiyor. Zamanı gelince seni dürterim. | Gör
+
+### 4j The other side closed the task (NUD-115)
+No design PNG. A system notification on the `tasks` channel, one per task, posted when a sync (not a full sync after sign-in or a reinstall) shows that the other person closed a task between us, so it never just vanishes from a list. Nothing for what I did myself, for a one-time message (NUD-79), or for a removed connection (5b stays silent). The home row and the bell stay as they are; the words are theirs.
+- To me, the sender cancelled: "Sibel iptal etti: "Çöpü at"" | "Not: ben hallettim · Dürtmeler durdu" (no note: "Dürtmeler durdu"). Opens home.
+- To me, given to someone else (NUD-114): "Sibel bu görevi başka birine verdi: "Çöpü at"" | "Dürtmeler durdu". Opens home.
+- Mine, done: "Eren bitirdi: "Çöpü at"" | "Bitti dedi". Opens home.
+- Mine, can't today: "Eren bugün yapamayacak: "Çöpü at"" | "Not: yarın hallederim" (no line without a note). Opens the task (5d).
+- Mine, missed: "Eren yetiştiremedi: "Çöpü at"" | "Son zaman geçti, Eren bitti demedi." (photo: "Son zaman geçti, fotoğraf gelmedi."; an `at` task says "Zamanı geçti"). Opens the task (5d).
 
 ### 4c Eren's home, task from Sibel · `OtherHome.png`
 Next-up card with Call and Message icons.
@@ -283,7 +298,7 @@ System notification on the `reach_out` channel.
 **Copy:** Eren'e ulaşamıyorum | Temizlikçi için para çek · son zaman 09:00. 4 kez dürttüm, tam ekran dahil, cevap yok. | Bir arasan iyi olur. Ben dürtmeye devam ediyorum. | Ara | Mesaj | Gör
 
 ### 7b Sibel: bell, finished tasks as text · `SibelBell.png`
-**Copy:** Bugün | Eren'e ulaşamıyorum: Temizlikçi için para çek | Son zaman 09:00 · bir arasan iyi olur | Eren "Çöpü at"ı bitirdi | Bitti dedi | Eren "Gelirken ekmek al"ı bitirdi | Onayladın | Eren "Kuru temizleme"yi bugün yapamayacak | Not: yarın hallederim | Biten işler sadece burada yazı olarak durur, ayrıca bildirim göndermem. Fotoğraflı işler onayına düşer.
+**Copy:** Bugün | Eren'e ulaşamıyorum: Temizlikçi için para çek | Son zaman 09:00 · bir arasan iyi olur | Eren "Çöpü at"ı bitirdi | Bitti dedi | Eren "Gelirken ekmek al"ı bitirdi | Onayladın | Eren "Kuru temizleme"yi bugün yapamayacak | Not: yarın hallederim | Biten işler burada da yazar. Fotoğraflı işler onayına düşer. (*Changed 2026-10-19, NUD-115:* the footer said "ayrıca bildirim göndermem"; closes now also come as a notification, see 4j.)
 Note: Turkish suffixes after a quoted title ("Çöpü at"ı) depend on the title's last vowel. Use plural/format resources carefully or rephrase to avoid suffixing user content (open question).
 
 ### 7c Sibel: ongoing task · `SibelTaskDetail.png`

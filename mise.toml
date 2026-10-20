@@ -130,6 +130,13 @@ description = "Signed prod release bundle for Play (needs the upload key, docs/h
 dir = "apps/android"
 run = "./gradlew --console=plain :app:bundleProdRelease"
 
+[tasks."android:publish"]
+description = "Build, sign and upload the prod bundle to Play internal testing (ADR 0026; needs the upload and service account keys)"
+# Raise versionCode first. Release notes: apps/android/app/src/prod/play/release-notes/. Closed testing and
+# production are promotions in Play Console, the human's (CLAUDE.md rule 6).
+dir = "apps/android"
+run = "./gradlew --console=plain :app:publishProdReleaseBundle"
+
 [tasks."test:fast"]
 description = "Fast loop after every change (target under a minute)"
 depends = ["lint:eslint", "lint:typecheck", "test:unit"]
@@ -226,6 +233,12 @@ description = "Delete an account by phone number for an email request; dry run u
 depends = ["_install"]
 # Local by default. `--prod` targets nuddle.app: only the human runs that (CLAUDE.md rule 6).
 run = "pnpm --filter @nuddle/web account:delete"
+
+[tasks.announce]
+description = "Send announcements/<slug>.md to --to numbers or * (everyone); dry run unless --yes (ADR 0025)"
+depends = ["_install"]
+# Local by default. `--prod` targets nuddle.app: only the human runs that (CLAUDE.md rule 6).
+run = "pnpm --filter @nuddle/web announce"
 
 [tasks."contract:gen"]
 description = "Regenerate packages/contract/openapi.yaml"

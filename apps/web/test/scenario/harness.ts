@@ -12,6 +12,8 @@ import { v7 as uuidv7 } from "uuid";
 import { afterEach } from "vitest";
 import type { MissingField } from "../../src/domain/extraction";
 import type { PersonProfiler, PokePlanner } from "../../src/domain/ports";
+import { announce, type AnnounceResult } from "../../src/api/services";
+import type { AnnouncementContent } from "../../src/domain/announcements";
 import { isQuiet } from "../../src/domain/quiet-hours";
 import {
   deriveReachability,
@@ -92,6 +94,10 @@ export class SimPhone {
   private readonly snoozes = new Map<TaskId, number>();
   /** Task events the phone has synced, oldest first: what the app builds cards, the bell and 7a from. */
   readonly events: { taskId: TaskId; type: string; payload: Record<string, unknown> }[] = [];
+  /** Announcements as the phone stores them, by id: the last text synced (ADR 0025). */
+  readonly announcements = new Map<string, { title: string; summary: string; body: string }>();
+  /** Every announcement row a sync brought, in order: a repeated id is a text update. */
+  readonly announcementSyncs: string[] = [];
 
   constructor(
     private readonly world: World,
@@ -133,6 +139,11 @@ export class SimPhone {
   /** Whether each task is on this phone's list, as the last sync said (a missed card leaves it, NUD-49). */
   readonly inList = new Map<TaskId, boolean>();
 
+  /** What a sync without a cursor answers, as after sign-in; the phone's own state is untouched. */
+  async fullSync() {
+    return ok(await this.api.GET("/api/v1/sync", { params: { query: {} } }), "full sync");
+  }
+
   /** GET /api/v1/sync from the last cursor and store newer plans. */
   async sync(): Promise<void> {
     if (!this.online || this.device.fid === null) return;
@@ -151,6 +162,10 @@ export class SimPhone {
     }
     for (const e of data.events)
       this.events.push({ taskId: e.taskId, type: e.type, payload: e.payload });
+    for (const a of data.announcements ?? []) {
+      this.announcementSyncs.push(a.id);
+      this.announcements.set(a.id, { title: a.title, summary: a.summary, body: a.body });
+    }
     for (const plan of data.plans) {
       const local = this.alarms.get(plan.taskId);
       // Devices ignore steps from older plan versions.
@@ -340,6 +355,8 @@ export class Client {
         return post("/api/v1/commands/new_deadline", { deadline: cmd.deadline.toISOString() });
       case "sender_handles":
         return post("/api/v1/commands/sender_handles", {});
+      case "reassign":
+        return post("/api/v1/commands/reassign", { recipientId: cmd.recipientId });
       case "deadline_passed":
       case "approval_timeout":
       case "account_deleted":
@@ -347,6 +364,17 @@ export class Client {
       case "replan":
         throw new Error(`${cmd.type} is a server command`);
     }
+  }
+
+  /** Kime changed in 7c (NUD-114): the new task's id, or the error. */
+  async reassign(
+    taskId: TaskId,
+    to: Client,
+  ): Promise<{ ok: true; taskId: TaskId } | { ok: false; error: DomainError }> {
+    const r = await this.send(taskId, { type: "reassign", recipientId: to.uuid });
+    await this.world.refresh();
+    if (r.error) return { ok: false, error: r.error.error.name as DomainError };
+    return { ok: true, taskId: (r.data as { taskId: TaskId }).taskId };
   }
 
   /** Gönder; [takenAt] is when the photo was taken, for an upload that comes late (6e). */
@@ -593,6 +621,19 @@ export class World {
     return client;
   }
 
+  /** `mise run announce`: `to` is people in the scenario or "*" (ADR 0025). */
+  async announce(
+    content: AnnouncementContent,
+    to: readonly (Client | string)[] | "*",
+    confirm = true,
+  ): Promise<AnnounceResult> {
+    const server = await this.ready;
+    const phones = to === "*" ? "*" : to.map((c) => (typeof c === "string" ? c : c.person.phone));
+    const result = await announce(server.deps, content, phones, confirm);
+    await this.refresh();
+    return result;
+  }
+
   /** Invite and accept in one step, for scenarios that start with a connection. */
   async connect(
     inviter: Client,
@@ -765,6 +806,12 @@ export class World {
       ),
       smsSends: await count(
         db.select().from(schema.smsSends).where(eq(schema.smsSends.phone, phone)),
+      ),
+      announcementRecipients: await count(
+        db
+          .select()
+          .from(schema.announcementRecipients)
+          .where(eq(schema.announcementRecipients.personId, id)),
       ),
     };
     return Object.fromEntries(Object.entries(counts).filter(([, n]) => n > 0));

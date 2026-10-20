@@ -16,6 +16,7 @@ import app.nuddle.data.session.OutboxTaskAcks
 import app.nuddle.data.sync.AlarmRearmer
 import app.nuddle.data.sync.LocalPendingChanges
 import app.nuddle.data.sync.SyncRepository
+import app.nuddle.data.sync.TaskClose
 import app.nuddle.domain.IdGenerator
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
@@ -100,7 +101,11 @@ class SyncAndOutboxTest {
             pending = { unsent },
             acks = acks,
             avatars = { },
+            announcements = { synced, notify -> received += synced.map { it.id } to notify },
         )
+
+    /** What sync handed the announcement inbox (ADR 0025): ids and whether to notify. */
+    private val received = mutableListOf<Pair<List<String>, Boolean>>()
 
     private val sibelConnection =
         """
@@ -349,6 +354,77 @@ class SyncAndOutboxTest {
         }
 
     @Test
+    fun `my task closed by Sibel tells me once how, done or can't today with the note or missed (NUD-115)`() =
+        runTest {
+            sessions.cursor = "40"
+            val repo = syncRepository()
+            server.enqueue(json(200, myTaskToSibel("SCHEDULED", event(1, "created"))))
+            server.enqueue(json(200, myTaskToSibel("DROPPED", event(2, "dropped", """{"note":"Vaktim olmadı"}"""))))
+            server.enqueue(json(200, myTaskToSibel("SCHEDULED", event(3, "edited", """{"reopened":true}"""))))
+            server.enqueue(json(200, myTaskToSibel("MISSED", event(4, "missed"))))
+            server.enqueue(json(200, myTaskToSibel("SCHEDULED", event(5, "edited", """{"reopened":true}"""))))
+            server.enqueue(json(200, myTaskToSibel("DONE", event(6, "done"))))
+            server.enqueue(json(200, myTaskToSibel("DONE", event(6, "done"))))
+
+            repeat(7) { assertTrue(repo.sync()) }
+
+            assertEquals(
+                listOf(TaskClose.Dropped("Vaktim olmadı"), TaskClose.Missed, TaskClose.Done),
+                announcer.closes.map { it.third },
+            )
+            assertEquals(setOf(Cast.TASK_ID to "Sibel"), announcer.closes.map { it.first to it.second }.toSet())
+        }
+
+    @Test
+    fun `a task to me that Sibel cancelled or gave to someone else tells me, removing the connection does not (NUD-115)`() =
+        runTest {
+            sessions.cursor = "40"
+            val repo = syncRepository()
+            val toMe = syncBody.replace("\"connections\":[]", sibelConnection)
+
+            fun closed(
+                reason: String,
+                note: String = "null",
+            ) = toMe
+                .replace("\"status\":\"SCHEDULED\"", "\"status\":\"CANCELLED\"")
+                .replace("\"events\":[]", "\"events\":[${event(2, "cancelled", """{"reason":"$reason","note":$note}""")}]")
+            listOf(closed("sender_cancelled", "\"Ben hallettim\""), closed("reassigned"), closed("connection_removed")).forEach {
+                server.enqueue(json(200, toMe))
+                server.enqueue(json(200, it))
+            }
+
+            repeat(6) { assertTrue(repo.sync()) }
+
+            assertEquals(listOf(TaskClose.Cancelled("Ben hallettim"), TaskClose.Reassigned), announcer.closes.map { it.third })
+        }
+
+    @Test
+    fun `what I closed myself, and a full sync, tell me nothing (NUD-115)`() =
+        runTest {
+            sessions.cursor = null
+            server.enqueue(json(200, myTaskToSibel("DONE", event(6, "done"))))
+            assertTrue(syncRepository().sync())
+
+            sessions.cursor = "40"
+            val toMe = syncBody.replace("\"connections\":[]", sibelConnection)
+            server.enqueue(json(200, toMe))
+            assertTrue(syncRepository().sync())
+            // I said Bitti here; the sender's cancel crossed it on the server.
+            db.tasks().setStatus(Cast.TASK_ID, "DONE")
+            server.enqueue(
+                json(
+                    200,
+                    toMe
+                        .replace("\"status\":\"SCHEDULED\"", "\"status\":\"CANCELLED\"")
+                        .replace("\"events\":[]", "\"events\":[${event(2, "cancelled", """{"reason":"sender_cancelled"}""")}]"),
+                ),
+            )
+            assertTrue(syncRepository().sync())
+
+            assertTrue(announcer.closes.isEmpty())
+        }
+
+    @Test
     fun `sync stores sent and received invites`() =
         runTest {
             server.enqueue(
@@ -451,6 +527,28 @@ class SyncAndOutboxTest {
         }
 
     @Test
+    fun `announcements reach the inbox, notified only after the first sync (ADR 0025)`() =
+        runTest {
+            val withNews =
+                syncBody.replace(
+                    "\"connections\":[]",
+                    """"connections":[],"announcements":[{"id":"n1","title":"T","summary":"S","body":"B","button":null,
+                       "sentAt":"2026-10-19T10:00:00Z"}]""",
+                )
+            sessions.cursor = null
+            server.enqueue(json(200, withNews))
+            assertTrue(syncRepository().sync())
+            sessions.cursor = "40"
+            server.enqueue(json(200, withNews))
+            assertTrue(syncRepository().sync())
+            // An older server's sync has no announcements field.
+            server.enqueue(json(200, syncBody))
+            assertTrue(syncRepository().sync())
+
+            assertEquals(listOf(listOf("n1") to false, listOf("n1") to true, emptyList<String>() to true), received)
+        }
+
+    @Test
     fun `a task taken back before I looked withdraws its announcement`() =
         runTest {
             sessions.cursor = "40"
@@ -483,6 +581,7 @@ class SyncAndOutboxTest {
                     { emptySet() },
                     RecordingTaskAcks(),
                     { },
+                    { _, _ -> },
                 )
             val waiting = mine.replace("\"status\":\"SCHEDULED\"", "\"status\":\"AWAITING_APPROVAL\"")
             server.enqueue(json(200, mine))

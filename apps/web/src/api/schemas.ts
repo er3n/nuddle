@@ -235,6 +235,8 @@ export const EditCommand = taskKeyed({
   detail: z.string().max(200).nullable().optional(),
   finishMode: FinishMode.optional(),
 }).openapi("EditCommand");
+/** Kime changed (NUD-114): the caller, or one of their connections. */
+export const ReassignCommand = taskKeyed({ recipientId: Id }).openapi("ReassignCommand");
 export const ApproveCommand = taskKeyed({}).openapi("ApproveCommand");
 export const ReRequestCommand = taskKeyed({ note: Note }).openapi("ReRequestCommand");
 export const NewDeadlineCommand = taskKeyed({ deadline: Instant }).openapi("NewDeadlineCommand");
@@ -487,6 +489,21 @@ const SyncPlan = z
   })
   .openapi("SyncPlan");
 
+const SyncAnnouncement = z
+  .object({
+    id: Id,
+    title: z.string(),
+    /** The notification text and the bell line. */
+    summary: z.string(),
+    /** CommonMark. Images use root-relative paths resolved against the API host (ADR 0025). */
+    body: z.string(),
+    /** An optional call to action: an app route (`invite`, `profile`) or an `https://` URL. */
+    button: z.object({ label: z.string(), target: z.string() }).nullable(),
+    /** When it reached this person. */
+    sentAt: Instant,
+  })
+  .openapi("SyncAnnouncement");
+
 export const SyncResponse = z
   .object({
     cursor: z.string(),
@@ -548,5 +565,7 @@ export const SyncResponse = z
     events: z.array(SyncEvent),
     /** Only for tasks the caller receives: the device sets alarms from these. */
     plans: z.array(SyncPlan),
+    /** Messages from Nuddle (ADR 0025). Optional so an app reading an older server's sync does not fail. */
+    announcements: z.array(SyncAnnouncement).optional(),
   })
   .openapi("SyncResponse");

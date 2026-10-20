@@ -7,7 +7,14 @@ import { z } from "zod";
 import type { AppDeps } from "./deps";
 import { ApiError } from "./errors";
 import type { AppEnv } from "./routes";
-import { deleteAccountByPhone, deletionPreview, runTick, sendSignInCode } from "./services";
+import { SLUG } from "../domain/announcements";
+import {
+  announce,
+  deleteAccountByPhone,
+  deletionPreview,
+  runTick,
+  sendSignInCode,
+} from "./services";
 
 function sameSecret(given: string, expected: string): boolean {
   const a = Buffer.from(given);
@@ -23,6 +30,20 @@ const SendSmsHookPayload = z.object({
 const DeleteAccountRequest = z.object({
   phone: z.string().regex(/^\+\d{8,15}$/),
   /** Without it nothing changes: the answer says what would be deleted. */
+  confirm: z.boolean().default(false),
+});
+
+const AnnounceRequest = z.object({
+  announcement: z.object({
+    slug: z.string().regex(SLUG),
+    title: z.string(),
+    summary: z.string(),
+    body: z.string(),
+    button: z.object({ label: z.string(), target: z.string() }).nullable().default(null),
+  }),
+  /** Phone numbers, or "*" for every live account. */
+  to: z.union([z.literal("*"), z.array(z.string().regex(/^\+\d{8,15}$/)).min(1)]),
+  /** Without it nothing changes: the answer says who would get it. */
   confirm: z.boolean().default(false),
 });
 
@@ -52,6 +73,16 @@ export function internalRoutes(deps: AppDeps): Hono<AppEnv> {
       ? await deleteAccountByPhone(deps, phone)
       : await deletionPreview(deps, phone);
     return c.json({ account, deleted: confirm && account !== null });
+  });
+
+  // `mise run announce`: a message from Nuddle to chosen people or everyone (ADR 0025). The human
+  // runs it against production.
+  r.post("/announce", async (c) => {
+    requireTickSecret(c.req.header("authorization"));
+    const parsed = AnnounceRequest.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) throw new ApiError("validation_failed", parsed.error.message);
+    const { announcement, to, confirm } = parsed.data;
+    return c.json(await announce(deps, announcement, to, confirm));
   });
 
   // Supabase Auth Send SMS hook, signed with Standard Webhooks. Errors use the shape Supabase Auth

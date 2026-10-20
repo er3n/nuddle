@@ -5,7 +5,7 @@ import { planPokes } from "./plan-pokes";
 import type { Reachability } from "./reachability";
 import { DAY, HOUR, MINUTE, addMs } from "./time";
 import type { RepeatRule } from "./repeat";
-import { leadMinutesOf, MAX_LEAD_MINUTES, reschedule, scheduleOf } from "./timing";
+import { leadMinutesOf, MAX_LEAD_MINUTES, retime, scheduleOf, timingFor } from "./timing";
 import type {
   CancelReason,
   DeviceLevel,
@@ -53,6 +53,11 @@ export type Command =
   | { type: "cancel"; note: string | null }
   /** `deadline` here and in new_deadline is the time the person picked; an `at` task keeps its grace. */
   | { type: "edit"; deadline?: Date; detail?: string | null; finishMode?: FinishMode }
+  /**
+   * Kime changed on an open task (NUD-114): this task closes as `reassigned`, and the caller
+   * creates the same task for `recipientId` in the same transaction.
+   */
+  | { type: "reassign"; recipientId: PersonId }
   | { type: "approve" }
   | { type: "re_request"; note: string | null }
   | { type: "new_deadline"; deadline: Date }
@@ -119,6 +124,7 @@ function transitionsFrom(status: TaskStatus): Partial<Record<CommandType, TaskSt
         deadline_passed: "MISSED",
         cancel: "CANCELLED",
         edit: "SCHEDULED",
+        reassign: "CANCELLED",
         account_deleted: "CANCELLED",
         connection_removed: "CANCELLED",
         replan: "SCHEDULED",
@@ -184,6 +190,7 @@ function actorOf(type: CommandType): Actor {
       return "recipient";
     case "cancel":
     case "edit":
+    case "reassign":
     case "approve":
     case "re_request":
     case "new_deadline":
@@ -510,6 +517,16 @@ function eventFor(
       return [
         event(task, actorId, "cancelled", { reason: "sender_handles" satisfies CancelReason }, now),
       ];
+    case "reassign":
+      return [
+        event(
+          task,
+          actorId,
+          "cancelled",
+          { reason: "reassigned" satisfies CancelReason, note: null, to: cmd.recipientId },
+          now,
+        ),
+      ];
     case "edit":
       return [
         event(
@@ -635,7 +652,7 @@ export function applyCommand(
         if (cmd.deadline.getTime() <= now.getTime()) {
           return { ok: false, error: "deadline_not_in_future" };
         }
-        Object.assign(next, reschedule(task, cmd.deadline));
+        Object.assign(next, retime(task, cmd.deadline, now));
       }
       if (cmd.detail !== undefined) next.detail = cmd.detail;
       if (cmd.finishMode !== undefined) next.finishMode = cmd.finishMode;
@@ -644,7 +661,7 @@ export function applyCommand(
       if (cmd.deadline.getTime() <= now.getTime()) {
         return { ok: false, error: "deadline_not_in_future" };
       }
-      Object.assign(next, reschedule(task, cmd.deadline));
+      Object.assign(next, retime(task, cmd.deadline, now));
       break;
     case "account_deleted":
     case "connection_removed":
@@ -666,6 +683,9 @@ export function applyCommand(
     case "re_request":
     case "sender_handles":
     case "approval_timeout":
+      break;
+    case "reassign":
+      if (cmd.recipientId === task.recipientId) return { ok: false, error: "wrong_status" };
       break;
   }
 
@@ -832,15 +852,17 @@ export function createTask(input: CreateTaskInput): Result<Outcome> {
     return { ok: false, error: "deadline_not_in_future" };
   }
 
+  // A `by` time a few minutes away is a moment (NUD-116).
+  const timing = timingFor(input.timing ?? "by", input.deadline, now);
   const task: Task = {
     id: input.id,
     senderId: sender.id,
     recipientId: recipient.id,
     title: input.title,
     detail: input.detail,
-    timing: input.timing ?? "by",
-    ...scheduleOf(input.timing ?? "by", input.deadline, input.missAfterMinutes),
-    leadMinutes: leadMinutesOf(input.timing ?? "by", input.leadMinutes),
+    timing,
+    ...scheduleOf(timing, input.deadline, input.missAfterMinutes),
+    leadMinutes: leadMinutesOf(timing, input.leadMinutes),
     pokeFrom: null,
     finishMode: input.finishMode,
     rawText: input.rawText,

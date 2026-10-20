@@ -425,6 +425,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/commands/reassign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sender: Kime changed; the task closes and starts for the new recipient (NUD-114) */
+        post: operations["reassign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/commands/approve": {
         parameters: {
             query?: never;
@@ -755,6 +772,7 @@ export interface components {
             tasks: components["schemas"]["SyncTask"][];
             events: components["schemas"]["SyncEvent"][];
             plans: components["schemas"]["SyncPlan"][];
+            announcements?: components["schemas"]["SyncAnnouncement"][];
         };
         Me: {
             /** Format: uuid */
@@ -951,6 +969,23 @@ export interface components {
         };
         /** @enum {string} */
         DeviceLevel: "SILENT" | "SOUND" | "FULL_SCREEN";
+        SyncAnnouncement: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            summary: string;
+            body: string;
+            button: {
+                label: string;
+                target: string;
+            } | null;
+            /**
+             * Format: date-time
+             * @description ISO 8601 with offset
+             * @example 2026-10-12T09:00:00+03:00
+             */
+            sentAt: string;
+        };
         RegisterDeviceResult: {
             /** Format: uuid */
             deviceId: string;
@@ -1223,6 +1258,17 @@ export interface components {
             deadline?: string;
             detail?: string | null;
             finishMode?: components["schemas"]["FinishMode"];
+        };
+        ReassignCommand: {
+            /**
+             * Format: uuid
+             * @description Client generated UUIDv7; a replay returns the first result (ADR 0006)
+             */
+            idempotencyKey: string;
+            /** Format: uuid */
+            taskId: string;
+            /** Format: uuid */
+            recipientId: string;
         };
         ApproveCommand: {
             /**
@@ -2970,6 +3016,84 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["EditCommand"];
+            };
+        };
+        responses: {
+            /** @description The result; a replay with the same key returns it again */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskCommandResult"];
+                };
+            };
+            /** @description Error with a DRT code */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    reassign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReassignCommand"];
             };
         };
         responses: {

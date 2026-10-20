@@ -23,6 +23,7 @@ import {
   sql,
 } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import type { AnnouncementContent } from "../../domain/announcements";
 import type { Invite, InviteStatus } from "../../domain/connections";
 import type { CapWindow, LlmCallKind } from "../../domain/cost-caps";
 import { noAttempts, type OtpAttempts } from "../../domain/otp-attempts";
@@ -42,6 +43,8 @@ import type {
   TaskId,
 } from "../../domain/types";
 import {
+  announcementRecipients,
+  announcements,
   devices,
   edges,
   idempotencyKeys,
@@ -853,6 +856,7 @@ export interface SyncRows {
   })[];
   events: (TaskEvent & { id: string })[];
   plans: PokePlan[];
+  announcements: (AnnouncementContent & { id: string; sentAt: Date })[];
 }
 
 /** Everything that changed for `me` since `cursor` (ADR 0006). Run inside `inSyncReadTx`. */
@@ -942,6 +946,15 @@ export async function syncRows(tx: Tx, me: Person, cursor: number): Promise<Sync
     }
   }
 
+  const announcementRows = await tx
+    .select({ a: announcements, sentAt: announcementRecipients.createdAt })
+    .from(announcementRecipients)
+    .innerJoin(announcements, eq(announcements.id, announcementRecipients.announcementId))
+    .where(
+      and(eq(announcementRecipients.personId, me.id), gt(announcementRecipients.changeSeq, cursor)),
+    )
+    .orderBy(asc(announcementRecipients.changeSeq));
+
   const received_ = taskRows.map(toTask).filter((t) => t.recipientId === me.id);
   const plans: PokePlan[] = [];
   for (const t of received_) plans.push(await currentPlan(tx, t));
@@ -970,7 +983,106 @@ export async function syncRows(tx: Tx, me: Person, cursor: number): Promise<Sync
     })),
     events: eventRows.map((r) => ({ ...toEvent(r.e), id: String(r.e.id) })),
     plans,
+    announcements: announcementRows.map((r) => ({
+      id: r.a.id,
+      ...toAnnouncementContent(r.a),
+      sentAt: r.sentAt,
+    })),
   };
+}
+
+// ---- announcements (ADR 0025) -----------------------------------------------------------------
+
+function toAnnouncementContent(row: typeof announcements.$inferSelect): AnnouncementContent {
+  return {
+    slug: row.slug,
+    title: row.title,
+    summary: row.summary,
+    body: row.body,
+    button:
+      row.buttonLabel !== null && row.buttonTarget !== null
+        ? { label: row.buttonLabel, target: row.buttonTarget }
+        : null,
+  };
+}
+
+/** Live people with these numbers; unknown numbers are simply missing from the answer. */
+export async function livePeopleByPhone(
+  ex: Executor,
+  phones: readonly string[] | "*",
+): Promise<{ id: PersonId; phone: string }[]> {
+  const live = isNull(people.deletedAt);
+  const rows = await ex
+    .select({ id: people.id, phone: people.phone })
+    .from(people)
+    .where(phones === "*" ? live : and(live, inArray(people.phone, [...phones])));
+  return rows.map((r) => ({ id: r.id, phone: r.phone }));
+}
+
+/** The announcement with this slug and who already has it; null when it was never sent. */
+export async function findAnnouncement(
+  ex: Executor,
+  slug: string,
+): Promise<{ id: string; content: AnnouncementContent; recipients: Set<string> } | null> {
+  const [row] = await ex.select().from(announcements).where(eq(announcements.slug, slug));
+  if (!row) return null;
+  const got = await ex
+    .select({ personId: announcementRecipients.personId })
+    .from(announcementRecipients)
+    .where(eq(announcementRecipients.announcementId, row.id));
+  return {
+    id: row.id,
+    content: toAnnouncementContent(row),
+    recipients: new Set(got.map((r) => r.personId)),
+  };
+}
+
+/**
+ * Stores the announcement (a changed text bumps every recipient's row so their phones get it)
+ * and adds the recipients that do not have it yet. Returns the new recipients.
+ */
+export async function saveAnnouncement(
+  tx: Tx,
+  content: AnnouncementContent,
+  to: readonly PersonId[],
+  now: Date,
+): Promise<{ id: string; added: PersonId[] }> {
+  const values = {
+    title: content.title,
+    summary: content.summary,
+    body: content.body,
+    buttonLabel: content.button?.label ?? null,
+    buttonTarget: content.button?.target ?? null,
+    updatedAt: now,
+  };
+  const existing = await findAnnouncement(tx, content.slug);
+  let id: string;
+  if (existing === null) {
+    const [row] = await tx
+      .insert(announcements)
+      .values({ slug: content.slug, ...values, createdAt: now })
+      .returning({ id: announcements.id });
+    if (!row) throw new Error("announcement insert returned nothing");
+    id = row.id;
+  } else {
+    id = existing.id;
+    if (JSON.stringify(existing.content) !== JSON.stringify(content)) {
+      await tx.update(announcements).set(values).where(eq(announcements.id, id));
+      await tx
+        .update(announcementRecipients)
+        .set({ changeSeq: nextSeq })
+        .where(eq(announcementRecipients.announcementId, id));
+    }
+  }
+  const added =
+    to.length === 0
+      ? []
+      : await tx
+          .insert(announcementRecipients)
+          .values(to.map((personId) => ({ announcementId: id, personId, createdAt: now })))
+          .onConflictDoNothing()
+          .returning({ personId: announcementRecipients.personId });
+  return { id, added: added.map((r) => r.personId) };
 }
 
 export async function findOtpAttempts(ex: Executor, phone: string): Promise<OtpAttempts> {
@@ -1170,6 +1282,7 @@ export async function purgePerson(tx: Tx, personId: PersonId): Promise<void> {
     .where(or(eq(edges.fromPersonId, personId), eq(edges.toPersonId, personId)));
   await tx.delete(idempotencyKeys).where(eq(idempotencyKeys.callerId, personId));
   await tx.delete(devices).where(eq(devices.personId, personId));
+  await tx.delete(announcementRecipients).where(eq(announcementRecipients.personId, personId));
   await tx.delete(invites).where(eq(invites.inviterId, personId));
   await tx.delete(people).where(eq(people.id, personId));
 }

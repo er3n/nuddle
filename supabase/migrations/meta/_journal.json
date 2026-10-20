@@ -127,6 +127,13 @@
       "when": 1792152559151,
       "tag": "20261016120919_cost_guardrails",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792436231652,
+      "tag": "20261019185711_announcements",
+      "breakpoints": true
     }
   ]
 }

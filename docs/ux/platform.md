@@ -33,11 +33,12 @@ Min SDK 26, target the current SDK (35+). The app is declared to Play as an alar
 |---|---|---|---|
 | `poke_silent` | Sessiz dürtmeler | DEFAULT | none |
 | `poke_alarm` | Dürtme alarmları | HIGH | alarm sound, `USAGE_ALARM` (pierces DND by default) |
-| `tasks` | Görevler ve onaylar | DEFAULT | default |
+| `tasks` | Görevler ve onaylar | DEFAULT | default (4b, the photo note, and the close notes of 4j) |
 | `reach_out` | Ulaşılamayan kişi haberleri | HIGH | default |
 | `system` | İzin ve kurulum uyarıları | LOW | none |
+| `news` | Nuddle'dan haberler | DEFAULT | default |
 
-A channel disabled in system settings is treated like a missing permission: reachability drops and the bell shows a warning.
+A channel disabled in system settings is treated like a missing permission: reachability drops and the bell shows a warning. `news` is the exception (ADR 0025): turning it off only stops announcement notifications, the bell still lists them.
 
 ## Missed-ring detection
 
@@ -60,7 +61,7 @@ Single Activity with Navigation Compose, plus `PokeActivity` for the lock screen
 - An existing user goes from the code screen straight to `home`. A new user without an invite goes from name to `home`; `setup` opens at their first task. An install that never ran setup also opens it from `home` as soon as someone is connected and a permission is missing: a reinstall (or the move from a sideloaded build to Play, which needs one) of someone who mostly receives tasks would otherwise never see it (NUD-103).
 - Back never returns to sign-in steps. `home` is the root of the back stack.
 - Error screens (6a to 6f) are states of their screen, not routes. The generic error (6f) is full screen only when nothing can be recovered.
-- Deep links: invite links are `https://nuddle.app/i/{inviteCode}` (open-questions #13), verified App Links (`/.well-known/assetlinks.json` from the web app). Signed in, the link opens `consent/{inviteId}` for an open invite to me, otherwise the invalid invite screen 6d (open-questions #39). Signed out, the app asks for the invite preview (ADR 0016) and starts at the invited welcome (0b); the name screen (0e) is prefilled with the name the inviter typed. When the preview fails (invite no longer open, offline), the plain welcome (0a) shows. After sign-in the link opens the consent screen as above. Without the app, the link opens a page on the web. Notifications open `task/{id}` or `inbox`.
+- Deep links: invite links are `https://nuddle.app/i/{inviteCode}` (open-questions #13), verified App Links (`/.well-known/assetlinks.json` from the web app). Signed in, the link opens `consent/{inviteId}` for an open invite to me, otherwise the invalid invite screen 6d (open-questions #39). Signed out, the app asks for the invite preview (ADR 0016) and starts at the invited welcome (0b); the name screen (0e) is prefilled with the name the inviter typed. When the preview fails (invite no longer open, offline), the plain welcome (0a) shows. After sign-in the link opens the consent screen as above. Without the app, the link opens a page on the web. Notifications open `task/{id}`, `inbox` or `announcement/{id}`. An announcement's button opens an app route (`invite`, `profile`) or, for an `https://` target, the browser.
 
 ## Accessibility
 

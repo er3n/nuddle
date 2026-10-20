@@ -140,7 +140,9 @@
     <!-- The close button on a missed card: off my list only (NUD-49). -->
     <string name="issue_remove">Kaldır</string>
     <string name="issue_cancelled_title">%1$s iptal etti: \"%2$s\"</string>
+    <string name="issue_reassigned_title">%1$s bu görevi başka birine verdi: \"%2$s\"</string>
     <string name="issue_pokes_stopped">Dürtmeler durdu</string>
+    <string name="close_missed_title">%1$s yetiştiremedi: \"%2$s\"</string>
     <string name="issue_note">Not: %1$s</string>
     <string name="issues_footer">Kaçırılan iş bir gün sonra listeden kalkar. Sayılar sadece seni daha iyi dürtmek için tutulur, kimseye karne olarak gösterilmez.</string>
     <string name="two_sentences">%1$s %2$s</string>
@@ -303,6 +305,7 @@
     <string name="task_edit_hint">Bir satıra dokunup değiştirebilirsin. %1$s değişikliği kısa bir notla görür.</string>
     <!-- No design copy: the sheet behind a tapped row, and a save that did not go through. -->
     <string name="task_edit_note">%1$s değişikliği kısa bir notla görür.</string>
+    <string name="task_reassign_note">Görev seçtiğin kişiye geçer, dürtmeler ona başlar.</string>
     <string name="task_edit_failed_title">Değişiklik gitmedi</string>
 
     <!-- 7d Cancel. open-questions#34: the design says "Eren\'e kısa bir not giderim"; rephrased so the name takes no suffix. -->
@@ -420,7 +423,7 @@
     <string name="bell_approved">Onayladın</string>
     <string name="bell_auto_approved">Kendiliğinden onaylandı</string>
     <string name="bell_dropped_title">%1$s bugün yapamayacak: \"%2$s\"</string>
-    <string name="bell_footer">Biten işler sadece burada yazı olarak durur, ayrıca bildirim göndermem. Fotoğraflı işler onayına düşer.</string>
+    <string name="bell_footer">Biten işler burada da yazar. Fotoğraflı işler onayına düşer.</string>
     <string name="inbox_no_older">Daha eski bildirim yok</string>
     <!-- 2g: warnings at the top of the bell (open-questions#38) -->
     <string name="bell_fix">Düzelt</string>
@@ -696,4 +699,11 @@
     <string name="channel_tasks">Görevler ve onaylar</string>
     <string name="channel_reach_out">Ulaşılamayan kişi haberleri</string>
     <string name="channel_system">İzin ve kurulum uyarıları</string>
+    <string name="channel_news">Nuddle\'dan haberler</string>
+
+    <!-- Announcements (ADR 0025, screens.md announcement/{id}) -->
+    <string name="announcement_from">Nuddle\'dan</string>
+    <string name="announcement_missing">Bu haber bu telefona henüz gelmedi. Biraz sonra tekrar bak.</string>
+    <string name="markdown_bullet">•</string>
+    <string name="markdown_number">%1$d.</string>
 </resources>

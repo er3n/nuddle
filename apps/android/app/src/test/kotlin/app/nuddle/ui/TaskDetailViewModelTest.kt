@@ -29,6 +29,7 @@ import app.nuddle.testing.aStep
 import app.nuddle.testing.aTask
 import app.nuddle.testing.sibelConnection
 import app.nuddle.ui.screens.home.DeadlineText
+import app.nuddle.ui.screens.home.RecipientChoice
 import app.nuddle.ui.screens.poke.DropReason
 import app.nuddle.ui.screens.task.CancelReason
 import app.nuddle.ui.screens.task.DetailAction
@@ -73,6 +74,7 @@ class TaskDetailViewModelTest {
             events,
             steps,
             sessions,
+            tasks.reassigner,
             acks,
             doneNotes,
             closer,
@@ -198,6 +200,43 @@ class TaskDetailViewModelTest {
             vm.onEditSave()
             assertEquals(listOf<Pair<Instant?, FinishMode?>>(null to FinishMode.DONE, null to FinishMode.DONE), tasks.rowEdits)
             assertNull(vm.state.value?.editing)
+        }
+
+    @Test
+    fun `Kime gives my task to someone else, or back to me (NUD-114)`() =
+        runTest(main.dispatcher) {
+            ready()
+            val state = vm.state.value!!
+            assertEquals(RecipientChoice.Person(Cast.SIBEL_ID, "Sibel"), state.recipient)
+            assertEquals(listOf(RecipientChoice.Self, RecipientChoice.Person(Cast.SIBEL_ID, "Sibel")), state.recipientOptions)
+            assertTrue(state.recipientEditable)
+
+            vm.onEdit(EditRow.Recipient)
+            assertEquals(state.recipient, vm.state.value?.pickedRecipient, "starts at who it is for now")
+            // The same person again changes nothing.
+            vm.onEditSave()
+            assertEquals(emptyList(), tasks.reassigns)
+            assertNull(vm.state.value?.editing)
+
+            vm.onEdit(EditRow.Recipient)
+            vm.recipientEdit.onChoice(RecipientChoice.Self)
+            vm.onEditSave()
+            assertEquals(listOf(Cast.TASK_ID to Cast.EREN_ID), tasks.reassigns)
+            assertNull(vm.state.value?.editing)
+        }
+
+    @Test
+    fun `Kime is not tappable once the task left Kurulu, or with no one else to give it to`() =
+        runTest(main.dispatcher) {
+            sessions.saveMe("Eren", QuietHours.default(istanbul))
+            taskDao.upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.EREN_ID)))
+            backgroundScope.launch { vm.state.collect {} }
+            assertFalse(vm.state.value!!.recipientEditable, "no connection: only Kendine")
+
+            connectionDao.upsert(listOf(sibelConnection()))
+            assertTrue(vm.state.value!!.recipientEditable)
+            taskDao.upsert(listOf(aTask(status = "REJECTED").copy(senderId = Cast.EREN_ID, recipientId = Cast.EREN_ID)))
+            assertFalse(vm.state.value!!.recipientEditable)
         }
 
     private suspend fun TestScope.open(task: TaskEntity) {

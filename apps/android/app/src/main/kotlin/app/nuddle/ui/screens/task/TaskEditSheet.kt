@@ -29,6 +29,7 @@ import app.nuddle.ui.preview.PreviewScreens
 import app.nuddle.ui.screens.home.DeadlineChips
 import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.DeadlineText
+import app.nuddle.ui.screens.home.RecipientChoice
 import app.nuddle.ui.screens.home.TimePickerDialog
 import app.nuddle.ui.theme.DurtTheme
 import kotlin.time.Instant
@@ -41,6 +42,7 @@ private fun EditRow.title(): String =
         when (this) {
             EditRow.Deadline -> R.string.preview_question_deadline
             EditRow.Finish -> R.string.preview_finish_question
+            EditRow.Recipient -> R.string.preview_question_recipient
         },
     )
 
@@ -63,12 +65,21 @@ internal fun EditSheet(
     val row = state.editing ?: return
     DurtBottomSheet(
         title = row.title(),
-        description = stringResource(R.string.task_edit_note, state.toName),
+        description = row.note(state),
         onDismiss = callbacks.onEditDismiss,
         primary = saveAction(state, callbacks),
     ) { EditBody(state, callbacks) }
 }
 
+/** What the sheet says happens: a note to the recipient, or for Kime that the task moves (NUD-114). */
+@Composable
+private fun EditRow.note(state: TaskDetailUiState): String =
+    when {
+        this == EditRow.Recipient -> stringResource(R.string.task_reassign_note)
+        else -> stringResource(R.string.task_edit_note, state.toName)
+    }
+
+@OptIn(ExperimentalLayoutApi::class) // Reason: FlowRow is the layout for wrapping chips; no stable alternative.
 @Composable
 private fun ColumnScope.EditBody(
     state: TaskDetailUiState,
@@ -94,6 +105,27 @@ private fun ColumnScope.EditBody(
                     onClick = { callbacks.onPhotoChoice(true) },
                     modifier = Modifier.weight(1f).testTag(TestTags.PREVIEW_FINISH_PHOTO),
                 )
+            }
+        }
+
+        EditRow.Recipient -> {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(dimens.space8),
+                verticalArrangement = Arrangement.spacedBy(dimens.space8),
+            ) {
+                state.recipientOptions.forEach { choice ->
+                    val (text, tag) =
+                        when (choice) {
+                            RecipientChoice.Self -> stringResource(R.string.home_to_self) to TestTags.previewRecipient(null)
+                            is RecipientChoice.Person -> choice.name to TestTags.previewRecipient(choice.personId)
+                        }
+                    ChoiceChip(
+                        text,
+                        selected = state.pickedRecipient == choice,
+                        onClick = { callbacks.onRecipientChoice(choice) },
+                        modifier = Modifier.testTag(tag),
+                    )
+                }
             }
         }
 
@@ -126,6 +158,37 @@ private fun EditDeadlineSheetPreview() {
             DurtBottomSheetContent(
                 title = EditRow.Deadline.title(),
                 description = stringResource(R.string.task_edit_note, state.toName),
+                onDismiss = {},
+                primary = saveAction(state, TaskDetailCallbacks()),
+            ) { EditBody(state, TaskDetailCallbacks()) }
+        }
+    }
+}
+
+/** Kime on my task to Eren (NUD-114): Kendine and each connection, Eren selected. */
+@PreviewScreens
+@Composable
+private fun EditRecipientSheetPreview() {
+    val eren = RecipientChoice.Person("eren", "Eren")
+    val state =
+        TaskDetailUiState(
+            myName = "Sibel",
+            title = "Temizlikçi için para çek",
+            rawText = null,
+            toName = "Eren",
+            reachability = Reachability.FULL_SCREEN,
+            deadline = DeadlineText.Tomorrow("09:00"),
+            detail = "1.000 TL",
+            photo = true,
+            editing = EditRow.Recipient,
+            recipient = eren,
+            recipientOptions = listOf(RecipientChoice.Self, eren, RecipientChoice.Person("defne", "Defne")),
+        )
+    DurtTheme {
+        Box(Modifier.fillMaxSize().background(DurtTheme.colors.scrim), contentAlignment = Alignment.BottomCenter) {
+            DurtBottomSheetContent(
+                title = EditRow.Recipient.title(),
+                description = EditRow.Recipient.note(state),
                 onDismiss = {},
                 primary = saveAction(state, TaskDetailCallbacks()),
             ) { EditBody(state, TaskDetailCallbacks()) }

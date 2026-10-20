@@ -8,6 +8,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -21,6 +23,8 @@ import androidx.navigation.navArgument
 import app.nuddle.data.InviteLinks
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.screens.LightSystemBarIcons
+import app.nuddle.ui.screens.announcement.AnnouncementScreen
+import app.nuddle.ui.screens.announcement.AnnouncementViewModel
 import app.nuddle.ui.screens.approve.ApproveViewModel
 import app.nuddle.ui.screens.code.CodeScreen
 import app.nuddle.ui.screens.code.CodeViewModel
@@ -93,6 +97,10 @@ object Routes {
 
     fun task(taskId: String): String = "task/$taskId"
 
+    const val ANNOUNCEMENT = "announcement/{${AnnouncementViewModel.ARG_ANNOUNCEMENT}}"
+
+    fun announcement(announcementId: String): String = "announcement/$announcementId"
+
     fun consent(
         inviteId: String,
         fromBell: Boolean,
@@ -104,6 +112,19 @@ object Routes {
     ): String = "matched/${Uri.encode(inviterName)}?$ARG_SETUP=$setup"
 
     fun code(e164: String): String = "auth/code?${CodeViewModel.ARG_PHONE}=${Uri.encode(e164)}"
+}
+
+/** An announcement's button (ADR 0025): an https target opens the browser; anything else is one of our routes. */
+private fun openAnnouncementTarget(
+    target: String,
+    uriHandler: UriHandler,
+    nav: NavHostController,
+) {
+    if (target.startsWith("https://")) {
+        uriHandler.openUri(target)
+    } else {
+        nav.navigate(target) { launchSingleTop = true }
+    }
 }
 
 /** Back never returns to sign-in steps; `home` is the root of the back stack (docs/ux/platform.md, Navigation). */
@@ -356,6 +377,20 @@ fun NuddleNavHost(
                         is BellWarning.PermissionOff -> activity?.let { it.startActivity(settingsIntent(it, warning.step)) }
                     }
                 },
+                onOpenNews = { nav.navigate(Routes.announcement(it)) { launchSingleTop = true } },
+            )
+        }
+        composable(
+            Routes.ANNOUNCEMENT,
+            arguments = listOf(navArgument(AnnouncementViewModel.ARG_ANNOUNCEMENT) { type = NavType.StringType }),
+        ) {
+            val viewModel: AnnouncementViewModel = hiltViewModel()
+            val state by viewModel.state.collectAsStateWithLifecycle()
+            val uriHandler = LocalUriHandler.current
+            AnnouncementScreen(
+                state = state,
+                onBack = { nav.popBackStack() },
+                onButton = { openAnnouncementTarget(it, uriHandler, nav) },
             )
         }
         composable(Routes.MISSED_RING) {
