@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.openapi.generator) apply false
     alias(libs.plugins.roborazzi) apply false
     alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.play.publisher) apply false
     alias(libs.plugins.spotless)
 }
 

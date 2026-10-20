@@ -38,6 +38,8 @@ turbine = "1.2.1"
 # NUD-112, newest stable at least 14 days old on 2026-10-19 (ADR 0025).
 commonmark = "0.29.0"
 coil = "3.6.3"
+# NUD-117, newest stable at least 14 days old on 2026-10-20 (ADR 0026).
+play-publisher = "4.1.1"
 
 [libraries]
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "core" }
@@ -114,3 +116,4 @@ openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-gener
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+play-publisher = { id = "com.github.triplet.play", version.ref = "play-publisher" }
