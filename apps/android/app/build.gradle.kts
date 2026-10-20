@@ -1,4 +1,5 @@
 // The Android app (ADR 0004). Flavors: dev and e2e run as app.nuddle.debug against the local API, prod is app.nuddle.
+import com.github.triplet.gradle.androidpublisher.ReleaseStatus
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
 
 plugins {
@@ -12,6 +13,7 @@ plugins {
     alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.roborazzi)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.play.publisher)
 }
 
 // The Play upload key lives outside the repo (CLAUDE.md rule 11, docs/human-checklist.md, Before the beta):
@@ -28,6 +30,14 @@ val uploadKeyAlias = uploadKeyValue("nuddle.upload.keyAlias", "NUDDLE_UPLOAD_KEY
 val uploadKeyPassword = uploadKeyValue("nuddle.upload.keyPassword", "NUDDLE_UPLOAD_KEY_PASSWORD")
 val hasUploadKey =
     listOf(uploadStoreFile, uploadStorePassword, uploadKeyAlias, uploadKeyPassword).all { !it.isNullOrBlank() }
+
+// Uploads to Play go through the Publishing API with a service account (ADR 0026). Its key lives outside the repo
+// like the upload key; without it the build still configures and only the publish tasks fail.
+val playServiceAccount =
+    providers
+        .gradleProperty("nuddle.play.serviceAccount")
+        .orElse(providers.environmentVariable("NUDDLE_PLAY_SERVICE_ACCOUNT"))
+        .orElse("${System.getProperty("user.home")}/.nuddle/release/play-service-account.json")
 
 /** Crashlytics collection and the app's breadcrumbs and non-fatals (ADR 0023) are on or off together. */
 fun com.android.build.api.dsl.ProductFlavor.crashReports(enabled: Boolean) {
@@ -259,6 +269,24 @@ tasks.matching { it.name == "bundleProdRelease" }.configureEach {
         check(signed) {
             "No Play upload key. Set nuddle.upload.* in ~/.gradle/gradle.properties " +
                 "(docs/human-checklist.md, Before the beta)."
+        }
+    }
+}
+
+// `mise run android:publish` (ADR 0026): only prod reaches Play, and only the internal track from here. Closed testing
+// and production stay promotions in Play Console, which the human does. Release notes: src/prod/play/release-notes.
+play {
+    enabled.set(false)
+    serviceAccountCredentials.set(file(playServiceAccount.get()))
+    defaultToAppBundles.set(true)
+    track.set("internal")
+    releaseStatus.set(ReleaseStatus.COMPLETED)
+}
+
+android {
+    playConfigs {
+        register("prod") {
+            enabled.set(true)
         }
     }
 }
