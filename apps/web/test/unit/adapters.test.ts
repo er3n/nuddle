@@ -10,7 +10,7 @@ import { FcmPushSender } from "../../src/infra/push/fcm";
 
 const mock = setupServer();
 beforeAll(() => {
-  mock.listen({ onUnhandledRequest: "error" });
+  mock.listen({ onUnhandledFrame: "error" });
 });
 afterEach(() => {
   mock.resetHandlers();
