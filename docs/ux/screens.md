@@ -212,6 +212,14 @@ Sender side. Shows the extracted task, finish mode choice (photo preselected for
 ### 4b Notification to Eren · `OtherNotif.png`
 **Copy:** Sibel sana bir görev yazdı | Temizlikçi için para çek · yarın 09:00'dan önce. Bitince fotoğrafını istiyor. | Bir şey yapman gerekmiyor. Zamanı gelince seni dürterim. | Gör
 
+### 4j The other side closed the task (NUD-115)
+No design PNG. A system notification on the `tasks` channel, one per task, posted when a sync (not a full sync after sign-in or a reinstall) shows that the other person closed a task between us, so it never just vanishes from a list. Nothing for what I did myself, for a one-time message (NUD-79), or for a removed connection (5b stays silent). The home row and the bell stay as they are; the words are theirs.
+- To me, the sender cancelled: "Sibel iptal etti: "Çöpü at"" | "Not: ben hallettim · Dürtmeler durdu" (no note: "Dürtmeler durdu"). Opens home.
+- To me, given to someone else (NUD-114): "Sibel bu görevi başka birine verdi: "Çöpü at"" | "Dürtmeler durdu". Opens home.
+- Mine, done: "Eren bitirdi: "Çöpü at"" | "Bitti dedi". Opens home.
+- Mine, can't today: "Eren bugün yapamayacak: "Çöpü at"" | "Not: yarın hallederim" (no line without a note). Opens the task (5d).
+- Mine, missed: "Eren yetiştiremedi: "Çöpü at"" | "Son zaman geçti, Eren bitti demedi." (photo: "Son zaman geçti, fotoğraf gelmedi."; an `at` task says "Zamanı geçti"). Opens the task (5d).
+
 ### 4c Eren's home, task from Sibel · `OtherHome.png`
 Next-up card with Call and Message icons.
 **Copy:** Sıradaki | Sibel yazdı · 14:32 | Kurulu | Temizlikçi için para çek | 1.000 TL | Son zaman | Yarın 09:00 | Bitince | Fotoğraf, Sibel onaylar | Bitti, çek | Bugün yapamayacağım
@@ -285,7 +293,7 @@ System notification on the `reach_out` channel.
 **Copy:** Eren'e ulaşamıyorum | Temizlikçi için para çek · son zaman 09:00. 4 kez dürttüm, tam ekran dahil, cevap yok. | Bir arasan iyi olur. Ben dürtmeye devam ediyorum. | Ara | Mesaj | Gör
 
 ### 7b Sibel: bell, finished tasks as text · `SibelBell.png`
-**Copy:** Bugün | Eren'e ulaşamıyorum: Temizlikçi için para çek | Son zaman 09:00 · bir arasan iyi olur | Eren "Çöpü at"ı bitirdi | Bitti dedi | Eren "Gelirken ekmek al"ı bitirdi | Onayladın | Eren "Kuru temizleme"yi bugün yapamayacak | Not: yarın hallederim | Biten işler sadece burada yazı olarak durur, ayrıca bildirim göndermem. Fotoğraflı işler onayına düşer.
+**Copy:** Bugün | Eren'e ulaşamıyorum: Temizlikçi için para çek | Son zaman 09:00 · bir arasan iyi olur | Eren "Çöpü at"ı bitirdi | Bitti dedi | Eren "Gelirken ekmek al"ı bitirdi | Onayladın | Eren "Kuru temizleme"yi bugün yapamayacak | Not: yarın hallederim | Biten işler burada da yazar. Fotoğraflı işler onayına düşer. (*Changed 2026-10-19, NUD-115:* the footer said "ayrıca bildirim göndermem"; closes now also come as a notification, see 4j.)
 Note: Turkish suffixes after a quoted title ("Çöpü at"ı) depend on the title's last vowel. Use plural/format resources carefully or rephrase to avoid suffixing user content (open question).
 
 ### 7c Sibel: ongoing task · `SibelTaskDetail.png`

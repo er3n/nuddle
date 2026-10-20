@@ -6,6 +6,7 @@ import android.app.Notification
 import android.app.NotificationManager
 import androidx.core.content.getSystemService
 import androidx.test.core.app.ApplicationProvider
+import app.nuddle.data.sync.TaskClose
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.aTask
@@ -52,6 +53,21 @@ class TaskAnnouncerTest {
                 .endsWith("Bir şey yapman gerekmiyor. Zamanı gelince seni dürterim."),
         )
         assertEquals(listOf("Gör"), notification.actions.map { it.title.toString() })
+    }
+
+    @Test
+    fun `a close by the other side says who did what, apart from the arrival note (NUD-115)`() {
+        announcer.announce(aTask(), "Sibel")
+        announcer.closed(aTask(), "Sibel", TaskClose.Cancelled("Ben hallettim"))
+        announcer.closed(aTask(id = "missed").copy(finishMode = "done"), "Eren", TaskClose.Missed)
+
+        val texts =
+            manager.allNotifications.map {
+                it.extras.getString(Notification.EXTRA_TITLE) to it.extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
+            }
+        assertEquals(3, texts.size)
+        assertTrue("Sibel iptal etti: \"Temizlikçi için para çek\"" to "Not: Ben hallettim · Dürtmeler durdu" in texts)
+        assertTrue("Eren yetiştiremedi: \"Temizlikçi için para çek\"" to "Son zaman geçti, Eren bitti demedi." in texts)
     }
 
     @Test
