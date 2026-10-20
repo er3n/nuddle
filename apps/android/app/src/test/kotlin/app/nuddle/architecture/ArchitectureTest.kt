@@ -77,6 +77,27 @@ class ArchitectureTest {
     }
 
     @Test
+    fun `every activity draws edge to edge`() {
+        // Android 15 forces edge to edge on apps targeting SDK 35; older phones get the same layout only through
+        // enableEdgeToEdge() (Play's edge-to-edge check, NUD-118).
+        main
+            .classes()
+            .filter { cls -> cls.parents().any { it.name.endsWith("Activity") } }
+            .assertTrue { it.text.contains("enableEdgeToEdge()") }
+    }
+
+    @Test
+    fun `every screen keeps clear of the system bars`() {
+        // ScreenLayout pads with safeDrawingPadding(); a screen that skips it pads itself.
+        val insets = Regex("""\b(ScreenLayout|safeDrawingPadding|systemBarsPadding|windowInsetsPadding)\(""")
+        main.files
+            .filter {
+                it.packagee?.name?.startsWith("app.nuddle.ui.screens.") == true &&
+                    it.name.endsWith("Screen")
+            }.assertTrue { insets.containsMatchIn(it.text) }
+    }
+
+    @Test
     fun `every screen state has a preview`() {
         main.files
             .filter {

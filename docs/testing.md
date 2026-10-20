@@ -74,6 +74,7 @@ Start the backend scenario suite with: task to self, task to other with done, ph
 - CameraX replaced by injecting an image file from the test: the orchestrator copies `e2e/fixtures/photo.jpg` into the app's `files/e2e-photo.jpg` (`run-as`), and the camera of this flavor (`InjectedPhotoSource`, `BuildConfig.INJECTED_PHOTO`) returns it as the shot.
 - Speech recognition replaced the same way: the orchestrator writes the text to `files/e2e-speech.txt`, and the speech input of this flavor (`InjectedSpeechInput`, `BuildConfig.INJECTED_SPEECH`) "hears" it and ends by itself 1.5 s later, like the real recognizer after silence (NUD-60), or at once on a tap on stop.
 - `adb reverse` also forwards `:54321` (local Supabase), where the signed photo upload and view URLs point.
+- The release build runs through R8 (shrinking, obfuscation, NUD-118), the debug build does not. `--minified` (`pnpm --filter @nuddle/e2e smoke --minified`) runs a set on `assembleE2eMinified` instead: the same R8 run as the Play build (shrinking, obfuscation, optimization), signed with the debug key and debuggable through its own manifest for `run-as`. Run it before a Play upload that adds a library or touches `proguard-rules.pro`.
 
 ### Orchestrator
 TypeScript runner in `e2e/orchestrator` that drives two emulators (`emulator-5554` as Sibel, `emulator-5556` as Eren), runs the flows (`src/flows.ts`) on each in sequence over adb, and calls test endpoints in between (ADR 0018). A flow reads the screen with `uiautomator dump`, finds elements only by test tag (text only to check copy), and acts with `input tap` and `input text`; the emulators' on-screen keyboards are off, so keys go straight into the field. Time is fake (below): a flow never waits for a poke or a deadline, it moves the server and both phones to it. Every run writes `e2e-runs/<timestamp>/` with per-step screenshots and UI dumps of both devices, logcat for both, and server logs. Agents debug from that folder.
@@ -140,6 +141,7 @@ The full set runs on demand. Because the repo is public, standard GitHub-hosted 
 | `mise run test:fast` | lint (fast), typecheck, server unit, Android domain unit, UI behavior, a11y, screenshot record | after every change, under ~1 minute target |
 | `mise run test` | + contract diff, HTTP, scenario, integration, Roborazzi verify, Konsist | before opening a PR, in CI |
 | `mise run e2e:smoke` | smoke set on two emulators | before merging, background with timeout |
+| `pnpm --filter @nuddle/e2e smoke --minified` | smoke set on the R8 build (Android `e2e` flavor) | before a Play upload that adds a library or changes `proguard-rules.pro` |
 | `mise run e2e:sync` | two-person set on two emulators | before merging a change to sync, the outbox, alarms or notifications |
 | `mise run e2e` | full E2E set | nightly or on demand |
 | `mise run eval` | LLM golden set | when prompt or model changes |

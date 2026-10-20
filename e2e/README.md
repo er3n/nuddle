@@ -14,6 +14,7 @@ Real flows on two emulators against the local backend in E2E mode (`docs/testing
 mise run e2e:smoke            # the smoke set; prints the run folder first and last
 mise run e2e:sync             # the two-person set (docs/testing.md, Two-person set): ~3 minutes warm
 pnpm --filter @nuddle/e2e sync --cases 3,4   # some of its cases;  --fresh  starts clean
+pnpm --filter @nuddle/e2e smoke --minified    # on the R8 build Play gets (assembleE2eMinified, NUD-118)
 ```
 
 It runs in the foreground with a 20 minute hard timeout and exits non-zero on failure. It takes several minutes (first Gradle build, emulator boot), so agents start it in the background and poll `<run folder>/orchestrator.log` (CLAUDE.md, long-running commands).
