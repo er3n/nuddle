@@ -77,6 +77,9 @@ object NotificationIds {
 
     fun note(taskId: String): Int = "arrived:$taskId".hashCode()
 
+    /** The other side closed the task (NUD-115); apart from 4b, which sync takes away once the task is closed. */
+    fun closed(taskId: String): Int = "closed:$taskId".hashCode()
+
     /** 7a, apart from the photo note so each goes away on its own. */
     fun reach(taskId: String): Int = "reach:$taskId".hashCode()
 

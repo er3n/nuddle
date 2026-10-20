@@ -731,6 +731,52 @@ export async function taskCommand(
   });
 }
 
+/**
+ * Kime changed on an open task (NUD-114): the task closes as `reassigned` for its recipient, and the
+ * same task starts for the new one with a plan of its own. A repeating task starts a new series. The
+ * result names the new task.
+ */
+export async function reassignTask(
+  deps: AppDeps,
+  caller: Person,
+  input: { idempotencyKey: string; taskId: TaskId; recipientId: PersonId },
+): Promise<{ taskId: TaskId; status: TaskStatus; planVersion: number }> {
+  return runCommand(deps, caller.id, "reassign", input.idempotencyKey, async (tx, now) => {
+    const task = await lockTaskOf(tx, caller.id, input.taskId);
+    const r = applyCommand(
+      task,
+      { type: "reassign", recipientId: input.recipientId },
+      caller.id,
+      await taskContext(tx, task, now),
+    );
+    if (!r.ok) throw new ApiError(r.error);
+    const closed = adjust(deps, r.value, now);
+    await persistOutcome(tx, closed, now);
+    const created = await createTaskTx(
+      tx,
+      deps,
+      caller.id,
+      {
+        recipientId: input.recipientId,
+        title: task.title,
+        detail: task.detail,
+        deadline: task.remindAt ?? task.deadline,
+        timing: task.timing,
+        missAfterMinutes:
+          task.remindAt === null
+            ? null
+            : Math.round((task.deadline.getTime() - task.remindAt.getTime()) / MINUTE),
+        leadMinutes: task.leadMinutes,
+        finishMode: task.finishMode,
+        rawText: task.rawText,
+        repeat: task.repeat,
+      },
+      now,
+    );
+    return { result: created.result, effects: mergeEffects(effectsOf(closed), created.effects) };
+  });
+}
+
 function mergeEffects(a: Effects, b: Effects): Effects {
   return {
     pushes: [...a.pushes, ...b.pushes],

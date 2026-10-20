@@ -33,7 +33,7 @@ Min SDK 26, target the current SDK (35+). The app is declared to Play as an alar
 |---|---|---|---|
 | `poke_silent` | Sessiz dürtmeler | DEFAULT | none |
 | `poke_alarm` | Dürtme alarmları | HIGH | alarm sound, `USAGE_ALARM` (pierces DND by default) |
-| `tasks` | Görevler ve onaylar | DEFAULT | default |
+| `tasks` | Görevler ve onaylar | DEFAULT | default (4b, the photo note, and the close notes of 4j) |
 | `reach_out` | Ulaşılamayan kişi haberleri | HIGH | default |
 | `system` | İzin ve kurulum uyarıları | LOW | none |
 | `news` | Nuddle'dan haberler | DEFAULT | default |

@@ -40,6 +40,7 @@ import app.nuddle.data.session.SessionStore
 import app.nuddle.data.session.SetupStore
 import app.nuddle.data.session.StoredSession
 import app.nuddle.data.sync.TaskAnnouncer
+import app.nuddle.data.sync.TaskClose
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.AlarmScheduler
 import app.nuddle.domain.GrantedPermissions
@@ -313,6 +314,16 @@ class FakeTaskRepository : TaskRepository {
         return editOutcome
     }
 
+    /** Every Kime change in the task detail (NUD-114): the task and its new recipient. */
+    val reassigns = mutableListOf<Pair<String, String>>()
+
+    /** A [app.nuddle.data.TaskReassigner]; the key only matters to the server. */
+    val reassigner =
+        app.nuddle.data.TaskReassigner { taskId, recipientId, _ ->
+            reassigns += taskId to recipientId
+            editOutcome
+        }
+
     /** The note of each cancel, in order; null for Geri al or a cancel without a reason. */
     val cancelNotes = mutableListOf<String?>()
 
@@ -542,6 +553,17 @@ class RecordingAnnouncer : TaskAnnouncer {
 
     override fun withdrawCantReach(taskId: String) {
         reachWithdrawn += taskId
+    }
+
+    /** Task, the other side's name and how they closed it (NUD-115). */
+    val closes = mutableListOf<Triple<String, String, TaskClose>>()
+
+    override fun closed(
+        task: TaskEntity,
+        otherName: String,
+        close: TaskClose,
+    ) {
+        closes += Triple(task.id, otherName, close)
     }
 }
 

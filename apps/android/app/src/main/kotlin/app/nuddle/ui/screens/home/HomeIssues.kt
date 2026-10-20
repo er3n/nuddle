@@ -92,7 +92,11 @@ internal fun CancelledRow(
         }
         Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
             Text(
-                stringResource(R.string.issue_cancelled_title, task.byName, task.title),
+                stringResource(
+                    if (task.reassigned) R.string.issue_reassigned_title else R.string.issue_cancelled_title,
+                    task.byName,
+                    task.title,
+                ),
                 style = DurtTheme.type.body,
                 color = colors.ink,
                 maxLines = 1,

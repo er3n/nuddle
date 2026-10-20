@@ -1178,6 +1178,23 @@ components:
       required:
         - idempotencyKey
         - taskId
+    ReassignCommand:
+      type: object
+      properties:
+        idempotencyKey:
+          type: string
+          format: uuid
+          description: Client generated UUIDv7; a replay returns the first result (ADR 0006)
+        taskId:
+          type: string
+          format: uuid
+        recipientId:
+          type: string
+          format: uuid
+      required:
+        - idempotencyKey
+        - taskId
+        - recipientId
     ApproveCommand:
       type: object
       properties:
@@ -2634,6 +2651,63 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/EditCommand"
+      responses:
+        "200":
+          description: The result; a replay with the same key returns it again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskCommandResult"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/commands/reassign:
+    post:
+      operationId: reassign
+      summary: "Sender: Kime changed; the task closes and starts for the new recipient (NUD-114)"
+      tags:
+        - commands
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReassignCommand"
       responses:
         "200":
           description: The result; a replay with the same key returns it again

@@ -1,6 +1,7 @@
 package app.nuddle.alarm
 
 import android.Manifest
+import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -104,7 +105,11 @@ class AndroidPokeNotifications
             // The poke takes over from the note that the task arrived ("Zamanı gelince seni dürterim", 4b).
             manager.cancel(NotificationIds.note(task.id))
             if (!silent) volume.raise()
-            manager.notify(notificationId(task.id), builder.build())
+            val notification = builder.build()
+            // SOUND and FULL_SCREEN ring until silenced (docs/domain.md, Poke levels): without the flag the channel plays
+            // the alarm tone once and stops, which a tester heard as one soft ring and no more.
+            if (!silent) notification.flags = notification.flags or Notification.FLAG_INSISTENT
+            manager.notify(notificationId(task.id), notification)
         }
 
         private fun fullScreenIntent(step: PokeStep): PendingIntent =

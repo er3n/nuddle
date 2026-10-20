@@ -355,6 +355,8 @@ export class Client {
         return post("/api/v1/commands/new_deadline", { deadline: cmd.deadline.toISOString() });
       case "sender_handles":
         return post("/api/v1/commands/sender_handles", {});
+      case "reassign":
+        return post("/api/v1/commands/reassign", { recipientId: cmd.recipientId });
       case "deadline_passed":
       case "approval_timeout":
       case "account_deleted":
@@ -362,6 +364,17 @@ export class Client {
       case "replan":
         throw new Error(`${cmd.type} is a server command`);
     }
+  }
+
+  /** Kime changed in 7c (NUD-114): the new task's id, or the error. */
+  async reassign(
+    taskId: TaskId,
+    to: Client,
+  ): Promise<{ ok: true; taskId: TaskId } | { ok: false; error: DomainError }> {
+    const r = await this.send(taskId, { type: "reassign", recipientId: to.uuid });
+    await this.world.refresh();
+    if (r.error) return { ok: false, error: r.error.error.name as DomainError };
+    return { ok: true, taskId: (r.data as { taskId: TaskId }).taskId };
   }
 
   /** Gönder; [takenAt] is when the photo was taken, for an upload that comes late (6e). */
