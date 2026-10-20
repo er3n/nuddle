@@ -45,6 +45,7 @@ const commands: { cmd: Command; actor: string | null }[] = [
   { cmd: { type: "re_request", note: null }, actor: "sibel" },
   { cmd: { type: "new_deadline", deadline: addMs(now, 5 * HOUR) }, actor: "sibel" },
   { cmd: { type: "sender_handles" }, actor: "sibel" },
+  { cmd: { type: "reassign", recipientId: "sibel" }, actor: "sibel" },
   { cmd: { type: "deadline_passed" }, actor: null },
   { cmd: { type: "approval_timeout" }, actor: null },
   { cmd: { type: "account_deleted", personId: "eren" }, actor: null },
@@ -61,6 +62,7 @@ const allowed: Record<TaskStatus, Partial<Record<Command["type"], TaskStatus>>> 
     deadline_passed: "MISSED",
     cancel: "CANCELLED",
     edit: "SCHEDULED",
+    reassign: "CANCELLED",
     account_deleted: "CANCELLED",
     connection_removed: "CANCELLED",
     replan: "SCHEDULED",
@@ -249,6 +251,19 @@ describe("task state machine", () => {
   it("marks 'Sonradan yaptım' as late", () => {
     const o = apply(aTask().withStatus("MISSED").build(), { type: "did_it_later" }, "eren");
     expect(o.task).toMatchObject({ status: "DONE", late: true });
+  });
+
+  it("Kime changed: closes as reassigned, naming the new recipient, and tells the old one (NUD-114)", () => {
+    const o = apply(aTask().build(), { type: "reassign", recipientId: "sibel" }, "sibel");
+    expect(o.events[0]?.payload).toEqual({ reason: "reassigned", note: null, to: "sibel" });
+    expect(o.plan.steps).toEqual([]);
+    expect(o.pushes).toContainEqual(
+      expect.objectContaining({ to: "eren", hint: "task_cancelled" }),
+    );
+    // The same recipient again is not a change.
+    expect(
+      applyCommand(aTask().build(), { type: "reassign", recipientId: "eren" }, "sibel", ctx()),
+    ).toEqual({ ok: false, error: "wrong_status" });
   });
 
   it("closes 'Ben hallederim' as cancelled with reason sender_handles", () => {

@@ -70,6 +70,19 @@ class IssuesTest {
         assertTrue(dayLater.cancelled.isEmpty())
     }
 
+    @Test
+    fun `a task given to someone else says so, without naming them (NUD-114)`() {
+        val gone = aTask(status = "CANCELLED").copy(statusChangedAt = now.toEpochMilliseconds())
+        val event = event("cancelled", """{"reason":"reassigned","note":null,"to":"defne"}""")
+
+        val result = issues(listOf(gone), mapOf(Cast.TASK_ID to listOf(event)), Cast.EREN_ID, sibel, now, istanbul)
+
+        assertEquals(
+            listOf(CancelledUi(Cast.TASK_ID, "Temizlikçi için para çek", "Sibel", null, reassigned = true)),
+            result.cancelled,
+        )
+    }
+
     private fun toSibel(
         id: String,
         status: String,

@@ -9,12 +9,14 @@ import app.nuddle.alarm.PokeActions
 import app.nuddle.data.AccountRepository
 import app.nuddle.data.ApiAccountRepository
 import app.nuddle.data.ApiInviteRepository
+import app.nuddle.data.ApiTaskReassigner
 import app.nuddle.data.ApiTaskRepository
 import app.nuddle.data.Approvals
 import app.nuddle.data.InviteRepository
 import app.nuddle.data.LocalWipe
 import app.nuddle.data.OutboxApprovals
 import app.nuddle.data.TaskCloser
+import app.nuddle.data.TaskReassigner
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.avatar.ApiAvatarRepository
 import app.nuddle.data.avatar.AvatarRefresher
@@ -163,4 +165,12 @@ abstract class AvatarModule {
 
     @Binds
     abstract fun avatarUploads(impl: WorkManagerScheduling): AvatarUploads
+}
+
+/** Kime changed in 7c (NUD-114), in a module of its own so RepositoryModule stays within the size limit. */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class TaskEditModule {
+    @Binds
+    abstract fun taskReassigner(impl: ApiTaskReassigner): TaskReassigner
 }

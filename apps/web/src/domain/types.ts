@@ -61,7 +61,12 @@ export interface Edge {
 }
 
 export type CancelReason =
-  "sender_cancelled" | "sender_handles" | "account_deleted" | "connection_removed";
+  | "sender_cancelled"
+  | "sender_handles"
+  | "account_deleted"
+  | "connection_removed"
+  /** Kime changed: the same task now goes to someone else (NUD-114). */
+  | "reassigned";
 
 export interface Task {
   id: TaskId;

@@ -36,6 +36,7 @@ Client-only status: `QUEUED` (written offline, not yet on the server).
 | `SCHEDULED` | deadline passed | `MISSED` | server |
 | `SCHEDULED` | cancel | `CANCELLED` | sender |
 | `SCHEDULED` | edit (deadline, detail, finish mode) | `SCHEDULED`, plan regenerated | sender |
+| `SCHEDULED` | Kime changed (`reassign`, NUD-114) | `CANCELLED` with reason `reassigned` (the payload names the new recipient); in the same transaction the same task (title, detail, time, timing, lead, finish mode, raw text, repeat rule) is created for the new recipient, self or a connection, with a new plan. A repeating task starts a new series. The old recipient is told as for a cancel; nothing is told for a task to self | sender |
 | `AWAITING_APPROVAL` | approve | `DONE` | sender |
 | `AWAITING_APPROVAL` | 3 hours without approval | `DONE` (auto) | server |
 | `AWAITING_APPROVAL` | re-request (optional note) | `REJECTED` | sender |

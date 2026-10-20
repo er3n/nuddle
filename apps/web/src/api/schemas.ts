@@ -235,6 +235,8 @@ export const EditCommand = taskKeyed({
   detail: z.string().max(200).nullable().optional(),
   finishMode: FinishMode.optional(),
 }).openapi("EditCommand");
+/** Kime changed (NUD-114): the caller, or one of their connections. */
+export const ReassignCommand = taskKeyed({ recipientId: Id }).openapi("ReassignCommand");
 export const ApproveCommand = taskKeyed({}).openapi("ApproveCommand");
 export const ReRequestCommand = taskKeyed({ note: Note }).openapi("ReRequestCommand");
 export const NewDeadlineCommand = taskKeyed({ deadline: Instant }).openapi("NewDeadlineCommand");

@@ -6,10 +6,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.Reachability
+import app.nuddle.api.model.SyncConnection
 import app.nuddle.data.Delivery
 import app.nuddle.data.DoneNotes
 import app.nuddle.data.EventTypes
 import app.nuddle.data.TaskCloser
+import app.nuddle.data.TaskReassigner
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.WriteOutcome
 import app.nuddle.data.db.ConnectionDao
@@ -28,6 +30,7 @@ import app.nuddle.ui.screens.home.FromUi
 import app.nuddle.ui.screens.home.HOUR_MINUTE
 import app.nuddle.ui.screens.home.MissedUi
 import app.nuddle.ui.screens.home.NewDeadlineUi
+import app.nuddle.ui.screens.home.RecipientChoice
 import app.nuddle.ui.screens.home.RepeatUi
 import app.nuddle.ui.screens.home.SentIssueUi
 import app.nuddle.ui.screens.home.issues
@@ -62,8 +65,8 @@ private const val STOP_TIMEOUT_MS = 5_000L
 /** "Ben hallettim", "Gerek kalmadı" (7d). Optional; the chosen one goes to the recipient as the note. */
 enum class CancelReason { HandledIt, NotNeeded }
 
-/** The rows of 7c that can be changed; Kime and Detay stay as written (open-questions#34). */
-enum class EditRow { Deadline, Finish }
+/** The rows of 7c that can be changed; Detay stays as written (open-questions#34), Kime changes since NUD-114. */
+enum class EditRow { Deadline, Finish, Recipient }
 
 /**
  * The detail of an open task from either side (docs/ux/screens.md, Task detail; 7c for my task to someone else). The
@@ -106,6 +109,11 @@ data class TaskDetailUiState(
     val deadlineChoices: List<DeadlineChoice> = emptyList(),
     val pickedDeadline: DeadlineChoice? = null,
     val pickedPhoto: Boolean = photo,
+    /** Who the task is for now: Kendine or a connection (my task only). */
+    val recipient: RecipientChoice? = null,
+    /** What a tap on Kime offers (NUD-114): Kendine and each connection; empty when there is no one else. */
+    val recipientOptions: List<RecipientChoice> = emptyList(),
+    val pickedRecipient: RecipientChoice? = recipient,
     val saving: Boolean = false,
     val saveFailed: Boolean = false,
     /** 7f, while open. */
@@ -127,6 +135,9 @@ data class TaskDetailUiState(
 ) {
     val actions: List<DetailAction> get() = actionsFor(side, status, photo, notice)
     val editable: Boolean get() = editable(side, status)
+
+    /** Kime can change while the task is Kurulu and there is someone else to give it to (NUD-114). */
+    val recipientEditable: Boolean get() = editable && status == DetailStatus.Scheduled && recipientOptions.size > 1
 }
 
 @HiltViewModel
@@ -139,6 +150,7 @@ class TaskDetailViewModel
         eventDao: TaskEventDao,
         stepDao: PokeStepDao,
         sessions: SessionStore,
+        reassigner: TaskReassigner,
         private val acks: TaskAcks,
         doneNotes: DoneNotes,
         closer: TaskCloser,
@@ -177,19 +189,23 @@ class TaskDetailViewModel
         /** Yeni zaman ver and Süreyi uzat (5d). */
         val newDeadline = NewDeadlineHolder(taskId, tasks, ids, clock, timeZone, viewModelScope)
 
+        /** Kime's sheet (NUD-114). */
+        val recipientEdit = RecipientEditHolder(taskId, reassigner, sessions, ids, viewModelScope)
+
         /** The recipient moves when the pokes begin (NUD-78). */
         val start = StartHolder(taskId, tasks, ids, clock, timeZone, viewModelScope)
 
         /** The task is gone from my lists: answered here, or closed elsewhere (done, cancelled by sync). */
         val close: Flow<Unit> = closeChannel.receiveAsFlow()
 
-        private val sheets = combine(local, drop.open, newDeadline.open, start.open, ::Sheets)
+        private val sheets = combine(local, drop.open, newDeadline.open, start.open, recipientEdit.picked, ::Sheets)
 
         private data class Sheets(
             val local: Local,
             val drop: DropUi?,
             val newDeadline: NewDeadlineUi?,
             val start: NewDeadlineUi?,
+            val pickedRecipient: RecipientChoice?,
         )
 
         val state: StateFlow<TaskDetailUiState?> =
@@ -217,6 +233,12 @@ class TaskDetailViewModel
                 val sender = byId[task.senderId]?.takeIf { side == DetailSide.ToMe }
                 val issues = issues(listOf(task), mapOf(taskId to events), me, byId, now, timeZone)
                 val local = sheets.local
+                val recipient =
+                    when {
+                        side == DetailSide.ToMe -> null
+                        task.recipientId == me -> RecipientChoice.Self
+                        else -> RecipientChoice.Person(task.recipientId, to?.displayName.orEmpty())
+                    }
                 TaskDetailUiState(
                     myName = myName.orEmpty(),
                     title = task.title,
@@ -255,6 +277,17 @@ class TaskDetailViewModel
                     deadlineChoices = quickDeadlines(now, timeZone),
                     pickedDeadline = local.pickedDeadline,
                     pickedPhoto = local.pickedPhoto ?: (task.finishMode == FinishMode.PHOTO.value),
+                    recipient = recipient,
+                    recipientOptions =
+                        if (recipient == null) {
+                            emptyList()
+                        } else {
+                            listOf(RecipientChoice.Self) +
+                                connections
+                                    .filter { it.status == SyncConnection.Status.ACTIVE.value }
+                                    .map { RecipientChoice.Person(it.personId, it.displayName) }
+                        },
+                    pickedRecipient = sheets.pickedRecipient ?: recipient,
                     saving = local.saving,
                     saveFailed = local.saveFailed,
                     drop = sheets.drop,
@@ -299,9 +332,10 @@ class TaskDetailViewModel
             viewModelScope.launch { tasks.cancel(taskId, note) }
         }
 
-        /** A tap on Son zaman or Nasıl bitsin opens that row's sheet. */
+        /** A tap on Kime, Son zaman or Nasıl bitsin opens that row's sheet. */
         fun onEdit(row: EditRow) {
             editKey = null
+            recipientEdit.onOpen()
             local.update { it.copy(editing = row, pickedDeadline = null, pickedPhoto = null, saveFailed = false) }
         }
 
@@ -334,6 +368,12 @@ class TaskDetailViewModel
             val current = local.value
             val row = current.editing ?: return
             if (current.saving) return
+            if (row == EditRow.Recipient) {
+                local.update { it.copy(saving = true, saveFailed = false) }
+                return recipientEdit.save(state.value?.recipient) { ok ->
+                    local.update { if (ok) it.copy(editing = null, saving = false) else it.copy(saving = false, saveFailed = true) }
+                }
+            }
             val deadline = if (row == EditRow.Deadline) current.pickedDeadline?.at ?: return else null
             val finishMode =
                 if (row == EditRow.Finish) (if (state.value?.pickedPhoto == true) FinishMode.PHOTO else FinishMode.DONE) else null

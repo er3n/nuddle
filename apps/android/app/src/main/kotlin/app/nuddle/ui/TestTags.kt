@@ -69,6 +69,7 @@ object TestTags {
     const val APPROVE_RETRY_PHOTO = "approve.retryPhoto"
     const val TASK_CANCEL = "task.cancel"
     const val TASK_EDIT_DEADLINE = "task.editDeadline"
+    const val TASK_EDIT_RECIPIENT = "task.editRecipient"
     const val TASK_EDIT_FINISH = "task.editFinish"
     const val TASK_START = "task.start"
     const val TASK_CALL = "task.call"

@@ -3,13 +3,16 @@ package app.nuddle.ui.screens.task
 import app.nuddle.data.DoneNote
 import app.nuddle.data.DoneNotes
 import app.nuddle.data.TaskCloser
+import app.nuddle.data.TaskReassigner
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.WriteOutcome
+import app.nuddle.data.session.SessionStore
 import app.nuddle.data.session.TaskAcks
 import app.nuddle.domain.IdGenerator
 import app.nuddle.ui.screens.home.DeadlineChoice
 import app.nuddle.ui.screens.home.HOUR_MINUTE
 import app.nuddle.ui.screens.home.NewDeadlineUi
+import app.nuddle.ui.screens.home.RecipientChoice
 import app.nuddle.ui.screens.home.nextOccurrence
 import app.nuddle.ui.screens.home.quickDeadlines
 import app.nuddle.ui.screens.poke.DropReason
@@ -18,6 +21,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalTime
@@ -197,5 +201,55 @@ class SeenOnce(
         if (told) return
         told = true
         scope.launch { acks.seen(listOf(taskId)) }
+    }
+}
+
+/**
+ * Kime's sheet over 7c (NUD-114): who is picked, and Kaydet, which closes the task here and starts it for the picked
+ * person. Picking the same person again changes nothing.
+ */
+class RecipientEditHolder(
+    private val taskId: String,
+    private val reassigner: TaskReassigner,
+    private val sessions: SessionStore,
+    private val ids: IdGenerator,
+    private val scope: CoroutineScope,
+) {
+    private val choice = MutableStateFlow<RecipientChoice?>(null)
+
+    /** The person picked so far; null until a chip is tapped, which shows the current one. */
+    val picked: StateFlow<RecipientChoice?> = choice.asStateFlow()
+
+    /** Kept while the same change is retried (ADR 0006). */
+    private var saveKey: String? = null
+
+    fun onOpen() {
+        saveKey = null
+        choice.value = null
+    }
+
+    fun onChoice(picked: RecipientChoice) {
+        saveKey = null
+        choice.value = picked
+    }
+
+    /** [done] gets whether the sheet may close: true when saved or nothing changed, false to try again. */
+    fun save(
+        current: RecipientChoice?,
+        done: (Boolean) -> Unit,
+    ) {
+        val target = choice.value ?: current
+        if (target == null || target == current) return done(true)
+        val key = saveKey ?: ids.next().also { saveKey = it }
+        scope.launch {
+            val recipientId =
+                when (target) {
+                    is RecipientChoice.Person -> target.personId
+                    RecipientChoice.Self -> sessions.session.first()?.personId
+                }
+            val ok = recipientId != null && reassigner.reassign(taskId, recipientId, key) is WriteOutcome.Created
+            if (ok) saveKey = null
+            done(ok)
+        }
     }
 }

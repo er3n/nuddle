@@ -563,6 +563,19 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
       ...(b.finishMode === undefined ? {} : { finishMode: b.finishMode }),
     }),
   );
+  app.openapi(
+    command(
+      "reassign",
+      "reassign",
+      "Sender: Kime changed; the task closes and starts for the new recipient (NUD-114)",
+      s.ReassignCommand,
+      s.TaskCommandResult,
+    ),
+    async (c) => {
+      const b = c.req.valid("json");
+      return c.json(await svc.reassignTask(deps, await person(c.get("caller")), b), 200);
+    },
+  );
   taskCommand("approve", "approve", "Sender: approve the photo", s.ApproveCommand, () => ({
     type: "approve",
   }));

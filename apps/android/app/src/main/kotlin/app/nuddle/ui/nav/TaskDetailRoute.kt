@@ -37,6 +37,7 @@ fun TaskDetailRoute(
                 onDeadlineChoice = viewModel::onDeadlineChoice,
                 onTimePicked = viewModel::onTimePicked,
                 onPhotoChoice = viewModel::onPhotoChoice,
+                onRecipientChoice = viewModel.recipientEdit::onChoice,
                 onEditDismiss = viewModel::onEditDismiss,
                 onEditSave = viewModel::onEditSave,
                 onAction = { action -> viewModel.answer(action, current) { onTakePhoto(viewModel.taskId) } },
