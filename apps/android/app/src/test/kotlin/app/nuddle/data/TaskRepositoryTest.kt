@@ -228,6 +228,28 @@ class TaskRepositoryTest {
         }
 
     @Test
+    fun `a moment from the preview keeps the lead the extraction judged (NUD-121)`() =
+        runTest {
+            server.enqueue(json(200, """{"taskId":"${Cast.TASK_ID}","status":"SCHEDULED","planVersion":1}"""))
+            server.enqueue(json(200, syncBody))
+
+            repository.create(
+                title = "Çocukları okuldan al",
+                detail = null,
+                deadline = Instant.parse("2026-10-12T17:30:00+03:00"),
+                finishMode = FinishMode.DONE,
+                rawText = "17.30da çocukları okuldan al",
+                idempotencyKey = "key-10",
+                moment = true,
+                missAfterMinutes = 15,
+                leadMinutes = 20,
+            )
+
+            val body = server.takeRequest().body?.utf8() ?: ""
+            assertTrue(""""leadMinutes":20""" in body, body)
+        }
+
+    @Test
     fun `editing an at task sends its moment, so the server keeps the grace`() =
         runTest {
             val moment = Instant.parse("2026-10-12T09:00:00+03:00")

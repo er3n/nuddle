@@ -373,6 +373,7 @@ class HomeViewModel
                             moment = open.ui.knownDeadline?.moment == true,
                             missAfterMinutes = open.ui.missAfterMinutes,
                             repeat = open.ui.repeat?.toRule(),
+                            leadMinutes = open.ui.leadMinutes,
                         )
                     }
                 when {
