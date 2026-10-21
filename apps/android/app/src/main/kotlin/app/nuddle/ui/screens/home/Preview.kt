@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.Reachability
 import app.nuddle.api.model.WriteTaskResult
+import app.nuddle.data.TaskDraft
 import app.nuddle.data.WriteOutcome
 import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.TaskEntity
@@ -254,15 +255,7 @@ fun previewFor(
             listOf(RecipientChoice.Self) +
                 it
         }
-    val photo = draft.finishMode == FinishMode.PHOTO
-    val repeat = draft.repeat?.let { RepeatUi(it.every.value, it.days.orEmpty(), it.time) }
-    val base =
-        previewFor(rawText, title, draft.detail, quiet, now).copy(
-            photo = photo,
-            photoSuggested = photo,
-            repeat = repeat,
-            notice = draft.finishMode == FinishMode.NOTICE,
-        )
+    val base = previewFor(rawText, title, draft.detail, quiet, now).withDraft(draft)
     return when (ask.question) {
         WriteTaskResult.Question.DEADLINE -> {
             // The extraction may have the wrong person ("beni ara" read as to self): a tap on Kime changes it (NUD-108).
@@ -336,4 +329,15 @@ private fun quietPreview(
                 askedFirstPokeAt = firstPoke,
             ),
     ) to asked
+}
+
+/** The draft's finish mode and repeat rule on a preview that opens. */
+private fun PreviewUi.withDraft(draft: TaskDraft): PreviewUi {
+    val photo = draft.finishMode == FinishMode.PHOTO
+    return copy(
+        photo = photo,
+        photoSuggested = photo,
+        repeat = draft.repeat?.let { RepeatUi(it.every.value, it.days.orEmpty(), it.time) },
+        notice = draft.finishMode == FinishMode.NOTICE,
+    )
 }
