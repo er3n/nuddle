@@ -103,6 +103,11 @@
     <string name="preview_tomorrow_morning">Yarın 09:00</string>
     <string name="preview_pick_time">Saat seç</string>
     <string name="preview_quiet_hint">Zamanı gelince seni dürterim. Gece %1$s ile %2$s arası asla.</string>
+    <string name="preview_quiet_self">Sessiz saatlerine denk geliyor (%1$s-%2$s)</string>
+    <string name="preview_quiet_other">%1$s için sessiz saat (%2$s-%3$s)</string>
+    <string name="preview_quiet_move">%1$s olsun</string>
+    <string name="preview_quiet_keep">Yine de %1$s</string>
+    <string name="preview_quiet_keep_note">Yine de dersen sessiz saatte çalar.</string>
     <string name="preview_confirm">Kur</string>
     <!-- 4a A task to someone else. open-questions#34: the design says "Eren\'e gönder", "Yarın 09:00\'dan önce" and
          "Eren\'e şu an en fazla sesli bildirimle ulaşabilirim."; rephrased so names and times take no suffix. -->

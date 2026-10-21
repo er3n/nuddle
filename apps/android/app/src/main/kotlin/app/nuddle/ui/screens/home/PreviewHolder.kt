@@ -2,6 +2,7 @@ package app.nuddle.ui.screens.home
 
 import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.Reachability
+import app.nuddle.ui.screens.hourMinute
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.datetime.LocalTime
@@ -75,6 +76,25 @@ internal class PreviewHolder(
         open.update { current ->
             val known = current?.ui?.knownDeadline ?: return@update current
             current.copy(ui = current.ui.copy(knownDeadline = known.asMoment(!known.moment)))
+        }
+    }
+
+    /** "06:00 olsun" (false) or "Yine de 05:00" (true), NUD-120; a second tap clears it. The time row follows. */
+    fun onQuiet(keep: Boolean) {
+        open.update { current ->
+            val quiet = current?.ui?.quiet ?: return@update current
+            val picked = quiet.copy(keep = if (quiet.keep == keep) null else keep)
+            val at = picked.at
+            current.copy(
+                knownDeadline = at,
+                ui =
+                    current.ui.copy(
+                        quiet = picked,
+                        knownDeadline = deadlineText(at, clock.now(), timeZone, moment = true),
+                        firstPokeAt = picked.firstPokeAt,
+                        repeat = current.ui.repeat?.copy(time = at.hourMinute(timeZone)),
+                    ),
+            )
         }
     }
 

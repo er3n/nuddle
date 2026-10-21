@@ -1087,7 +1087,7 @@ export interface components {
             /** Format: uuid */
             taskId: string | null;
             /** @enum {string|null} */
-            question: "recipient" | "title" | "deadline" | null;
+            question: "recipient" | "title" | "deadline" | "quiet_hours" | null;
             draft: {
                 recipient: string | null;
                 title: string | null;
@@ -1100,6 +1100,18 @@ export interface components {
                 repeat?: components["schemas"]["RepeatRule"];
             } | null;
             reply?: string | null;
+            quiet?: {
+                /** @example 23:00 */
+                start: string;
+                /** @example 07:00 */
+                end: string;
+                /**
+                 * Format: date-time
+                 * @description ISO 8601 with offset
+                 * @example 2026-10-12T09:00:00+03:00
+                 */
+                suggested: string;
+            } | null;
         };
         WriteTaskCommand: {
             /**

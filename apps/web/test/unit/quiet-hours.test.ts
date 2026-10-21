@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { isQuiet, latestQuietOverlap, quietIntervalAt } from "../../src/domain/quiet-hours";
+import {
+  isQuiet,
+  latestQuietOverlap,
+  quietIntervalAt,
+  quietMomentOf,
+} from "../../src/domain/quiet-hours";
 import { toLocalIso, zonedInstant } from "../../src/domain/time";
 import type { QuietHours } from "../../src/domain/types";
 
@@ -79,5 +84,41 @@ describe("time zone helpers", () => {
     expect(toLocalIso(new Date("2026-01-15T12:00:00Z"), "America/New_York")).toBe(
       "2026-01-15T07:00:00-05:00",
     );
+  });
+});
+
+describe("a moment inside quiet hours (NUD-120)", () => {
+  const eren: QuietHours = { start: "23:00", end: "06:00", timeZone: "Europe/Istanbul" };
+  const at = (moment: string, leadMinutes: number | null = null) =>
+    quietMomentOf({ timing: "at", moment: new Date(moment), leadMinutes }, eren);
+
+  it("a 05:00 wake-up is quiet and 06:00 is suggested", () => {
+    expect(at("2026-10-21T05:00:00+03:00")).toEqual({
+      interval: {
+        start: new Date("2026-10-20T23:00:00+03:00"),
+        end: new Date("2026-10-21T06:00:00+03:00"),
+      },
+      suggested: new Date("2026-10-21T06:00:00+03:00"),
+    });
+  });
+
+  it("the moment at the end of quiet hours is free", () => {
+    expect(at("2026-10-21T06:00:00+03:00")).toBeNull();
+  });
+
+  it("a lead that starts inside quiet hours counts, and the suggestion keeps the lead", () => {
+    expect(at("2026-10-21T06:10:00+03:00", 20)?.suggested).toEqual(
+      new Date("2026-10-21T06:20:00+03:00"),
+    );
+    expect(at("2026-10-21T06:30:00+03:00", 20)).toBeNull();
+  });
+
+  it("a `by` deadline is never asked about: its pokes move before quiet hours", () => {
+    expect(
+      quietMomentOf(
+        { timing: "by", moment: new Date("2026-10-21T05:00:00+03:00"), leadMinutes: null },
+        eren,
+      ),
+    ).toBeNull();
   });
 });

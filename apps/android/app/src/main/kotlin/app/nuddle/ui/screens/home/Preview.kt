@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import app.nuddle.api.model.FinishMode
 import app.nuddle.api.model.Reachability
 import app.nuddle.api.model.WriteTaskResult
+import app.nuddle.data.TaskDraft
 import app.nuddle.data.WriteOutcome
 import app.nuddle.data.db.ConnectionEntity
 import app.nuddle.data.db.TaskEntity
@@ -78,10 +79,34 @@ data class PreviewUi(
     val notice: Boolean = false,
     /** 4a: how far pokes reach the recipient now; null for a task to self. */
     val reach: Reachability? = null,
+    /** The moment is inside the recipient's quiet hours (NUD-120): Kur waits for "06:00 olsun" or "Yine de 05:00". */
+    val quiet: QuietUi? = null,
 ) {
     val toOther: Boolean get() = recipient is RecipientChoice.Person
 
-    val ready: Boolean get() = recipient != null && (knownDeadline != null || selected != null)
+    val ready: Boolean
+        get() = recipient != null && (knownDeadline != null || selected != null) && (quiet == null || quiet.keep != null)
+}
+
+/** A moment inside quiet hours (NUD-120, open-questions#47): the asked time or the one that starts as they end. */
+@Immutable
+data class QuietUi(
+    /** "23:00" and "06:00": the recipient's quiet hours. */
+    val start: String,
+    val end: String,
+    val asked: Instant,
+    val suggested: Instant,
+    /** "05:00" and "06:00" as the chips show them. */
+    val askedTime: String,
+    val suggestedTime: String,
+    /** "ilk hatırlatma" for the asked time; with a lead the suggested one starts as quiet hours end. */
+    val askedFirstPokeAt: String? = null,
+    /** null until a chip is picked; true is "Yine de", false the end of quiet hours. */
+    val keep: Boolean? = null,
+) {
+    val at: Instant get() = if (keep == false) suggested else asked
+
+    val firstPokeAt: String? get() = askedFirstPokeAt?.let { if (keep == false) end else it }
 }
 
 /** The same time as a moment or as a deadline: a tap on the 2b time row switches (open-questions#43). */
@@ -230,15 +255,7 @@ fun previewFor(
             listOf(RecipientChoice.Self) +
                 it
         }
-    val photo = draft.finishMode == FinishMode.PHOTO
-    val repeat = draft.repeat?.let { RepeatUi(it.every.value, it.days.orEmpty(), it.time) }
-    val base =
-        previewFor(rawText, title, draft.detail, quiet, now).copy(
-            photo = photo,
-            photoSuggested = photo,
-            repeat = repeat,
-            notice = draft.finishMode == FinishMode.NOTICE,
-        )
+    val base = previewFor(rawText, title, draft.detail, quiet, now).withDraft(draft)
     return when (ask.question) {
         WriteTaskResult.Question.DEADLINE -> {
             // The extraction may have the wrong person ("beni ara" read as to self): a tap on Kime changes it (NUD-108).
@@ -266,8 +283,61 @@ fun previewFor(
             ) to known
         }
 
+        WriteTaskResult.Question.QUIET_HOURS -> {
+            quietPreview(base, ask, connections, quiet.timeZone, now)
+        }
+
         else -> {
             null
         }
     }
+}
+
+/** A moment inside the recipient's quiet hours (NUD-120): the asked time as known, and the two chips. */
+private fun quietPreview(
+    base: PreviewUi,
+    ask: WriteOutcome.Ask,
+    connections: List<ConnectionEntity>,
+    zone: TimeZone,
+    now: Instant,
+): Pair<PreviewUi, Instant>? {
+    val draft = ask.draft
+    val asked = draft?.deadline?.takeIf { it > now }
+    val quietAsk = ask.quiet
+    val recipient = recipientNamed(draft?.recipient, connections)
+    if (asked == null || quietAsk == null || recipient == null) return null
+    val person = recipient as? RecipientChoice.Person
+    val firstPoke = firstPokeAt(asked, true, draft.leadMinutes, zone)
+    return base.copy(
+        recipient = recipient,
+        to = person?.name,
+        reach =
+            person?.let { p ->
+                Reachability.decode(connections.first { it.personId == p.personId }.reachability) ?: Reachability.NONE
+            },
+        knownDeadline = deadlineText(asked, now, zone, moment = true),
+        missAfterMinutes = draft.missAfterMinutes,
+        firstPokeAt = firstPoke,
+        quiet =
+            QuietUi(
+                start = quietAsk.start,
+                end = quietAsk.end,
+                asked = asked,
+                suggested = quietAsk.suggested,
+                askedTime = asked.hourMinute(zone),
+                suggestedTime = quietAsk.suggested.hourMinute(zone),
+                askedFirstPokeAt = firstPoke,
+            ),
+    ) to asked
+}
+
+/** The draft's finish mode and repeat rule on a preview that opens. */
+private fun PreviewUi.withDraft(draft: TaskDraft): PreviewUi {
+    val photo = draft.finishMode == FinishMode.PHOTO
+    return copy(
+        photo = photo,
+        photoSuggested = photo,
+        repeat = draft.repeat?.let { RepeatUi(it.every.value, it.days.orEmpty(), it.time) },
+        notice = draft.finishMode == FinishMode.NOTICE,
+    )
 }

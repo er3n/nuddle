@@ -106,6 +106,8 @@ object TestTags {
     const val PREVIEW_EVENING = "preview.evening"
     const val PREVIEW_MORNING = "preview.morning"
     const val PREVIEW_PICK_TIME = "preview.pickTime"
+    const val PREVIEW_QUIET_MOVE = "preview.quietMove"
+    const val PREVIEW_QUIET_KEEP = "preview.quietKeep"
     const val SHEET_PRIMARY = "sheet.primary"
     const val SHEET_DISMISS = "sheet.dismiss"
 

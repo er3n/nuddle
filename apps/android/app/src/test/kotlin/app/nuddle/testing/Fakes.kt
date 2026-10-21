@@ -351,6 +351,7 @@ class FakeTaskRepository : TaskRepository {
         createdFor += recipientId
         createdFinishModes += finishMode
         createdMoments += moment to missAfterMinutes
+        createdRepeats += repeat
         return createOutcome
     }
 
@@ -360,6 +361,7 @@ class FakeTaskRepository : TaskRepository {
     /** Whether each create was a moment (ADR 0017), with its grace. */
     val createdMoments = mutableListOf<Pair<Boolean, Int?>>()
     val createdFinishModes = mutableListOf<FinishMode>()
+    val createdRepeats = mutableListOf<RepeatRule?>()
 
     val didItLater = mutableListOf<String>()
     val senderHandled = mutableListOf<String>()

@@ -876,6 +876,7 @@ components:
             - recipient
             - title
             - deadline
+            - quiet_hours
             - null
         draft:
           type: object
@@ -918,6 +919,25 @@ components:
         reply:
           type: string
           nullable: true
+        quiet:
+          type: object
+          nullable: true
+          properties:
+            start:
+              type: string
+              example: 23:00
+            end:
+              type: string
+              example: 07:00
+            suggested:
+              type: string
+              format: date-time
+              example: 2026-10-12T09:00:00+03:00
+              description: ISO 8601 with offset
+          required:
+            - start
+            - end
+            - suggested
       required:
         - kind
         - taskId

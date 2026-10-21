@@ -298,6 +298,7 @@ fun NuddleNavHost(
                             onPhoto = viewModel.previewSheet::onPhoto,
                             onTimePicked = viewModel.previewSheet::onTimePicked,
                             onToggleMoment = viewModel.previewSheet::onToggleMoment,
+                            onQuiet = viewModel.previewSheet::onQuiet,
                             onConfirm = viewModel::onPreviewConfirm,
                             onDismiss = viewModel.previewSheet::onDismiss,
                         ),
