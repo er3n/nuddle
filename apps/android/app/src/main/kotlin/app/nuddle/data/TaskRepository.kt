@@ -40,6 +40,8 @@ sealed interface WriteOutcome {
     data class Ask(
         val question: WriteTaskResult.Question?,
         val draft: TaskDraft?,
+        /** For [WriteTaskResult.Question.QUIET_HOURS]: the recipient's quiet hours (NUD-120). */
+        val quiet: QuietAsk? = null,
     ) : WriteOutcome
 
     /** The text is not a task ("merhaba"): [reply] shows above the bar and nothing was created (NUD-52). */
@@ -87,6 +89,13 @@ data class TaskDraft(
     val leadMinutes: Int? = null,
     /** A repeating task's rule (ADR 0021); the deadline is its first occurrence. */
     val repeat: RepeatRule? = null,
+)
+
+/** A moment inside the recipient's quiet hours (NUD-120): "23:00", "06:00", and the moment that starts as they end. */
+data class QuietAsk(
+    val start: String,
+    val end: String,
+    val suggested: Instant,
 )
 
 /** Closes a task on the device at once (implemented by the alarm package, which also stops its alarms). */
@@ -241,6 +250,9 @@ class ApiTaskRepository
                                 leadMinutes = draft.leadMinutes,
                                 repeat = draft.repeat,
                             )
+                        },
+                        written.quiet?.let { quiet ->
+                            runCatching { Instant.parse(quiet.suggested) }.getOrNull()?.let { QuietAsk(quiet.start, quiet.end, it) }
                         },
                     )
                 }

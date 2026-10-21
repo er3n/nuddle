@@ -19,6 +19,8 @@ export const TEXT = {
   loveToEren: "erene 3te seni seviyorum de",
   dinnerToEren: "erene yemek hazır de",
   weekdaysWakeSelf: "beni hafta içi her gün 7'de kaldır",
+  earlyWakeSelf: "yarın sabah beni 5.00'te uyandır",
+  earlyWakeEren: "eren yarın sabah 5te kalksın",
 } as const;
 
 const fixtures: Record<string, FixtureExtraction> = {
@@ -155,6 +157,27 @@ const fixtures: Record<string, FixtureExtraction> = {
     timing: "at",
     missAfterMinutes: 60,
     finishMode: "notice",
+    missing: [],
+  },
+  // Inside quiet hours (NUD-120): the preview asks before the task exists.
+  [TEXT.earlyWakeSelf]: {
+    recipient: "self",
+    title: "Uyan",
+    detail: null,
+    deadline: "2026-10-12T05:00:00+03:00",
+    timing: "at",
+    missAfterMinutes: 15,
+    finishMode: "done",
+    missing: [],
+  },
+  [TEXT.earlyWakeEren]: {
+    recipient: "Eren",
+    title: "Kalk",
+    detail: null,
+    deadline: "2026-10-12T05:00:00+03:00",
+    timing: "at",
+    missAfterMinutes: 15,
+    finishMode: "done",
     missing: [],
   },
   [TEXT.homeworkToDefne]: {

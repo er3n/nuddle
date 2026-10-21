@@ -56,6 +56,8 @@ data class PreviewCallbacks(
     /** A tap on the Kime row when the text gave the recipient (NUD-108). */
     val onChangeRecipient: () -> Unit = {},
     val onPhoto: (Boolean) -> Unit = {},
+    /** "06:00 olsun" (false) or "Yine de 05:00" (true) for a moment inside quiet hours (NUD-120). */
+    val onQuiet: (Boolean) -> Unit = {},
     val onTimePicked: (LocalTime) -> Unit = {},
     /** A tap on the known time: a moment ("19:48") or a deadline ("Son zaman 19:48"), open-questions#43. */
     val onToggleMoment: () -> Unit = {},
@@ -100,10 +102,11 @@ internal fun ColumnScope.PreviewBody(
     DraftRows(preview, callbacks)
     if (preview.recipients.isNotEmpty()) RecipientQuestion(preview, callbacks)
     if (preview.knownDeadline == null) DeadlineQuestion(preview, callbacks)
+    preview.quiet?.let { QuietQuestion(it, preview.to, callbacks) }
     if (preview.toOther) {
         if (!preview.notice) FinishChoice(preview, callbacks)
         preview.reach?.let { ReachNote(preview.to.orEmpty(), it) }
-    } else {
+    } else if (preview.quiet == null) {
         Row(horizontalArrangement = Arrangement.spacedBy(dimens.space8)) {
             Icon(DurtIcons.Bell, contentDescription = null, tint = colors.poke, modifier = Modifier.size(dimens.icon))
             Text(
@@ -117,7 +120,7 @@ internal fun ColumnScope.PreviewBody(
 
 /** The highlighted box around the one question (2b). */
 @Composable
-private fun QuestionBox(
+internal fun QuestionBox(
     question: String,
     content: @Composable () -> Unit,
 ) {

@@ -249,7 +249,11 @@ function alarmKey(taskId: TaskId, version: number, seq: number): string {
 
 type WriteResult =
   | { kind: "created"; taskId: TaskId }
-  | { kind: "ask"; question: MissingField }
+  | {
+      kind: "ask";
+      question: MissingField | "quiet_hours";
+      quiet?: { start: string; end: string; suggested: string };
+    }
   | { kind: "chat"; reply: string }
   | { kind: "rejected"; error: DomainError };
 
@@ -301,8 +305,11 @@ export class Client {
     if (data.kind === "created" && data.taskId !== null) {
       return { kind: "created", taskId: data.taskId };
     }
-    if (data.kind === "ask" && data.question !== null)
-      return { kind: "ask", question: data.question };
+    if (data.kind === "ask" && data.question !== null) {
+      return data.quiet
+        ? { kind: "ask", question: data.question, quiet: data.quiet }
+        : { kind: "ask", question: data.question };
+    }
     if (data.kind === "chat" && data.reply) return { kind: "chat", reply: data.reply };
     throw new Error(`unexpected write_task result ${JSON.stringify(data)}`);
   }

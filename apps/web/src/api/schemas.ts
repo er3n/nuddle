@@ -170,7 +170,8 @@ export const WriteTaskResult = z
      */
     kind: z.enum(["created", "ask", "chat"]),
     taskId: Id.nullable(),
-    question: z.enum(["recipient", "title", "deadline"]).nullable(),
+    /** quiet_hours: a moment inside the recipient's quiet hours; the preview offers `quiet.suggested` or the time (NUD-120). */
+    question: z.enum(["recipient", "title", "deadline", "quiet_hours"]).nullable(),
     draft: z
       .object({
         recipient: z.string().nullable(),
@@ -190,6 +191,15 @@ export const WriteTaskResult = z
       .nullable(),
     /** Only for `chat`. */
     reply: z.string().nullable().optional(),
+    /** Only for `quiet_hours`: the recipient's quiet hours and the moment that starts poking as they end. */
+    quiet: z
+      .object({
+        start: z.string().openapi({ example: "23:00" }),
+        end: z.string().openapi({ example: "07:00" }),
+        suggested: Instant,
+      })
+      .nullable()
+      .optional(),
   })
   .openapi("WriteTaskResult");
 

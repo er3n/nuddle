@@ -36,6 +36,7 @@ import { profileIsStale, RECENT_TASKS, type ProfileInput } from "../domain/profi
 import type { PersonProfiler } from "../domain/ports";
 import { nextOccurrenceAt, type RepeatRule } from "../domain/repeat";
 import { addMs, DAY, HOUR, MINUTE } from "../domain/time";
+import { quietMomentOf } from "../domain/quiet-hours";
 import { pokeStartOf } from "../domain/timing";
 import {
   checkPlan,
@@ -565,8 +566,10 @@ export type WriteTaskResult =
   | {
       kind: "ask";
       taskId: null;
-      question: MissingField;
+      question: MissingField | "quiet_hours";
       draft: Omit<Extraction, "missing" | "reply">;
+      /** For `quiet_hours`: the recipient's quiet hours and the moment that starts poking as they end. */
+      quiet?: { start: string; end: string; suggested: string } | null;
     }
   | { kind: "chat"; taskId: null; question: null; draft: null; reply: string };
 
@@ -634,14 +637,24 @@ export async function writeTask(
     await call.record("chat");
     return { kind: "chat", taskId: null, question: null, draft: null, reply: resolved.reply };
   }
-  if (resolved.kind === "ask") {
-    await call.record("ask", { error: `asked ${resolved.question}` });
+  // A moment inside the recipient's quiet hours waits for the sender to choose (NUD-120).
+  const quiet =
+    resolved.kind === "create"
+      ? await quietMomentFor(deps, resolved.recipientId, {
+          timing: resolved.timing,
+          moment: resolved.deadline,
+          leadMinutes: resolved.leadMinutes,
+        })
+      : null;
+  if (resolved.kind === "ask" || quiet !== null) {
+    const question = resolved.kind === "ask" ? resolved.question : "quiet_hours";
+    await call.record("ask", { error: `asked ${question}` });
     const { recipient, title, detail, deadline, timing, missAfterMinutes, finishMode } = extraction;
     const leadMinutes = extraction.leadMinutes ?? null;
     return {
       kind: "ask",
       taskId: null,
-      question: resolved.question,
+      question,
       draft: {
         recipient,
         title,
@@ -653,6 +666,7 @@ export async function writeTask(
         finishMode,
         repeat: extraction.repeat ?? null,
       },
+      quiet,
     };
   }
   const written = await runCommand(
@@ -679,6 +693,21 @@ export async function writeTask(
   );
   await call.record("create", { taskId: written.taskId });
   return written;
+}
+
+/** The recipient's quiet hours when the moment would start poking inside them, else null. */
+async function quietMomentFor(
+  deps: AppDeps,
+  recipientId: PersonId,
+  task: { timing: Timing; moment: Date; leadMinutes: number | null },
+): Promise<{ start: string; end: string; suggested: string } | null> {
+  if (task.timing !== "at") return null;
+  const recipient = await findPerson(deps.db, recipientId);
+  if (!recipient) return null;
+  const hit = quietMomentOf(task, recipient.quietHours);
+  if (!hit) return null;
+  const { start, end } = recipient.quietHours;
+  return { start, end, suggested: hit.suggested.toISOString() };
 }
 
 /** The preview (2b) after its one question: create with explicit fields. */

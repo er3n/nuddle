@@ -1,7 +1,16 @@
 // Quiet hours (docs/domain.md, Time rules): no channel fires inside the window, full screen
 // included. Stored as local times in the recipient's time zone.
-import { addDays, type LocalDate, localDateOf, parseClockTime, zonedInstant } from "./time";
-import type { QuietHours } from "./types";
+import {
+  addDays,
+  addMs,
+  type LocalDate,
+  localDateOf,
+  MINUTE,
+  parseClockTime,
+  zonedInstant,
+} from "./time";
+import { leadMinutesOf } from "./timing";
+import type { QuietHours, Timing } from "./types";
 
 export interface Interval {
   start: Date;
@@ -57,4 +66,21 @@ export function latestQuietOverlap(from: Date, to: Date, qh: QuietHours): Interv
     if (overlaps && (latest === null || i.end.getTime() > latest.end.getTime())) latest = i;
   }
   return latest;
+}
+
+/**
+ * A moment written as text whose pokes would start inside the recipient's quiet hours (NUD-120,
+ * open-questions#47): its start (the moment minus the lead) up to the moment overlaps them. The
+ * preview then asks before the task exists; `suggested` is the moment that starts poking as quiet
+ * hours end. Null for a `by` task or a free moment.
+ */
+export function quietMomentOf(
+  task: { timing: Timing; moment: Date; leadMinutes: number | null },
+  qh: QuietHours,
+): { interval: Interval; suggested: Date } | null {
+  if (task.timing !== "at") return null;
+  const leadMs = leadMinutesOf("at", task.leadMinutes) * MINUTE;
+  const start = addMs(task.moment, -leadMs);
+  const interval = latestQuietOverlap(start, addMs(task.moment, 1), qh);
+  return interval ? { interval, suggested: addMs(interval.end, leadMs) } : null;
 }

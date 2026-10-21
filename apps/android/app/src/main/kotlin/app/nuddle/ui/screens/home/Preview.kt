@@ -78,10 +78,34 @@ data class PreviewUi(
     val notice: Boolean = false,
     /** 4a: how far pokes reach the recipient now; null for a task to self. */
     val reach: Reachability? = null,
+    /** The moment is inside the recipient's quiet hours (NUD-120): Kur waits for "06:00 olsun" or "Yine de 05:00". */
+    val quiet: QuietUi? = null,
 ) {
     val toOther: Boolean get() = recipient is RecipientChoice.Person
 
-    val ready: Boolean get() = recipient != null && (knownDeadline != null || selected != null)
+    val ready: Boolean
+        get() = recipient != null && (knownDeadline != null || selected != null) && (quiet == null || quiet.keep != null)
+}
+
+/** A moment inside quiet hours (NUD-120, open-questions#47): the asked time or the one that starts as they end. */
+@Immutable
+data class QuietUi(
+    /** "23:00" and "06:00": the recipient's quiet hours. */
+    val start: String,
+    val end: String,
+    val asked: Instant,
+    val suggested: Instant,
+    /** "05:00" and "06:00" as the chips show them. */
+    val askedTime: String,
+    val suggestedTime: String,
+    /** "ilk hatırlatma" for the asked time; with a lead the suggested one starts as quiet hours end. */
+    val askedFirstPokeAt: String? = null,
+    /** null until a chip is picked; true is "Yine de", false the end of quiet hours. */
+    val keep: Boolean? = null,
+) {
+    val at: Instant get() = if (keep == false) suggested else asked
+
+    val firstPokeAt: String? get() = askedFirstPokeAt?.let { if (keep == false) end else it }
 }
 
 /** The same time as a moment or as a deadline: a tap on the 2b time row switches (open-questions#43). */
@@ -266,8 +290,50 @@ fun previewFor(
             ) to known
         }
 
+        WriteTaskResult.Question.QUIET_HOURS -> {
+            quietPreview(base, ask, connections, quiet.timeZone, now)
+        }
+
         else -> {
             null
         }
     }
+}
+
+/** A moment inside the recipient's quiet hours (NUD-120): the asked time as known, and the two chips. */
+private fun quietPreview(
+    base: PreviewUi,
+    ask: WriteOutcome.Ask,
+    connections: List<ConnectionEntity>,
+    zone: TimeZone,
+    now: Instant,
+): Pair<PreviewUi, Instant>? {
+    val draft = ask.draft
+    val asked = draft?.deadline?.takeIf { it > now }
+    val quietAsk = ask.quiet
+    val recipient = recipientNamed(draft?.recipient, connections)
+    if (asked == null || quietAsk == null || recipient == null) return null
+    val person = recipient as? RecipientChoice.Person
+    val firstPoke = firstPokeAt(asked, true, draft.leadMinutes, zone)
+    return base.copy(
+        recipient = recipient,
+        to = person?.name,
+        reach =
+            person?.let { p ->
+                Reachability.decode(connections.first { it.personId == p.personId }.reachability) ?: Reachability.NONE
+            },
+        knownDeadline = deadlineText(asked, now, zone, moment = true),
+        missAfterMinutes = draft.missAfterMinutes,
+        firstPokeAt = firstPoke,
+        quiet =
+            QuietUi(
+                start = quietAsk.start,
+                end = quietAsk.end,
+                asked = asked,
+                suggested = quietAsk.suggested,
+                askedTime = asked.hourMinute(zone),
+                suggestedTime = quietAsk.suggested.hourMinute(zone),
+                askedFirstPokeAt = firstPoke,
+            ),
+    ) to asked
 }
