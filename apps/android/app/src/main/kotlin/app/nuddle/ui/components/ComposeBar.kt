@@ -73,8 +73,10 @@ sealed interface ComposeState {
         val text: String,
     ) : ComposeState
 
+    /** [limitUntil]: refused over the daily write cap, when writing works again, "21:15" (6b, open-questions#54). */
     data class Failed(
         val text: String,
+        val limitUntil: String? = null,
     ) : ComposeState
 
     /** On its way: [text] stays in the box, dimmed and not editable, so it does not look lost (NUD-54). */

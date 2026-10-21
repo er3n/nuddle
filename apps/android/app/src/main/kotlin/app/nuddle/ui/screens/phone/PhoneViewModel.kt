@@ -34,14 +34,21 @@ class PhoneViewModel
         val codeSent: Flow<String> = sent.receiveAsFlow()
 
         fun onNumberChange(input: String) {
-            mutableState.update { it.copy(national = TurkishPhone.sanitize(input), failed = false, lockedUntil = null) }
+            mutableState.update {
+                it.copy(
+                    national = TurkishPhone.sanitize(input),
+                    failed = false,
+                    lockedUntil = null,
+                    limitedUntil = null,
+                )
+            }
         }
 
         fun onSend() {
             val current = mutableState.value
             if (!current.canSend) return
             val e164 = TurkishPhone.toE164(current.national) ?: return
-            mutableState.update { it.copy(sending = true, failed = false, lockedUntil = null) }
+            mutableState.update { it.copy(sending = true, failed = false, lockedUntil = null, limitedUntil = null) }
             viewModelScope.launch {
                 when (val outcome = auth.sendOtp(e164)) {
                     SendOtpOutcome.Sent -> {
@@ -51,6 +58,10 @@ class PhoneViewModel
 
                     is SendOtpOutcome.Locked -> {
                         mutableState.update { it.copy(sending = false, lockedUntil = outcome.until.hourMinute(timeZone)) }
+                    }
+
+                    is SendOtpOutcome.Limited -> {
+                        mutableState.update { it.copy(sending = false, limitedUntil = outcome.until.hourMinute(timeZone)) }
                     }
 
                     SendOtpOutcome.Failed -> {

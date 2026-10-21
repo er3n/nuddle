@@ -193,6 +193,39 @@ class SignInViewModelTest {
             }
         }
 
+    @Test
+    fun `phone screen says when a new code can go over the daily SMS cap (ADR 0024)`() =
+        runTest(main.dispatcher) {
+            auth.sendOutcome = SendOtpOutcome.Limited(waitEnds)
+            val vm = PhoneViewModel(auth, istanbul)
+            vm.codeSent.test {
+                vm.onNumberChange("5320000002")
+                vm.onSend()
+                assertEquals("21:15", vm.state.value.limitedUntil)
+                assertFalse(vm.state.value.failed)
+                expectNoEvents()
+                vm.onNumberChange("5320000003")
+                assertEquals(null, vm.state.value.limitedUntil)
+            }
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class) // Reason: advanceTimeBy is how virtual time moves (ADR 0009).
+    @Test
+    fun `a resend over the daily SMS cap says when and asks no more, the sent code still works`() =
+        runTest(main.dispatcher) {
+            val vm = codeViewModel()
+            advanceTimeBy(61.seconds)
+            auth.sendOutcome = SendOtpOutcome.Limited(waitEnds)
+            vm.onResend()
+            assertEquals("21:15", vm.state.value.limitedUntil)
+            assertFalse(vm.state.value.unreachable)
+            val asked = auth.sentTo.size
+            vm.onResend()
+            assertEquals(asked, auth.sentTo.size)
+            vm.onCodeChange("1")
+            assertEquals("21:15", vm.state.value.limitedUntil)
+        }
+
     @OptIn(ExperimentalCoroutinesApi::class) // Reason: advanceTimeBy is how virtual time moves (ADR 0009).
     @Test
     fun `a new code can be asked for after the one minute wait`() =

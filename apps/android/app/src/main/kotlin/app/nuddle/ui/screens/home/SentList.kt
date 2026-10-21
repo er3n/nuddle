@@ -184,6 +184,29 @@ private fun HomeScreenSendFailedPreview() {
     }
 }
 
+/** ErrSend.png over the daily write cap (open-questions#54). */
+@PreviewScreens
+@Composable
+private fun HomeScreenWriteLimitPreview() {
+    DurtTheme {
+        HomeScreen(
+            state =
+                HomeUiState(
+                    myName = "Eren",
+                    connected = true,
+                    compose = ComposeState.Failed("sibel cuma akşama kadar kuru temizlemeyi alsın", limitUntil = "21:15"),
+                ),
+            onBell = {},
+            onProfile = {},
+            onInvite = {},
+            onComposeTextChange = {},
+            onComposeSend = {},
+            onVoiceStart = {},
+            onVoiceEnd = {},
+        )
+    }
+}
+
 @PreviewScreens
 @Composable
 private fun HomeScreenQuickSentPreview() {

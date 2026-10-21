@@ -52,6 +52,11 @@ sealed interface WriteOutcome {
     /** No answer or an error answer. The text stays in the bar for "Tekrar dene" (6b). */
     data object Failed : WriteOutcome
 
+    /** Too many texts in the last 24 hours (`write_limit`, ADR 0024): nothing is read until [until] (6b). */
+    data class Limited(
+        val until: Instant,
+    ) : WriteOutcome
+
     /** The server broke on our side (`internal` or another 5xx it named): 6f shows [code] (open-questions#39). */
     data class Broken(
         val code: String,
@@ -63,10 +68,15 @@ private const val HTTP_SERVER_MIN = 500
 /** Waits before sending a write again after no answer (NUD-53). */
 private val WRITE_RETRY_WAITS = listOf(1.seconds, 3.seconds)
 private const val UPSTREAM_FAILED = "DRT-5002"
+private const val WRITE_LIMIT = "write_limit"
 
-/** 6f for a server error with a code, except the LLM or SMS provider failing (6b); anything else is 6b. */
+/**
+ * 6f for a server error with a code, except the LLM or SMS provider failing (6b); the daily write cap says until when
+ * (6b, open-questions#54); anything else is 6b.
+ */
 internal fun ApiResult.Failure.toOutcome(): WriteOutcome {
     val http = failure as? ApiFailure.Http ?: return WriteOutcome.Failed
+    http.retryAt?.takeIf { http.name == WRITE_LIMIT }?.let { return WriteOutcome.Limited(it) }
     val code = http.code?.takeIf { http.status >= HTTP_SERVER_MIN && it != UPSTREAM_FAILED }
     return code?.let(WriteOutcome::Broken) ?: WriteOutcome.Failed
 }

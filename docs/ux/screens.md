@@ -112,11 +112,13 @@ Same as 0a with an inviter chip on top.
 Country code button (TR +90) + number input. Privacy note card. The design makes WhatsApp the primary channel; until a WhatsApp template exists the code goes by SMS only (ADR 0014, decided in NUD-9), so the screen has one button.
 **Copy:** Numaran ne? | Şifre yok. Numarana tek seferlik bir kod gelir. | Telefon numarası | Numaran sadece eşleştiğin kişilere görünür. Reklam, pazarlama mesajı, rehber taraması yok. | Kodu SMS ile gönder
 WhatsApp copy for later: Kodu WhatsApp'tan gönder | SMS ile gönder
+Over a daily SMS cap (`otp_limit`, ADR 0024, open-questions #54) an InlineAlert under the note says when to try again, with the local time of `retryAt`: Çok fazla kod istendi | Şu an yeni kod gönderemiyoruz. Saat 21:15 olunca tekrar dene.
 
 ### 0d Code · `Otp.png`
 Six-box CodeInput, resend countdown, autofill hint. SMS variant until WhatsApp exists (NUD-9); after the one minute countdown "Yeni kod gönder" appears in its place.
 After a correct code for an existing account the code screen keeps its spinner until the first sync is in, at most 5 seconds, so home opens with the tasks instead of the empty state (NUD-105). A failed or slow sync opens home anyway.
 **Copy:** Mesajlarına baktın mı? | +90 532 123 45 67 numarasına 6 haneli kod gönderdik. Numarayı değiştir | Kod gelmedi mi? 0:42 sonra tekrar gönderebilirsin. | Kod SMS ile gelince klavyenin üstünde otomatik çıkar, dokunman yeter. | Yeni kod gönder
+If "Yeni kod gönder" meets a daily SMS cap, the same alert as 0c shows and the button stays off until that time; the code already sent can still be typed.
 WhatsApp copy for later: WhatsApp'ına baktın mı? | Kod WhatsApp'a gelince klavyenin üstünde otomatik çıkar, dokunman yeter. | SMS ile dene
 
 ### 0e Name · `Name.png`
@@ -278,6 +280,7 @@ Sections: Sana yazılanlar, Senin yazdıkların, Kendine. DoneNote at the bottom
 
 ### 6b Send failed · `ErrSend.png`
 **Copy:** Şu an anlayamadım | Sunucuya ulaşırken bir sorun oldu. Yazdığın duruyor, tekrar dene. | Tekrar dene
+Over the daily write cap (`write_limit`, ADR 0024, open-questions #54) the same alert says when instead, with the local time of `retryAt`, and the text stays in the bar: Çok fazla yazdın | Son 24 saatte çok fazla şey yazdın. Saat 21:15 olunca tekrar yazabilirsin, yazdığın duruyor.
 
 ### 6c Wrong code · `ErrOtp.png`
 **Copy:** Kod tutmadı | +90 532 123 45 67 numarasına gelen 6 haneli kodu tekrar dene. | Kod yanlış. | Yeni kod gönder

@@ -53,6 +53,8 @@
     <string name="code_wrong_limit_note">Hakların biterse 15 dakika sonra yeni kod isteyebilirsin. Bu, numaranı kötüye kullanılmaktan korur.</string>
     <string name="code_locked_title">Çok fazla yanlış deneme.</string>
     <string name="code_locked_body">Yeni kodu saat %1$s olunca isteyebilirsin.</string>
+    <string name="code_limit_title">Çok fazla kod istendi</string>
+    <string name="code_limit_body">Şu an yeni kod gönderemiyoruz. Saat %1$s olunca tekrar dene.</string>
     <!-- no design copy: accessibility label of the code boxes -->
     <string name="code_input_label">6 haneli kod</string>
 
@@ -538,6 +540,8 @@
     <string name="voice_unavailable">Bu telefonda sesle yazma yok. Yazarak da olur.</string>
     <string name="compose_failed_title">Şu an anlayamadım</string>
     <string name="compose_failed_body">Sunucuya ulaşırken bir sorun oldu. Yazdığın duruyor, tekrar dene.</string>
+    <string name="compose_limit_title">Çok fazla yazdın</string>
+    <string name="compose_limit_body">Son 24 saatte çok fazla şey yazdın. Saat %1$s olunca tekrar yazabilirsin, yazdığın duruyor.</string>
     <string name="home_offline">İnternet yok. Dürtmeler yine zamanında çalar, değişiklikler bağlantı gelince gider.</string>
     <string name="queued_waiting">bağlantı gelince gidecek</string>
     <string name="invalid_invite_title">Bu davet artık geçerli değil</string>

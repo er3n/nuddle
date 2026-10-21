@@ -50,6 +50,8 @@ data class CodeUiState(
     val remainingAttempts: Int? = null,
     /** Too many wrong codes: when a new one can be asked for, "21:15". */
     val lockedUntil: String? = null,
+    /** Too many codes in the last 24 hours (ADR 0024): when a new one can be asked for, "21:15". */
+    val limitedUntil: String? = null,
     val unreachable: Boolean = false,
     val resendInSeconds: Int = 0,
 )
@@ -84,7 +86,7 @@ fun CodeScreen(
                     text = stringResource(R.string.code_resend),
                     onClick = onResend,
                     kind = DurtButtonKind.Secondary,
-                    enabled = state.resendInSeconds == 0 && state.lockedUntil == null,
+                    enabled = state.resendInSeconds == 0 && state.lockedUntil == null && state.limitedUntil == null,
                     modifier = Modifier.testTag(TestTags.CODE_RESEND),
                 )
             }
@@ -137,6 +139,8 @@ fun CodeScreen(
                     )
                 }
 
+                state.limitedUntil != null -> {}
+
                 else -> {
                     TextLink(stringResource(R.string.code_resend), onClick = onResend, modifier = Modifier.testTag(TestTags.CODE_RESEND))
                 }
@@ -149,6 +153,9 @@ fun CodeScreen(
                         color = colors.textBody,
                     )
                 }
+            }
+            state.limitedUntil?.let {
+                InlineAlert(stringResource(R.string.code_limit_title), stringResource(R.string.code_limit_body, it))
             }
             if (state.unreachable) {
                 InlineAlert(
@@ -215,5 +222,13 @@ private fun CodeScreenLockedPreview() {
 private fun CodeScreenResendPreview() {
     DurtTheme {
         CodeScreen(CodeUiState("+90 532 123 45 67", unreachable = true), {}, {}, {}, {}, {})
+    }
+}
+
+@PreviewScreens
+@Composable
+private fun CodeScreenLimitedPreview() {
+    DurtTheme {
+        CodeScreen(CodeUiState("+90 532 123 45 67", limitedUntil = "21:15"), {}, {}, {}, {}, {})
     }
 }

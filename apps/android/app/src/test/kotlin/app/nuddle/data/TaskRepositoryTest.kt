@@ -346,6 +346,19 @@ class TaskRepositoryTest {
         }
 
     @Test
+    fun `over the daily write cap the write says until when (ADR 0024)`() =
+        runTest {
+            server.enqueue(
+                json(
+                    429,
+                    """{"error":{"code":"DRT-1010","name":"write_limit","message":"x","requestId":"r",""" +
+                        """"details":{"retryAt":"2026-10-11T18:15:00.000Z"}}}""",
+                ),
+            )
+            assertEquals(WriteOutcome.Limited(Instant.parse("2026-10-11T18:15:00Z")), repository.write("asdf", "key-3"))
+        }
+
+    @Test
     fun `an error answer or no answer is a failed write`() =
         runTest {
             server.enqueue(drtError(400, "DRT-1001", "validation_failed"))

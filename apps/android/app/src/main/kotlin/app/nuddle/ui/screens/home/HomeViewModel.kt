@@ -30,6 +30,7 @@ import app.nuddle.data.session.TaskAcks
 import app.nuddle.domain.IdGenerator
 import app.nuddle.domain.QuietHours
 import app.nuddle.ui.components.ComposeState
+import app.nuddle.ui.screens.hourMinute
 import app.nuddle.ui.theme.DurtMotion
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -305,10 +306,10 @@ class HomeViewModel
                     }
 
                     // 6a without a network: only the server can understand the text, so it waits on the phone with its
-                    // key. With one, the text stays for Tekrar dene (6b).
-                    WriteOutcome.Failed -> {
-                        if (connectivity.online.value) {
-                            compose.value = ComposeState.Failed(text)
+                    // key. With one, the text stays for Tekrar dene (6b); over the daily cap 6b says when (ADR 0024).
+                    WriteOutcome.Failed, is WriteOutcome.Limited -> {
+                        if (outcome.staysInBar(connectivity.online.value)) {
+                            compose.value = ComposeState.Failed(text, outcome.limitUntil(timeZone))
                         } else {
                             pendingKey = null
                             compose.value = ComposeState.Idle
@@ -427,7 +428,7 @@ class HomeViewModel
                 }
 
                 // Not understood or the server failed: it waits for the next connection.
-                WriteOutcome.Failed, is WriteOutcome.Broken -> {}
+                WriteOutcome.Failed, is WriteOutcome.Broken, is WriteOutcome.Limited -> {}
             }
         }
 
@@ -489,3 +490,9 @@ private fun seenOnBana(state: HomeUiState): List<String> =
     } else {
         listOfNotNull(state.nextUp?.takeIf { it.from != null }?.taskId) + state.later.filter { it.fromId != null }.map { it.taskId }
     }
+
+/** "21:15" for a write refused over the daily cap (6b, open-questions#54), else null. */
+private fun WriteOutcome.limitUntil(timeZone: TimeZone): String? = (this as? WriteOutcome.Limited)?.until?.hourMinute(timeZone)
+
+/** A failed write waits on the phone only without a network; a refusal over the cap came from the server. */
+private fun WriteOutcome.staysInBar(online: Boolean): Boolean = online || this is WriteOutcome.Limited

@@ -31,10 +31,12 @@ internal fun ColumnScope.HomeBottom(
     state.reply?.let {
         ReplyNote(it, undo.onReplyTimeout, Modifier.padding(bottom = dimens.space10).testTag(TestTags.HOME_REPLY))
     }
-    if (state.compose is ComposeState.Failed) {
+    val compose = state.compose
+    if (compose is ComposeState.Failed) {
+        val until = compose.limitUntil
         InlineAlert(
-            stringResource(R.string.compose_failed_title),
-            stringResource(R.string.compose_failed_body),
+            if (until != null) stringResource(R.string.compose_limit_title) else stringResource(R.string.compose_failed_title),
+            if (until != null) stringResource(R.string.compose_limit_body, until) else stringResource(R.string.compose_failed_body),
             Modifier.padding(bottom = dimens.space10).testTag(TestTags.HOME_SEND_FAILED),
         )
     }
