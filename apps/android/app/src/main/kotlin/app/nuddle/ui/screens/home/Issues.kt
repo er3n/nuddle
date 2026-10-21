@@ -35,6 +35,8 @@ data class CancelledUi(
     val note: String?,
     /** Kime changed (NUD-114): the sender gave the task to someone else, unnamed here. */
     val reassigned: Boolean = false,
+    /** Ben hallederim on a task I dropped (NUD-122): the sender took it over. */
+    val handled: Boolean = false,
 )
 
 enum class SentIssue { Dropped, Missed }
@@ -73,7 +75,7 @@ internal val CANCELLED_ROW_TTL = 1.days
 
 /**
  * The cards from the stored tasks and their events. A missed task to me shows while the server keeps it in my list
- * (one day); a cancel shows for a day, but not "Ben hallederim" on a task I dropped myself. Newest first.
+ * (one day); a cancel shows for a day, "Ben hallederim" on a task I dropped too (NUD-122). Newest first.
  */
 fun issues(
     tasks: List<TaskEntity>,
@@ -102,7 +104,14 @@ fun issues(
                 val cancel = events[task.id].orEmpty().lastOrNull { it.type == EventTypes.CANCELLED }
                 if (cancel == null || cancel.reason !in SHOWN_CANCELS) return@mapNotNull null
                 val by = connections[task.senderId] ?: return@mapNotNull null
-                CancelledUi(task.id, task.title, by.displayName, cancel.note, reassigned = cancel.reason == REASSIGNED)
+                CancelledUi(
+                    task.id,
+                    task.title,
+                    by.displayName,
+                    cancel.note,
+                    reassigned = cancel.reason == REASSIGNED,
+                    handled = cancel.reason == SENDER_HANDLES,
+                )
             }
     val sent =
         newestFirst
@@ -136,4 +145,5 @@ private const val SENDER_CANCELLED = "sender_cancelled"
 private const val REASSIGNED = "reassigned"
 
 /** The cancels the recipient sees a row for: the sender took the task back, or gave it to someone else. */
-private val SHOWN_CANCELS = setOf(SENDER_CANCELLED, REASSIGNED)
+private const val SENDER_HANDLES = "sender_handles"
+private val SHOWN_CANCELS = setOf(SENDER_CANCELLED, REASSIGNED, SENDER_HANDLES)

@@ -56,7 +56,7 @@ class IssuesTest {
     }
 
     @Test
-    fun `a cancel by the sender shows for a day with its note, but not Ben hallederim on a task I dropped`() {
+    fun `a cancel by the sender shows for a day with its note, and Ben hallederim as taken over`() {
         val cancelled = aTask(status = "CANCELLED").copy(statusChangedAt = (now - 23.hours).toEpochMilliseconds())
         val cancelEvent = event("cancelled", """{"reason":"sender_cancelled","note":"Ben hallettim"}""")
         val taken = aTask(id = "taken", status = "CANCELLED").copy(statusChangedAt = now.toEpochMilliseconds())
@@ -64,7 +64,14 @@ class IssuesTest {
         val events = mapOf(Cast.TASK_ID to listOf(cancelEvent), "taken" to listOf(takenEvent))
 
         val result = issues(listOf(cancelled, taken), events, Cast.EREN_ID, sibel, now, istanbul)
-        assertEquals(listOf(CancelledUi(Cast.TASK_ID, "Temizlikçi için para çek", "Sibel", "Ben hallettim")), result.cancelled)
+        // Ben hallederim on a task I dropped shows too, as taken over (NUD-122).
+        assertEquals(
+            listOf(
+                CancelledUi("taken", "Temizlikçi için para çek", "Sibel", null, handled = true),
+                CancelledUi(Cast.TASK_ID, "Temizlikçi için para çek", "Sibel", "Ben hallettim"),
+            ),
+            result.cancelled,
+        )
 
         val dayLater = issues(listOf(cancelled), events, Cast.EREN_ID, sibel, now + 1.hours, istanbul)
         assertTrue(dayLater.cancelled.isEmpty())

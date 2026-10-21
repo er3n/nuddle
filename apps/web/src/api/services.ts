@@ -753,11 +753,52 @@ export async function taskCommand(
     // A sender's cancel ends a series; any other close brings the next occurrence (ADR 0021).
     const next =
       cmd.type === "cancel" ? noEffects : await spawnNextOccurrence(tx, deps, task, o, now);
+    // Ben hallederim: the same task lands in the sender's own list (NUD-122, open-questions#8).
+    const taken =
+      cmd.type === "sender_handles" ? await takeOver(tx, deps, caller.id, task, now) : null;
     return {
       result: { taskId: o.task.id, status: o.task.status, planVersion: o.task.planVersion },
-      effects: mergeEffects(effectsOf(o), next),
+      effects: mergeEffects(mergeEffects(effectsOf(o), next), taken ?? noEffects),
     };
   });
+}
+
+/**
+ * The task a sender takes over with Ben hallederim, as a one-off to self at the same time. A time
+ * already past leaves only the cancel: the sender sets a new one by writing it.
+ */
+async function takeOver(
+  tx: Tx,
+  deps: AppDeps,
+  senderId: PersonId,
+  task: Task,
+  now: Date,
+): Promise<Effects | null> {
+  const time = task.remindAt ?? task.deadline;
+  if (time.getTime() <= now.getTime()) return null;
+  const created = await createTaskTx(
+    tx,
+    deps,
+    senderId,
+    {
+      recipientId: senderId,
+      title: task.title,
+      detail: task.detail,
+      deadline: time,
+      timing: task.timing,
+      missAfterMinutes:
+        task.remindAt === null
+          ? null
+          : Math.round((task.deadline.getTime() - task.remindAt.getTime()) / MINUTE),
+      leadMinutes: task.leadMinutes,
+      // A photo to approve myself makes no sense; Bitti is enough on a task to self.
+      finishMode: task.finishMode === "photo" ? "done" : task.finishMode,
+      rawText: task.rawText,
+      repeat: null,
+    },
+    now,
+  );
+  return created.effects;
 }
 
 /**

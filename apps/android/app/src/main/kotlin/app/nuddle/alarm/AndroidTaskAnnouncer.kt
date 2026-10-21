@@ -235,6 +235,10 @@ class AndroidTaskAnnouncer
                     context.getString(R.string.issue_reassigned_title, name, task.title) to stopped
                 }
 
+                TaskClose.Handled -> {
+                    context.getString(R.string.issue_handled_title, name, task.title) to context.getString(R.string.issue_handled_line)
+                }
+
                 TaskClose.Done -> {
                     context.getString(R.string.bell_done_title, name, task.title) to context.getString(R.string.bell_said_done)
                 }
@@ -244,30 +248,22 @@ class AndroidTaskAnnouncer
                 }
 
                 TaskClose.Missed -> {
-                    val line =
-                        when {
-                            task.finishMode == FinishMode.PHOTO.value && task.isMoment -> {
-                                context.getString(
-                                    R.string.issue_missed_photo_moment,
-                                )
-                            }
-
-                            task.finishMode == FinishMode.PHOTO.value -> {
-                                context.getString(R.string.issue_missed_photo)
-                            }
-
-                            task.isMoment -> {
-                                context.getString(R.string.issue_missed_done_moment, name)
-                            }
-
-                            else -> {
-                                context.getString(R.string.issue_missed_done, name)
-                            }
-                        }
-                    context.getString(R.string.close_missed_title, name, task.title) to line
+                    context.getString(R.string.close_missed_title, name, task.title) to missedLine(task, name)
                 }
             }
         }
+
+        /** Why a missed task counts as missed: no photo or no Bitti, by its moment or its deadline. */
+        private fun missedLine(
+            task: TaskEntity,
+            name: String,
+        ): String =
+            when {
+                task.finishMode == FinishMode.PHOTO.value && task.isMoment -> context.getString(R.string.issue_missed_photo_moment)
+                task.finishMode == FinishMode.PHOTO.value -> context.getString(R.string.issue_missed_photo)
+                task.isMoment -> context.getString(R.string.issue_missed_done_moment, name)
+                else -> context.getString(R.string.issue_missed_done, name)
+            }
 
         override fun withdrawCantReach(taskId: String) {
             NotificationManagerCompat.from(context).cancel(NotificationIds.reach(taskId))

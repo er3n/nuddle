@@ -49,7 +49,7 @@ Client-only status: `QUEUED` (written offline, not yet on the server).
 | `MISSED` | "Süreyi uzat" (new deadline) | `SCHEDULED` | sender |
 | `MISSED` | cancel | `CANCELLED` | sender |
 | `DROPPED` | "Yeni zaman ver" (new deadline) | `SCHEDULED` | sender |
-| `DROPPED` | "Ben hallederim" | `CANCELLED` with reason `sender_handles` **(proposed)** | sender |
+| `DROPPED` | "Ben hallederim" | `CANCELLED` with reason `sender_handles`; the same task opens for the sender as a task to self at the same time, unless it has passed (NUD-122, open-questions #8) | sender |
 | any status but `DONE` and `CANCELLED` | either side deletes the account | `CANCELLED` with reason `account_deleted`, the other side is told | server |
 | any status but `DONE` and `CANCELLED` | either side removes the connection (5b) | `CANCELLED` with reason `connection_removed`, no notification to the other side **(proposed)** | server |
 | `SCHEDULED`, `REJECTED` | a setting the plan depends on changed (quiet hours, a human channel switch) | same status, plan regenerated from the level already reached **(proposed)** | server |
