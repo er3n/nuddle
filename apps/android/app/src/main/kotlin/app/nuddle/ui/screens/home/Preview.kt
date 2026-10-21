@@ -70,6 +70,8 @@ data class PreviewUi(
     val repeat: RepeatUi? = null,
     /** For a moment ([knownDeadline] `moment`): how long after it the task is missed, from the extraction. */
     val missAfterMinutes: Int? = null,
+    /** For a moment: how long before it the pokes begin, sent with Kur (NUD-121). */
+    val leadMinutes: Int? = null,
     /** "17:10": when the pokes begin for a moment with a lead (NUD-82); null for a deadline or no lead. */
     val firstPokeAt: String? = null,
     /** 4a, a task to someone else: "Fotoğrafla, sen onayla" is chosen; [photoSuggested] when the text was about money. */
@@ -279,6 +281,7 @@ fun previewFor(
                 recipient = null,
                 knownDeadline = known?.let { deadlineText(it, now, quiet.timeZone, draft.moment) },
                 missAfterMinutes = draft.missAfterMinutes,
+                leadMinutes = draft.leadMinutes,
                 firstPokeAt = known?.let { firstPokeAt(it, draft.moment, draft.leadMinutes, quiet.timeZone) },
             ) to known
         }
@@ -317,6 +320,7 @@ private fun quietPreview(
             },
         knownDeadline = deadlineText(asked, now, zone, moment = true),
         missAfterMinutes = draft.missAfterMinutes,
+        leadMinutes = draft.leadMinutes,
         firstPokeAt = firstPoke,
         quiet =
             QuietUi(

@@ -346,12 +346,14 @@ class FakeTaskRepository : TaskRepository {
         moment: Boolean,
         missAfterMinutes: Int?,
         repeat: RepeatRule?,
+        leadMinutes: Int?,
     ): WriteOutcome {
         created += Triple(title, deadline, idempotencyKey)
         createdFor += recipientId
         createdFinishModes += finishMode
         createdMoments += moment to missAfterMinutes
         createdRepeats += repeat
+        createdLeads += leadMinutes
         return createOutcome
     }
 
@@ -362,6 +364,7 @@ class FakeTaskRepository : TaskRepository {
     val createdMoments = mutableListOf<Pair<Boolean, Int?>>()
     val createdFinishModes = mutableListOf<FinishMode>()
     val createdRepeats = mutableListOf<RepeatRule?>()
+    val createdLeads = mutableListOf<Int?>()
 
     val didItLater = mutableListOf<String>()
     val senderHandled = mutableListOf<String>()

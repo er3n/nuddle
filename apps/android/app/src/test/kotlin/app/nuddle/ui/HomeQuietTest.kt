@@ -96,6 +96,7 @@ class HomeQuietTest {
                     deadline = five,
                     moment = true,
                     missAfterMinutes = 15,
+                    leadMinutes = 10,
                     repeat = repeat,
                 ),
                 QuietAsk("23:00", "06:00", six),
@@ -132,6 +133,7 @@ class HomeQuietTest {
             vm.previewSheet.onQuiet(keep = true)
             vm.onPreviewConfirm()
             assertEquals(five, tasks.created.single().second)
+            assertEquals(listOf<Int?>(10), tasks.createdLeads, "the lead goes with Kur (NUD-121)")
         }
 
     @Test

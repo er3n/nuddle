@@ -145,6 +145,8 @@ interface TaskRepository {
         moment: Boolean = false,
         missAfterMinutes: Int? = null,
         repeat: RepeatRule? = null,
+        /** For a moment: how long before it the pokes begin, as the extraction judged (NUD-70, NUD-121). */
+        leadMinutes: Int? = null,
     ): WriteOutcome
 
     /** "Düzenle" on the undo toast for a task to self: a new deadline, detail and finish mode kept. */
@@ -287,6 +289,7 @@ class ApiTaskRepository
             moment: Boolean,
             missAfterMinutes: Int?,
             repeat: RepeatRule?,
+            leadMinutes: Int?,
         ): WriteOutcome {
             val me = sessions.current()?.personId ?: return WriteOutcome.Failed
             val command =
@@ -300,6 +303,7 @@ class ApiTaskRepository
                     rawText = rawText,
                     timing = if (moment) Timing.AT else Timing.BY,
                     missAfterMinutes = missAfterMinutes?.takeIf { moment },
+                    leadMinutes = leadMinutes?.takeIf { moment },
                     repeat = repeat,
                 )
             val created =
