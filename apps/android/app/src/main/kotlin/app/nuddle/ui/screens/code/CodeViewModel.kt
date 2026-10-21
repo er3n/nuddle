@@ -107,7 +107,8 @@ class CodeViewModel
         }
 
         fun onResend() {
-            if (mutableState.value.resendInSeconds > 0 || mutableState.value.lockedUntil != null) return
+            val current = mutableState.value
+            if (current.resendInSeconds > 0 || current.lockedUntil != null || current.limitedUntil != null) return
             mutableState.update { it.copy(code = "", wrongCode = false, unreachable = false) }
             viewModelScope.launch {
                 when (val outcome = auth.sendOtp(phone)) {
@@ -118,6 +119,11 @@ class CodeViewModel
 
                     is SendOtpOutcome.Locked -> {
                         locked(outcome.until)
+                    }
+
+                    // The code already sent can still be typed; only a new one waits (ADR 0024).
+                    is SendOtpOutcome.Limited -> {
+                        mutableState.update { it.copy(limitedUntil = outcome.until.hourMinute(timeZone)) }
                     }
 
                     SendOtpOutcome.Failed -> {

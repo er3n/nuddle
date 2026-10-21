@@ -58,6 +58,15 @@ class ErrorScreensTest {
     }
 
     @Test
+    fun `6b over the daily write cap says when writing works again`() {
+        home(HomeUiState(myName = "Eren", compose = ComposeState.Failed("kuru temizlemeyi al", limitUntil = "21:15")))
+        compose.onNodeWithText("Çok fazla yazdın").assertIsDisplayed()
+        compose
+            .onNodeWithText("Son 24 saatte çok fazla şey yazdın. Saat 21:15 olunca tekrar yazabilirsin, yazdığın duruyor.")
+            .assertIsDisplayed()
+    }
+
+    @Test
     fun `6d goes home or to the invite screen`() {
         compose.setContent {
             DurtTheme { InvalidInviteScreen(InvalidInviteCallbacks(onHome = { did += "home" }, onInvite = { did += "invite" })) }

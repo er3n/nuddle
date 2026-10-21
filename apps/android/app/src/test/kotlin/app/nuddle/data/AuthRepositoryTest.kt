@@ -128,4 +128,17 @@ class AuthRepositoryTest {
             server.enqueue(json(429, locked))
             assertEquals(SendOtpOutcome.Locked(Instant.parse("2026-10-11T18:15:00Z")), repo.sendOtp(Cast.EREN_PHONE))
         }
+
+    @Test
+    fun `too many codes in a day says until when, not a failed send (ADR 0024)`() =
+        runTest {
+            server.enqueue(
+                json(
+                    429,
+                    """{"error":{"code":"DRT-1009","name":"otp_limit","message":"x","requestId":"r",""" +
+                        """"details":{"retryAt":"2026-10-11T18:15:00.000Z"}}}""",
+                ),
+            )
+            assertEquals(SendOtpOutcome.Limited(Instant.parse("2026-10-11T18:15:00Z")), repo.sendOtp(Cast.EREN_PHONE))
+        }
 }

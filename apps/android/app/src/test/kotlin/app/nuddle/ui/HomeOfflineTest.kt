@@ -117,6 +117,17 @@ class HomeOfflineTest {
         }
 
     @Test
+    fun `over the daily write cap the text stays and 6b says when (ADR 0024)`() =
+        runTest(main.dispatcher) {
+            connectivity.online.value = true
+            ready()
+            tasks.outcome = WriteOutcome.Limited(Instant.parse("2026-10-11T21:15:00+03:00"))
+            vm.onComposeTextChange("1000 tl çek")
+            vm.onComposeSend()
+            assertEquals(ComposeState.Failed("1000 tl çek", limitUntil = "21:15"), vm.state.value?.compose)
+        }
+
+    @Test
     fun `back online, queued texts go out oldest first with the key they got`() =
         runTest(main.dispatcher) {
             ready()

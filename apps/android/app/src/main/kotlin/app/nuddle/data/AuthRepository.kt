@@ -43,12 +43,20 @@ sealed interface SendOtpOutcome {
         val until: Instant,
     ) : SendOtpOutcome
 
+    /** Too many codes to this phone or to everyone in the last 24 hours (ADR 0024): none is sent until [until]. */
+    data class Limited(
+        val until: Instant,
+    ) : SendOtpOutcome
+
     data object Failed : SendOtpOutcome
 }
 
 private const val OTP_LOCKED = "otp_locked"
+private const val OTP_LIMIT = "otp_limit"
 
-private fun ApiFailure.lockedUntil(): Instant? = (this as? ApiFailure.Http)?.takeIf { it.name == OTP_LOCKED }?.retryAt
+private fun ApiFailure.retryAtFor(name: String): Instant? = (this as? ApiFailure.Http)?.takeIf { it.name == name }?.retryAt
+
+private fun ApiFailure.lockedUntil(): Instant? = retryAtFor(OTP_LOCKED)
 
 /** Sign-in and sign-up are one flow, all through our API (ADR 0014). */
 interface AuthRepository {
@@ -74,8 +82,15 @@ class ApiAuthRepository
     ) : AuthRepository {
         override suspend fun sendOtp(e164: String): SendOtpOutcome =
             when (val result = apiCall(json) { authApi.sendOtp(SendOtpRequest(e164)) }) {
-                is ApiResult.Success -> SendOtpOutcome.Sent
-                is ApiResult.Failure -> result.failure.lockedUntil()?.let(SendOtpOutcome::Locked) ?: SendOtpOutcome.Failed
+                is ApiResult.Success -> {
+                    SendOtpOutcome.Sent
+                }
+
+                is ApiResult.Failure -> {
+                    result.failure.lockedUntil()?.let(SendOtpOutcome::Locked)
+                        ?: result.failure.retryAtFor(OTP_LIMIT)?.let(SendOtpOutcome::Limited)
+                        ?: SendOtpOutcome.Failed
+                }
             }
 
         override suspend fun verify(

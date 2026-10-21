@@ -15,7 +15,7 @@ sealed interface ApiFailure {
         val name: String?,
         /** `invalid_otp`: codes left before the wait (6c). */
         val remainingAttempts: Int? = null,
-        /** `otp_locked`: when the wait ends. */
+        /** `otp_locked`, `otp_limit` and `write_limit`: when the wait ends. */
         val retryAt: Instant? = null,
     ) : ApiFailure
 
