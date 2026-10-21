@@ -221,6 +221,7 @@ Sender side. Shows the extracted task, finish mode choice (photo preselected for
 No design PNG. A system notification on the `tasks` channel, one per task, posted when a sync (not a full sync after sign-in or a reinstall) shows that the other person closed a task between us, so it never just vanishes from a list. Nothing for what I did myself, for a one-time message (NUD-79), or for a removed connection (5b stays silent). The home row and the bell stay as they are; the words are theirs.
 - To me, the sender cancelled: "Sibel iptal etti: "Çöpü at"" | "Not: ben hallettim · Dürtmeler durdu" (no note: "Dürtmeler durdu"). Opens home.
 - To me, given to someone else (NUD-114): "Sibel bu görevi başka birine verdi: "Çöpü at"" | "Dürtmeler durdu". Opens home.
+- To me, I said I can't and the sender took it over (Ben hallederim, NUD-122): "Sibel üstlendi: "Çöpü at"" | "Ben hallederim dedi". Opens home.
 - Mine, done: "Eren bitirdi: "Çöpü at"" | "Bitti dedi". Opens home.
 - Mine, can't today: "Eren bugün yapamayacak: "Çöpü at"" | "Not: yarın hallederim" (no line without a note). Opens the task (5d).
 - Mine, missed: "Eren yetiştiremedi: "Çöpü at"" | "Son zaman geçti, Eren bitti demedi." (photo: "Son zaman geçti, fotoğraf gelmedi."; an `at` task says "Zamanı geçti"). Opens the task (5d).

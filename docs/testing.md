@@ -118,7 +118,7 @@ Each case is one thing that happens between a sender and a recipient, checked on
 2. Eren taps Şimdiden bitti: done on the server, his card, alarms and notifications go, her row goes.
 3. A poke is up on Eren's phone (app in the background) and Sibel cancels the task in the app: the poke and the alarms go from his phone, her row goes, his home says she cancelled it.
 4. The full screen poke rings and Eren taps Ertele: counted on the server, his card says when it rings again, his alarms stay, her row stays; Bitti then closes it on both.
-5. Eren answers Bugün yapamayacağım: his pokes stop, Sibel's home has the dropped card; Ben hallederim closes it on her side and nothing comes back on his.
+5. Eren answers Bugün yapamayacağım: his pokes stop, Sibel's home has the dropped card; Ben hallederim closes it, opens the same task in her own list, and his phone shows "Sibel üstlendi".
 6. Nobody answers until the deadline: missed on the server, the poke goes from his phone, both homes have the missed card; Sonradan yaptım closes it on both.
 7. Sibel moves a far deadline close: Eren's phone takes the new plan and rings its first step; her cancel then leaves nothing on his phone.
 

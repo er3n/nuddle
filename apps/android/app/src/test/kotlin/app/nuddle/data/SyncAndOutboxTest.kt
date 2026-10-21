@@ -399,6 +399,27 @@ class SyncAndOutboxTest {
         }
 
     @Test
+    fun `Ben hallederim on a task I dropped tells me Sibel took it over (NUD-122)`() =
+        runTest {
+            sessions.cursor = "40"
+            val repo = syncRepository()
+            val dropped =
+                syncBody
+                    .replace("\"connections\":[]", sibelConnection)
+                    .replace("\"status\":\"SCHEDULED\"", "\"status\":\"DROPPED\"")
+            val handled =
+                dropped
+                    .replace("\"status\":\"DROPPED\"", "\"status\":\"CANCELLED\"")
+                    .replace("\"events\":[]", "\"events\":[${event(2, "cancelled", """{"reason":"sender_handles"}""")}]")
+            server.enqueue(json(200, dropped))
+            server.enqueue(json(200, handled))
+
+            repeat(2) { assertTrue(repo.sync()) }
+
+            assertEquals(listOf(TaskClose.Handled), announcer.closes.map { it.third })
+        }
+
+    @Test
     fun `what I closed myself, and a full sync, tell me nothing (NUD-115)`() =
         runTest {
             sessions.cursor = null

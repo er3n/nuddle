@@ -93,7 +93,11 @@ internal fun CancelledRow(
         Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
             Text(
                 stringResource(
-                    if (task.reassigned) R.string.issue_reassigned_title else R.string.issue_cancelled_title,
+                    when {
+                        task.handled -> R.string.issue_handled_title
+                        task.reassigned -> R.string.issue_reassigned_title
+                        else -> R.string.issue_cancelled_title
+                    },
                     task.byName,
                     task.title,
                 ),
@@ -104,7 +108,16 @@ internal fun CancelledRow(
             )
             Text(
                 text =
-                    task.note?.let { stringResource(R.string.separator_dot, stringResource(R.string.issue_note, it), stopped) } ?: stopped,
+                    when {
+                        task.handled -> {
+                            stringResource(R.string.issue_handled_line)
+                        }
+
+                        else -> {
+                            task.note?.let { stringResource(R.string.separator_dot, stringResource(R.string.issue_note, it), stopped) }
+                                ?: stopped
+                        }
+                    },
                 style = DurtTheme.type.caption,
                 color = colors.textSecondary,
                 maxLines = 1,
@@ -192,7 +205,7 @@ private fun IssuesPreviewOf(state: HomeUiState) {
     }
 }
 
-/** 7e in Bana: Eren missed a task from Sibel, and Sibel cancelled another. */
+/** 7e in Bana: Eren missed a task from Sibel, Sibel cancelled another and took over a third. */
 @PreviewScreens
 @Composable
 private fun HomeScreenMissedPreview() {
@@ -206,7 +219,12 @@ private fun HomeScreenMissedPreview() {
                         listOf(
                             MissedUi("t1", "Temizlikçi için para çek", DeadlineText.Today("09:00"), "sibel", "Sibel", "+905321234567"),
                         ),
-                    cancelled = listOf(CancelledUi("t2", "Kuru temizlemeyi al", "Sibel", "Ben hallettim")),
+                    cancelled =
+                        listOf(
+                            CancelledUi("t2", "Kuru temizlemeyi al", "Sibel", "Ben hallettim"),
+                            // Ben hallederim on a task Eren dropped (NUD-122).
+                            CancelledUi("t3", "Bulaşık makinesini boşalt", "Sibel", null, handled = true),
+                        ),
                 ),
         ),
     )

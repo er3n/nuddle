@@ -146,6 +146,8 @@
     <string name="issue_remove">Kaldır</string>
     <string name="issue_cancelled_title">%1$s iptal etti: \"%2$s\"</string>
     <string name="issue_reassigned_title">%1$s bu görevi başka birine verdi: \"%2$s\"</string>
+    <string name="issue_handled_title">%1$s üstlendi: \"%2$s\"</string>
+    <string name="issue_handled_line">Ben hallederim dedi</string>
     <string name="issue_pokes_stopped">Dürtmeler durdu</string>
     <string name="close_missed_title">%1$s yetiştiremedi: \"%2$s\"</string>
     <string name="issue_note">Not: %1$s</string>

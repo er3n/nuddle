@@ -106,6 +106,9 @@ sealed interface TaskClose {
     /** The sender gave the task to me to someone else (NUD-114). */
     data object Reassigned : TaskClose
 
+    /** I said Bugün olmaz and the sender took it over: Ben hallederim (NUD-122). */
+    data object Handled : TaskClose
+
     /** My task: the recipient said Bitti. */
     data object Done : TaskClose
 
@@ -383,8 +386,11 @@ private fun closeToMe(
     before: String,
     events: List<TaskEventEntity>,
 ): TaskClose? {
-    if (task.status != TaskStatus.CANCELLED || before !in STILL_MINE) return null
+    if (task.status != TaskStatus.CANCELLED) return null
     val cancel = events.lastOrNull { it.type == EventTypes.CANCELLED }
+    // Ben hallederim answers my own Bugün olmaz, so the task was no longer mine (NUD-122).
+    if (cancel?.reason == SENDER_HANDLES) return TaskClose.Handled.takeIf { before == TaskStatus.DROPPED.value }
+    if (before !in STILL_MINE) return null
     return when (cancel?.reason) {
         SENDER_CANCELLED -> TaskClose.Cancelled(cancel.note)
         REASSIGNED -> TaskClose.Reassigned
@@ -409,6 +415,7 @@ private fun closeOfMine(
 
 private const val SENDER_CANCELLED = "sender_cancelled"
 private const val REASSIGNED = "reassigned"
+private const val SENDER_HANDLES = "sender_handles"
 
 /** A task to me that was still mine here: open, waiting for approval or missed, not one I closed myself. */
 private val STILL_MINE =

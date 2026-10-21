@@ -375,6 +375,39 @@ describe("scenarios: task lifecycle", () => {
     expect(world.pendingActions(taskId)).toEqual([]);
   });
 
+  it("'Ben hallederim' puts the same task in the sender's own list (NUD-122)", async () => {
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.photoToEren);
+    await world.advanceTo(at("2026-10-12T07:40:00"));
+    expect(await eren.command(taskId, { type: "cant_today", note: null })).toEqual({ ok: true });
+    expect(await sibel.command(taskId, { type: "sender_handles" })).toEqual({ ok: true });
+
+    const mine = world.tasksWrittenBy("sibel").filter((t) => t.id !== taskId);
+    expect(mine).toHaveLength(1);
+    const taken = mine[0];
+    expect(taken).toMatchObject({
+      recipientId: sibel.person.id,
+      title: "Temizlikçi için para çek",
+      deadline: at("2026-10-12T09:00:00"),
+      status: "SCHEDULED",
+      // A photo to approve herself makes no sense on a task to self.
+      finishMode: "done",
+    });
+    await world.advanceTo(at("2026-10-12T09:30:00"));
+    expect(sibel.phone.ringsFor(taken?.id ?? "")).not.toEqual([]);
+    expect(world.task(taskId).status).toBe("CANCELLED");
+  });
+
+  it("'Ben hallederim' after the time has passed only closes it", async () => {
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.trashToEren);
+    await world.advanceTo(at("2026-10-12T18:46:00"));
+    expect(await eren.command(taskId, { type: "cant_today", note: null })).toEqual({ ok: true });
+    await world.advanceTo(at("2026-10-12T19:30:00"));
+    expect(await sibel.command(taskId, { type: "sender_handles" })).toEqual({ ok: true });
+    expect(world.tasksWrittenBy("sibel").map((t) => t.id)).toEqual([taskId]);
+  });
+
   it("human channel (7a): only while the task is open", async () => {
     const { world, sibel, eren } = await sibelAndEren();
     const taskId = await writeTask(sibel, TEXT.trashToEren);
