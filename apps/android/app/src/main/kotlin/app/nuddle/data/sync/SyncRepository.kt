@@ -316,6 +316,8 @@ internal fun SyncTask.toEntity() =
         repeatEvery = repeat?.every?.value,
         repeatDays = repeat?.days?.joinToString(","),
         repeatTime = repeat?.time,
+        contactPersonId = contact?.personId,
+        contactAction = contact?.action?.value,
     )
 
 internal fun SyncEvent.toEntity() =

@@ -159,6 +159,17 @@ const RepeatRule = z
   })
   .openapi("RepeatRule");
 
+/**
+ * Whom the recipient calls or messages from the full screen poke ("annemi ara", NUD-128): one of
+ * their connections or the sender. The phone dials the number it has for that connection.
+ */
+const TaskContact = z
+  .object({
+    personId: Id,
+    action: z.enum(["call", "message"]),
+  })
+  .openapi("TaskContact");
+
 export const WriteTaskCommand = keyed({ text: z.string().trim().min(1).max(500) }).openapi(
   "WriteTaskCommand",
 );
@@ -187,6 +198,8 @@ export const WriteTaskResult = z
         finishMode: FinishMode,
         /** The rule the text gave, for the preview's "Her gün 09:00" line (NUD-77). */
         repeat: RepeatRule.nullable().optional(),
+        /** Send it back with `create_task`; the server checks it against the chosen recipient. */
+        contact: TaskContact.nullable().optional(),
       })
       .nullable(),
     /** Only for `chat`. */
@@ -217,6 +230,8 @@ export const CreateTaskCommand = keyed({
   rawText: z.string().max(500).nullable(),
   /** The rule of a repeating task; the picked deadline is its first occurrence (NUD-77). */
   repeat: RepeatRule.nullable().optional(),
+  /** The draft's contact (NUD-128); dropped when the recipient does not know that person. */
+  contact: TaskContact.nullable().optional(),
 }).openapi("CreateTaskCommand");
 
 export const DoneCommand = taskKeyed({
@@ -474,6 +489,8 @@ const SyncTask = z
     /** The rule of a repeating task and the id shared by its occurrences (ADR 0021); null for a one-off. */
     repeat: RepeatRule.nullable().optional(),
     seriesId: Id.nullable().optional(),
+    /** Ara or Mesaj at on the full screen poke (NUD-128); null or absent: none. */
+    contact: TaskContact.nullable().optional(),
   })
   .openapi("SyncTask");
 

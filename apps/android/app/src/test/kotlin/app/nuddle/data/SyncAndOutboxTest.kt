@@ -152,6 +152,25 @@ class SyncAndOutboxTest {
         }
 
     @Test
+    fun `a task about calling someone keeps whom, a task without one has none (NUD-128)`() =
+        runTest {
+            val call =
+                syncBody.replace(
+                    """"futureField":1""",
+                    """"futureField":1,"contact":{"personId":"${Cast.SIBEL_ID}","action":"call"}""",
+                )
+            server.enqueue(json(200, call))
+            assertTrue(syncRepository().sync())
+            val task = db.tasks().get(Cast.TASK_ID)!!
+            assertEquals(Cast.SIBEL_ID, task.contactPersonId)
+            assertEquals("call", task.contactAction)
+
+            server.enqueue(json(200, syncBody))
+            assertTrue(syncRepository().sync())
+            assertEquals(null, db.tasks().get(Cast.TASK_ID)!!.contactPersonId)
+        }
+
+    @Test
     fun `an open task to me that sync stored is told as reached, a closed one is not (NUD-68)`() =
         runTest {
             server.enqueue(json(200, syncBody))

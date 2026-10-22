@@ -46,6 +46,7 @@ describe("resolveExtraction", () => {
       leadMinutes: null,
       finishMode: "photo",
       repeat: null,
+      contact: null,
     });
   });
 
@@ -165,6 +166,35 @@ describe("resolveExtraction, not a task (NUD-52)", () => {
   });
 });
 
+describe("resolveExtraction, the contact (NUD-128)", () => {
+  const call: Extraction = {
+    ...complete,
+    recipient: "self",
+    title: "Annemi ara",
+    detail: null,
+    finishMode: "done",
+    contact: { name: "Ayşe", action: "call" },
+  };
+  const withAyse = [...connections, { personId: "ayse", name: "Ayşe" }];
+
+  it("resolves the named connection; the recipient stays the person who calls", () => {
+    expect(resolveExtraction(call, { id: "sibel" }, withAyse, now)).toMatchObject({
+      kind: "create",
+      recipientId: "sibel",
+      contact: { personId: "ayse", action: "call" },
+    });
+  });
+
+  it("no contact for a name that is no connection, nor on a one-time message", () => {
+    expect(resolveExtraction(call, { id: "sibel" }, connections, now)).toMatchObject({
+      contact: null,
+    });
+    expect(
+      resolveExtraction({ ...call, finishMode: "notice" }, { id: "sibel" }, withAyse, now),
+    ).toMatchObject({ contact: null });
+  });
+});
+
 describe("FixtureExtractor", () => {
   it("returns the fixture for the exact text and everything missing otherwise", async () => {
     const e = new FixtureExtractor(new Map([[input.text, complete]]));
@@ -218,6 +248,28 @@ describe("OpenRouterExtractor", () => {
     };
     await new OpenRouterExtractor({ apiKey: "k", model: "m", fetch: fakeFetch }).extract(input);
     expect(JSON.parse(bodies[0] ?? "{}")).toMatchObject({ reasoning: { enabled: false } });
+  });
+
+  it("asks for the contact and parses it (NUD-128)", async () => {
+    const bodies: string[] = [];
+    const answer = { ...complete, contact: { name: "Eren", action: "message" } };
+    const fakeFetch: typeof fetch = (_url, init) => {
+      bodies.push(init?.body as string);
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({ choices: [{ message: { content: JSON.stringify(answer) } }] }),
+          { status: 200 },
+        ),
+      );
+    };
+    const extractor = new OpenRouterExtractor({ apiKey: "k", model: "m", fetch: fakeFetch });
+    expect(await extractor.extract(input)).toEqual({ ...answer, repeat: null });
+    const schema = (
+      JSON.parse(bodies[0] ?? "{}") as {
+        response_format: { json_schema: { schema: { required: string[] } } };
+      }
+    ).response_format.json_schema.schema;
+    expect(schema.required).toContain("contact");
   });
 
   it("accepts JSON wrapped in a code fence", async () => {

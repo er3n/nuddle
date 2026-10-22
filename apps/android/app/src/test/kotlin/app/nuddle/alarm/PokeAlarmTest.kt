@@ -224,6 +224,20 @@ class PokeAlarmTest {
         }
 
     @Test
+    fun `Ara on the poke stops this ring and nothing else, the task stays open (NUD-128)`() =
+        runTest {
+            givenPlan()
+            alarms.rearm()
+            val armed = scheduler.scheduled.toList()
+            actions.contact(key(1))
+
+            assertEquals(listOf(Cast.TASK_ID), notifications.cancelled)
+            assertEquals("SCHEDULED", db.tasks().get(Cast.TASK_ID)!!.status)
+            assertEquals(armed, scheduler.scheduled.toList())
+            assertTrue(db.outbox().pending().isEmpty())
+        }
+
+    @Test
     fun `Bitti on the poke leaves the done note for home with that poke's number`() =
         runTest {
             givenPlan()

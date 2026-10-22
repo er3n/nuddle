@@ -32,6 +32,7 @@ Code and docs are in English. The UI is Turkish first (`values/strings.xml`), En
 | Quiet hours | Sessiz saatler | Default 23:00-07:00. |
 | Bell, inbox | zil, Bildirimler | In-app inbox. |
 | Announcement | "Nuddle'dan", channel "Nuddle'dan haberler" | A message from us to people, not about a task (ADR 0025). The UI shows its own title; never "duyuru" or "bildiri". |
+| Contact (to call or message) | Ara / Mesaj at | NUD-128: the person a task is about calling or messaging ("annemi ara"), always one of the recipient's connections or the sender. Only the buttons on the full screen poke show it; the UI never says "kişi" or "rehber" for it. |
 | Human channel | (never named in UI) | Telling another person when pokes fail. In MVP: the sender. |
 | Setup | Bir kerelik kurulum | Permission flow. |
 

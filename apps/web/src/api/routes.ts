@@ -202,6 +202,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
             photoSentAt: t.photoSentAt === null ? null : iso(t.photoSentAt),
             pokeFrom: t.pokeFrom === null ? null : iso(t.pokeFrom),
             reRequestNote: t.reRequestNote,
+            contact: t.contact,
           })),
           sentInvites: r.sentInvites.map((i) => ({
             id: i.id,

@@ -30,6 +30,7 @@ import {
   announcementPushes,
   type AnnouncementContent,
 } from "../domain/announcements";
+import { contactOf, keepContact } from "../domain/contact";
 import { afterWrongCode, lockedUntil } from "../domain/otp-attempts";
 import { humanChannelAllowed } from "../domain/plan-pokes";
 import { profileIsStale, RECENT_TASKS, type ProfileInput } from "../domain/profile";
@@ -84,6 +85,7 @@ import type {
   PokeProfile,
   PushMessage,
   Task,
+  TaskContact,
   TaskEvent,
   TaskId,
   TaskStatus,
@@ -527,6 +529,28 @@ interface NewTask {
   rawText: string | null;
   /** The rule of a repeating task (ADR 0021); the deadline is its first occurrence. */
   repeat?: RepeatRule | null;
+  /** Whom to call or message from the poke (NUD-128); checked against the recipient here. */
+  contact?: TaskContact | null;
+}
+
+/**
+ * The contact a task from `senderId` to `recipientId` may keep (docs/domain.md, Call or message
+ * from the poke): the edges to the contact decide, so a task to someone who does not know that
+ * person simply has no Ara.
+ */
+async function checkedContact(
+  tx: Tx,
+  contact: TaskContact | null | undefined,
+  senderId: PersonId,
+  recipientId: PersonId,
+): Promise<TaskContact | null> {
+  if (!contact) return null;
+  const active = new Set<PersonId>();
+  for (const from of new Set([senderId, recipientId])) {
+    const edge = await findEdge(tx, from, contact.personId);
+    if (edge?.status === "active") active.add(from);
+  }
+  return keepContact(contact, { senderId, recipientId }, (from) => active.has(from));
 }
 
 async function createTaskTx(
@@ -549,6 +573,7 @@ async function createTaskTx(
     recipient,
     edge: sender.id === recipient.id ? null : await findEdge(tx, sender.id, recipient.id),
     ...input,
+    contact: await checkedContact(tx, input.contact, sender.id, recipient.id),
     reachability: await reachabilityOf(tx, recipient.id),
     now,
   });
@@ -567,7 +592,8 @@ export type WriteTaskResult =
       kind: "ask";
       taskId: null;
       question: MissingField | "quiet_hours";
-      draft: Omit<Extraction, "missing" | "reply">;
+      /** `contact` is resolved to a person (NUD-128); the preview sends it back with `create_task`. */
+      draft: Omit<Extraction, "missing" | "reply" | "contact"> & { contact: TaskContact | null };
       /** For `quiet_hours`: the recipient's quiet hours and the moment that starts poking as they end. */
       quiet?: { start: string; end: string; suggested: string } | null;
     }
@@ -665,6 +691,14 @@ export async function writeTask(
         leadMinutes,
         finishMode,
         repeat: extraction.repeat ?? null,
+        contact:
+          finishMode === "notice"
+            ? null
+            : contactOf(
+                extraction.contact,
+                caller,
+                connections.map((c) => ({ personId: c.person.id, name: c.person.displayName })),
+              ),
       },
       quiet,
     };
@@ -795,6 +829,7 @@ async function takeOver(
       finishMode: task.finishMode === "photo" ? "done" : task.finishMode,
       rawText: task.rawText,
       repeat: null,
+      contact: task.contact,
     },
     now,
   );
@@ -840,6 +875,7 @@ export async function reassignTask(
         finishMode: task.finishMode,
         rawText: task.rawText,
         repeat: task.repeat,
+        contact: task.contact,
       },
       now,
     );
@@ -896,6 +932,7 @@ async function spawnNextOccurrence(
     rawText: null,
     repeat: t.repeat,
     seriesId: t.seriesId,
+    contact: await checkedContact(tx, t.contact, sender.id, recipient.id),
     reachability: await reachabilityOf(tx, recipient.id),
     now,
   });

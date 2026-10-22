@@ -29,6 +29,11 @@ const extractionSchema = z.object({
     })
     .nullable()
     .optional(),
+  // Optional for the same reason (NUD-128); resolved and checked by the server before use.
+  contact: z
+    .object({ name: z.string(), action: z.enum(["call", "message"]) })
+    .nullable()
+    .optional(),
 });
 
 const nullableString = { type: ["string", "null"] };
@@ -48,6 +53,7 @@ const jsonSchema = {
     "missing",
     "reply",
     "repeat",
+    "contact",
   ],
   properties: {
     recipient: nullableString,
@@ -68,6 +74,15 @@ const jsonSchema = {
         every: { type: "string", enum: ["day", "week", "weekdays"] },
         days: { type: ["array", "null"], items: { type: "integer" } },
         time: { type: "string" },
+      },
+    },
+    contact: {
+      type: ["object", "null"],
+      additionalProperties: false,
+      required: ["name", "action"],
+      properties: {
+        name: { type: "string" },
+        action: { type: "string", enum: ["call", "message"] },
       },
     },
   },
@@ -140,8 +155,18 @@ repeat
 - A task that comes back on a schedule (NUD-77): "her gün 9da ilacını alsın" {every "day", days null, time "09:00"}; "her salı çöpü çıkarsın" {every "week", days [2], time}; "pazartesi ve perşembe" days [1, 4]; "hafta içi her sabah 7de kalksın" {every "weekdays", time "07:00"}; "her sabah" is every day at 09:00, "her akşam" at 19:00 unless an hour is given. ISO weekdays: 1 pazartesi, 2 salı, 3 çarşamba, 4 perşembe, 5 cuma, 6 cumartesi, 7 pazar. The deadline is then the first occurrence: the next matching time after now, which is today when that time is still ahead today ("her gün 9da" at 08:00 is today 09:00; at 10:00 it is tomorrow 09:00). Everything else (title, timing, finishMode, leadMinutes) as for a one-off.
 - null for a one-off task, which is the usual case. Only the sentence itself makes a task repeat, with a word like "her gün", "her sabah", "her akşam", "her hafta", "her salı", "hafta içi", "her iş günü". A day named once ("çarşamba 9da", "cumartesi"), "yarın", "bugün", a school run, a pickup or a bill said once: a one-off, repeat null, even when such a thing happens every day in real life. Never more than once a day: those get a reply (see below).
 
+contact
+- When the task is to call or to message one specific person (NUD-128): {name, action}. action "call" for ara, arasın, telefon et; "message" for mesaj at, yaz, mesaj gönder, whatsapp'tan yaz.
+- name is that person: exactly one name from the connection list, spelled as in the list ("Sibel'e mesaj at" is "Sibel"; a relationship word, "annemi ara", "eşine yaz", means the single connection with that relationship), or "sender" when it is the writer ("eren beni arasın", "bana mesaj atsın").
+- null when the person is not in the list (öğretmen, tesisatçı, doktor, a name not in the list), when more than one connection could be meant, when the text gives a phone number instead, when calling or messaging is not what the task asks ("anneme 500 gönder", "babamı doktora götür"), and for finishMode "notice".
+- The contact never changes the recipient: "annemi ara" is "self" with contact the parent.
+- The contact never sets the time: a call or a message with no time or day ("annemi ara", "Sibel'e mesaj at") has deadline null and "deadline" in missing, never "now".
+
 Worked examples (sender's local time Sunday 21:00, connections Eren: spouse, Ayşe: parent)
-- "babamı yarın ara": the sender calls; babam is only the object. recipient "self", deadline tomorrow 19:00, timing "by".
+- "babamı yarın ara": the sender calls; babam is only the object. recipient "self", deadline tomorrow 19:00, timing "by"; no connection is a father here, so contact null.
+- "annemi ara": recipient "self", title "Annemi ara", no time so deadline null and "deadline" in missing; contact {name "Ayşe", action "call"}.
+- "eren yarın akşam beni arasın": recipient Eren, title "Beni ara", tomorrow 19:00, timing "by"; contact {name "sender", action "call"}.
+- "yarın erene mesaj at": recipient "self" (Eren is the object), title "Eren'e mesaj at", tomorrow 19:00, timing "by"; contact {name "Eren", action "message"}.
 - "annem 11de ilacını içsin": annem means Ayşe; 11 has no part of day, so 11:00, which has passed today, so tomorrow 11:00; timing "at".
 - "eren saat 3te markete gitsin": 3 is afternoon, 15:00, passed today, so tomorrow 15:00; timing "at", leadMinutes 15.
 - "yarın çiçekleri sula": nobody named, so recipient "self"; tomorrow 19:00, timing "by".

@@ -90,6 +90,8 @@ export class SimPhone {
     me: { avatarPath?: string | null };
     connections: { personId: string; avatarPath?: string | null }[];
   } | null = null;
+  /** Each task's contact as the last sync said (NUD-128): what Ara on the full screen poke dials. */
+  readonly contacts = new Map<TaskId, { personId: string; action: string } | null>();
   /** Snoozes used per task, as the last sync said. */
   private readonly snoozes = new Map<TaskId, number>();
   /** Task events the phone has synced, oldest first: what the app builds cards, the bell and 7a from. */
@@ -159,6 +161,7 @@ export class SimPhone {
     for (const task of data.tasks) {
       this.snoozes.set(task.id, task.snoozesUsed ?? 0);
       this.inList.set(task.id, task.inRecipientList);
+      this.contacts.set(task.id, task.contact ?? null);
     }
     for (const e of data.events)
       this.events.push({ taskId: e.taskId, type: e.type, payload: e.payload });
@@ -312,6 +315,41 @@ export class Client {
     }
     if (data.kind === "chat" && data.reply) return { kind: "chat", reply: data.reply };
     throw new Error(`unexpected write_task result ${JSON.stringify(data)}`);
+  }
+
+  /** write_task as the preview gets it: the whole answer, draft included (2b). */
+  async writeRaw(text: string) {
+    const r = ok(
+      await this.api.POST("/api/v1/commands/write_task", {
+        body: { idempotencyKey: uuidv7(), text },
+      }),
+      "write_task",
+    );
+    await this.world.refresh();
+    return r;
+  }
+
+  /** create_task from the preview with the fields it shows; returns the new task id. */
+  async createFromPreview(body: {
+    recipientId: string;
+    title: string;
+    deadline: string;
+    contact?: { personId: string; action: "call" | "message" } | null;
+  }): Promise<TaskId> {
+    const r = ok(
+      await this.api.POST("/api/v1/commands/create_task", {
+        body: {
+          idempotencyKey: uuidv7(),
+          detail: null,
+          finishMode: "done",
+          rawText: null,
+          ...body,
+        },
+      }),
+      "create_task",
+    );
+    await this.world.refresh();
+    return r.taskId;
   }
 
   async command(taskId: TaskId, cmd: Command): Promise<CommandResult> {
@@ -850,6 +888,7 @@ export class World {
         ...t,
         senderId: named(t.senderId),
         recipientId: named(t.recipientId),
+        contact: t.contact && { ...t.contact, personId: named(t.contact.personId) },
       });
     }
     snap.events = (
