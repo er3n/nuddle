@@ -2,7 +2,7 @@
 // Provider and model: docs/architecture.md (LLM), open-questions#16. Env: OPENROUTER_API_KEY,
 // OPENROUTER_MODEL.
 import { z } from "zod";
-import type { Extraction, ExtractionInput } from "../../domain/extraction";
+import { RELATIONSHIP_WORDS, type Extraction, type ExtractionInput } from "../../domain/extraction";
 import { repeatRuleOf } from "../../domain/repeat";
 import type { ExchangeSink, TaskExtractor } from "../../domain/ports";
 import { toLocalIso } from "../../domain/time";
@@ -88,6 +88,12 @@ const jsonSchema = {
   },
 };
 
+/** "eşim, karım, ... (spouse); annem, babam (parent); ...", from the domain's word list. */
+const RELATIONSHIPS = Object.entries(RELATIONSHIP_WORDS)
+  .filter(([, words]) => words.length > 0)
+  .map(([type, words]) => `${words.join(", ")} (${type})`)
+  .join("; ");
+
 const RULES = `You turn one sentence (usually Turkish) into a reminder task for a family reminder app.
 Return only JSON that matches the schema.
 
@@ -100,12 +106,16 @@ reply
 - Only when the text is not a task at all (a greeting, thanks, small talk, a question about the app or about you): one short Turkish sentence answering it as the app, first person singular, "sen", no emoji, and point to writing a task. Then every other field is null, missing is empty, timing "by", finishMode "done".
 - Examples: "merhaba" → "Merhaba! Kime ne hatırlatayım? Mesela: Eren yarın 9'dan önce ekmek alsın." "bu uygulama ne işe yarıyor" → "Birine ya da kendine bir iş yazarsın, iş bitene kadar zamanında dürterim." "teşekkürler" → "Rica ederim, başka ne hatırlatayım?"
 
+The sender's formats line gives their language, the first day of their week and their clock. Write title, detail and reply in that language (tr-TR: Turkish). "bu hafta" ends on the last day of the sender's week, "haftaya" and "gelecek hafta" are the week after it. With a 24-hour clock an hour 13-23 is that hour; an hour 1-12 follows the deadline rules below.
+
 The text may be a speech transcript (4h): no punctuation, numbers and times in words ("dokuzda", "sekiz buçukta", "yarım saat sonra", "iki bin beş yüz"), filler words ("şey", "hmm") to ignore.
 
 recipient
 - "self" when the sender writes to themselves: first person ("ödeyeyim"), "bana", "beni", or a plain imperative with no person named ("kuru temizlemeyi al", "faturayı öde"). A sentence that names nobody is "self", never null.
-- Otherwise exactly one name from the connection list, spelled as in the list. Names are often written in lowercase and some are also ordinary words ("can", "deniz", "umut", "ayşe"): a word that matches a connection's name, usually the first word, is that person. A relationship word ("annem", "eşim", "babam") means the single connection with that relationship.
-- The recipient is the person who must do the task (the subject of the verb). A person who is only the object ("annemi ara", "Eren'e yaz") is not the recipient.
+- Otherwise exactly one name from the connection list, spelled as in the list. Names are often written in lowercase and some are also ordinary words ("can", "deniz", "umut", "ayşe"): a word that matches a connection's name, usually the first word, is that person.
+- A relationship word is how the sender names a connection: ${RELATIONSHIPS}; also with a suffix ("anneme", "eşimin"). It means the single connection with that relationship: write that connection's name, never the word. When no connection or more than one has that relationship ("annem" with two parents, "oğlum" with two children), use null and add "recipient" to missing; never guess from what a name sounds like.
+- The recipient is the person who must do the task (the subject of the verb). A person who is only the object ("annemi ara", "Eren'e yaz", "anneme 500 lira gönder") is not the recipient.
+- "X'e söyle", "X'e hatırlat", "X'e ilet" followed by what X must do: X is the recipient and the task is that thing ("eşime hatırlat yarın ekmek alsın": the spouse, title "Ekmek al").
 - If the person is not in the list, or more than one connection could be meant ("çocuklar", "biri"), use null and add "recipient" to missing.
 
 title
@@ -163,6 +173,7 @@ contact
 - The contact never sets the time: a call or a message with no time or day ("annemi ara", "Sibel'e mesaj at") has deadline null and "deadline" in missing, never "now".
 
 Worked examples (sender's local time Sunday 21:00, connections Eren: spouse, Ayşe: parent)
+- "eşime hatırlat yarın 8de ilacını alsın": eşim means Eren and the task is his: recipient Eren, title "İlacını al", tomorrow 08:00, timing "at".
 - "babamı yarın ara": the sender calls; babam is only the object. recipient "self", deadline tomorrow 19:00, timing "by"; no connection is a father here, so contact null.
 - "annemi ara": recipient "self", title "Annemi ara", no time so deadline null and "deadline" in missing; contact {name "Ayşe", action "call"}.
 - "eren yarın akşam beni arasın": recipient Eren, title "Beni ara", tomorrow 19:00, timing "by"; contact {name "sender", action "call"}.
@@ -193,6 +204,7 @@ export function buildPrompt(input: ExtractionInput): string {
   return [
     `Sender: ${input.senderName}`,
     `Sender's local time: ${toLocalIso(input.now, input.timeZone)} (${weekday(input.now, input.timeZone)}), time zone ${input.timeZone}`,
+    `Sender's formats: language ${input.formats.locale}, week starts ${input.formats.weekStart === "monday" ? "Monday" : "Sunday"}, ${input.formats.hour24 ? "24-hour" : "12-hour"} clock`,
     `Sender's connections (name: relationship, the relationship is what the person is to the sender):`,
     connections,
     ``,

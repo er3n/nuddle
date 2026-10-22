@@ -1,6 +1,7 @@
 package app.nuddle.ui
 
 import androidx.compose.ui.test.assertHasNoClickAction
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -50,6 +51,7 @@ class ProfileScreenTest {
                         onFixPermission = { did += "fix $it" },
                         onQuietHours = { did += "quiet" },
                         onLogOut = { did += "logOut" },
+                        onMissedRing = { did += "missedRing" },
                     ),
                     sheetCallbacks = ProfileSheetCallbacks(onConfirm = { did += "confirm" }),
                 )
@@ -73,6 +75,14 @@ class ProfileScreenTest {
         compose.onNodeWithTag(TestTags.profilePermission(SetupStep.NOTIFICATIONS.name)).performScrollTo().assertHasNoClickAction()
         compose.onNodeWithTag(TestTags.profilePermission(SetupStep.EXACT_ALARM.name)).performScrollTo().performClick()
         assertEquals(listOf("fix ${SetupStep.EXACT_ALARM}"), did)
+    }
+
+    @Test
+    fun `Dürtmem çalmadı opens the brand steps with every permission on (NUD-126)`() {
+        show(previewProfile.copy(permissions = GrantedPermissions(notifications = true, exactAlarm = true, fullScreen = true)))
+        compose.onNodeWithText("Dürtmem çalmadı").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag(TestTags.PROFILE_MISSED_RING).performClick()
+        assertEquals(listOf("missedRing"), did)
     }
 
     @Test

@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   resolveExtraction,
+  TURKISH_FORMATS,
   withFirstOccurrence,
+  withoutRelationshipGuess,
   type Extraction,
 } from "../../src/domain/extraction";
 import { FixtureExtractor } from "../../src/infra/llm/fixture-extractor";
 import type { LlmExchange } from "../../src/domain/ports";
+import type { EdgeType } from "../../src/domain/types";
 import { buildPrompt, OpenRouterExtractor } from "../../src/infra/llm/openrouter-extractor";
 
 const now = new Date("2026-10-11T20:00:00+03:00");
@@ -29,6 +32,7 @@ const input = {
   text: "eren yarın 9dan önce temizlikçi için 1000 çeksin",
   now,
   timeZone: "Europe/Istanbul",
+  formats: TURKISH_FORMATS,
   senderName: "Sibel",
   connections: [{ name: "Eren", relationship: "spouse" as const }],
 };
@@ -136,6 +140,98 @@ describe("resolveExtraction, a name the model missed (NUD-52)", () => {
   });
 });
 
+describe("resolveExtraction, a relationship word (NUD-132)", () => {
+  type Person = { personId: string; name: string; relationship: EdgeType };
+  const family: Person[] = [
+    { personId: "eren", name: "Eren", relationship: "spouse" as const },
+    { personId: "ayse", name: "Ayşe", relationship: "parent" as const },
+    { personId: "defne", name: "Defne", relationship: "child" as const },
+    { personId: "can", name: "Can", relationship: "child" as const },
+    { personId: "ali", name: "Ali", relationship: "roommate" as const },
+  ];
+  const noRecipient: Extraction = { ...complete, recipient: null, missing: ["recipient"] };
+  const resolve = (text: string, e: Extraction = noRecipient, people: readonly Person[] = family) =>
+    resolveExtraction(e, { id: "sibel" }, people, now, text);
+
+  it("takes the one connection with the relationship the model wrote instead of a name", () => {
+    expect(resolve("annem yarın ilacını alsın", { ...complete, recipient: "Annem" })).toMatchObject(
+      { kind: "create", recipientId: "ayse" },
+    );
+    expect(resolve("eşim yarın gitsin", { ...complete, recipient: "spouse" })).toMatchObject({
+      recipientId: "eren",
+    });
+  });
+
+  it("takes the one connection named by a relationship word the model missed", () => {
+    expect(resolve("annem yarın 9dan önce ilacını alsın")).toMatchObject({ recipientId: "ayse" });
+    expect(resolve("Eşim, yarın ekmek alsın")).toMatchObject({ recipientId: "eren" });
+    expect(resolve("ev arkadaşım yarın çöpü atsın")).toMatchObject({ recipientId: "ali" });
+  });
+
+  it("asks when two connections share the relationship or none has it", () => {
+    expect(resolve("oğlum yarın antrenmana gitsin")).toEqual({
+      kind: "ask",
+      question: "recipient",
+    });
+    expect(resolve("kızım yarın gitsin", { ...complete, recipient: "kızım" })).toEqual({
+      kind: "ask",
+      question: "recipient",
+    });
+    const twoParents = [
+      ...family,
+      { personId: "mehmet", name: "Mehmet", relationship: "parent" as const },
+    ];
+    expect(resolve("annem yarın ilacını alsın", noRecipient, twoParents)).toEqual({
+      kind: "ask",
+      question: "recipient",
+    });
+    expect(resolve("kardeşim yarın gitsin")).toEqual({ kind: "ask", question: "recipient" });
+  });
+
+  it("does not take a relationship word with a suffix, or one next to a name", () => {
+    expect(resolve("annemi yarın ara")).toEqual({ kind: "ask", question: "recipient" });
+    expect(resolve("anneme yarın 500 gönder")).toEqual({ kind: "ask", question: "recipient" });
+    expect(resolve("annem ve eşim yarın gitsin")).toEqual({ kind: "ask", question: "recipient" });
+    expect(resolve("eren annem gelince kapıyı açsın")).toMatchObject({ recipientId: "eren" });
+  });
+
+  it("prefers a connection whose name is the word itself", () => {
+    const named = [...family, { personId: "annem", name: "Annem", relationship: "other" as const }];
+    expect(resolve("annem yarın gitsin", { ...complete, recipient: "annem" }, named)).toMatchObject(
+      { recipientId: "annem" },
+    );
+  });
+});
+
+describe("withoutRelationshipGuess (NUD-132)", () => {
+  const people = [
+    { name: "Eren", relationship: "spouse" as const },
+    { name: "Ayşe", relationship: "parent" as const },
+    { name: "Mehmet", relationship: "parent" as const },
+  ];
+  const toAyse: Extraction = { ...complete, recipient: "Ayşe" };
+
+  it("drops a pick among two connections of the relationship the text names", () => {
+    for (const text of ["annem yarın ilacını alsın", "anneme söyle yarın ilacını alsın"]) {
+      expect(withoutRelationshipGuess(toAyse, text, people)).toMatchObject({
+        recipient: null,
+        missing: ["recipient"],
+      });
+    }
+  });
+
+  it("keeps the pick when the relationship is unique, the name is in the text, or no word is", () => {
+    const oneParent = people.filter((p) => p.name !== "Mehmet");
+    expect(withoutRelationshipGuess(toAyse, "annem yarın ilacını alsın", oneParent)).toBe(toAyse);
+    expect(withoutRelationshipGuess(toAyse, "annem ayşe yarın ilacını alsın", people)).toBe(toAyse);
+    expect(withoutRelationshipGuess(toAyse, "ayşe yarın ilacını alsın", people)).toBe(toAyse);
+    const toEren: Extraction = { ...complete, recipient: "Eren" };
+    expect(withoutRelationshipGuess(toEren, "eren annemi yarın arasın", people)).toBe(toEren);
+    const self: Extraction = { ...complete, recipient: "self" };
+    expect(withoutRelationshipGuess(self, "annemi yarın ara", people)).toBe(self);
+  });
+});
+
 describe("resolveExtraction, not a task (NUD-52)", () => {
   const hello: Extraction = {
     recipient: null,
@@ -182,6 +278,24 @@ describe("resolveExtraction, the contact (NUD-128)", () => {
       kind: "create",
       recipientId: "sibel",
       contact: { personId: "ayse", action: "call" },
+    });
+  });
+
+  it("a relationship word instead of the name is the single connection with it (NUD-132)", () => {
+    const family = [
+      { personId: "eren", name: "Eren", relationship: "spouse" as const },
+      { personId: "ayse", name: "Ayşe", relationship: "parent" as const },
+    ];
+    const word = { ...call, contact: { name: "Annem", action: "call" as const } };
+    expect(resolveExtraction(word, { id: "sibel" }, family, now)).toMatchObject({
+      contact: { personId: "ayse", action: "call" },
+    });
+    const twoParents = [
+      ...family,
+      { personId: "ali", name: "Ali", relationship: "parent" as const },
+    ];
+    expect(resolveExtraction(word, { id: "sibel" }, twoParents, now)).toMatchObject({
+      contact: null,
     });
   });
 
@@ -317,6 +431,47 @@ describe("OpenRouterExtractor", () => {
 
   it("lists connections with their relationship", () => {
     expect(buildPrompt(input)).toContain("- Eren: spouse");
+  });
+
+  it("tells the model the relationship words (NUD-132)", async () => {
+    const seen: LlmExchange[] = [];
+    const extractor = new OpenRouterExtractor({
+      apiKey: "k",
+      model: "m",
+      fetch: () =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({ choices: [{ message: { content: JSON.stringify(complete) } }] }),
+            { status: 200 },
+          ),
+        ),
+    });
+    await extractor.extract(input, (x) => seen.push(x));
+    expect(seen[0]?.system).toContain("annem, babam (parent)");
+    expect(seen[0]?.system).toContain("ev arkadaşım (roommate)");
+  });
+
+  it("gives the sender's language, week start and clock (NUD-132)", () => {
+    expect(buildPrompt(input)).toContain(
+      "Sender's formats: language tr-TR, week starts Monday, 24-hour clock",
+    );
+    expect(
+      buildPrompt({ ...input, formats: { locale: "en-US", weekStart: "sunday", hour24: false } }),
+    ).toContain("Sender's formats: language en-US, week starts Sunday, 12-hour clock");
+  });
+
+  it("sends only what the input holds: no phone number, no id (NUD-132)", () => {
+    // Fields a caller might pass by mistake are not in the prompt.
+    const leaky = {
+      ...input,
+      connections: [
+        { name: "Eren", relationship: "spouse" as const, phone: "+905321112233", personId: "p-1" },
+      ],
+    };
+    const prompt = buildPrompt(leaky);
+    expect(prompt).not.toContain("5321112233");
+    expect(prompt).not.toContain("p-1");
+    expect(prompt.split("\n").filter((l) => l.startsWith("- "))).toEqual(["- Eren: spouse"]);
   });
 });
 

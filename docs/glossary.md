@@ -35,6 +35,8 @@ Code and docs are in English. The UI is Turkish first (`values/strings.xml`), En
 | Contact (to call or message) | Ara / Mesaj at | NUD-128: the person a task is about calling or messaging ("annemi ara"), always one of the recipient's connections or the sender. Only the buttons on the full screen poke show it; the UI never says "kişi" or "rehber" for it. |
 | Human channel | (never named in UI) | Telling another person when pokes fail. In MVP: the sender. |
 | Setup | Bir kerelik kurulum | Permission flow. |
+| Missed ring, brand steps | "Son dürtmen çalmadı" (detected), "Dürtmem çalmadı" (profile row), "Dürtmen çalmadı mı?" (2h opened from it) | 2g, 2h. The person's own report uses "çalmadı", never "kayboldu" or "hata". |
+| Re-install pokes | "Dürtmelerimi yeniden kur", then "Bu telefondaki dürtmelerin yeniden kuruldu." | Last action of 2h (NUD-126): every alarm of this phone set again. Never "yeniden planla" (the plan is the server's). |
 
 ## Spoken poke
 

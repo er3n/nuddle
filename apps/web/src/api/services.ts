@@ -14,7 +14,10 @@ import {
 } from "../domain/connections";
 import {
   resolveExtraction,
+  contactOfExtraction,
+  TURKISH_FORMATS,
   withFirstOccurrence,
+  withoutRelationshipGuess,
   type Extraction,
   type MissingField,
 } from "../domain/extraction";
@@ -30,7 +33,7 @@ import {
   announcementPushes,
   type AnnouncementContent,
 } from "../domain/announcements";
-import { contactOf, keepContact } from "../domain/contact";
+import { keepContact } from "../domain/contact";
 import { afterWrongCode, lockedUntil } from "../domain/otp-attempts";
 import { humanChannelAllowed } from "../domain/plan-pokes";
 import { profileIsStale, RECENT_TASKS, type ProfileInput } from "../domain/profile";
@@ -627,7 +630,9 @@ export async function writeTask(
     text: input.text,
     now,
     timeZone: caller.quietHours.timeZone,
+    formats: TURKISH_FORMATS,
     senderName: caller.displayName,
+    // Only the name and the relationship of the sender's own connections (docs/domain.md).
     connections: connections.map((c) => ({
       name: c.person.displayName,
       relationship: c.edge.type,
@@ -641,11 +646,15 @@ export async function writeTask(
   });
   let extraction: Extraction;
   try {
-    extraction = withFirstOccurrence(
-      await deps.extractor.extract(extractionInput, call.sink),
+    extraction = withoutRelationshipGuess(
+      withFirstOccurrence(
+        await deps.extractor.extract(extractionInput, call.sink),
+        input.text,
+        now,
+        caller.quietHours.timeZone,
+      ),
       input.text,
-      now,
-      caller.quietHours.timeZone,
+      extractionInput.connections,
     );
   } catch (error) {
     console.error("extraction failed", error);
@@ -655,7 +664,11 @@ export async function writeTask(
   const resolved = resolveExtraction(
     extraction,
     caller,
-    connections.map((c) => ({ personId: c.person.id, name: c.person.displayName })),
+    connections.map((c) => ({
+      personId: c.person.id,
+      name: c.person.displayName,
+      relationship: c.edge.type,
+    })),
     now,
     input.text,
   );
@@ -691,14 +704,15 @@ export async function writeTask(
         leadMinutes,
         finishMode,
         repeat: extraction.repeat ?? null,
-        contact:
-          finishMode === "notice"
-            ? null
-            : contactOf(
-                extraction.contact,
-                caller,
-                connections.map((c) => ({ personId: c.person.id, name: c.person.displayName })),
-              ),
+        contact: contactOfExtraction(
+          extraction,
+          caller,
+          connections.map((c) => ({
+            personId: c.person.id,
+            name: c.person.displayName,
+            relationship: c.edge.type,
+          })),
+        ),
       },
       quiet,
     };

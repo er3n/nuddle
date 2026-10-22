@@ -357,6 +357,7 @@ fun NuddleNavHost(
                 onBack = { nav.popBackStack() },
                 onOpenPerson = { nav.navigate(Routes.person(it)) { launchSingleTop = true } },
                 onInvite = { nav.navigate(Routes.INVITE) { launchSingleTop = true } },
+                onMissedRing = { nav.navigate(Routes.MISSED_RING) { launchSingleTop = true } },
                 onSignedOut = { nav.replaceAll(Routes.WELCOME) },
             )
         }
