@@ -1,5 +1,6 @@
 package app.nuddle.data
 
+import app.nuddle.BuildConfig
 import app.nuddle.api.AuthApi
 import app.nuddle.api.CommandsApi
 import app.nuddle.api.model.RegisterCommand
@@ -97,7 +98,12 @@ class ApiAuthRepository
             e164: String,
             code: String,
         ): VerifyOutcome =
-            when (val result = apiCall(json) { authApi.verifyOtp(VerifyOtpRequest(e164, code)) }) {
+            when (
+                val result =
+                    apiCall(
+                        json,
+                    ) { authApi.verifyOtp(VerifyOtpRequest(e164, code, BuildConfig.VERSION_NAME, sessions.deviceId())) }
+            ) {
                 is ApiResult.Success -> {
                     sessions.save(result.value.toStored())
                     VerifyOutcome.SignedIn(result.value.registered)

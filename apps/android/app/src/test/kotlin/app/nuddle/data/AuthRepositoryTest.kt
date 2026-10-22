@@ -1,5 +1,6 @@
 package app.nuddle.data
 
+import app.nuddle.BuildConfig
 import app.nuddle.api.AuthApi
 import app.nuddle.api.CommandsApi
 import app.nuddle.domain.IdGenerator
@@ -70,6 +71,23 @@ class AuthRepositoryTest {
             assertEquals(Cast.EREN_ID, stored.personId)
             assertEquals("a1", stored.accessToken)
             assertTrue(stored.registered)
+        }
+
+    @Test
+    fun `verify names the app version and the device this phone registered (ADR 0027)`() =
+        runTest {
+            server.enqueue(session(registered = true))
+            repo.verify(Cast.EREN_PHONE, "123456")
+            assertEquals(
+                """{"phone":"${Cast.EREN_PHONE}","code":"123456","appVersion":"${BuildConfig.VERSION_NAME}"}""",
+                server.takeRequest().body?.utf8(),
+            )
+
+            sessions.saveDeviceId("device-1")
+            server.enqueue(session(registered = true))
+            repo.verify(Cast.EREN_PHONE, "123456")
+            val body = server.takeRequest().body!!.utf8()
+            assertTrue(body.contains(""""deviceId":"device-1""""), body)
         }
 
     @Test

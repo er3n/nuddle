@@ -692,6 +692,23 @@
     <string name="profile_delete">Hesabı sil</string>
     <string name="profile_failed_title">Olmadı</string>
     <string name="profile_failed_body">Bağlantını kontrol edip tekrar dene.</string>
+    <!-- 5e Cihazlarım (NUD-142, ADR 0027): no canvas; "telefon" in rows and sentences, "cihaz" only in the two names. -->
+    <string name="profile_account">Hesap</string>
+    <string name="devices_title">Cihazlarım</string>
+    <string name="devices_group">Hesabının açık olduğu telefonlar</string>
+    <string name="devices_this_phone">Bu telefon</string>
+    <string name="devices_unknown_model">Bilinmeyen telefon</string>
+    <string name="devices_version">Sürüm %1$s</string>
+    <string name="devices_separator">" · "</string>
+    <string name="devices_seen_today">Son görülme bugün %1$s</string>
+    <string name="devices_seen_yesterday">Son görülme dün %1$s</string>
+    <string name="devices_seen_on">Son görülme %1$d %2$s %3$s</string>
+    <string name="devices_sign_out_others">Diğer cihazlardan çıkış yap</string>
+    <string name="devices_sign_out_others_note">Diğer telefonlarda dürtmeler durur, oralarda yeniden girmek için kod gerekir.</string>
+    <string name="devices_confirm_title">Diğer cihazlardan çıkılsın mı?</string>
+    <string name="devices_confirm_body">Bu telefon dışındaki tüm telefonlarda hesabın kapanır. O telefonlarda dürtmeler çalmaz, görevlerin ve bağlantıların silinmez.</string>
+    <string name="devices_confirm">Çıkış yap</string>
+    <string name="devices_failed_title">Telefonların yüklenemedi</string>
     <string name="rename_title">Adın</string>
     <!-- 5b: person detail (open-questions#37, #4); names take no suffix (#21) -->
     <string name="person_since_today">%1$s · bugün bağlandınız</string>

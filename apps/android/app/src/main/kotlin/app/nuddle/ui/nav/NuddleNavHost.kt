@@ -78,6 +78,7 @@ object Routes {
     const val INBOX = "inbox"
     const val MISSED_RING = "missed-ring"
     const val PROFILE = "profile"
+    const val DEVICES = "devices"
     const val PERSON = "person/{${PersonViewModel.ARG_PERSON}}"
 
     fun person(personId: String): String = "person/$personId"
@@ -377,8 +378,12 @@ fun NuddleNavHost(
                 onOpenPerson = { nav.navigate(Routes.person(it)) { launchSingleTop = true } },
                 onInvite = { nav.navigate(Routes.INVITE) { launchSingleTop = true } },
                 onMissedRing = { nav.navigate(Routes.MISSED_RING) { launchSingleTop = true } },
+                onDevices = { nav.navigate(Routes.DEVICES) { launchSingleTop = true } },
                 onSignedOut = { nav.replaceAll(Routes.WELCOME) },
             )
+        }
+        composable(Routes.DEVICES) {
+            DevicesRoute(onBack = { nav.popBackStack() })
         }
         composable(Routes.PERSON, arguments = listOf(navArgument(PersonViewModel.ARG_PERSON) { type = NavType.StringType })) {
             PersonRoute(onBack = { nav.popBackStack() })

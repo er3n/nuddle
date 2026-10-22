@@ -1,5 +1,6 @@
 package app.nuddle.data
 
+import app.nuddle.BuildConfig
 import app.nuddle.api.AuthApi
 import app.nuddle.api.SyncApi
 import app.nuddle.data.api.AuthInterceptor
@@ -58,9 +59,24 @@ class TokenAuthenticatorTest {
             assertEquals("Bearer access-1", server.takeRequest().headers["Authorization"])
             val refresh = server.takeRequest()
             assertEquals("/api/v1/auth/refresh", refresh.url.encodedPath)
-            assertEquals("""{"refreshToken":"refresh-1"}""", refresh.body?.utf8())
+            assertEquals("""{"refreshToken":"refresh-1","appVersion":"${BuildConfig.VERSION_NAME}"}""", refresh.body?.utf8())
             assertEquals("Bearer access-2", server.takeRequest().headers["Authorization"])
             assertEquals("refresh-2", sessions.current()!!.refreshToken)
+        }
+
+    @Test
+    fun `the refresh names the device this phone registered (ADR 0027)`() =
+        runTest {
+            sessions.saveDeviceId("device-1")
+            server.enqueue(drtError(401, "DRT-1002", "unauthorized"))
+            server.enqueue(drtError(401, "DRT-1006", "invalid_otp"))
+
+            syncApi.sync()
+
+            server.takeRequest()
+            val body = server.takeRequest().body!!.utf8()
+            assertTrue(body.contains(""""deviceId":"device-1""""), body)
+            assertTrue(body.contains(""""appVersion":"${BuildConfig.VERSION_NAME}""""), body)
         }
 
     @Test

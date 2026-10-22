@@ -1,5 +1,6 @@
 package app.nuddle.data.api
 
+import app.nuddle.BuildConfig
 import app.nuddle.api.AuthApi
 import app.nuddle.api.model.RefreshRequest
 import app.nuddle.api.model.Session
@@ -65,7 +66,10 @@ class TokenAuthenticator(
                     if (current.accessToken != failedToken) return@withLock current.accessToken
                     val refreshed =
                         try {
-                            authApi().refreshSession(RefreshRequest(current.refreshToken))
+                            authApi().refreshSession(
+                                // Which phone holds the session (ADR 0027): never more than its id and version.
+                                RefreshRequest(current.refreshToken, BuildConfig.VERSION_NAME, sessions.deviceId()),
+                            )
                         } catch (_: java.io.IOException) {
                             // Offline: keep the session and fail this call; the outbox retries later.
                             return@withLock null

@@ -26,6 +26,7 @@ If a screen and `product.md` disagree on behavior, `product.md` wins. Copy writt
 | `invite`, `invite/ready` | 1e, 1f | Ends in the system share sheet |
 | `announcement/{id}` | (no canvas, ADR 0025) | An announcement from Nuddle: markdown and an optional button. From its notification or the bell |
 | `profile`, `person/{id}` | 5a, 5b, 7g, 7h, 7i | Settings sheets on top of profile |
+| `devices` | 5e (no canvas, ADR 0027) | Cihazlarım: the phones signed in to my account, from profile |
 | `PokeActivity` | 3b, 2d (demo), 7f | Opened from a notification or alarm |
 | System notification | 3a, 4b, 7a | `NotificationCompat`, not Compose |
 
@@ -293,6 +294,11 @@ Note: the canvas shows "23:00 – 07:00" with an en dash. Use "23:00-07:00" or "
 An open invite I sent is a row under Bizimkiler with "Bekliyor"; a tap opens a sheet with the 1g content: "Sibel henüz katılmadı", when it was shared and as what, the body, "Tekrar paylaş" (the system share sheet with the same link) and "İptal et" (NUD-100).
 Under İzinler a last row "Dürtmem çalmadı" opens 2h (NUD-126), so the person can walk through the brand steps and re-install the pokes without a detected loss.
 Since NUD-72 the avatar at the top opens the picture sheet ("Fotoğraf"): "Galeriden seç" opens the system photo picker and uploads the picture; "Fotoğrafı kaldır" shows the initial again. Connections see the picture after their next sync.
+
+### 5e Cihazlarım (no canvas, NUD-142, ADR 0027)
+**The design canvas is missing.** Built from the components of 5a and 5b (BackBar, SettingsGroup, a row with a caption line like ToggleRow's text, InlineAlert, a DangerOutline button at the bottom as on 5b, and a Danger sheet like 7h and 7i) and the theme tokens; replace with the canvas when there is one.
+A row "Cihazlarım" in a "Hesap" group on 5a, above Çıkış yap and Hesabı sil, opens `devices`. It lists the phones signed in to my account (`GET /api/v1/sessions`), newest first, one row each: the phone's model ("Bilinmeyen telefon" until the phone reports one) and under it the app version and when it was last seen; the phone in my hand says "Bu telefon" instead of the time. While the list loads a spinner shows; when it cannot load, the 5a alert with "Tekrar dene". With other phones in the list a DangerOutline button "Diğer cihazlardan çıkış yap" sits at the bottom with a note; it opens a sheet that asks first. Confirmed, every other phone is signed out (`sign_out_others`): those phones stop poking and go to the welcome screen (NUD-141); the list reloads and shows only this phone. When it does not go, the sheet stays with the 5a alert.
+**Copy:** Hesap | Cihazlarım | Hesabının açık olduğu telefonlar (the group title) | Bu telefon | Bilinmeyen telefon | Sürüm 0.1.7 | Son görülme bugün 14:32 | Son görülme dün 09:10 | Son görülme 12 Ekim 18:05 | Diğer cihazlardan çıkış yap | Diğer telefonlarda dürtmeler durur, oralarda yeniden girmek için kod gerekir. | Diğer cihazlardan çıkılsın mı? | Bu telefon dışındaki tüm telefonlarda hesabın kapanır. O telefonlarda dürtmeler çalmaz, görevlerin ve bağlantıların silinmez. | Çıkış yap | Vazgeç | Telefonların yüklenemedi | Bağlantını kontrol edip tekrar dene. | Tekrar dene
 
 ### 5b Person detail · `PersonDetail.png`
 **Copy:** Eşin · [3 aydır] bağlısınız | Bu bağlantı | İlişki | Sibel'in işleri için bana haber verilebilir | Sibel bir işi kaçırırsa sana da söyleyebilirim. | Birlikte | Birbirinize yazdığınız | [24] görev | Zamanında biten | [%88] | Bağlantıyı kaldır | Sibel'e bildirim gitmez. Açık görevleriniz iptal olur.
