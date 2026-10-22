@@ -170,7 +170,7 @@ On home only while nobody is connected yet, as in the PNG. Once someone is conne
 ## 2 · Writing a task and setup
 
 ### 2a Compose, to self · `TaskCompose.png`
-ComposeBar focused with keyboard. Text that is not a task ("merhaba") gets the extractor's one-sentence reply in a ReplyNote above the bar, the bar is emptied, and nothing is created (NUD-52, components.md 6).
+ComposeBar focused with keyboard. Text that is not a task ("merhaba") gets the extractor's one-sentence reply in a ReplyNote above the bar, the bar is emptied, and nothing is created (NUD-52, components.md 6). Text shared from another app (NUD-127, platform.md, Other) lands in the bar after what is already typed, as `Typing`; nothing goes out until the arrow.
 **Copy:** Kime, ne, ne zaman. Yazınca mikrofon gönder butonuna dönüşür. | Yeni görev | (example input) 1000 tl çek
 
 ### 2b Preview, only when info is missing · `TaskPreview.png`
