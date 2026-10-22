@@ -26,6 +26,7 @@ import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.DurtButton
 import app.nuddle.ui.components.DurtButtonKind
 import app.nuddle.ui.components.DurtButtonSize
+import app.nuddle.ui.components.SlideToConfirm
 import app.nuddle.ui.components.TextLink
 import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewScreens
@@ -65,6 +66,8 @@ data class PokeUiState(
     val contact: PokeContactUi? = null,
     /** The step's poke title over the task (NUD-130, glossary.md, Poke titles); null on a one-time message. */
     val pokeTitle: String? = null,
+    /** Shown over a locked phone (NUD-131): Bitti or Tamam is a slide, so a pocket tap cannot close the task. */
+    val locked: Boolean = false,
 )
 
 @Composable
@@ -77,7 +80,7 @@ fun timeLeftText(timeLeft: TimeLeft): String =
 /**
  * Full screen poke (3b): `poke` background with static rings, the poke title (NUD-130), the task, and the three
  * answers; Ara or Mesaj at under Bitti when the task is about calling or messaging a connection (NUD-128). [onContact]
- * leaves the task open.
+ * leaves the task open. Over a locked phone Bitti is a slide ([PokeUiState.locked], NUD-131).
  */
 @Composable
 fun PokeScreen(
@@ -97,14 +100,7 @@ fun PokeScreen(
         modifier = modifier.testTag(TestTags.POKE),
         horizontalAlignment = Alignment.CenterHorizontally,
         bottom = {
-            DurtButton(
-                text = stringResource(if (state.notice) R.string.poke_ok else R.string.poke_done),
-                onClick = onDone,
-                kind = DurtButtonKind.OnPoke,
-                size = DurtButtonSize.Poke,
-                leadingIcon = DurtIcons.Check,
-                modifier = Modifier.testTag(TestTags.POKE_DONE),
-            )
+            PokeDoneButton(state, onDone)
             state.contact?.let { PokeContactButton(it, onContact) }
             if (state.snooze != null && !state.notice) {
                 DurtButton(
@@ -174,6 +170,32 @@ fun PokeScreen(
                         .padding(dimens.space20),
             )
         }
+    }
+}
+
+/** Bitti (Tamam on a one-time message); a slide over the lock screen (NUD-131, screens.md 3b). */
+@Composable
+private fun PokeDoneButton(
+    state: PokeUiState,
+    onDone: () -> Unit,
+) {
+    val label = stringResource(if (state.notice) R.string.poke_ok else R.string.poke_done)
+    if (state.locked) {
+        SlideToConfirm(
+            text = stringResource(if (state.notice) R.string.poke_slide_ok else R.string.poke_slide_done),
+            accessibilityLabel = label,
+            onConfirm = onDone,
+            modifier = Modifier.testTag(TestTags.POKE_DONE),
+        )
+    } else {
+        DurtButton(
+            text = label,
+            onClick = onDone,
+            kind = DurtButtonKind.OnPoke,
+            size = DurtButtonSize.Poke,
+            leadingIcon = DurtIcons.Check,
+            modifier = Modifier.testTag(TestTags.POKE_DONE),
+        )
     }
 }
 
@@ -328,6 +350,30 @@ private fun PokeScreenMessagePreview() {
                     snooze = null,
                     contact = PokeContactUi(phone = "+905320000001", message = true),
                     pokeTitle = "Pes etmem",
+                ),
+            onDone = {},
+            onSnooze = {},
+            onCantToday = {},
+        )
+    }
+}
+
+/** Over the lock screen (NUD-131): Bitti is a slide, the other answers stay taps. */
+@PreviewScreens
+@Composable
+private fun PokeScreenLockedPreview() {
+    DurtTheme {
+        PokeScreen(
+            state =
+                PokeUiState(
+                    pokeNumber = 3,
+                    time = "08:15",
+                    title = "Para çek",
+                    detail = "1.000 TL",
+                    timeLeft = TimeLeft.Minutes(45),
+                    snooze = SnoozeUi(time = "08:25", last = true),
+                    pokeTitle = "Pes etmem",
+                    locked = true,
                 ),
             onDone = {},
             onSnooze = {},

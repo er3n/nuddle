@@ -598,6 +598,9 @@
     <string name="poke_count">%1$d. dürtme</string>
     <string name="poke_count_at">%1$d. dürtme · %2$s</string>
     <string name="poke_done">Bitti</string>
+    <!-- NUD-131: Bitti and Tamam over a locked phone are a slide (screens.md 3b); TalkBack hears poke_done / poke_ok. -->
+    <string name="poke_slide_done">Kaydırarak bitir</string>
+    <string name="poke_slide_ok">Kaydırarak kapat</string>
     <!-- Quiet notification before a loud poke when the phone is in use (NUD-129, glossary.md). Text: the task title. -->
     <string name="heads_up_title">Zaten yaptın mı?</string>
     <string name="poke_call">Ara</string>
