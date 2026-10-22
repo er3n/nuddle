@@ -54,7 +54,11 @@ class WorkManagerAlarmChecks(
 ) : AlarmCheckScheduling {
     override fun keepChecking(active: Boolean) {
         if (active) {
-            val request = PeriodicWorkRequestBuilder<AlarmCheckWorker>(CHECK_EVERY_HOURS, TimeUnit.HOURS).build()
+            // The first check an hour from now too: the alarms were just set, and a periodic job otherwise runs at once.
+            val request =
+                PeriodicWorkRequestBuilder<AlarmCheckWorker>(CHECK_EVERY_HOURS, TimeUnit.HOURS)
+                    .setInitialDelay(CHECK_EVERY_HOURS, TimeUnit.HOURS)
+                    .build()
             // KEEP: a re-arm after every sync must not push the next check further away.
             workManager.enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
         } else {
