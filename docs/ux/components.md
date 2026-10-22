@@ -96,7 +96,7 @@ sealed interface ComposeState { data object Idle; data class Typing(val text: St
 
 - `InboxItem(icon, title, subtitle, time, unread, onClick)`: 36 dp icon circle; unread means title 600 and an 8 dp `poke` dot on the right. The bell groups items as "Bugün / Dün / Daha önce" with SettingsGroup.
 - Warning entries (permission off, poke did not ring) are cards with a full width "Düzelt" button (screen 2g).
-- PokeNotification is not Compose. Built with `NotificationCompat`: title = task title, text = "From · time to deadline", large icon = sender avatar bitmap, at most three actions: Bitti, Ertele, Bugün olmaz. Channels in `platform.md`.
+- PokeNotification is not Compose. Built with `NotificationCompat`: title = the step's poke title (glossary.md, Poke titles; a one-time message keeps the message), text = task title (with the detail), the expanded text adds the time to the deadline, large icon = sender avatar bitmap, at most three actions: Bitti, Ertele, Bugün olmaz. Channels in `platform.md`.
 
 ## 8. DurtBottomSheet
 

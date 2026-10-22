@@ -615,6 +615,28 @@
     <!-- A poke before the first unlock after a reboot: the task cannot be read yet (docs/ux/platform.md, Direct boot). -->
     <string name="poke_locked_title">Bir dürtmen var</string>
     <string name="poke_locked_text">Kilidi açınca görürsün.</string>
+    <!-- NUD-130: a poke's title per level, the task is the text under it (glossary.md, Poke titles). Never blame, never
+         count, never tell the plan or the next time. PokeTitles picks one; each list needs at least two lines. -->
+    <!-- 3a expanded: the task, then the time line ("Son zamana 1 saat var.") under it. -->
+    <string name="poke_text_expanded">%1$s\n%2$s</string>
+    <string-array name="poke_titles_silent">
+        <item>Bir şey unutmadın mı?</item>
+        <item>Küçük bir hatırlatma</item>
+        <item>Aklında olsun</item>
+        <item>Usulca dürtüyorum</item>
+    </string-array>
+    <string-array name="poke_titles_sound">
+        <item>Ben buradayım</item>
+        <item>Selam, ben geldim</item>
+        <item>Hâlâ buradayım</item>
+        <item>Biraz ses çıkarayım dedim</item>
+    </string-array>
+    <string-array name="poke_titles_full_screen">
+        <item>Pes etmem</item>
+        <item>Hadi, şimdi tam sırası</item>
+        <item>Ben gitmiyorum</item>
+        <item>İnatçıyımdır, bilirsin</item>
+    </string-array>
     <!-- 7f: the optional note after Bugün yapamayacağım (open-questions#36) -->
     <string name="drop_title">Tamam, bugün olmuyor</string>
     <string name="drop_body">%1$s için bir not bırakmak ister misin? Zorunlu değil.</string>

@@ -50,6 +50,21 @@ The sound and full screen steps say the task aloud (NUD-124, product.md Poking).
 
 Only the title is read, never the detail. A one-time message reads the same way ("Sibel diyor ki: seni seviyorum").
 
+## Poke titles
+
+A poke's title is a short line from the app (NUD-130, product.md Principles), and the task's title is the text under it ("Hâlâ buradayım" over "Para çek · 1.000 TL"). Each level has its own lines, and each level is a step more insistent than the one before: `SILENT` asks gently, `SOUND` says it is still here, `FULL_SCREEN` says it will not give up. The lines are warm and a little funny, in the app's first person voice. They never blame, never count ("üçüncü kez" is out, the "N. dürtme" sub text is the only count), and never tell the plan or the next time.
+
+| Level | Titles (Turkish) | Resource |
+|---|---|---|
+| `SILENT` | Bir şey unutmadın mı? / Küçük bir hatırlatma / Aklında olsun / Usulca dürtüyorum | `poke_titles_silent` |
+| `SOUND` | Ben buradayım / Selam, ben geldim / Hâlâ buradayım / Biraz ses çıkarayım dedim | `poke_titles_sound` |
+| `FULL_SCREEN` | Pes etmem / Hadi, şimdi tam sırası / Ben gitmiyorum / İnatçıyımdır, bilirsin | `poke_titles_full_screen` |
+
+- The phone picks the line (`PokeTitles`, pure) from the task, the plan version and the step's number, so showing the same poke again (the full screen after the notification, a reboot) keeps its line, and two pokes in a row of one plan never share a line. The level is the one that rings (a full screen step that rings as sound takes a `SOUND` line). A new plan (a snooze, an edit) moves the start of the rotation; open-questions #60.
+- Tasks to self and tasks from someone else use the same lines. The sender's picture stays the large icon.
+- A one-time message (NUD-79) keeps the message as its title: the lines are about a task to do, a message has none.
+- Before the first unlock a poke still says "Bir dürtmen var" (platform.md, Direct boot).
+
 ## Words the UI never uses
 
 - "ev", "hane" (household)

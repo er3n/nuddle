@@ -63,6 +63,8 @@ data class PokeUiState(
     val notice: Boolean = false,
     /** Whom to call or message from here (NUD-128); null hides the button, always null on a one-time message. */
     val contact: PokeContactUi? = null,
+    /** The step's poke title over the task (NUD-130, glossary.md, Poke titles); null on a one-time message. */
+    val pokeTitle: String? = null,
 )
 
 @Composable
@@ -73,8 +75,9 @@ fun timeLeftText(timeLeft: TimeLeft): String =
     }
 
 /**
- * Full screen poke (3b): `poke` background with static rings, the task, and the three answers; Ara or Mesaj at under
- * Bitti when the task is about calling or messaging a connection (NUD-128). [onContact] leaves the task open.
+ * Full screen poke (3b): `poke` background with static rings, the poke title (NUD-130), the task, and the three
+ * answers; Ara or Mesaj at under Bitti when the task is about calling or messaging a connection (NUD-128). [onContact]
+ * leaves the task open.
  */
 @Composable
 fun PokeScreen(
@@ -137,6 +140,14 @@ fun PokeScreen(
                     .padding(horizontal = dimens.space14, vertical = dimens.space6),
         )
         PokeRings()
+        if (state.pokeTitle != null) {
+            Text(
+                text = state.pokeTitle,
+                style = DurtTheme.type.bodyLarge,
+                color = colors.onPokeSoft,
+                textAlign = TextAlign.Center,
+            )
+        }
         Text(
             text = state.title,
             style = DurtTheme.type.displayPoke,
@@ -224,6 +235,7 @@ private fun PokeScreenPreview() {
                     timeLeft = TimeLeft.Minutes(45),
                     message = "İki dürtmeyi geçtin. Bu sefer ciddiyim, 09:00'a az kaldı.",
                     snooze = SnoozeUi(time = "08:25", last = true),
+                    pokeTitle = "Pes etmem",
                 ),
             onDone = {},
             onSnooze = {},
@@ -245,6 +257,7 @@ private fun PokeScreenNoSnoozePreview() {
                     detail = "1.000 TL",
                     timeLeft = TimeLeft.Minutes(20),
                     snooze = null,
+                    pokeTitle = "Ben gitmiyorum",
                 ),
             onDone = {},
             onSnooze = {},
@@ -266,6 +279,7 @@ private fun PokeScreenMomentPreview() {
                     title = "Su iç",
                     detail = null,
                     timeLeft = null,
+                    pokeTitle = "Hadi, şimdi tam sırası",
                 ),
             onDone = {},
             onSnooze = {},
@@ -289,6 +303,7 @@ private fun PokeScreenCallPreview() {
                     timeLeft = TimeLeft.Minutes(15),
                     snooze = SnoozeUi(time = "18:55", last = false),
                     contact = PokeContactUi(phone = "+905320000005", message = false),
+                    pokeTitle = "İnatçıyımdır, bilirsin",
                 ),
             onDone = {},
             onSnooze = {},
@@ -312,6 +327,7 @@ private fun PokeScreenMessagePreview() {
                     timeLeft = null,
                     snooze = null,
                     contact = PokeContactUi(phone = "+905320000001", message = true),
+                    pokeTitle = "Pes etmem",
                 ),
             onDone = {},
             onSnooze = {},

@@ -21,6 +21,7 @@ import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.isMoment
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.Diagnostics
+import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeRules
 import app.nuddle.domain.SnoozeRules
 import app.nuddle.ui.TestTagsRoot
@@ -152,6 +153,8 @@ class PokeActivity : ComponentActivity() {
                         },
                     notice = notice,
                     contact = task.contactPersonId?.takeUnless { notice }?.let { pokeContact(task, connections.get(it)) },
+                    // The line the notification shows too (NUD-130); this screen only opens for a full screen ring.
+                    pokeTitle = pokeTitle(step, PokeLevel.FULL_SCREEN).takeUnless { notice },
                 )
         }
         // Closed on the other phone or on the server while it is up (cancelled, missed): the poke goes (NUD-64).

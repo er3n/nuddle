@@ -209,12 +209,16 @@ The person can open 2h themselves from profile (5a, "Dürtmem çalmadı") when n
 System notification (shell is the system's, content and actions are ours).
 **Copy:** 2. dürtme | Para çek · 1.000 TL | Son zamana 1 saat var. Şimdi çıkarken uğrarsan iş biter. | Bitti | 15 dk ertele (built as "Ertele · 08:30", open-questions #1) | Bugün olmaz
 
+**Poke titles (NUD-130).** The PNG shows the task as the title. Built since NUD-130: the title is the step's poke title (glossary.md, Poke titles: "Ben buradayım"), the text is the task ("Para çek · 1.000 TL"), and the expanded notification adds the time line under it ("Son zamana 1 saat var."). A one-time message keeps the message as the title.
+
 **Zaten yaptın mı? (NUD-129).** No design PNG. A quiet system notification before a loud poke when the phone is in use (domain.md, Already done?): the poke's icon and color, title "Zaten yaptın mı?", text the task's title, the sender's picture as for 3a, one action Bitti. No time and no poke count.
 **Copy:** Zaten yaptın mı? | Para çek | Bitti
 
 ### 3b Poke, full screen · `PokeFull.png`
 `PokeActivity` on `poke` background with rings.
 **Copy:** 3. dürtme · 08:15 | Para çek | 1.000 TL · son zamana 45 dk | İki dürtmeyi geçtin. Bu sefer ciddiyim, 09:00'a az kaldı. | Bitti | 10 dk ertele · son hakkın (built as "Ertele · 08:25 · son hakkın", open-questions #1) | Bugün yapamayacağım
+
+**Poke title (NUD-130).** No design PNG. The step's poke title (glossary.md, Poke titles: "Pes etmem") sits under the rings in `bodyLarge`, `onPokeSoft`, above the task's title, which stays the heading. None on a one-time message.
 
 **Ara or Mesaj at (NUD-128).** No design PNG. When the task has a contact (domain.md, Call or message from the poke: "annemi ara", "Sibel'e mesaj at") and the phone has that connection's number, an outline button under Bitti, with the phone or the message icon: "Ara" opens the dialer with the number (`ACTION_DIAL`, after the lock screen is unlocked), "Mesaj at" the `smsto:` chooser. The tap stops this poke's sound and voice and closes the full screen; the task stays open and its card stays on home, so only Bitti closes it and the next pokes ring as planned. Without a contact, or without the number (the connection is gone), the screen is as above. The notification (3a) keeps Bitti, Ertele and Bugün olmaz; the action is on the full screen only (open-questions #58). The demo poke (2d) never shows it.
 **Copy:** Ara | Mesaj at
