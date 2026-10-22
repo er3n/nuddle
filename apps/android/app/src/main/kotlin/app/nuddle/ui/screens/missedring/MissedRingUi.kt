@@ -23,14 +23,22 @@ data class MissedRingUiState(
     val loading: Boolean = true,
     /** The steps could not be loaded. */
     val failed: Boolean = false,
+    /** The person opened 2h from profile while no loss was being warned about (NUD-126). */
+    val reported: Boolean = false,
+    /** "Dürtmelerimi yeniden kur", the last action (NUD-126). */
+    val rearm: RearmUi = RearmUi.Idle,
 ) {
     /** The step to do now: the first one not done. */
     val active: String? get() = steps.firstOrNull { !it.done }?.id
 }
+
+/** Re-installing every alarm of this phone: not yet, going on, done. */
+enum class RearmUi { Idle, Busy, Done }
 
 @Immutable
 data class MissedRingCallbacks(
     val onBack: () -> Unit = {},
     val onOpen: (stepId: String) -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onRearm: () -> Unit = {},
 )

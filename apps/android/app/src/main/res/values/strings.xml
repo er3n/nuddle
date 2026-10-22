@@ -462,7 +462,12 @@
         <item>Beş</item>
     </string-array>
     <string name="missed_ring_open">Ayarı aç</string>
-    <string name="missed_ring_footer">Bu adımları sadece dürtmesi kaybolan telefonlarda gösteririm. Adımlar markaya göre değişir.</string>
+    <string name="missed_ring_footer">Adımlar markaya göre değişir.</string>
+    <!-- 2h opened from profile without a detected loss, and its last action (NUD-126) -->
+    <string name="missed_ring_reported_title">Dürtmen çalmadı mı?</string>
+    <string name="missed_ring_reported_body">Telefonun beni arka planda kapatmış olabilir.</string>
+    <string name="missed_ring_rearm">Dürtmelerimi yeniden kur</string>
+    <string name="missed_ring_rearmed">Bu telefondaki dürtmelerin yeniden kuruldu.</string>
     <string name="missed_ring_failed_body">Adımları alamadım. Bağlantını kontrol edip tekrar dene.</string>
     <string name="missed_ring_retry">Tekrar dene</string>
     <string name="ago_now">şimdi</string>
@@ -638,6 +643,7 @@
     <string name="bell_battery_on_title">Pil kısıtlaması açık</string>
     <string name="bell_battery_on_body">Telefon uygulamayı uyutabilir, dürtmeler bir süre sonra hiç gelmez.</string>
     <string name="profile_permission_off">Kapalı · Düzelt</string>
+    <string name="profile_missed_ring">Dürtmem çalmadı</string>
     <string name="cd_permission_on">Açık</string>
     <string name="profile_log_out">Çıkış yap</string>
     <string name="profile_delete">Hesabı sil</string>

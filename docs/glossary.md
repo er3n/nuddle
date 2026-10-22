@@ -34,6 +34,8 @@ Code and docs are in English. The UI is Turkish first (`values/strings.xml`), En
 | Announcement | "Nuddle'dan", channel "Nuddle'dan haberler" | A message from us to people, not about a task (ADR 0025). The UI shows its own title; never "duyuru" or "bildiri". |
 | Human channel | (never named in UI) | Telling another person when pokes fail. In MVP: the sender. |
 | Setup | Bir kerelik kurulum | Permission flow. |
+| Missed ring, brand steps | "Son dürtmen çalmadı" (detected), "Dürtmem çalmadı" (profile row), "Dürtmen çalmadı mı?" (2h opened from it) | 2g, 2h. The person's own report uses "çalmadı", never "kayboldu" or "hata". |
+| Re-install pokes | "Dürtmelerimi yeniden kur", then "Bu telefondaki dürtmelerin yeniden kuruldu." | Last action of 2h (NUD-126): every alarm of this phone set again. Never "yeniden planla" (the plan is the server's). |
 
 ## Words the UI never uses
 

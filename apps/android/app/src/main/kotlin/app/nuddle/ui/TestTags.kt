@@ -136,6 +136,7 @@ object TestTags {
     const val BELL_MISSED_RING = "inbox.missedRing"
     const val MISSED_RING_SCREEN = "missedRing.screen"
     const val MISSED_RING_OPEN = "missedRing.open"
+    const val MISSED_RING_REARM = "missedRing.rearm"
 
     const val SETUP = "setup.screen"
     const val SETUP_TRY = "setup.try"
@@ -177,6 +178,7 @@ object TestTags {
     const val PROFILE_QUIET = "profile.quiet"
     const val PROFILE_LOG_OUT = "profile.logOut"
     const val PROFILE_DELETE = "profile.delete"
+    const val PROFILE_MISSED_RING = "profile.missedRing"
     const val QUIET_START = "quiet.start"
     const val QUIET_END = "quiet.end"
     const val RENAME_INPUT = "rename.input"
