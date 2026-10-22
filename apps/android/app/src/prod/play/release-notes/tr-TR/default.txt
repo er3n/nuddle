@@ -1,1 +1,1 @@
-Nuddle'dan haberler: yenilikleri artık uygulamanın içinden okuyabilirsin. Bildirime ya da zile dokun.
+Dürtmeler artık görevi sesli okuyor ("Sibel diyor ki: ilacını iç") ve her seferinde biraz daha ısrarcı. Kilitli ekranda Bitti kaydırarak. "Annemi ara" gibi işlerde tek dokunuşla Ara. WhatsApp'tan bir mesajı paylaşarak görev yaz. Telefon yeniden başlasa da dürtmeler çalar.
