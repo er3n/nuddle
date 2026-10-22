@@ -1,1 +1,1 @@
-News from Nuddle: read what's new right inside the app. Tap the notification or the bell.
+Pokes now read the task aloud ("Sibel says: take your medicine") and get a little more insistent each time. Slide to finish on the lock screen. One tap to call for tasks like "call mom". Share a message from WhatsApp to write a task. Pokes ring even after the phone restarts.
