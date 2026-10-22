@@ -41,6 +41,7 @@ internal fun Context.timeLeftText(timeLeft: TimeLeft): String =
  * The poke notification (screen 3a, docs/ux/components.md, 7): title is the task, text is the time to the deadline,
  * at most three actions. `SILENT` goes to `poke_silent`, `SOUND` and `FULL_SCREEN` to `poke_alarm`; `FULL_SCREEN`
  * also opens [PokeActivity] over the lock screen. The sender's avatar as large icon arrives with tasks for others.
+ * `SOUND` and `FULL_SCREEN` also say the task aloud through [PokeSpeech] (NUD-124).
  */
 class AndroidPokeNotifications
     @Inject
@@ -50,6 +51,7 @@ class AndroidPokeNotifications
         private val timeZone: TimeZone,
         private val volume: AlarmVolume,
         private val avatars: AvatarFiles,
+        private val speech: PokeSpeech = PokeSpeech.None,
     ) : PokeNotifications {
         override fun show(
             task: TaskEntity,
@@ -110,6 +112,8 @@ class AndroidPokeNotifications
             // the alarm tone once and stops, which a tester heard as one soft ring and no more.
             if (!silent) notification.flags = notification.flags or Notification.FLAG_INSISTENT
             manager.notify(notificationId(task.id), notification)
+            // The task said aloud between the tone while this poke is up (NUD-124); a silent step says nothing.
+            speech.start(task, level) { task.id in showing() }
         }
 
         private fun fullScreenIntent(step: PokeStep): PendingIntent =
@@ -122,6 +126,7 @@ class AndroidPokeNotifications
 
         override fun cancel(taskId: String) {
             NotificationManagerCompat.from(context).cancel(notificationId(taskId))
+            speech.stop(taskId)
             if (showing().isEmpty()) volume.restore()
         }
 
