@@ -116,6 +116,8 @@ All of these live in pure functions that receive `now` from an injected `Clock` 
 | `FULL_SCREEN` | `PokeActivity` over the lock screen with alarm sound. | Notifications + full screen intent + exact alarm |
 | `HUMAN` | "Eren'e ulaşamıyorum" notification to the sender (MVP) or later another connection. | Server side only |
 
+`SOUND` and `FULL_SCREEN` also say the task aloud while they ring (NUD-124, product.md Poking): Android `TextToSpeech` on the alarm stream with a Turkish voice, the first time a few seconds after the tone starts, then twice more with a pause, and only while the poke is still up. Answering the poke, a sync that closes it or a swipe stops the voice. No Turkish voice or engine: the tone rings alone. The utterance (`PokeUtterances`, pure) is "<sender> diyor ki: <title>" for a task from someone else and the title alone for a task to self or when the sender's name is not on the phone; a `SILENT` step says nothing. The detail is not read. Not before the first unlock (no task text then).
+
 If full screen is not permitted, `FULL_SCREEN` silently degrades to `SOUND` on the device and the event is reported as `permission_missing`.
 
 ## Poke plan
@@ -170,7 +172,7 @@ Each device step also gets a `lost_poke_check` timer at planned time + 5 minutes
 - One call per written text. Output (structured): recipient, title, detail, deadline, timing, suggested finish mode, and a confidence or missing-field list.
 - **Context sent with the text** (NUD-132), and nothing else:
   - the sender's display name, local time, weekday and IANA time zone;
-  - the sender's formats: language (`tr-TR`), first day of the week (Monday) and clock (24-hour). Until the English strings ship every sender gets these Turkish values; the phone does not send its own yet (open-questions #56);
+  - the sender's formats: language (`tr-TR`), first day of the week (Monday) and clock (24-hour). Until the English strings ship every sender gets these Turkish values; the phone does not send its own yet (open-questions #57);
   - the sender's own active connections, each with the display name and the relationship the sender picked for them ("Senin neyin?", what the person is to the sender).
 - **Never sent:** phone numbers, person or task ids, photos, quiet hours, other tasks, a connection's own connections or anything about a person who is not the sender's active connection, and the relationship the connection picked for the sender.
 - **Relationship words are the nicknames.** The app keeps no nickname of its own; "eşim", "karım", "kocam" mean the connection typed `spouse`, "annem", "babam" `parent`, "oğlum", "kızım", "çocuğum" `child`, "kardeşim", "ablam", "abim" `sibling`, "ev arkadaşım" `roommate`, with or without a suffix ("anneme söyle", "eşime hatırlat"). The word stands for the single connection with that relationship, so it needs no Kime question. When no connection or more than one has it ("annem" with two parents: the type has no gender), the preview asks Kime. The subject is still the recipient: "annemi ara" is the sender's own task, "anneme söyle yarın faturayı ödesin" and "eşime hatırlat ekmek alsın" are the mother's and the spouse's. The server applies the same rule when the model writes the word instead of the name, or misses a relationship word without a suffix (`resolveExtraction`), and drops a recipient the model picked among two or more connections of the named relationship when the text does not also name that person (`withoutRelationshipGuess`).

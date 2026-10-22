@@ -23,10 +23,14 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
-    <!-- SpeechRecognizer binds to the phone's recognition service (package visibility, Android 11+). -->
+    <!-- SpeechRecognizer binds to the phone's recognition service, and TextToSpeech to the speech engine that says the
+         task aloud during a poke (NUD-124) (package visibility, Android 11+). -->
     <queries>
         <intent>
             <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
         </intent>
     </queries>
 

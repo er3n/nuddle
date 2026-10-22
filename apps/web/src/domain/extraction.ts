@@ -17,7 +17,7 @@ export interface SenderFormats {
 /**
  * The app is Turkish only until the English strings ship, and the phone does not send its locale,
  * so every sender reads Turkish, a week from Monday and a 24-hour clock.
- * TODO(open-questions#56): take the phone's locale, week start and clock once English ships.
+ * TODO(open-questions#57): take the phone's locale, week start and clock once English ships.
  */
 export const TURKISH_FORMATS: SenderFormats = {
   locale: "tr-TR",

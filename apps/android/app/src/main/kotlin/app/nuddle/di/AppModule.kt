@@ -12,6 +12,7 @@ import app.nuddle.alarm.AlarmCheckScheduling
 import app.nuddle.alarm.AlarmManagerScheduler
 import app.nuddle.alarm.AndroidLockedPokeNotification
 import app.nuddle.alarm.AndroidPokeNotifications
+import app.nuddle.alarm.AndroidPokeSpeech
 import app.nuddle.alarm.ArmedPokes
 import app.nuddle.alarm.ArmedPokesKeeper
 import app.nuddle.alarm.DirectBootStore
@@ -20,6 +21,7 @@ import app.nuddle.alarm.FullScreenPermission
 import app.nuddle.alarm.LockedPokeNotification
 import app.nuddle.alarm.PokeAlarms
 import app.nuddle.alarm.PokeNotifications
+import app.nuddle.alarm.PokeSpeech
 import app.nuddle.alarm.WorkManagerAlarmChecks
 import app.nuddle.alarm.userUnlocked
 import app.nuddle.data.ApiAuthRepository
@@ -123,6 +125,9 @@ abstract class BindingsModule {
 
     @Binds
     abstract fun pokeNotifications(impl: AndroidPokeNotifications): PokeNotifications
+
+    @Binds
+    abstract fun pokeSpeech(impl: AndroidPokeSpeech): PokeSpeech
 
     @Binds
     abstract fun fullScreenPermission(impl: DevicePermissions): FullScreenPermission
