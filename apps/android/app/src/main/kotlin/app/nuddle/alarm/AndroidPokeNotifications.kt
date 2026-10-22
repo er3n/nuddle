@@ -21,6 +21,7 @@ import app.nuddle.data.photo.circled
 import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeRules
 import app.nuddle.domain.PokeStep
+import app.nuddle.domain.PokeTitles
 import app.nuddle.domain.Snooze
 import app.nuddle.domain.SnoozeRules
 import app.nuddle.domain.TimeLeft
@@ -37,9 +38,26 @@ internal fun Context.timeLeftText(timeLeft: TimeLeft): String =
         is TimeLeft.Hours -> resources.getQuantityString(R.plurals.duration_hours, timeLeft.value, timeLeft.value)
     }
 
+/** The poke title for [step] ringing at [level] (NUD-130, glossary.md, Poke titles): the same on 3a and 3b. */
+internal fun Context.pokeTitle(
+    step: PokeStep,
+    level: PokeLevel,
+): String {
+    val titles =
+        resources.getStringArray(
+            when (level) {
+                PokeLevel.SILENT -> R.array.poke_titles_silent
+                PokeLevel.SOUND -> R.array.poke_titles_sound
+                PokeLevel.FULL_SCREEN -> R.array.poke_titles_full_screen
+            },
+        )
+    return titles[PokeTitles.index(step, titles.size)]
+}
+
 /**
- * The poke notification (screen 3a, docs/ux/components.md, 7): title is the task, text is the time to the deadline,
- * at most three actions. `SILENT` goes to `poke_silent`, `SOUND` and `FULL_SCREEN` to `poke_alarm`; `FULL_SCREEN`
+ * The poke notification (screen 3a, docs/ux/components.md, 7): title is the poke title (NUD-130), text is the task,
+ * the expanded text adds the time to the deadline; a one-time message keeps the message as its title. At most three
+ * actions. `SILENT` goes to `poke_silent`, `SOUND` and `FULL_SCREEN` to `poke_alarm`; `FULL_SCREEN`
  * also opens [PokeActivity] over the lock screen. The sender's avatar as large icon arrives with tasks for others.
  * `SOUND` and `FULL_SCREEN` also say the task aloud through [PokeSpeech] (NUD-124).
  */
@@ -66,8 +84,6 @@ class AndroidPokeNotifications
             val silent = level == PokeLevel.SILENT
             val fullScreen = level == PokeLevel.FULL_SCREEN
             val channel = if (silent) NotificationChannels.POKE_SILENT else NotificationChannels.POKE_ALARM
-            val title = task.detail?.let { context.getString(R.string.separator_dot, task.title, it) } ?: task.title
-            val timeLeft = PokeRules.timeLeft(clock.now(), Instant.fromEpochMilliseconds(task.deadline))
             val notice = task.finishMode == FinishMode.NOTICE.value
             val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
             val builder =
@@ -75,17 +91,9 @@ class AndroidPokeNotifications
                     .Builder(context, channel)
                     .setSmallIcon(R.drawable.ic_notification)
                     .setColor(ContextCompat.getColor(context, R.color.poke))
-                    .setContentTitle(title)
                     .setLargeIcon(senderPicture(task))
-                    .setContentText(
-                        if (notice) {
-                            context.getString(R.string.home_finish_notice)
-                        } else if (task.isMoment) {
-                            context.getString(R.string.poke_moment_now)
-                        } else {
-                            context.getString(R.string.poke_time_left_sentence, context.timeLeftText(timeLeft))
-                        },
-                    ).setSubText(context.getString(R.string.poke_count, step.number))
+                    .setPokeContent(task, step, level, notice)
+                    .setSubText(context.getString(R.string.poke_count, step.number))
                     .setCategory(if (fullScreen) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_REMINDER)
                     .setPriority(if (silent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_HIGH)
                     .setContentIntent(open)
@@ -191,6 +199,38 @@ class AndroidPokeNotifications
                 .activeNotifications
                 .mapNotNull { it.notification.group?.let(NotificationIds::taskOfPokeGroup) }
                 .toSet()
+
+        /**
+         * Title and text (3a, NUD-130): the poke title over the task, the time line in the expanded text. A one-time
+         * message has nothing to do, so the message stays the title (glossary.md, Poke titles).
+         */
+        private fun NotificationCompat.Builder.setPokeContent(
+            task: TaskEntity,
+            step: PokeStep,
+            level: PokeLevel,
+            notice: Boolean,
+        ): NotificationCompat.Builder {
+            val taskText = task.detail?.let { context.getString(R.string.separator_dot, task.title, it) } ?: task.title
+            val time =
+                when {
+                    notice -> {
+                        context.getString(R.string.home_finish_notice)
+                    }
+
+                    task.isMoment -> {
+                        context.getString(R.string.poke_moment_now)
+                    }
+
+                    else -> {
+                        val timeLeft = PokeRules.timeLeft(clock.now(), Instant.fromEpochMilliseconds(task.deadline))
+                        context.getString(R.string.poke_time_left_sentence, context.timeLeftText(timeLeft))
+                    }
+                }
+            if (notice) return setContentTitle(taskText).setContentText(time)
+            return setContentTitle(context.pokeTitle(step, level))
+                .setContentText(taskText)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(R.string.poke_text_expanded, taskText, time)))
+        }
 
         /** The sender's cached picture as a circle (components.md 7, NUD-80); none for a task to self or without one. */
         private fun senderPicture(task: TaskEntity) =

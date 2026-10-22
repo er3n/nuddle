@@ -7,10 +7,12 @@ import android.app.NotificationManager
 import android.graphics.Bitmap
 import androidx.core.content.getSystemService
 import androidx.test.core.app.ApplicationProvider
+import app.nuddle.R
 import app.nuddle.data.avatar.AvatarFiles
 import app.nuddle.data.photo.toJpeg
 import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeStep
+import app.nuddle.domain.PokeTitles
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.aTask
@@ -24,6 +26,7 @@ import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -170,5 +173,63 @@ class PokeNotificationsTest {
         // In the app's automatic group a poke would be silent and its full screen would never open (E2E smoke 3).
         assertEquals("poke:${Cast.TASK_ID}", poke.group)
         assertEquals(listOf(poke.channelId), shadowOf(app.getSystemService<NotificationManager>()).allNotifications.map { it.channelId })
+    }
+
+    private fun titles(level: PokeLevel): List<String> =
+        app.resources
+            .getStringArray(
+                when (level) {
+                    PokeLevel.SILENT -> R.array.poke_titles_silent
+                    PokeLevel.SOUND -> R.array.poke_titles_sound
+                    PokeLevel.FULL_SCREEN -> R.array.poke_titles_full_screen
+                },
+            ).toList()
+
+    @Test
+    fun `the title is a line of the ringing level and the task is the text under it (NUD-130)`() {
+        val manager = app.getSystemService<NotificationManager>()!!
+        PokeLevel.entries.forEach { level ->
+            manager.cancelAll()
+            val step = PokeStep(Cast.TASK_ID, 1, 2, Instant.parse("2026-10-12T08:00:00+03:00"), level)
+            notifications.show(aTask(), step, level)
+            val poke = shadowOf(manager).allNotifications.single()
+
+            val title = poke.extras.getString(Notification.EXTRA_TITLE)
+            assertEquals(titles(level)[PokeTitles.index(step, titles(level).size)], title)
+            assertEquals("Temizlikçi için para çek · 1.000 TL", poke.extras.getCharSequence(Notification.EXTRA_TEXT).toString())
+            assertEquals(
+                "Temizlikçi için para çek · 1.000 TL\nSon zamana 1 saat var.",
+                poke.extras.getCharSequence(Notification.EXTRA_BIG_TEXT).toString(),
+            )
+        }
+    }
+
+    @Test
+    fun `two pokes in a row show different titles, and a re-show keeps its title (NUD-130)`() {
+        val first = show(seq = 1).extras.getString(Notification.EXTRA_TITLE)
+        val again = show(seq = 1).extras.getString(Notification.EXTRA_TITLE)
+        val second = show(seq = 2).extras.getString(Notification.EXTRA_TITLE)
+        assertEquals(first, again)
+        assertNotEquals(first, second)
+    }
+
+    @Test
+    fun `a one-time message keeps the message as its title (NUD-130)`() {
+        val step = PokeStep(Cast.TASK_ID, 1, 1, Instant.parse("2026-10-12T08:00:00+03:00"), PokeLevel.SOUND)
+        notifications.show(aTask().copy(title = "Seni seviyorum", detail = null, finishMode = "notice"), step, PokeLevel.SOUND)
+        val poke = shadowOf(app.getSystemService<NotificationManager>()).allNotifications.single()
+        assertEquals("Seni seviyorum", poke.extras.getString(Notification.EXTRA_TITLE))
+    }
+
+    @Test
+    fun `every level has lines to rotate, none with an em dash (NUD-130, glossary)`() {
+        PokeLevel.entries.forEach { level ->
+            val lines = titles(level)
+            assertTrue(lines.size >= PokeTitles.MIN_TITLES, "$level has ${lines.size}")
+            assertEquals(lines.size, lines.toSet().size, "$level repeats a line")
+            lines.forEach { assertFalse('\u2014' in it, it) }
+        }
+        val all = PokeLevel.entries.flatMap(::titles)
+        assertEquals(all.size, all.toSet().size, "levels share a line")
     }
 }
