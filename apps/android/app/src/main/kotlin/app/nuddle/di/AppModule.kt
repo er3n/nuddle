@@ -10,9 +10,11 @@ import androidx.work.WorkManager
 import app.nuddle.BuildConfig
 import app.nuddle.alarm.AlarmManagerScheduler
 import app.nuddle.alarm.AndroidPokeNotifications
+import app.nuddle.alarm.AndroidPokeSpeech
 import app.nuddle.alarm.FullScreenPermission
 import app.nuddle.alarm.PokeAlarms
 import app.nuddle.alarm.PokeNotifications
+import app.nuddle.alarm.PokeSpeech
 import app.nuddle.data.ApiAuthRepository
 import app.nuddle.data.AuthRepository
 import app.nuddle.data.SessionStarter
@@ -105,6 +107,9 @@ abstract class BindingsModule {
 
     @Binds
     abstract fun pokeNotifications(impl: AndroidPokeNotifications): PokeNotifications
+
+    @Binds
+    abstract fun pokeSpeech(impl: AndroidPokeSpeech): PokeSpeech
 
     @Binds
     abstract fun fullScreenPermission(impl: DevicePermissions): FullScreenPermission
