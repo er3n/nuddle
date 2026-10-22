@@ -55,7 +55,7 @@ class PokeAlarmReceiver : BroadcastReceiver() {
     }
 }
 
-/** Notification actions: Bitti, Ertele, Bugün olmaz (3a). */
+/** Notification actions: Bitti, Ertele, Bugün olmaz (3a), and Bitti on "Zaten yaptın mı?" (NUD-129). */
 @AndroidEntryPoint
 class PokeActionReceiver : BroadcastReceiver() {
     @Inject lateinit var actions: PokeActions
@@ -73,6 +73,29 @@ class PokeActionReceiver : BroadcastReceiver() {
                 PokeIntents.ACTION_DONE -> actions.done(key)
                 PokeIntents.ACTION_SNOOZE -> actions.snooze(key)
                 PokeIntents.ACTION_CANT_TODAY -> actions.cantToday(key)
+                PokeIntents.ACTION_HEADS_UP_DONE -> actions.doneFromHeadsUp(key)
+            }
+        }
+    }
+}
+
+/** "Zaten yaptın mı?" (NUD-129): the check alarm inside the window, and the unlock heard while the process lives. */
+@AndroidEntryPoint
+class HeadsUpReceiver : BroadcastReceiver() {
+    @Inject lateinit var headsUp: HeadsUp
+
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
+        when (intent.action) {
+            PokeIntents.ACTION_HEADS_UP_CHECK -> {
+                val inUse = context.phoneInUse()
+                runAsync { headsUp.check(inUse) }
+            }
+
+            PokeIntents.ACTION_HEADS_UP_UNLOCKED -> {
+                runAsync { headsUp.unlocked() }
             }
         }
     }

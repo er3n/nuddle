@@ -10,6 +10,7 @@ import androidx.work.WorkManager
 import app.nuddle.BuildConfig
 import app.nuddle.alarm.AlarmCheckScheduling
 import app.nuddle.alarm.AlarmManagerScheduler
+import app.nuddle.alarm.AndroidHeadsUpChecks
 import app.nuddle.alarm.AndroidLockedPokeNotification
 import app.nuddle.alarm.AndroidPokeNotifications
 import app.nuddle.alarm.AndroidPokeSpeech
@@ -18,6 +19,7 @@ import app.nuddle.alarm.ArmedPokesKeeper
 import app.nuddle.alarm.DirectBootStore
 import app.nuddle.alarm.FileDirectBootStore
 import app.nuddle.alarm.FullScreenPermission
+import app.nuddle.alarm.HeadsUpChecks
 import app.nuddle.alarm.LockedPokeNotification
 import app.nuddle.alarm.PokeAlarms
 import app.nuddle.alarm.PokeNotifications
@@ -29,8 +31,10 @@ import app.nuddle.data.AuthRepository
 import app.nuddle.data.SessionStarter
 import app.nuddle.data.outbox.OutboxDrainer
 import app.nuddle.data.outbox.WorkManagerScheduling
+import app.nuddle.data.session.DataStoreHeadsUpStore
 import app.nuddle.data.session.DataStoreSessionStore
 import app.nuddle.data.session.DataStoreSetupStore
+import app.nuddle.data.session.HeadsUpStore
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.session.SetupStore
 import app.nuddle.data.sync.AlarmRearmer
@@ -95,6 +99,16 @@ object AppModule {
             if (BuildConfig.FAKE_TIME && context.userUnlocked()) TestTime.shift(context, at) else at
         }
 
+    /** One instance: it holds the unlock receiver it registered (NUD-129). */
+    @Provides
+    @Singleton
+    fun headsUpChecks(
+        @ApplicationContext context: Context,
+    ): HeadsUpChecks =
+        AndroidHeadsUpChecks(context, context.getSystemService(AlarmManager::class.java)) { at ->
+            if (BuildConfig.FAKE_TIME && context.userUnlocked()) TestTime.shift(context, at) else at
+        }
+
     /** Only built once the phone is unlocked: WorkManager cannot open its database before (Direct boot). */
     @Provides
     fun alarmChecks(
@@ -137,6 +151,9 @@ abstract class BindingsModule {
 
     @Binds
     abstract fun setupStore(impl: DataStoreSetupStore): SetupStore
+
+    @Binds
+    abstract fun headsUpStore(impl: DataStoreHeadsUpStore): HeadsUpStore
 
     @Binds
     abstract fun sessionStarter(impl: AppSessionStarter): SessionStarter

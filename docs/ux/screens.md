@@ -209,6 +209,9 @@ The person can open 2h themselves from profile (5a, "Dürtmem çalmadı") when n
 System notification (shell is the system's, content and actions are ours).
 **Copy:** 2. dürtme | Para çek · 1.000 TL | Son zamana 1 saat var. Şimdi çıkarken uğrarsan iş biter. | Bitti | 15 dk ertele (built as "Ertele · 08:30", open-questions #1) | Bugün olmaz
 
+**Zaten yaptın mı? (NUD-129).** No design PNG. A quiet system notification before a loud poke when the phone is in use (domain.md, Already done?): the poke's icon and color, title "Zaten yaptın mı?", text the task's title, the sender's picture as for 3a, one action Bitti. No time and no poke count.
+**Copy:** Zaten yaptın mı? | Para çek | Bitti
+
 ### 3b Poke, full screen · `PokeFull.png`
 `PokeActivity` on `poke` background with rings.
 **Copy:** 3. dürtme · 08:15 | Para çek | 1.000 TL · son zamana 45 dk | İki dürtmeyi geçtin. Bu sefer ciddiyim, 09:00'a az kaldı. | Bitti | 10 dk ertele · son hakkın (built as "Ertele · 08:25 · son hakkın", open-questions #1) | Bugün yapamayacağım

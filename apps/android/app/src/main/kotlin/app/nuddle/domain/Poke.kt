@@ -33,6 +33,8 @@ data class LocalTaskState(
     val open: Boolean,
     /** An `at` task: the sender asked for that time, so its pokes ring inside quiet hours too (open-questions#47). */
     val moment: Boolean = false,
+    /** A one-time message (finish mode `notice`): no "Zaten yaptın mı?" before it (NUD-129). */
+    val notice: Boolean = false,
 )
 
 sealed interface FireDecision {

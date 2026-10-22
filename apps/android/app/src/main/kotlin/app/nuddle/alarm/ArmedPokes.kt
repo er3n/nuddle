@@ -8,6 +8,7 @@ import app.nuddle.domain.LockedPlan
 import app.nuddle.domain.LockedStep
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlin.time.Clock
 
 /** Starts and stops the hourly alarm check (docs/ux/platform.md, Hourly check; NUD-125). */
 fun interface AlarmCheckScheduling {
@@ -15,7 +16,10 @@ fun interface AlarmCheckScheduling {
     fun keepChecking(active: Boolean)
 }
 
-/** What has to follow whenever the set of armed pokes changes: the direct boot copy and the hourly check. */
+/**
+ * What has to follow whenever the set of armed pokes changes: the direct boot copy, the hourly check and the checks for
+ * "Zaten yaptın mı?" (NUD-129).
+ */
 interface ArmedPokes {
     suspend fun armed(steps: List<LockedStep>)
 
@@ -36,15 +40,20 @@ class ArmedPokesKeeper
         private val store: DirectBootStore,
         private val sessions: SessionStore,
         private val checks: AlarmCheckScheduling,
+        private val clock: Clock,
+        private val headsUps: HeadsUpChecks = HeadsUpChecks.None,
     ) : ArmedPokes {
         override suspend fun armed(steps: List<LockedStep>) {
             store.savePlan(LockedPlan(steps, sessions.quietHours()))
             checks.keepChecking(steps.isNotEmpty())
+            headsUps.follow(steps.map { it.step }, clock.now())
         }
 
         override suspend fun cleared() {
             store.clear()
             checks.keepChecking(false)
+            headsUps.checkAt(null)
+            headsUps.watchUnlocks(false)
         }
     }
 

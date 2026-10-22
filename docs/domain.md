@@ -166,6 +166,20 @@ Each device step also gets a `lost_poke_check` timer at planned time + 5 minutes
 5. Every fired step reports planned and actual time to the server.
 6. Done, Snooze and Can't today are applied locally first (remaining alarms cancelled immediately, even offline), then sent to the server with WorkManager. Done carries the moment it was tapped (`doneAt`).
 7. A cancelled task can still ring if the cancel push is delayed. Accepted edge case in the MVP; the fired report lets the server answer with a cancel and the ring stops on the next sync.
+8. Before a loud step the phone may ask quietly whether the task is already done (Already done?, below). It never changes the plan or an alarm.
+
+## Already done?
+
+A person who is already using the phone shortly before a loud step gets a quiet notification first (NUD-129): "Zaten yaptın mı?" with the task's title and Bitti. Nothing about the plan is in it: no time, no poke count (product.md, Principles).
+
+The rule (`HeadsUpRules`, pure, `now` passed in):
+- **Which steps:** the task's next armed step is `SOUND` or `FULL_SCREEN`. A `SILENT` step gets none; it is quiet already.
+- **Window:** the person unlocks the phone, or is using it (screen on, not locked) when the phone looks, between **10 minutes** and **1 minute** before that step (TODO(open-questions#59)). The phone looks every 2 minutes inside the window, since it cannot always hear the unlock (docs/ux/platform.md, Already done?).
+- **Not shown** for a closed task, a step of an older plan version, a one-time message (`notice`, its single step is the message itself), while a poke of the task is already up (it has Bitti), or inside quiet hours except in an `at` task's own window (as for its pokes).
+- **At most once** per task and plan version. A new plan version (an edit, a replan, a snooze shifting the plan) may show it once more.
+- **Never instead of a step.** Ignored, the step rings as planned and takes the heads-up away; it also goes by itself when the step is due. Bitti on it is the normal Done (Device execution, step 6): local first, the remaining alarms stop, `done` with `doneAt` goes to the server, and the done note names no poke. On a photo task Bitti opens the camera, as on the poke.
+
+Nothing reaches the server but the Done: no event for the heads-up itself.
 
 ## Reachability
 

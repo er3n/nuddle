@@ -94,6 +94,16 @@ object NotificationIds {
 
     private const val POKE_GROUP = "poke:"
 
+    /** "Zaten yaptın mı?" before a loud poke (NUD-129); apart from the poke, which takes it away when it rings. */
+    fun headsUp(taskId: String): Int = "heads_up:$taskId".hashCode()
+
+    /** A group of its own, so it is never folded together with the task's poke. */
+    fun headsUpGroup(taskId: String): String = "$HEADS_UP_GROUP$taskId"
+
+    fun taskOfHeadsUpGroup(group: String): String? = group.removePrefix(HEADS_UP_GROUP).takeIf { group.startsWith(HEADS_UP_GROUP) }
+
+    private const val HEADS_UP_GROUP = "heads_up:"
+
     /** A message from Nuddle (ADR 0025). */
     fun news(announcementId: String): Int = "news:$announcementId".hashCode()
 
