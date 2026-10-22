@@ -170,7 +170,7 @@ contact
 - name is that person: exactly one name from the connection list, spelled as in the list ("Sibel'e mesaj at" is "Sibel"; a relationship word, "annemi ara", "eşine yaz", means the single connection with that relationship), or "sender" when it is the writer ("eren beni arasın", "bana mesaj atsın").
 - null when the person is not in the list (öğretmen, tesisatçı, doktor, a name not in the list), when more than one connection could be meant, when the text gives a phone number instead, when calling or messaging is not what the task asks ("anneme 500 gönder", "babamı doktora götür"), and for finishMode "notice".
 - The contact never changes the recipient: "annemi ara" is "self" with contact the parent.
-- The contact never sets the time: a call or a message with no time or day ("annemi ara", "Sibel'e mesaj at") has deadline null and "deadline" in missing, never "now".
+- The contact never sets the time: the deadline follows the deadline rules above. A call or a message with a day or a time has that deadline ("çarşamba akşamı annemi ara" is Wednesday 19:00, "yarın sibel'e yaz" tomorrow 19:00); only one with neither ("annemi ara", "Sibel'e mesaj at") has deadline null and "deadline" in missing, never "now".
 
 Worked examples (sender's local time Sunday 21:00, connections Eren: spouse, Ayşe: parent)
 - "eşime hatırlat yarın 8de ilacını alsın": eşim means Eren and the task is his: recipient Eren, title "İlacını al", tomorrow 08:00, timing "at".
