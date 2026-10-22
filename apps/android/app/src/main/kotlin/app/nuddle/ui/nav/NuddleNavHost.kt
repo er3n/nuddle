@@ -142,6 +142,8 @@ fun NuddleNavHost(
     onInviteCodeTake: () -> Unit = {},
     openRoute: String? = null,
     onOpenRouteTake: () -> Unit = {},
+    sharedText: String? = null,
+    onSharedTextTake: () -> Unit = {},
     onRouteChange: (String) -> Unit = {},
 ) {
     val nav = rememberNavController()
@@ -154,6 +156,7 @@ fun NuddleNavHost(
         nav.addOnDestinationChangedListener(listener)
         onDispose { nav.removeOnDestinationChangedListener(listener) }
     }
+    BackToHomeOnShare(nav, sharedText)
     NavHost(navController = nav, startDestination = startRoute) {
         composable(Routes.WELCOME) {
             LightSystemBarIcons()
@@ -241,6 +244,7 @@ fun NuddleNavHost(
             }
             val voice: VoiceViewModel = hiltViewModel()
             val typed = state?.compose.typedText()
+            SharedTextEffect(sharedText, typed, onSharedTextTake, viewModel::onComposeTextChange)
             val listening by voice.listening.collectAsStateWithLifecycle()
             val voiceNotice by voice.notice.collectAsStateWithLifecycle()
             val voiceInput =

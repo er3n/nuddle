@@ -66,6 +66,7 @@ In code and docs the domain verb is **poke** (`Poke`, `PokeLevel`, `PokeActivity
 ### Writing a task
 - One input box. Who, what and when are extracted from free text by the LLM. "To whom" is never asked while typing.
 - Voice input is in the MVP: a tap on the mic dictates into the box (open-questions #40, NUD-48).
+- Share to Nuddle (NUD-127): text shared from another app (a WhatsApp message, a school e-mail) opens home with it in the box, after anything already typed. It is never sent by itself; the person edits it and sends it, and the confident / preview rules below apply. Signed out, the text waits through sign-in. Text only; images (OCR or LLM vision) are NUD-134. The app never reads WhatsApp on its own (see "Deliberately out of the MVP").
 - If the AI is confident, the task goes out immediately and a 5 second "Undo / Edit" toast appears. A preview opens only when information is missing or ambiguous, and it asks at most one question at a time.
 - A photo is never mandatory. For suitable tasks (money, payments) it is suggested and preselected, one tap changes it.
 - Tasks to yourself exist. A user without any connection can still use the app.

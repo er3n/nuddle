@@ -68,6 +68,12 @@
                     android:pathPrefix="/i/"
                     android:scheme="https" />
             </intent-filter>
+            <!-- Share to Nuddle (NUD-127): shared text opens home with it in the compose box. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
         </activity>
 
         <activity
