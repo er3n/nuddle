@@ -1,1 +1,1 @@
-Pokes now read the task aloud ("Sibel says: take your medicine") and get a little more insistent each time. Slide to finish on the lock screen. One tap to call for tasks like "call mom". Share a message from WhatsApp to write a task. Pokes ring even after the phone restarts.
+Add a photo to a task: "get what's in the picture", so it is clear what to buy. You can also share an image from WhatsApp to dürt to write a task. Right after sending, choose with one tap how it finishes: "Done" or "With a photo".
