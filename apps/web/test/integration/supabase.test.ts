@@ -90,6 +90,24 @@ describe("local Supabase adapters", () => {
     expect(sync.status).toBe(200);
   });
 
+  it("gives each of two refreshes at the same moment its own person's session (NUD-139)", async () => {
+    // One gateway serves every request on a server instance, as in production.
+    const auth = new SupabaseAuthGateway(url, secretKey);
+    await auth.sendOtp("+905320000004");
+    await auth.sendOtp("+905320000005");
+    const first = await auth.verifyOtp("+905320000004", "123456");
+    const second = await auth.verifyOtp("+905320000005", "123456");
+    if (!first || !second) throw new Error("test numbers did not sign in");
+    expect(first.userId).not.toBe(second.userId);
+
+    const [a, b] = await Promise.all([
+      auth.refresh(first.refreshToken),
+      auth.refresh(second.refreshToken),
+    ]);
+    expect(a?.userId).toBe(first.userId);
+    expect(b?.userId).toBe(second.userId);
+  });
+
   it("uploads to a signed URL in the private bucket and deletes the task's photos", async () => {
     const photos = new SupabasePhotoStorage(url, secretKey);
     const taskId = uuidv7();

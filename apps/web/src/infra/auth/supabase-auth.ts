@@ -43,21 +43,39 @@ function toSession(s: SessionLike): Session | null {
 const bare = (phone: string): string => phone.replace(/^\+/, "");
 
 export class SupabaseAuthGateway implements AuthGateway {
+  /** For the admin calls only: they carry no user session. */
   private readonly client: ReturnType<typeof createClient>;
 
-  constructor(url: string, secretKey: string) {
-    this.client = createClient(url, secretKey, {
+  constructor(
+    private readonly url: string,
+    private readonly secretKey: string,
+  ) {
+    this.client = this.newClient();
+  }
+
+  /**
+   * A supabase-js client holds one user's session and single-flights its refreshes: a second
+   * `refreshSession` that starts while one is in flight gets the first one's result, whatever token
+   * it sent. One server instance serves many people at once, so every call that signs someone in
+   * or refreshes gets its own client (NUD-139).
+   */
+  private newClient(): ReturnType<typeof createClient> {
+    return createClient(this.url, this.secretKey, {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     });
   }
 
   async sendOtp(phone: string): Promise<void> {
-    const { error } = await this.client.auth.signInWithOtp({ phone });
+    const { error } = await this.newClient().auth.signInWithOtp({ phone });
     if (error) throw error;
   }
 
   async verifyOtp(phone: string, code: string): Promise<Session | null> {
-    const { data, error } = await this.client.auth.verifyOtp({ phone, token: code, type: "sms" });
+    const { data, error } = await this.newClient().auth.verifyOtp({
+      phone,
+      token: code,
+      type: "sms",
+    });
     if (error) {
       if (error.status !== undefined && error.status < 500) return null;
       throw error;
@@ -66,7 +84,9 @@ export class SupabaseAuthGateway implements AuthGateway {
   }
 
   async refresh(refreshToken: string): Promise<Session | null> {
-    const { data, error } = await this.client.auth.refreshSession({ refresh_token: refreshToken });
+    const { data, error } = await this.newClient().auth.refreshSession({
+      refresh_token: refreshToken,
+    });
     if (error) {
       if (error.status !== undefined && error.status < 500) return null;
       throw error;
