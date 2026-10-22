@@ -106,6 +106,7 @@ class HomeViewModelTest {
             InMemoryTaskEventDao(),
             { flowOf(Unit) },
             RecordingTaskAcks(),
+            tasks.finishSwitcher,
         )
     }
 

@@ -10,6 +10,7 @@ import app.nuddle.api.model.Reachability
 import app.nuddle.api.model.SyncConnection
 import app.nuddle.api.model.WriteTaskResult
 import app.nuddle.data.DoneNotes
+import app.nuddle.data.FinishSwitcher
 import app.nuddle.data.MinuteTicks
 import app.nuddle.data.SetupGate
 import app.nuddle.data.TaskRepository
@@ -90,6 +91,7 @@ class HomeViewModel
         eventDao: TaskEventDao,
         ticks: MinuteTicks,
         private val acks: TaskAcks,
+        finishSwitcher: FinishSwitcher,
     ) : ViewModel() {
         private val compose = MutableStateFlow<ComposeState>(ComposeState.Idle)
 
@@ -100,6 +102,9 @@ class HomeViewModel
         internal val previewSheet = PreviewHolder(clock, timeZone)
         private val preview = previewSheet.open
         private val undo = MutableStateFlow<UndoUi?>(null)
+
+        /** The undo toast's "Bitti" | "Fotoğrafla" switch (NUD-137); the route binds its callback to this. */
+        internal val undoFinish = UndoFinishSwitch(undo, finishSwitcher, viewModelScope)
 
         /** The one-line answer to a text that is not a task, above the bar (NUD-52). */
         private val reply = MutableStateFlow<String?>(null)

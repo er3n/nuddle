@@ -8,9 +8,9 @@ import kotlinx.serialization.json.jsonPrimitive
 import javax.inject.Inject
 
 /**
- * Tasks this phone changed locally that the server does not know about yet: a Bitti, İptal, Ertele or Bugün olmaz
- * still in the outbox, or a photo still uploading. A sync keeps their local state until it is sent, so a sync that
- * lands in between does not bring the card and its alarms back (NUD-64).
+ * Tasks this phone changed locally that the server does not know about yet: a Bitti, İptal, Ertele, Bugün olmaz or
+ * the undo toast's finish switch still in the outbox, or a photo still uploading. A sync keeps their local state
+ * until it is sent, so a sync that lands in between does not bring the card and its alarms back (NUD-64).
  */
 fun interface PendingChanges {
     suspend fun taskIds(): Set<String>
@@ -18,7 +18,7 @@ fun interface PendingChanges {
 
 /** Outbox commands applied on the phone first (the rest, like `report_fired`, change nothing the phone shows). */
 private val LOCAL_FIRST =
-    setOf("done", "cancel", "cant_today", "snooze", "did_it_later", "remove_missed", "sender_handles")
+    setOf("done", "cancel", "cant_today", "snooze", "did_it_later", "remove_missed", "sender_handles", "edit")
 
 class LocalPendingChanges
     @Inject

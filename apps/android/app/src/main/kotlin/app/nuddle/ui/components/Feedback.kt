@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -29,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.res.stringResource
@@ -36,6 +39,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import app.nuddle.R
 import app.nuddle.ui.icons.DurtIcons
 import app.nuddle.ui.preview.PreviewComponent
@@ -75,13 +79,52 @@ private fun ToastButton(
                 .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text, style = DurtTheme.type.bodySmallStrong, color = DurtTheme.colors.surface)
+        ToastLabel(text, DurtTheme.colors.surface)
+    }
+}
+
+/** A button label that wraps inside its half at large font scales (screens.md 4i). */
+@Composable
+private fun ToastLabel(
+    text: String,
+    color: Color,
+) {
+    Text(
+        text,
+        style = DurtTheme.type.bodySmallStrong,
+        color = color,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = DurtTheme.dimens.space8),
+    )
+}
+
+/** One half of the finish switch (NUD-137): selected is white with `ink` text, the other the button color. */
+@Composable
+private fun ToastChoice(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = DurtTheme.colors
+    val dimens = DurtTheme.dimens
+    Box(
+        modifier =
+            modifier
+                .heightIn(min = dimens.buttonCompact)
+                .clip(RoundedCornerShape(dimens.radiusS))
+                .background(if (selected) colors.surface else colors.toastButton)
+                .selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        ToastLabel(text, if (selected) colors.ink else colors.surface)
     }
 }
 
 /**
  * Sent, with a 5 s window to undo or edit (docs/ux/components.md, 6). A 3 dp orange line fills over the window;
- * timeout confirms. With TalkBack on it lasts 10 s and takes focus.
+ * timeout confirms. With TalkBack on it lasts 10 s and takes focus. With [photo] not null a "Bitti" | "Fotoğrafla"
+ * switch sits above the buttons (NUD-137, screens.md 4i); a change starts the window again.
  */
 @Composable
 fun UndoToast(
@@ -92,6 +135,8 @@ fun UndoToast(
     onTimeout: () -> Unit,
     modifier: Modifier = Modifier,
     durationMs: Long = DurtMotion.UNDO_TOAST_MS,
+    photo: Boolean? = null,
+    onPhoto: (Boolean) -> Unit = {},
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
@@ -100,9 +145,10 @@ fun UndoToast(
     val progress = remember { Animatable(0f) }
     val currentTimeout = rememberUpdatedState(onTimeout)
     val focus = remember { FocusRequester() }
-    LaunchedEffect(window) {
+    LaunchedEffect(window, photo) {
         // The window is a timer, not the animation: with animations off (animator scale 0) the line
-        // fills at once, but the toast must still stay for the whole window.
+        // fills at once, but the toast must still stay for the whole window. A finish change starts it again.
+        progress.snapTo(0f)
         launch { progress.animateTo(1f, tween(window.toInt(), easing = LinearEasing)) }
         delay(window)
         currentTimeout.value()
@@ -123,6 +169,12 @@ fun UndoToast(
                     Column {
                         Text(title, style = DurtTheme.type.bodyStrong, color = colors.surface)
                         Text(subtitle, style = DurtTheme.type.caption, color = colors.darkTextSecondary)
+                    }
+                }
+                if (photo != null) {
+                    Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(dimens.space8)) {
+                        ToastChoice(stringResource(R.string.undo_switch_done), !photo, { if (photo) onPhoto(false) }, Modifier.weight(1f))
+                        ToastChoice(stringResource(R.string.undo_switch_photo), photo, { if (!photo) onPhoto(true) }, Modifier.weight(1f))
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(dimens.space8)) {
@@ -259,7 +311,9 @@ fun StatusBanner(
 private fun FeedbackPreview() {
     PreviewSurface {
         Column(verticalArrangement = Arrangement.spacedBy(DurtTheme.dimens.space16)) {
-            UndoToast("Eren'e gitti", "Para çek · yarın 09:00", onUndo = {}, onEdit = {}, onTimeout = {})
+            UndoToast("Eren'e gitti", "Para çek · yarın 09:00", onUndo = {}, onEdit = {}, onTimeout = {}, photo = false)
+            UndoToast("Eren'e gitti", "Para çek · yarın 09:00 · bitince fotoğraf", onUndo = {}, onEdit = {}, onTimeout = {}, photo = true)
+            UndoToast("Gönderildi", "Eren · seni seviyorum · bugün 15:00", onUndo = {}, onEdit = {}, onTimeout = {})
             DoneNote("\"Para çek\" tamamlandı", "Bu sefer seni 2. dürtmede yakaladım.")
             ReplyNote("Merhaba! Kime ne hatırlatayım? Mesela: Eren yarın 9'dan önce ekmek alsın.", onTimeout = {})
             InlineAlert("Şu an anlayamadım", "Yazdığın duruyor, tekrar dene.")

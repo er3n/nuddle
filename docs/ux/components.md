@@ -79,7 +79,7 @@ sealed interface ComposeState { data object Idle; data class Typing(val text: St
 ## 6. UndoToast, DoneNote, InlineAlert, StatusBanner
 
 ```kotlin
-@Composable fun UndoToast(title: String, subtitle: String, durationMs: Long = 5_000, onUndo: () -> Unit, onEdit: () -> Unit, onTimeout: () -> Unit)
+@Composable fun UndoToast(title: String, subtitle: String, durationMs: Long = 5_000, onUndo: () -> Unit, onEdit: () -> Unit, onTimeout: () -> Unit, photo: Boolean? = null, onPhoto: (Boolean) -> Unit = {})
 @Composable fun ReplyNote(text: String, onTimeout: () -> Unit)
 @Composable fun DoneNote(title: String, learning: String?)
 @Composable fun InlineAlert(title: String, body: String, icon: ImageVector = DurtIcons.Warning)
@@ -87,6 +87,7 @@ sealed interface ComposeState { data object Idle; data class Typing(val text: St
 ```
 - Toasts: `ink` background, radius 18, 10 dp above the compose box, slide up in 200 ms. No Material Snackbar.
 - UndoToast: 3 dp orange progress line filling over 5 s. Timeout confirms the task. Undo and Edit 40 dp, background #2C333B, tick #7FD8C3. 10 s and focus moves to it when TalkBack is on.
+- UndoToast finish switch (NUD-137, screens.md 4i): with `photo` not null, a row of two 40 dp options "Bitti" | "Fotoğrafla" above Undo and Edit, single choice (`Role.RadioButton`, selected state for TalkBack). Selected: white fill with `ink` text; the other: #2C333B with white text. A tap on the other option calls `onPhoto` and starts the window and the line again; a tap on the selected one does nothing. `photo` null (a one-time message) hides the row.
 - ReplyNote: the UndoToast's box and place without buttons or progress, the reply in 15 sp white. Stays 8 s (16 s with TalkBack, and focus moves to it), or until the bar is focused or a new text is sent. Announced as a polite live region (NUD-52).
 - DoneNote: 4 s after a task completes, optional second line with the learning ("Bu sefer seni 2. dürtmede yakaladım").
 - InlineAlert: `warningSoft` background, `warningBorder` border, radius 16. Stays inside the screen, never auto-dismisses.

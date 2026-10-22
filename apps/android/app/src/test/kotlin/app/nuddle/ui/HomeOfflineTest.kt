@@ -79,6 +79,7 @@ class HomeOfflineTest {
             InMemoryTaskEventDao(),
             { flowOf(Unit) },
             RecordingTaskAcks(),
+            tasks.finishSwitcher,
         )
     }
 

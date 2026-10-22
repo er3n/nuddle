@@ -35,6 +35,13 @@ interface TaskDao {
         status: String,
     )
 
+    /** The undo toast's finish switch (NUD-137): the new finish mode at once, before the server knows. */
+    @Query("UPDATE tasks SET finishMode = :finishMode WHERE id = :id")
+    suspend fun setFinishMode(
+        id: String,
+        finishMode: String,
+    )
+
     /** Ertele on this phone: one more snooze, and until when the card says "Ertelendi" (NUD-63). */
     @Query("UPDATE tasks SET snoozesUsed = snoozesUsed + 1, snoozedUntil = :until WHERE id = :id")
     suspend fun countSnooze(
