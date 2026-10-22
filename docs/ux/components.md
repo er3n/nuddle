@@ -114,6 +114,17 @@ sealed interface ComposeState { data object Idle; data class Typing(val text: St
 - `CodeInput(length = 6, value, error, onComplete)`: 6 boxes, active box 2 dp `ink`; on error all boxes get `poke` border and `highlightSoft` fill. SMS Retriever autofill, submits on the 6th digit.
 - `PermissionStep(index, title, state: Done | Active | Next, badge?, description?, hint?, action?)`: Done shows a green tick and "Tamam"; Active has a 2 dp `ink` border, expands with description, the gray hint box ("**Açılan sayfada** ...") and "Ayarları aç" (or `action`, e.g. "İzin ver" for the system dialog); Next is dashed and gray.
 
+## 10. SlideToConfirm
+
+```kotlin
+@Composable fun SlideToConfirm(text: String, accessibilityLabel: String, onConfirm: () -> Unit, modifier: Modifier = Modifier)
+```
+- A deliberate action for a screen that may be touched by accident. Used for Bitti on the full screen poke over the lock screen (3b, NUD-131).
+- Track: full width, at least `size.slide.height` (the Poke button's 62), radius pill, `pokeDeep` fill. Thumb: `size.slide.thumb` circle in `surface` with the `pokeDeep` tick, inset `size.slide.inset` from the track's edge. The label is `buttonPoke` in `surface`, centered in the room right of the thumb, and fades as the thumb moves; it wraps and the track grows with the font (200%).
+- A horizontal drag anywhere on the track moves the thumb. Released past `size.slide.confirm` of the way, the thumb goes to the end and `onConfirm` runs once; otherwise it springs back in `motion` medium. A tap does nothing.
+- Accessibility: one `Role.Button` node named `accessibilityLabel` (the plain verb, "Bitti") whose click action confirms, so TalkBack and Switch Access never drag.
+- States with previews: idle, dragging, done.
+
 ## Screen-specific parts
 
 Parts used on one screen stay in that screen's file: full screen poke (3b, 2d), voice recording overlay (4h), camera (4d), welcome notification stack illustration (0a), quiet hours picker (7g, system `TimePicker`).

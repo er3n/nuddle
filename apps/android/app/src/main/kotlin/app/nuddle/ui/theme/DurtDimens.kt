@@ -55,6 +55,11 @@ data class DurtDimens(
     val tabHeight: Dp = 40.dp,
     val tabPadding: Dp = 4.dp,
     val tabSwipe: Dp = 48.dp,
+    // size.slide: SlideToConfirm, Bitti over the lock screen (NUD-131)
+    val slideHeight: Dp = 62.dp,
+    val slideThumb: Dp = 54.dp,
+    val slideInset: Dp = 4.dp,
+    val slideConfirm: Float = 0.85f,
     val pillPaddingHorizontal: Dp = 10.dp,
     val sheetHandleWidth: Dp = 40.dp,
     val sheetHandleHeight: Dp = 5.dp,

@@ -1,6 +1,10 @@
 package app.nuddle.alarm
 
 import android.app.KeyguardManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -14,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
 import app.nuddle.MainActivity
 import app.nuddle.api.model.FinishMode
 import app.nuddle.data.db.ConnectionDao
@@ -76,9 +81,22 @@ class PokeActivity : ComponentActivity() {
 
     @Inject lateinit var timeZone: TimeZone
 
+    /** Over a locked phone Bitti is a slide (NUD-131, screens.md 3b). */
+    private var locked by mutableStateOf(false)
+
+    // The keyguard listener needs a system permission; the unlock broadcast is open to apps.
+    private val unlocked =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context,
+                intent: Intent,
+            ) = readLock()
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         showOverLockScreen()
+        readLock()
         enableEdgeToEdge()
         val key = PokeIntents.key(intent)
         if (key == null) {
@@ -87,6 +105,31 @@ class PokeActivity : ComponentActivity() {
         }
         diagnostics.log("poke screen ${key.taskId}")
         setContent { DurtTheme { TestTagsRoot { PokeRoute(key) } } }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        readLock()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Unlocked while the poke is up (fingerprint, face): Bitti turns back into a button.
+        ContextCompat.registerReceiver(this, unlocked, IntentFilter(Intent.ACTION_USER_PRESENT), ContextCompat.RECEIVER_NOT_EXPORTED)
+    }
+
+    override fun onStop() {
+        unregisterReceiver(unlocked)
+        super.onStop()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) readLock()
+    }
+
+    private fun readLock() {
+        locked = getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == true
     }
 
     /** The manifest attributes cover API 27+; API 26 needs the window flags. */
@@ -172,7 +215,7 @@ class PokeActivity : ComponentActivity() {
             }
         }
         PokeScreen(
-            state = current,
+            state = current.copy(locked = locked),
             onDone = {
                 if (photo) {
                     // A photo task ends with the photo (4d); the pokes go on until it is sent.
