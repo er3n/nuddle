@@ -98,6 +98,8 @@ data class HomeUiState(
     val voiceNotice: VoiceNotice? = null,
     /** The answer to a text that is not a task, above the bar (NUD-52). */
     val reply: String? = null,
+    /** The example photo attached in the bar (NUD-138), goes out with the task. */
+    val composePhoto: ImageBitmap? = null,
 )
 
 /** Anything to list: next up, an issue, a task I wrote, a text waiting for the connection. */
@@ -157,13 +159,14 @@ fun HomeScreen(
     preview: PreviewCallbacks = PreviewCallbacks(),
     undo: UndoCallbacks = UndoCallbacks(),
     pendingInvite: PendingInviteCallbacks = PendingInviteCallbacks(),
+    photo: ComposePhotoCallbacks = ComposePhotoCallbacks(),
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
     ScreenLayout(
         background = colors.background,
         modifier = modifier.testTag(TestTags.HOME),
-        bottom = { HomeBottom(state, undo, onComposeTextChange, onComposeSend, onVoiceStart, onVoiceEnd) },
+        bottom = { HomeBottom(state, undo, onComposeTextChange, onComposeSend, onVoiceStart, onVoiceEnd, photo) },
     ) {
         TopBar(myName = state.myName, unread = state.unread, onBell = onBell, onProfile = onProfile)
         if (state.offline) StatusBanner(stringResource(R.string.home_offline), Modifier.testTag(TestTags.HOME_OFFLINE))

@@ -464,6 +464,9 @@ components:
           format: uuid
         contact:
           $ref: "#/components/schemas/TaskContact"
+        examplePhotoPath:
+          type: string
+          nullable: true
       required:
         - id
         - senderId
@@ -587,6 +590,7 @@ components:
         - delivered
         - seen
         - start_set
+        - example_photo_set
     SyncPlan:
       type: object
       properties:
@@ -819,6 +823,32 @@ components:
         - url
         - sentAt
     PhotoViewUrlRequest:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+      required:
+        - taskId
+    ExamplePhotoUploadUrlRequest:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+      required:
+        - taskId
+    ExamplePhotoViewUrlResult:
+      type: object
+      properties:
+        url:
+          type: string
+        examplePhotoPath:
+          type: string
+      required:
+        - url
+        - examplePhotoPath
+    ExamplePhotoViewUrlRequest:
       type: object
       properties:
         taskId:
@@ -1129,6 +1159,23 @@ components:
           format: date-time
           example: 2026-10-12T09:00:00+03:00
           description: ISO 8601 with offset
+      required:
+        - idempotencyKey
+        - taskId
+        - photoPath
+    SetExamplePhotoCommand:
+      type: object
+      properties:
+        idempotencyKey:
+          type: string
+          format: uuid
+          description: Client generated UUIDv7; a replay returns the first result (ADR 0006)
+        taskId:
+          type: string
+          format: uuid
+        photoPath:
+          type: string
+          minLength: 1
       required:
         - idempotencyKey
         - taskId
@@ -1916,6 +1963,102 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /api/v1/photos/example-upload-url:
+    post:
+      operationId: createExamplePhotoUploadUrl
+      summary: "Sender: a signed upload URL for the example photo of a task; set_example_photo with its path (NUD-138)"
+      tags:
+        - photos
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExamplePhotoUploadUrlRequest"
+      responses:
+        "200":
+          description: Upload URL and the path to send with set_example_photo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhotoUploadUrlResult"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/photos/example-view-url:
+    post:
+      operationId: createExamplePhotoViewUrl
+      summary: A short-lived signed URL to the example photo of an open task, for its two people
+      tags:
+        - photos
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExamplePhotoViewUrlRequest"
+      responses:
+        "200":
+          description: Where to load the picture from
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExamplePhotoViewUrlResult"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /api/v1/avatar/upload-url:
     post:
       operationId: createAvatarUploadUrl
@@ -2407,6 +2550,63 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/PhotoSentCommand"
+      responses:
+        "200":
+          description: The result; a replay with the same key returns it again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskCommandResult"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/commands/set_example_photo:
+    post:
+      operationId: setExamplePhoto
+      summary: "Sender: the example photo is uploaded; it shows what to do and is never proof (NUD-138)"
+      tags:
+        - commands
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetExamplePhotoCommand"
       responses:
         "200":
           description: The result; a replay with the same key returns it again

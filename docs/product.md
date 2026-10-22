@@ -66,7 +66,8 @@ In code and docs the domain verb is **poke** (`Poke`, `PokeLevel`, `PokeActivity
 ### Writing a task
 - One input box. Who, what and when are extracted from free text by the LLM. "To whom" is never asked while typing.
 - Voice input is in the MVP: a tap on the mic dictates into the box (open-questions #40, NUD-48).
-- Share to Nuddle (NUD-127): text shared from another app (a WhatsApp message, a school e-mail) opens home with it in the box, after anything already typed. It is never sent by itself; the person edits it and sends it, and the confident / preview rules below apply. Signed out, the text waits through sign-in. Text only; images (OCR or LLM vision) are NUD-134. The app never reads WhatsApp on its own (see "Deliberately out of the MVP").
+- Share to Nuddle (NUD-127): text shared from another app (a WhatsApp message, a school e-mail) opens home with it in the box, after anything already typed. It is never sent by itself; the person edits it and sends it, and the confident / preview rules below apply. Signed out, the text waits through sign-in. An image shared the same way (NUD-138, the real WhatsApp path, since WhatsApp offers the system share for media only) lands in the box as the attached example photo below, with its text, if any, in the box. The app never reads WhatsApp on its own (see "Deliberately out of the MVP").
+- **Example photo** (NUD-138): the sender may attach one picture that shows what to do ("fotodakileri al", a shopping list, the right medicine box), from the gallery next to the box or by sharing an image to dürt. Optional, one per task, and the text is still what is understood: the picture is not read (open-questions #63). It goes out with the task on both the direct and the preview path, and is uploaded with retries like a photo. The recipient sees it on the task, on the full screen poke and in the poke notification. It is never proof (see Photo and approval).
 - If the AI is confident, the task goes out immediately and a 5 second "Undo / Edit" toast appears. A preview opens only when information is missing or ambiguous, and it asks at most one question at a time.
 - A photo is never mandatory. For suitable tasks (money, payments) it is suggested and preselected, one tap changes it.
 - Tasks to yourself exist. A user without any connection can still use the app.
@@ -91,6 +92,7 @@ In code and docs the domain verb is **poke** (`Poke`, `PokeLevel`, `PokeActivity
 
 ### Photo and approval
 - Photos from the in-app camera (either lens) or picked from the gallery (decided 2026-10-15, open-questions #48). They stay between the two people and are deleted when the task closes.
+- The sender's example photo (Writing a task) is a different thing and never proof: it does not close the task, does not start approval, and a photo task still needs the recipient's own photo. It follows the same privacy rules: only the two people see it, it is deleted when the task closes and with the account.
 - Sending a photo stops poking, the task becomes "awaiting approval".
 - The sender approves. They can ask again with a note. After a re-request, poking resumes where it stopped.
 - If approval is forgotten, the task auto-approves after 3 hours. The deadline applies to sending the photo, not to the approval.

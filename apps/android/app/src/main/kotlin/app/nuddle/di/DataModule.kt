@@ -2,6 +2,7 @@ package app.nuddle.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.work.WorkManager
 import app.nuddle.BuildConfig
 import app.nuddle.alarm.AndroidLocalWipe
 import app.nuddle.alarm.AndroidNewsAnnouncer
@@ -38,6 +39,14 @@ import app.nuddle.data.db.PokeStepDao
 import app.nuddle.data.db.QueuedWriteDao
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEventDao
+import app.nuddle.data.example.ExampleFiles
+import app.nuddle.data.example.ExamplePhotoRefresher
+import app.nuddle.data.example.ExamplePhotos
+import app.nuddle.data.example.ExamplePictures
+import app.nuddle.data.example.ExampleSync
+import app.nuddle.data.example.ExampleUploads
+import app.nuddle.data.example.FileExamplePhotos
+import app.nuddle.data.example.WorkManagerExampleUploads
 import app.nuddle.data.outbox.WorkManagerScheduling
 import app.nuddle.data.photo.ApiPhotoLoader
 import app.nuddle.data.photo.ContentGalleryImages
@@ -200,4 +209,25 @@ abstract class AnnouncementModule {
 
     @Binds
     abstract fun newsAnnouncer(impl: AndroidNewsAnnouncer): NewsAnnouncer
+}
+
+/** The sender's example photo (NUD-138): attached from the compose bar, uploaded through WorkManager, fetched after a sync. */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class ExamplePhotoModule {
+    @Binds
+    abstract fun examplePhotos(impl: FileExamplePhotos): ExamplePhotos
+
+    @Binds
+    abstract fun exampleRefresher(impl: ExampleSync): ExamplePhotoRefresher
+
+    @Binds
+    abstract fun examplePictures(impl: ExampleFiles): ExamplePictures
+
+    companion object {
+        @Provides
+        fun exampleUploads(
+            @ApplicationContext context: Context,
+        ): ExampleUploads = WorkManagerExampleUploads(WorkManager.getInstance(context))
+    }
 }

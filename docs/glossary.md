@@ -24,6 +24,7 @@ Code and docs are in English. The UI is Turkish first (`values/strings.xml`), En
 | Drop ("can't today") | Bugün yapamayacağım / Bugün olmaz | Status `DROPPED`, UI pill "Bırakıldı". Not a failure. |
 | Missed | Kaçırıldı | Deadline passed without done or photo. |
 | Photo | fotoğraf | **Never** "kanıt" (proof). |
+| Example photo | ekli fotoğraf | The sender's picture of what to do (NUD-138). Never proof, never "kanıt"; the recipient's photo stays "fotoğraf". |
 | One-time message, notice | mesaj | Finish mode `notice` (NUD-79): the card shows the message with "Tamam" only. Never "bildiri" or "duyuru". |
 | Awaiting approval | Onayını bekliyor / Onay bekleniyor | |
 | Re-request | Tekrar iste / Tekrar istendi | |

@@ -432,6 +432,32 @@ export class Client {
     return this.command(taskId, { type: "photo_sent", photoPath: upload.data.path, takenAt });
   }
 
+  /**
+   * The sender's example photo (NUD-138): the upload URL, then set_example_photo with its path.
+   * The path, or the error of whichever step refused.
+   */
+  async attachExamplePhoto(
+    taskId: TaskId,
+  ): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
+    const upload = await this.api.POST("/api/v1/photos/example-upload-url", { body: { taskId } });
+    if (!upload.data) return { ok: false, error: upload.error.error.name };
+    const set = await this.setExamplePhoto(taskId, upload.data.path);
+    if (set.error) return { ok: false, error: set.error.error.name };
+    return { ok: true, path: upload.data.path };
+  }
+
+  async setExamplePhoto(taskId: TaskId, photoPath: string) {
+    const r = await this.api.POST("/api/v1/commands/set_example_photo", {
+      body: { idempotencyKey: uuidv7(), taskId, photoPath },
+    });
+    await this.world.refresh();
+    return r;
+  }
+
+  async exampleViewUrl(taskId: TaskId) {
+    return this.api.POST("/api/v1/photos/example-view-url", { body: { taskId } });
+  }
+
   async invite(phone: string, relationship: EdgeType, prefilledName: string): Promise<string> {
     const r = ok(
       await this.api.POST("/api/v1/commands/create_invite", {

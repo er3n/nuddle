@@ -86,6 +86,7 @@ const TaskEventType = z
     "delivered",
     "seen",
     "start_set",
+    "example_photo_set",
   ])
   .openapi("TaskEventType");
 
@@ -244,6 +245,11 @@ export const PhotoSentCommand = taskKeyed({
   /** When Gönder was tapped: a photo taken before the deadline counts even if its upload came late (6e). */
   takenAt: Instant.optional(),
 }).openapi("PhotoSentCommand");
+/** Sender: the example photo is uploaded (NUD-138); never proof, the task stays as it is. */
+export const SetExamplePhotoCommand = taskKeyed({
+  /** The path `photos/example-upload-url` gave. */
+  photoPath: z.string().min(1),
+}).openapi("SetExamplePhotoCommand");
 export const CantTodayCommand = taskKeyed({ note: Note }).openapi("CantTodayCommand");
 export const DidItLaterCommand = taskKeyed({}).openapi("DidItLaterCommand");
 /** "Kaldır" on the recipient's missed card (NUD-49). */
@@ -406,6 +412,21 @@ export const PhotoUploadUrlResult = z
   })
   .openapi("PhotoUploadUrlResult");
 
+export const ExamplePhotoUploadUrlRequest = z
+  .object({ taskId: Id })
+  .openapi("ExamplePhotoUploadUrlRequest");
+export const ExamplePhotoViewUrlRequest = z
+  .object({ taskId: Id })
+  .openapi("ExamplePhotoViewUrlRequest");
+export const ExamplePhotoViewUrlResult = z
+  .object({
+    /** GET the picture here; valid for a few minutes. */
+    url: z.string(),
+    /** The path the URL is for: keep the copy under it. */
+    examplePhotoPath: z.string(),
+  })
+  .openapi("ExamplePhotoViewUrlResult");
+
 export const AvatarUploadUrlResult = z
   .object({
     /** Send this path with `set_avatar` once the PUT succeeded. */
@@ -491,6 +512,11 @@ const SyncTask = z
     seriesId: Id.nullable().optional(),
     /** Ara or Mesaj at on the full screen poke (NUD-128); null or absent: none. */
     contact: TaskContact.nullable().optional(),
+    /**
+     * The sender's example photo (NUD-138): fetch it with `photos/example-view-url` when it differs from the
+     * copy on the phone. Null or absent: none. Never proof.
+     */
+    examplePhotoPath: z.string().nullable().optional(),
   })
   .openapi("SyncTask");
 

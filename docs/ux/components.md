@@ -39,7 +39,8 @@ enum class DurtButtonSize(val height: Dp) { Poke(62.dp), Large(56.dp), Medium(52
 ```kotlin
 sealed interface ComposeState { data object Idle; data class Typing(val text: String); data class Failed(val text: String); data class Sending(val text: String); data class Listening(val heard: String) }
 @Composable fun ComposeBar(state: ComposeState, onTextChange: (String) -> Unit, onSend: () -> Unit,
-    onVoiceStart: () -> Unit, onVoiceEnd: (cancelled: Boolean) -> Unit, notice: VoiceNotice? = null)
+    onVoiceStart: () -> Unit, onVoiceEnd: (cancelled: Boolean) -> Unit, notice: VoiceNotice? = null,
+    photo: ComposePhoto? = null)
 ```
 - Idle: one slim line like a messaging app, 1 dp `border`, text 14 sp, 40 dp orange mic button. Placeholder "Yaz ya da konuş...". (Made smaller in NUD-48: the first phone test found the 52 dp mic and 18 sp text too big.)
 - Focused: 2 dp `ink` border, radius 20, text 15 sp, grows to at most 4 lines. With text the mic turns into a send arrow (same place and size, 150 ms crossfade).
@@ -47,6 +48,7 @@ sealed interface ComposeState { data object Idle; data class Typing(val text: St
 - Listening: the bar stays a bar: a "Dinliyorum" line above it, the transcript in the box with the word still being heard lighter, and the mic button pulses (`voicePulse`) as the stop button.
 - Sending: the text stays in the box in `textTertiary`, not editable, and a 20 dp spinner takes the button's place. An empty box while sending looked as if the text was lost, and people sent it again (NUD-54).
 - Failed: text is kept, the button becomes "Tekrar dene", an InlineAlert shows above.
+- Example photo (`photo`, NUD-138, screens.md 2a): a 44 dp gallery button (Gallery icon, `textMuted`, no fill) at the start of the bar while idle, typing or failed; the attached picture above the bar as a 64 dp `radiusS` thumbnail (`ExamplePhotoThumb`) with a 44 dp ✕ target (24 dp `ink` circle). A tap on the thumbnail opens `ExamplePhotoViewer`, the picture on `ink` with a close button. The same thumbnail and viewer show the picture on the task detail and the full screen poke.
 - Sits above the keyboard with `imePadding()`.
 
 ## 4. TaskRow, StatusPill, HomeTabs

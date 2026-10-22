@@ -107,6 +107,11 @@ export interface Task {
   seriesId: TaskId | null;
   /** Whom to call or message from the poke (NUD-128); null for most tasks. */
   contact: TaskContact | null;
+  /**
+   * The sender's example photo in the private bucket (NUD-138, docs/domain.md, Example photo):
+   * shows what to do, never proof. Cleared when the task closes and its folder is deleted.
+   */
+  examplePhotoPath: string | null;
   status: TaskStatus;
   late: boolean;
   planVersion: number;
@@ -148,7 +153,8 @@ export type TaskEventType =
   | "permission_missing"
   | "delivered"
   | "seen"
-  | "start_set";
+  | "start_set"
+  | "example_photo_set";
 
 export interface TaskEvent {
   taskId: TaskId;

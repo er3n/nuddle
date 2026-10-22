@@ -51,6 +51,11 @@ data class TaskEntity(
      */
     val contactPersonId: String? = null,
     val contactAction: String? = null,
+    /**
+     * The server path of the sender's example photo (NUD-138, docs/domain.md, Example photo). The phone keeps a copy
+     * of it in `ExampleFiles`; null without one or once the task closed. Never proof.
+     */
+    val examplePhotoPath: String? = null,
 )
 
 /** The time the sender picked and screens show: the moment of an `at` task, otherwise the deadline (ADR 0017). */

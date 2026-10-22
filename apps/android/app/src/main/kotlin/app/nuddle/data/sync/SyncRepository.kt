@@ -27,6 +27,7 @@ import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.db.TaskEventDao
 import app.nuddle.data.db.TaskEventEntity
+import app.nuddle.data.example.ExamplePhotoRefresher
 import app.nuddle.data.level
 import app.nuddle.data.note
 import app.nuddle.data.reason
@@ -146,6 +147,7 @@ class SyncRepository
         private val acks: TaskAcks,
         private val avatars: AvatarRefresher,
         private val announcements: AnnouncementInbox,
+        private val examples: ExamplePhotoRefresher = ExamplePhotoRefresher {},
     ) : Syncer {
         /**
          * One sync at a time in the process: a push, the app coming to the front and a write can ask at once (NUD-59),
@@ -201,6 +203,8 @@ class SyncRepository
                 val other = if (task.recipientId == session.personId) task.senderId else task.recipientId
                 connections.get(other)?.let { announcer.closed(task.toEntity(), it.displayName, close) }
             }
+            // The sender's pictures of the synced tasks, last, so a slow fetch holds no alarm or note (NUD-138).
+            examples.refresh(response.tasks.map(SyncTask::toEntity))
             return true
         }
 
@@ -320,6 +324,7 @@ internal fun SyncTask.toEntity() =
         repeatTime = repeat?.time,
         contactPersonId = contact?.personId,
         contactAction = contact?.action?.value,
+        examplePhotoPath = examplePhotoPath,
     )
 
 internal fun SyncEvent.toEntity() =

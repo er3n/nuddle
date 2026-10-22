@@ -1,6 +1,9 @@
 package app.nuddle.ui.screens.task
 
+import android.graphics.BitmapFactory
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -20,6 +23,7 @@ import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEventDao
 import app.nuddle.data.db.shownTime
 import app.nuddle.data.delivery
+import app.nuddle.data.example.ExamplePictures
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.session.TaskAcks
 import app.nuddle.data.sinceLastDeadline
@@ -48,6 +52,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -132,6 +137,8 @@ data class TaskDetailUiState(
     val taskTime: Instant? = null,
     /** A repeating task's rule (ADR 0021): the "Tekrar" row; null for a one-off. */
     val repeat: RepeatUi? = null,
+    /** The sender's example photo once the phone has it (NUD-138); never the recipient's photo. */
+    val examplePhoto: ImageBitmap? = null,
 ) {
     val actions: List<DetailAction> get() = actionsFor(side, status, photo, notice)
     val editable: Boolean get() = editable(side, status)
@@ -158,6 +165,7 @@ class TaskDetailViewModel
         private val ids: IdGenerator,
         private val clock: Clock,
         private val timeZone: TimeZone,
+        examples: ExamplePictures = ExamplePictures.None,
     ) : ViewModel() {
         val taskId: String = checkNotNull(savedState[ARG_TASK])
 
@@ -207,6 +215,13 @@ class TaskDetailViewModel
             val start: NewDeadlineUi?,
             val pickedRecipient: RecipientChoice?,
         )
+
+        /** The sender's example photo of this task, decoded once per change (NUD-138). */
+        private val examplePhoto: Flow<ImageBitmap?> =
+            examples
+                .picture(taskId)
+                .map { bytes -> bytes?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() } }
+                .onStart { emit(null) }
 
         val state: StateFlow<TaskDetailUiState?> =
             combine(
@@ -306,7 +321,8 @@ class TaskDetailViewModel
                             ?.takeIf { side != DetailSide.Mine && status == DetailStatus.Scheduled && task.snoozedUntil == null }
                             ?.hourMinute(),
                 )
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
+            }.combine(examplePhoto) { detail, photo -> detail?.copy(examplePhoto = photo) }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 
         private fun Instant.hourMinute(): String =
             toLocalDateTime(timeZone)

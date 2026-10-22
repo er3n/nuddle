@@ -8,6 +8,7 @@ import app.nuddle.data.api.RawCommandApi
 import app.nuddle.data.db.NuddleDatabase
 import app.nuddle.data.db.OutboxEntity
 import app.nuddle.data.db.PokeStepEntity
+import app.nuddle.data.example.ExamplePhotoRefresher
 import app.nuddle.data.outbox.Outbox
 import app.nuddle.data.outbox.OutboxSender
 import app.nuddle.data.photo.PendingPhoto
@@ -87,7 +88,7 @@ class SyncAndOutboxTest {
     /** Tasks with a change this phone has not sent yet. */
     private var unsent = emptySet<String>()
 
-    private fun syncRepository() =
+    private fun syncRepository(examples: ExamplePhotoRefresher = ExamplePhotoRefresher {}) =
         SyncRepository(
             api = server.retrofit().create(SyncApi::class.java),
             sessions = sessions,
@@ -102,6 +103,7 @@ class SyncAndOutboxTest {
             acks = acks,
             avatars = { },
             announcements = { synced, notify -> received += synced.map { it.id } to notify },
+            examples = examples,
         )
 
     /** What sync handed the announcement inbox (ADR 0025): ids and whether to notify. */
@@ -168,6 +170,25 @@ class SyncAndOutboxTest {
             server.enqueue(json(200, syncBody))
             assertTrue(syncRepository().sync())
             assertEquals(null, db.tasks().get(Cast.TASK_ID)!!.contactPersonId)
+        }
+
+    @Test
+    fun `the sender's example photo path is stored and the synced tasks go to the picture fetch (NUD-138)`() =
+        runTest {
+            val withPhoto =
+                syncBody.replace(
+                    """"futureField":1""",
+                    """"futureField":1,"examplePhotoPath":"tasks/${Cast.TASK_ID}/1.jpg"""",
+                )
+            server.enqueue(json(200, withPhoto))
+            val fetched = mutableListOf<List<String?>>()
+            assertTrue(syncRepository(examples = { tasks -> fetched += tasks.map { it.examplePhotoPath } }).sync())
+            assertEquals("tasks/${Cast.TASK_ID}/1.jpg", db.tasks().get(Cast.TASK_ID)!!.examplePhotoPath)
+            assertEquals(listOf(listOf<String?>("tasks/${Cast.TASK_ID}/1.jpg")), fetched)
+
+            server.enqueue(json(200, syncBody))
+            assertTrue(syncRepository().sync())
+            assertEquals(null, db.tasks().get(Cast.TASK_ID)!!.examplePhotoPath)
         }
 
     @Test

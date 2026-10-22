@@ -22,6 +22,7 @@ import app.nuddle.data.db.QueuedWriteEntity
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEventDao
 import app.nuddle.data.delivery
+import app.nuddle.data.example.ExamplePhotos
 import app.nuddle.data.network.Connectivity
 import app.nuddle.data.network.ErrorReporter
 import app.nuddle.data.photo.PhotoLoader
@@ -92,8 +93,12 @@ class HomeViewModel
         ticks: MinuteTicks,
         private val acks: TaskAcks,
         finishSwitcher: FinishSwitcher,
+        examples: ExamplePhotos = ExamplePhotos.None,
     ) : ViewModel() {
         private val compose = MutableStateFlow<ComposeState>(ComposeState.Idle)
+
+        /** The example photo in the bar (NUD-138); the route binds the gallery button and the ✕ to it. */
+        internal val composePhoto = ComposePhotoHolder(examples, viewModelScope)
 
         /** The code 6f shows while it is open. */
         private val unrecoverable = MutableStateFlow<String?>(null)
@@ -209,7 +214,7 @@ class HomeViewModel
                     inviteDao.observeAll().map { pendingInvite(it, clock.now(), timeZone) },
                     connectivity.online,
                     queuedWrites.observeAll().map { all -> all.map { QueuedUi(it.idempotencyKey, it.text) } },
-                    combine(unrecoverable, reply, tab, ::Notes),
+                    combine(unrecoverable, reply, tab, composePhoto.image, ::Notes),
                     ::Extras,
                 ),
             ) { (name, compose, tasksPart), preview, undo, doneNote, extras ->
@@ -230,6 +235,7 @@ class HomeViewModel
                     unrecoverable = extras.notes.unrecoverable,
                     reply = extras.notes.reply,
                     tab = extras.notes.tab,
+                    composePhoto = extras.notes.photo,
                 )
             }.onEach { home ->
                 // Tasks from others on Bana while home is on screen: their senders see "gördü" (NUD-68).
@@ -247,6 +253,7 @@ class HomeViewModel
             val unrecoverable: String?,
             val reply: String?,
             val tab: HomeTab,
+            val photo: ImageBitmap?,
         )
 
         init {
@@ -279,12 +286,14 @@ class HomeViewModel
             val text = sendable ?: return
             reply.value = null
             val key = pendingKey ?: ids.next().also { pendingKey = it }
+            val photo = composePhoto.current
             compose.value = ComposeState.Sending(text)
             viewModelScope.launch {
                 when (val outcome = tasks.write(text, key)) {
                     is WriteOutcome.Created -> {
                         pendingKey = null
                         compose.value = ComposeState.Idle
+                        composePhoto.sent(photo, outcome.taskId)
                         // 5 s to take it back or change it (domain.md, Undo toast). Synced right after the write;
                         // without the task on the device there is nothing to describe, and it stays as created.
                         undo.value =
@@ -318,6 +327,7 @@ class HomeViewModel
                         } else {
                             pendingKey = null
                             compose.value = ComposeState.Idle
+                            composePhoto.queued(photo, key)
                             queuedWrites.add(QueuedWriteEntity(key, text, clock.now().toEpochMilliseconds()))
                         }
                     }
@@ -363,6 +373,7 @@ class HomeViewModel
             val deadline = open.deadline ?: return
             if (open.ui.sending || !open.ui.ready) return
             preview.value = open.copy(ui = open.ui.copy(sending = true))
+            val photo = composePhoto.current.takeIf { open.editing == null }
             viewModelScope.launch {
                 val outcome =
                     if (open.editing != null) {
@@ -386,6 +397,7 @@ class HomeViewModel
                     outcome is WriteOutcome.Created -> {
                         preview.value = null
                         compose.value = ComposeState.Idle
+                        composePhoto.sent(photo, outcome.taskId)
                         tab.value = if (open.ui.toOther) HomeTab.Sent else HomeTab.Mine
                         // Setup follows a task to self only (open-questions#30).
                         if (!open.ui.toOther && setupGate.needed()) setup.send(Unit)
@@ -419,15 +431,19 @@ class HomeViewModel
             when (val outcome = tasks.write(entry.text, entry.idempotencyKey)) {
                 is WriteOutcome.Created -> {
                     queuedWrites.remove(entry.idempotencyKey)
+                    composePhoto.queuedSent(entry.idempotencyKey, outcome.taskId)
                 }
 
+                // Not a task: the picture comes back to the bar for the next try.
                 is WriteOutcome.Chat -> {
                     queuedWrites.remove(entry.idempotencyKey)
                     reply.value = outcome.reply
+                    composePhoto.queuedBack(entry.idempotencyKey)
                 }
 
                 is WriteOutcome.Ask -> {
                     queuedWrites.remove(entry.idempotencyKey)
+                    composePhoto.queuedBack(entry.idempotencyKey)
                     compose.value = ComposeState.Typing(entry.text)
                     openPreview(entry.text, outcome)
                 }
