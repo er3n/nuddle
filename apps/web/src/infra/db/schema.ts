@@ -53,6 +53,8 @@ export const inviteStatus = pgEnum("invite_status", [
 export const finishMode = pgEnum("finish_mode", ["done", "photo", "notice"]);
 // ADR 0017: `by` is done by the deadline, `at` is a moment (remind_at) and the deadline its grace.
 export const timing = pgEnum("timing", ["at", "by"]);
+
+export const contactAction = pgEnum("contact_action", ["call", "message"]);
 // Server statuses only. QUEUED is client-only and never stored here.
 export const taskStatus = pgEnum("task_status", [
   "SCHEDULED",
@@ -199,6 +201,9 @@ export const tasks = pgTable(
     // A repeating task's rule and the id of its first occurrence (ADR 0021); null for a one-off.
     repeat: jsonb("repeat").$type<RepeatRule>(),
     seriesId: uuid("series_id"),
+    // Whom the recipient calls or messages from the poke (NUD-128); both null for most tasks.
+    contactPersonId: uuid("contact_person_id").references(() => people.id),
+    contactAction: contactAction("contact_action"),
     status: taskStatus("status").notNull().default("SCHEDULED"),
     // TODO(open-questions#9): "Sonradan yaptım" after MISSED closes as DONE with late = true.
     late: boolean("late").notNull().default(false),

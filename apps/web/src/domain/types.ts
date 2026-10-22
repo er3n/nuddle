@@ -15,6 +15,15 @@ export type FinishMode = "done" | "photo" | "notice";
 /** `by`: done by the deadline. `at`: a moment (`remindAt`); the deadline is the moment plus a grace (ADR 0017). */
 export type Timing = "at" | "by";
 
+/**
+ * The person a task is about calling or messaging ("annemi ara", NUD-128): the recipient's phone
+ * offers Ara or Mesaj at on the full screen poke with that connection's number.
+ */
+export interface TaskContact {
+  personId: PersonId;
+  action: "call" | "message";
+}
+
 export type PokeLevel = "SILENT" | "SOUND" | "FULL_SCREEN" | "HUMAN";
 export type DeviceLevel = Exclude<PokeLevel, "HUMAN">;
 
@@ -96,6 +105,8 @@ export interface Task {
   repeat: RepeatRule | null;
   /** The first occurrence's id, shared by every occurrence of the series; null for a one-off. */
   seriesId: TaskId | null;
+  /** Whom to call or message from the poke (NUD-128); null for most tasks. */
+  contact: TaskContact | null;
   status: TaskStatus;
   late: boolean;
   planVersion: number;

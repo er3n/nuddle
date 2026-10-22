@@ -213,6 +213,9 @@ System notification (shell is the system's, content and actions are ours).
 `PokeActivity` on `poke` background with rings.
 **Copy:** 3. dürtme · 08:15 | Para çek | 1.000 TL · son zamana 45 dk | İki dürtmeyi geçtin. Bu sefer ciddiyim, 09:00'a az kaldı. | Bitti | 10 dk ertele · son hakkın (built as "Ertele · 08:25 · son hakkın", open-questions #1) | Bugün yapamayacağım
 
+**Ara or Mesaj at (NUD-128).** No design PNG. When the task has a contact (domain.md, Call or message from the poke: "annemi ara", "Sibel'e mesaj at") and the phone has that connection's number, an outline button under Bitti, with the phone or the message icon: "Ara" opens the dialer with the number (`ACTION_DIAL`, after the lock screen is unlocked), "Mesaj at" the `smsto:` chooser. The tap stops this poke's sound and voice and closes the full screen; the task stays open and its card stays on home, so only Bitti closes it and the next pokes ring as planned. Without a contact, or without the number (the connection is gone), the screen is as above. The notification (3a) keeps Bitti, Ertele and Bugün olmaz; the action is on the full screen only (open-questions #58). The demo poke (2d) never shows it.
+**Copy:** Ara | Mesaj at
+
 ## 4 · A task for someone else
 
 ### 4a Preview, only if ambiguous · `OtherPreview.png`

@@ -61,6 +61,7 @@ import app.nuddle.ui.screens.photo.PhotoStage
 import app.nuddle.ui.screens.photo.PhotoUiState
 import app.nuddle.ui.screens.photo.UnsentPhotoScreen
 import app.nuddle.ui.screens.photo.UnsentPhotoUiState
+import app.nuddle.ui.screens.poke.PokeContactUi
 import app.nuddle.ui.screens.poke.PokeDemoScreen
 import app.nuddle.ui.screens.poke.PokeScreen
 import app.nuddle.ui.screens.poke.PokeUiState
@@ -222,6 +223,27 @@ class TestTagsTest {
         }
         assertShown(TestTags.POKE)
         assertTaps(TestTags.POKE_DONE to "done", TestTags.POKE_SNOOZE to "snooze", TestTags.POKE_CANT_TODAY to "cant")
+    }
+
+    @Test
+    fun `poke about calling someone (NUD-128)`() {
+        content {
+            PokeScreen(
+                PokeUiState(
+                    pokeNumber = 1,
+                    time = "18:45",
+                    title = "Annemi ara",
+                    detail = null,
+                    timeLeft = TimeLeft.Minutes(15),
+                    contact = PokeContactUi(phone = Cast.SIBEL_PHONE, message = false),
+                ),
+                onDone = { clicked += "done" },
+                onSnooze = { clicked += "snooze" },
+                onCantToday = { clicked += "cant" },
+                onContact = { clicked += "contact" },
+            )
+        }
+        assertTaps(TestTags.POKE_CONTACT to "contact", TestTags.POKE_DONE to "done")
     }
 
     @Test

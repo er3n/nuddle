@@ -462,6 +462,8 @@ components:
           type: string
           nullable: true
           format: uuid
+        contact:
+          $ref: "#/components/schemas/TaskContact"
       required:
         - id
         - senderId
@@ -520,6 +522,21 @@ components:
       required:
         - every
         - time
+    TaskContact:
+      type: object
+      nullable: true
+      properties:
+        personId:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum:
+            - call
+            - message
+      required:
+        - personId
+        - action
     SyncEvent:
       type: object
       properties:
@@ -910,6 +927,8 @@ components:
               $ref: "#/components/schemas/FinishMode"
             repeat:
               $ref: "#/components/schemas/RepeatRule"
+            contact:
+              $ref: "#/components/schemas/TaskContact"
           required:
             - recipient
             - title
@@ -1014,6 +1033,8 @@ components:
           maxLength: 500
         repeat:
           $ref: "#/components/schemas/RepeatRule"
+        contact:
+          $ref: "#/components/schemas/TaskContact"
       required:
         - idempotencyKey
         - recipientId

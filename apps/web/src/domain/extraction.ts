@@ -1,7 +1,8 @@
 // LLM task extraction: the provider-neutral input/output and the post-processing that decides
 // between creating the task at once and asking exactly one question (docs/domain.md).
+import { contactOf, type ExtractedContact } from "./contact";
 import { nextOccurrenceAt, repeatRuleOf, textSaysRepeat, type RepeatRule } from "./repeat";
-import type { EdgeType, FinishMode, PersonId, Timing } from "./types";
+import type { EdgeType, FinishMode, PersonId, TaskContact, Timing } from "./types";
 
 /**
  * How the sender reads dates and times (NUD-132): the language the title and the reply are in,
@@ -59,6 +60,11 @@ export interface Extraction {
   finishMode: FinishMode;
   /** A repeating task's rule (ADR 0021); null or absent for a one-off. The deadline is then the first occurrence. */
   repeat?: RepeatRule | null;
+  /**
+   * Whom the task is about calling or messaging (NUD-128): a connection's name or "sender"; null
+   * or absent for anything else. Optional so fixtures written before it stay without one.
+   */
+  contact?: ExtractedContact | null;
   missing: MissingField[];
   /**
    * One short sentence when the text is not a reminder task at all (a greeting, small talk, a
@@ -81,6 +87,8 @@ export type Resolution =
       finishMode: FinishMode;
       /** The rule of a repeating task (ADR 0021); null for a one-off. */
       repeat: RepeatRule | null;
+      /** Whom to call or message (NUD-128), before the check against the recipient. */
+      contact: TaskContact | null;
     }
   | { kind: "ask"; question: MissingField }
   | { kind: "chat"; reply: string };
@@ -286,5 +294,24 @@ export function resolveExtraction(
     leadMinutes: e.timing === "at" ? (e.leadMinutes ?? null) : null,
     finishMode: e.finishMode,
     repeat: text !== undefined && textSaysRepeat(text) ? repeatRuleOf(e.repeat) : null,
+    contact: contactOfExtraction(e, sender, connections),
   };
+}
+
+/**
+ * Whom the task is about calling or messaging (NUD-128), before the check against the recipient:
+ * the named connection, or the single connection of the relationship the model wrote instead of
+ * the name ("Annem", NUD-132). None on a one-time message.
+ */
+export function contactOfExtraction(
+  e: Extraction,
+  sender: { id: PersonId },
+  connections: readonly Connection[],
+): TaskContact | null {
+  if (e.finishMode === "notice" || !e.contact) return null;
+  const named = contactOf(e.contact, sender, connections);
+  if (named !== null) return named;
+  if (connections.some((c) => normalize(c.name) === normalize(e.contact?.name ?? ""))) return null;
+  const personId = onlyOfType(typesNamedBy(e.contact.name), connections);
+  return personId === null ? null : { personId, action: e.contact.action };
 }

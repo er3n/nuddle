@@ -920,6 +920,7 @@ export interface components {
             repeat?: components["schemas"]["RepeatRule"];
             /** Format: uuid */
             seriesId?: string | null;
+            contact?: components["schemas"]["TaskContact"];
         };
         /** @enum {string} */
         Timing: "at" | "by";
@@ -932,6 +933,12 @@ export interface components {
             every: "day" | "week" | "weekdays";
             days?: number[] | null;
             time: string;
+        } | null;
+        TaskContact: {
+            /** Format: uuid */
+            personId: string;
+            /** @enum {string} */
+            action: "call" | "message";
         } | null;
         SyncEvent: {
             id: string;
@@ -1098,6 +1105,7 @@ export interface components {
                 leadMinutes?: number | null;
                 finishMode: components["schemas"]["FinishMode"];
                 repeat?: components["schemas"]["RepeatRule"];
+                contact?: components["schemas"]["TaskContact"];
             } | null;
             reply?: string | null;
             quiet?: {
@@ -1149,6 +1157,7 @@ export interface components {
             finishMode: components["schemas"]["FinishMode"];
             rawText: string | null;
             repeat?: components["schemas"]["RepeatRule"];
+            contact?: components["schemas"]["TaskContact"];
         };
         RemoveMissedCommand: {
             /**

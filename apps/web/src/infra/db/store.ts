@@ -197,6 +197,10 @@ export function toTask(r: TaskRow): Task {
     rawText: r.rawText,
     repeat: r.repeat ?? null,
     seriesId: r.seriesId,
+    contact:
+      r.contactPersonId !== null && r.contactAction !== null
+        ? { personId: r.contactPersonId, action: r.contactAction }
+        : null,
     status: r.status,
     late: r.late,
     planVersion: r.planVersion,
@@ -668,6 +672,8 @@ export async function persistOutcome(tx: Tx, o: Outcome, now: Date): Promise<voi
       rawText: t.rawText,
       repeat: t.repeat,
       seriesId: t.seriesId,
+      contactPersonId: t.contact?.personId ?? null,
+      contactAction: t.contact?.action ?? null,
       status: t.status,
       late: t.late,
       leadMinutes: t.leadMinutes,
@@ -1284,5 +1290,10 @@ export async function purgePerson(tx: Tx, personId: PersonId): Promise<void> {
   await tx.delete(devices).where(eq(devices.personId, personId));
   await tx.delete(announcementRecipients).where(eq(announcementRecipients.personId, personId));
   await tx.delete(invites).where(eq(invites.inviterId, personId));
+  // Someone else's task about calling them ("annemi ara", NUD-128) keeps going without its Ara.
+  await tx
+    .update(tasks)
+    .set({ contactPersonId: null, contactAction: null })
+    .where(eq(tasks.contactPersonId, personId));
   await tx.delete(people).where(eq(people.id, personId));
 }

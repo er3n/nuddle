@@ -19,6 +19,7 @@ import type {
   Task,
   TaskEvent,
   TaskEventType,
+  TaskContact,
   TaskId,
   PokeStep,
   TaskStatus,
@@ -828,6 +829,8 @@ export interface CreateTaskInput {
   repeat?: RepeatRule | null;
   /** Set when this is the next occurrence of an existing series. */
   seriesId?: TaskId | null;
+  /** Whom to call or message from the poke (NUD-128), already checked with `keepContact`. */
+  contact?: TaskContact | null;
   reachability: Reachability;
   now: Date;
 }
@@ -868,6 +871,7 @@ export function createTask(input: CreateTaskInput): Result<Outcome> {
     rawText: input.rawText,
     repeat: input.repeat ?? null,
     seriesId: input.repeat ? (input.seriesId ?? input.id) : null,
+    contact: input.contact ?? null,
     status: "SCHEDULED",
     late: false,
     planVersion: 1,

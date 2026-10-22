@@ -1,5 +1,6 @@
 package app.nuddle.alarm
 
+import android.app.KeyguardManager
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -23,11 +24,14 @@ import app.nuddle.domain.Diagnostics
 import app.nuddle.domain.PokeRules
 import app.nuddle.domain.SnoozeRules
 import app.nuddle.ui.TestTagsRoot
+import app.nuddle.ui.nav.dial
+import app.nuddle.ui.nav.message
 import app.nuddle.ui.screens.LightSystemBarIcons
 import app.nuddle.ui.screens.hourMinute
 import app.nuddle.ui.screens.poke.DropCallbacks
 import app.nuddle.ui.screens.poke.DropSheet
 import app.nuddle.ui.screens.poke.DropUi
+import app.nuddle.ui.screens.poke.PokeContactUi
 import app.nuddle.ui.screens.poke.PokeScreen
 import app.nuddle.ui.screens.poke.PokeUiState
 import app.nuddle.ui.screens.poke.SnoozeUi
@@ -96,6 +100,25 @@ class PokeActivity : ComponentActivity() {
         }
     }
 
+    /** The dialer or the message chooser, once the lock screen is out of the way (docs/ux/platform.md, Intents). */
+    private fun openContact(contact: PokeContactUi) {
+        val open = {
+            if (contact.message) message(contact.phone) else dial(contact.phone)
+            finish()
+        }
+        val keyguard = getSystemService(KeyguardManager::class.java)
+        if (keyguard?.isKeyguardLocked == true) {
+            keyguard.requestDismissKeyguard(
+                this,
+                object : KeyguardManager.KeyguardDismissCallback() {
+                    override fun onDismissSucceeded() = open()
+                },
+            )
+        } else {
+            open()
+        }
+    }
+
     @Composable
     private fun PokeRoute(key: AlarmKey) {
         var state by remember { mutableStateOf<PokeUiState?>(null) }
@@ -128,6 +151,7 @@ class PokeActivity : ComponentActivity() {
                             SnoozeUi(it.until.hourMinute(timeZone), it.last)
                         },
                     notice = notice,
+                    contact = task.contactPersonId?.takeUnless { notice }?.let { pokeContact(task, connections.get(it)) },
                 )
         }
         // Closed on the other phone or on the server while it is up (cancelled, missed): the poke goes (NUD-64).
@@ -156,6 +180,13 @@ class PokeActivity : ComponentActivity() {
                 }
             },
             onSnooze = { answer(actions::snooze) },
+            onContact = {
+                current.contact?.let { contact ->
+                    // Not an answer: the task stays open and the next pokes ring as planned (NUD-128).
+                    actions.contact(key)
+                    openContact(contact)
+                }
+            },
             onCantToday = {
                 val name = senderName
                 if (name == null) answer { actions.cantToday(it) } else drop = DropUi(name)

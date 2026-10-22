@@ -249,6 +249,15 @@ class PokeActions
             outbox.enqueue("snooze", id, SnoozeCommand(idempotencyKey = id, taskId = key.taskId), SnoozeCommand.serializer())
         }
 
+        /**
+         * Ara or Mesaj at on the full screen poke (NUD-128): this poke stops ringing and speaking, and nothing else
+         * changes. The task stays open, the rest of the plan rings as planned and the server is not told.
+         */
+        fun contact(key: AlarmKey) {
+            diagnostics.log("contact ${key.taskId}")
+            notifications.cancel(key.taskId)
+        }
+
         private suspend fun close(
             taskId: String,
             status: TaskStatus,

@@ -38,6 +38,15 @@ data class SnoozeUi(
     val last: Boolean,
 )
 
+/**
+ * Ara or Mesaj at on the poke (NUD-128): the task is about calling or messaging this connection, and [phone] is the
+ * number the phone has for them.
+ */
+data class PokeContactUi(
+    val phone: String,
+    val message: Boolean,
+)
+
 @Immutable
 data class PokeUiState(
     val pokeNumber: Int,
@@ -52,6 +61,8 @@ data class PokeUiState(
     val snooze: SnoozeUi? = SnoozeUi(time = "08:30", last = false),
     /** A one-time message (NUD-79): "Tamam" only. */
     val notice: Boolean = false,
+    /** Whom to call or message from here (NUD-128); null hides the button, always null on a one-time message. */
+    val contact: PokeContactUi? = null,
 )
 
 @Composable
@@ -61,7 +72,10 @@ fun timeLeftText(timeLeft: TimeLeft): String =
         is TimeLeft.Hours -> pluralStringResource(R.plurals.duration_hours, timeLeft.value, timeLeft.value)
     }
 
-/** Full screen poke (3b): `poke` background with static rings, the task, and the three answers. */
+/**
+ * Full screen poke (3b): `poke` background with static rings, the task, and the three answers; Ara or Mesaj at under
+ * Bitti when the task is about calling or messaging a connection (NUD-128). [onContact] leaves the task open.
+ */
 @Composable
 fun PokeScreen(
     state: PokeUiState,
@@ -69,6 +83,7 @@ fun PokeScreen(
     onSnooze: () -> Unit,
     onCantToday: () -> Unit,
     modifier: Modifier = Modifier,
+    onContact: () -> Unit = {},
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
@@ -87,6 +102,7 @@ fun PokeScreen(
                 leadingIcon = DurtIcons.Check,
                 modifier = Modifier.testTag(TestTags.POKE_DONE),
             )
+            state.contact?.let { PokeContactButton(it, onContact) }
             if (state.snooze != null && !state.notice) {
                 DurtButton(
                     text =
@@ -148,6 +164,22 @@ fun PokeScreen(
             )
         }
     }
+}
+
+/** Ara or Mesaj at under Bitti (NUD-128). */
+@Composable
+private fun PokeContactButton(
+    contact: PokeContactUi,
+    onClick: () -> Unit,
+) {
+    DurtButton(
+        text = stringResource(if (contact.message) R.string.poke_message else R.string.poke_call),
+        onClick = onClick,
+        kind = DurtButtonKind.OnPokeOutline,
+        size = DurtButtonSize.Medium,
+        leadingIcon = if (contact.message) DurtIcons.Message else DurtIcons.Phone,
+        modifier = Modifier.testTag(TestTags.POKE_CONTACT),
+    )
 }
 
 /** The bell in two static rings (3b, and the demo poke 2d). Poke rings stay still (platform.md, Accessibility). */
@@ -234,6 +266,52 @@ private fun PokeScreenMomentPreview() {
                     title = "Su iç",
                     detail = null,
                     timeLeft = null,
+                ),
+            onDone = {},
+            onSnooze = {},
+            onCantToday = {},
+        )
+    }
+}
+
+/** "Annemi ara" to self (NUD-128): Ara under Bitti opens the dialer with Ayşe's number. */
+@PreviewScreens
+@Composable
+private fun PokeScreenCallPreview() {
+    DurtTheme {
+        PokeScreen(
+            state =
+                PokeUiState(
+                    pokeNumber = 3,
+                    time = "18:45",
+                    title = "Annemi ara",
+                    detail = null,
+                    timeLeft = TimeLeft.Minutes(15),
+                    snooze = SnoozeUi(time = "18:55", last = false),
+                    contact = PokeContactUi(phone = "+905320000005", message = false),
+                ),
+            onDone = {},
+            onSnooze = {},
+            onCantToday = {},
+        )
+    }
+}
+
+/** "Sibel'e mesaj at" (NUD-128): Mesaj at opens the message apps' chooser. */
+@PreviewScreens
+@Composable
+private fun PokeScreenMessagePreview() {
+    DurtTheme {
+        PokeScreen(
+            state =
+                PokeUiState(
+                    pokeNumber = 2,
+                    time = "19:30",
+                    title = "Sibel'e mesaj at",
+                    detail = null,
+                    timeLeft = null,
+                    snooze = null,
+                    contact = PokeContactUi(phone = "+905320000001", message = true),
                 ),
             onDone = {},
             onSnooze = {},

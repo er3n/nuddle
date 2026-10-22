@@ -45,6 +45,12 @@ data class TaskEntity(
     val repeatEvery: String? = null,
     val repeatDays: String? = null,
     val repeatTime: String? = null,
+    /**
+     * Whom the task is about calling or messaging ("annemi ara", NUD-128): a connection's person id and "call" or
+     * "message". Null for most tasks; the full screen poke then has no Ara.
+     */
+    val contactPersonId: String? = null,
+    val contactAction: String? = null,
 )
 
 /** The time the sender picked and screens show: the moment of an `at` task, otherwise the deadline (ADR 0017). */

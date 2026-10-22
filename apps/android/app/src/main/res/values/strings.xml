@@ -598,6 +598,8 @@
     <string name="poke_count">%1$d. dürtme</string>
     <string name="poke_count_at">%1$d. dürtme · %2$s</string>
     <string name="poke_done">Bitti</string>
+    <string name="poke_call">Ara</string>
+    <string name="poke_message">Mesaj at</string>
     <!-- open-questions#1 (NUD-63): the time it rings again, no suffix after a time (#21). -->
     <string name="poke_snooze">Ertele · %1$s</string>
     <string name="poke_snooze_last">Ertele · %1$s · son hakkın</string>

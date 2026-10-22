@@ -21,9 +21,61 @@ export const TEXT = {
   weekdaysWakeSelf: "beni hafta içi her gün 7'de kaldır",
   earlyWakeSelf: "yarın sabah beni 5.00'te uyandır",
   earlyWakeEren: "eren yarın sabah 5te kalksın",
+  callMomSelf: "annemi ara",
+  callMomTomorrowSelf: "yarın annemi ara",
+  callMeEren: "eren yarın akşam beni arasın",
+  messageAyseEren: "eren yarın akşam ayşeye mesaj atsın",
+  callTeacherSelf: "yarın öğretmeni ara",
 } as const;
 
 const fixtures: Record<string, FixtureExtraction> = {
+  // A task about calling or messaging someone (NUD-128). Ayşe is Sibel's mother.
+  [TEXT.callMomSelf]: {
+    recipient: "self",
+    title: "Annemi ara",
+    detail: null,
+    deadline: null,
+    finishMode: "done",
+    missing: ["deadline"],
+    contact: { name: "Ayşe", action: "call" },
+  },
+  [TEXT.callMomTomorrowSelf]: {
+    recipient: "self",
+    title: "Annemi ara",
+    detail: null,
+    deadline: "2026-10-12T19:00:00+03:00",
+    finishMode: "done",
+    missing: [],
+    contact: { name: "Ayşe", action: "call" },
+  },
+  [TEXT.callMeEren]: {
+    recipient: "Eren",
+    title: "Beni ara",
+    detail: null,
+    deadline: "2026-10-12T19:00:00+03:00",
+    finishMode: "done",
+    missing: [],
+    contact: { name: "sender", action: "call" },
+  },
+  [TEXT.messageAyseEren]: {
+    recipient: "Eren",
+    title: "Ayşe'ye mesaj at",
+    detail: null,
+    deadline: "2026-10-12T19:00:00+03:00",
+    finishMode: "done",
+    missing: [],
+    contact: { name: "Ayşe", action: "message" },
+  },
+  // The model named someone who is no connection: the task has no contact.
+  [TEXT.callTeacherSelf]: {
+    recipient: "self",
+    title: "Öğretmeni ara",
+    detail: null,
+    deadline: "2026-10-12T19:00:00+03:00",
+    finishMode: "done",
+    missing: [],
+    contact: { name: "Öğretmen", action: "call" },
+  },
   [TEXT.hello]: {
     recipient: null,
     title: null,

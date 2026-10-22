@@ -33,6 +33,8 @@ interface GoldenCase {
     repeat?: RepeatRule | null;
     /** Not a task: a reply and nothing else (NUD-52). Every other case must have no reply. */
     chat?: boolean;
+    /** Whom to call or message (NUD-128); scored only when given, on question cases too. */
+    contact?: { name: string; action: "call" | "message" } | null;
   };
 }
 
@@ -57,6 +59,16 @@ function score(c: GoldenCase, got: Extraction): Record<string, boolean> {
     question: question === c.expected.question,
     chat: !replied,
   };
+  if (c.expected.contact !== undefined) {
+    const want = c.expected.contact;
+    const contact = got.contact ?? null;
+    result.contact =
+      want === null
+        ? contact === null
+        : contact !== null &&
+          contact.action === want.action &&
+          contact.name.toLocaleLowerCase("tr") === want.name.toLocaleLowerCase("tr");
+  }
   if (!c.expected.question) {
     result.deadline =
       got.deadline !== null &&
