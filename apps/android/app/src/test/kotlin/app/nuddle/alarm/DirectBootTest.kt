@@ -72,7 +72,7 @@ class DirectBootTest {
         db = inMemoryDatabase()
         sessions.device = "device-1"
         sessions.quiet = QuietHours.default(istanbul)
-        alarms = PokeAlarms(db.tasks(), db.pokeSteps(), scheduler, clock, notifications, ArmedPokesKeeper(store, sessions, checks))
+        alarms = PokeAlarms(db.tasks(), db.pokeSteps(), scheduler, clock, notifications, ArmedPokesKeeper(store, sessions, checks, clock))
         firing =
             PokeFiring(
                 alarms,

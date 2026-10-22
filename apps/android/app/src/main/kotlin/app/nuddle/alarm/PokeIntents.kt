@@ -11,6 +11,11 @@ object PokeIntents {
     const val ACTION_DONE = "app.nuddle.action.POKE_DONE"
     const val ACTION_SNOOZE = "app.nuddle.action.POKE_SNOOZE"
     const val ACTION_CANT_TODAY = "app.nuddle.action.POKE_CANT_TODAY"
+
+    /** Bitti on "Zaten yaptın mı?" (NUD-129). */
+    const val ACTION_HEADS_UP_DONE = "app.nuddle.action.HEADS_UP_DONE"
+    const val ACTION_HEADS_UP_CHECK = "app.nuddle.action.HEADS_UP_CHECK"
+    const val ACTION_HEADS_UP_UNLOCKED = "app.nuddle.action.HEADS_UP_UNLOCKED"
     private const val EXTRA_TASK = "taskId"
     private const val EXTRA_VERSION = "planVersion"
     private const val EXTRA_SEQ = "seq"
@@ -25,6 +30,12 @@ object PokeIntents {
         action: String,
         key: AlarmKey,
     ): Intent = Intent(context, PokeActionReceiver::class.java).setAction(action).withKey(key)
+
+    /** The check alarm and the unlock, both to [HeadsUpReceiver]. */
+    fun headsUp(
+        context: Context,
+        action: String,
+    ): Intent = Intent(context, HeadsUpReceiver::class.java).setAction(action)
 
     fun fullScreen(
         context: Context,

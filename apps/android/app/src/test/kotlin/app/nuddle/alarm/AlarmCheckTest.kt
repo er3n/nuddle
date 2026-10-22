@@ -57,7 +57,7 @@ class AlarmCheckTest {
     fun setUp() {
         db = inMemoryDatabase()
         sessions.quiet = QuietHours.default(istanbul)
-        val armed = ArmedPokesKeeper(InMemoryDirectBootStore(), sessions, checks)
+        val armed = ArmedPokesKeeper(InMemoryDirectBootStore(), sessions, checks, clock)
         alarms = PokeAlarms(db.tasks(), db.pokeSteps(), scheduler, clock, RecordingNotifications(), armed)
         check = AlarmCheck(alarms, db.tasks(), db.pokeSteps(), scheduler, missedRings, sessions, clock, istanbul, diagnostics)
     }

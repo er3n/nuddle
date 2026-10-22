@@ -101,6 +101,12 @@
             android:name=".alarm.PokeActionReceiver"
             android:exported="false" />
 
+        <!-- "Zaten yaptın mı?" (NUD-129): the check alarm and the unlock that a receiver registered at runtime hears
+             (ACTION_USER_PRESENT does not reach manifest receivers, docs/ux/platform.md). -->
+        <receiver
+            android:name=".alarm.HeadsUpReceiver"
+            android:exported="false" />
+
         <receiver
             android:name=".alarm.RearmReceiver"
             android:directBootAware="true"

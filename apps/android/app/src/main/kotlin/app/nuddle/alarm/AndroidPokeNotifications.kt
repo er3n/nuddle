@@ -104,8 +104,10 @@ class AndroidPokeNotifications
                 // the earlier step's notification with the same id (found by E2E smoke 1), so that one goes first.
                 manager.cancel(notificationId(task.id))
             }
-            // The poke takes over from the note that the task arrived ("Zamanı gelince seni dürterim", 4b).
+            // The poke takes over from the note that the task arrived ("Zamanı gelince seni dürterim", 4b), and from
+            // "Zaten yaptın mı?" before it (NUD-129).
             manager.cancel(NotificationIds.note(task.id))
+            manager.cancel(NotificationIds.headsUp(task.id))
             if (!silent) volume.raise()
             val notification = builder.build()
             // SOUND and FULL_SCREEN ring until silenced (docs/domain.md, Poke levels): without the flag the channel plays
@@ -115,6 +117,57 @@ class AndroidPokeNotifications
             // The task said aloud between the tone while this poke is up (NUD-124); a silent step says nothing.
             speech.start(task, level) { task.id in showing() }
         }
+
+        /**
+         * "Zaten yaptın mı?" (NUD-129, glossary.md): on `poke_silent`, the task's title as text, Bitti only, no time and no
+         * poke count (the plan stays hidden). It goes by itself when [step] is due, which takes it away when it rings.
+         */
+        override fun showHeadsUp(
+            task: TaskEntity,
+            step: PokeStep,
+        ) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) {
+                return
+            }
+            val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+            val done =
+                if (task.finishMode == FinishMode.PHOTO.value) {
+                    PendingIntent.getActivity(
+                        context,
+                        step.key.hashCode(),
+                        MainActivity.takePhoto(context, step.key.taskId),
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                    )
+                } else {
+                    action(PokeIntents.ACTION_HEADS_UP_DONE, step)
+                }
+            val notification =
+                NotificationCompat
+                    .Builder(context, NotificationChannels.POKE_SILENT)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setColor(ContextCompat.getColor(context, R.color.poke))
+                    .setContentTitle(context.getString(R.string.heads_up_title))
+                    .setContentText(task.title)
+                    .setLargeIcon(senderPicture(task))
+                    .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .setSilent(true)
+                    .setContentIntent(open)
+                    .setGroup(NotificationIds.headsUpGroup(task.id))
+                    .setTimeoutAfter((step.plannedAt - clock.now()).inWholeMilliseconds.coerceAtLeast(0))
+                    .addAction(0, context.getString(R.string.poke_done), done)
+                    .build()
+            NotificationManagerCompat.from(context).notify(NotificationIds.headsUp(task.id), notification)
+        }
+
+        override fun headsUps(): Set<String> =
+            NotificationManagerCompat
+                .from(context)
+                .activeNotifications
+                .mapNotNull { it.notification.group?.let(NotificationIds::taskOfHeadsUpGroup) }
+                .toSet()
 
         private fun fullScreenIntent(step: PokeStep): PendingIntent =
             PendingIntent.getActivity(
@@ -126,6 +179,7 @@ class AndroidPokeNotifications
 
         override fun cancel(taskId: String) {
             NotificationManagerCompat.from(context).cancel(notificationId(taskId))
+            NotificationManagerCompat.from(context).cancel(NotificationIds.headsUp(taskId))
             speech.stop(taskId)
             if (showing().isEmpty()) volume.restore()
         }

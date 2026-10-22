@@ -41,10 +41,20 @@ interface PokeNotifications {
         level: PokeLevel,
     )
 
+    /** "Zaten yaptın mı?" before [step] (NUD-129): quiet, Bitti only, gone when [step] rings. */
+    fun showHeadsUp(
+        task: TaskEntity,
+        step: PokeStep,
+    )
+
+    /** Takes the task's poke and its heads-up away. */
     fun cancel(taskId: String)
 
-    /** The tasks whose poke notification is up now. */
+    /** The tasks whose poke notification is up now. A heads-up is not a poke. */
     fun showing(): Set<String>
+
+    /** The tasks whose heads-up is up now. */
+    fun headsUps(): Set<String>
 }
 
 /** Whether the system currently lets the app open a full screen intent (Android 14+ can revoke it). */
@@ -169,6 +179,17 @@ class PokeActions
             val caughtAt = alarms.step(key)?.number
             done(key.taskId, cameraUnavailable = false)
             if (title != null) doneNotes.post(DoneNote(key.taskId, title, caughtAt))
+        }
+
+        /**
+         * Bitti on "Zaten yaptın mı?" (NUD-129): the same Done as on a poke, which stops the alarms still to come and
+         * tells the server. The done note names no poke: the heads-up is not one.
+         */
+        suspend fun doneFromHeadsUp(key: AlarmKey) {
+            val title = tasks.get(key.taskId)?.title
+            diagnostics.log("heads_up done ${key.taskId}")
+            done(key.taskId, cameraUnavailable = false)
+            if (title != null) doneNotes.post(DoneNote(key.taskId, title, caughtAt = null))
         }
 
         /** Also "Şimdiden bitti" on home (2f), before any alarm rang. */

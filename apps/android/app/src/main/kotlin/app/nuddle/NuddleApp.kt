@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import androidx.core.content.ContextCompat
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import app.nuddle.alarm.HeadsUp
 import app.nuddle.alarm.MissedRingCheck
 import app.nuddle.alarm.NotificationChannels
 import app.nuddle.alarm.userUnlocked
@@ -29,6 +30,8 @@ class NuddleApp :
     @Inject lateinit var workerFactory: HiltWorkerFactory
 
     @Inject lateinit var missedRingCheck: Lazy<MissedRingCheck>
+
+    @Inject lateinit var headsUp: Lazy<HeadsUp>
 
     @Inject lateinit var diagnostics: Diagnostics
 
@@ -78,5 +81,7 @@ class NuddleApp :
                 .collect(diagnostics::setPerson)
         }
         scope.launch { missedRingCheck.get().onLaunch() }
+        // The unlock listener for "Zaten yaptın mı?" lives only as long as the process (NUD-129).
+        scope.launch { headsUp.get().start() }
     }
 }

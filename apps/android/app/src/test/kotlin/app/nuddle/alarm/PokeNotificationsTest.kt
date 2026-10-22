@@ -95,6 +95,36 @@ class PokeNotificationsTest {
     }
 
     @Test
+    fun `Zaten yaptın mı is quiet, has Bitti only and no count, and the step's poke takes it away (NUD-129)`() {
+        val manager = app.getSystemService<NotificationManager>()!!
+        val step = PokeStep(Cast.TASK_ID, 1, 2, Instant.parse("2026-10-12T08:09:00+03:00"), PokeLevel.SOUND)
+        notifications.showHeadsUp(aTask().copy(finishMode = "done"), step)
+
+        val headsUp = shadowOf(manager).allNotifications.single()
+        assertEquals(NotificationChannels.POKE_SILENT, headsUp.channelId)
+        assertEquals("Zaten yaptın mı?", headsUp.extras.getString(Notification.EXTRA_TITLE))
+        assertEquals(aTask().title, headsUp.extras.getCharSequence(Notification.EXTRA_TEXT).toString())
+        assertNull(headsUp.extras.getString(Notification.EXTRA_SUB_TEXT))
+        assertEquals(listOf("Bitti"), headsUp.actionTitles())
+        assertEquals(0, headsUp.flags and Notification.FLAG_INSISTENT)
+        assertEquals(setOf(Cast.TASK_ID), notifications.headsUps())
+        // A heads-up is not a poke: nothing counts it as one that rang.
+        assertEquals(emptySet(), notifications.showing())
+
+        notifications.show(aTask(), step, PokeLevel.SOUND)
+        assertEquals(emptySet(), notifications.headsUps())
+        assertEquals(setOf(Cast.TASK_ID), notifications.showing())
+    }
+
+    @Test
+    fun `cancelling a task's poke takes its heads-up away too (NUD-129)`() {
+        val step = PokeStep(Cast.TASK_ID, 1, 2, Instant.parse("2026-10-12T08:09:00+03:00"), PokeLevel.SOUND)
+        notifications.showHeadsUp(aTask(), step)
+        notifications.cancel(Cast.TASK_ID)
+        assertEquals(emptySet(), notifications.headsUps())
+    }
+
+    @Test
     fun `the first step says 1 dürtme`() {
         assertEquals("1. dürtme", show(seq = 1).extras.getString(Notification.EXTRA_SUB_TEXT))
     }

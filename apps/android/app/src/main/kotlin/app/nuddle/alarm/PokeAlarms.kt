@@ -1,5 +1,6 @@
 package app.nuddle.alarm
 
+import app.nuddle.api.model.FinishMode
 import app.nuddle.data.db.PokeStepDao
 import app.nuddle.data.db.PokeStepEntity
 import app.nuddle.data.db.TaskDao
@@ -22,7 +23,13 @@ import kotlin.time.Instant
 internal fun PokeStepEntity.toStep() =
     PokeStep(taskId, planVersion, seq, Instant.fromEpochMilliseconds(plannedAt), PokeLevel.valueOf(level))
 
-internal fun TaskEntity.toLocalState() = LocalTaskState(currentPlanVersion = planVersion, open = status in OPEN_STATUSES, moment = isMoment)
+internal fun TaskEntity.toLocalState() =
+    LocalTaskState(
+        currentPlanVersion = planVersion,
+        open = status in OPEN_STATUSES,
+        moment = isMoment,
+        notice = finishMode == FinishMode.NOTICE.value,
+    )
 
 /** Keeps the alarms in AlarmManager equal to the stored plans (ADR 0005). */
 @Singleton
@@ -72,8 +79,7 @@ class PokeAlarms
             // A task closed on the other phone or on the server (cancelled, missed, connection removed): the poke that
             // rang for it goes too, not only its alarms (NUD-64). Asked of the system, because the sync that closed it
             // has already replaced the steps that rang.
-            notifications
-                .showing()
+            (notifications.showing() + notifications.headsUps())
                 .filter { states[it]?.open != true }
                 .forEach(notifications::cancel)
         }

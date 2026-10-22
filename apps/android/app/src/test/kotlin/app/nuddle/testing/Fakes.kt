@@ -5,6 +5,7 @@ import android.net.Uri
 import app.nuddle.alarm.AlarmCheckScheduling
 import app.nuddle.alarm.DirectBootStore
 import app.nuddle.alarm.FullScreenPermission
+import app.nuddle.alarm.HeadsUpChecks
 import app.nuddle.alarm.PokeNotifications
 import app.nuddle.api.model.EdgeType
 import app.nuddle.api.model.FinishMode
@@ -35,6 +36,7 @@ import app.nuddle.data.outbox.OutboxDrainer
 import app.nuddle.data.photo.PhotoLoader
 import app.nuddle.data.photo.PhotoUploads
 import app.nuddle.data.session.ConsentPrompts
+import app.nuddle.data.session.HeadsUpStore
 import app.nuddle.data.session.MissedRingState
 import app.nuddle.data.session.MissedRingStore
 import app.nuddle.data.session.Profile
@@ -46,6 +48,7 @@ import app.nuddle.data.sync.TaskClose
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.AlarmScheduler
 import app.nuddle.domain.GrantedPermissions
+import app.nuddle.domain.HeadsUpKey
 import app.nuddle.domain.LockedFire
 import app.nuddle.domain.LockedPlan
 import app.nuddle.domain.PermissionReader
@@ -202,12 +205,27 @@ class RecordingNotifications : PokeNotifications {
         up += task.id
     }
 
+    /** Heads-ups shown, as task id to the step they come before (NUD-129). */
+    val headsUpsShown = mutableListOf<Pair<String, Int>>()
+    private val headsUpsUp = mutableSetOf<String>()
+
+    override fun showHeadsUp(
+        task: TaskEntity,
+        step: PokeStep,
+    ) {
+        headsUpsShown += task.id to step.seq
+        headsUpsUp += task.id
+    }
+
     override fun cancel(taskId: String) {
         cancelled += taskId
         up -= taskId
+        headsUpsUp -= taskId
     }
 
     override fun showing(): Set<String> = up.toSet()
+
+    override fun headsUps(): Set<String> = headsUpsUp.toSet()
 }
 
 class RecordingDrainer : OutboxDrainer {
@@ -815,5 +833,33 @@ class RecordingNewsAnnouncer : NewsAnnouncer {
 
     override fun withdraw(announcementId: String) {
         withdrawn += announcementId
+    }
+}
+
+class InMemoryHeadsUpStore : HeadsUpStore {
+    val keys = mutableSetOf<HeadsUpKey>()
+
+    override suspend fun shown(): Set<HeadsUpKey> = keys.toSet()
+
+    override suspend fun markShown(
+        key: HeadsUpKey,
+        keep: Set<String>,
+    ) {
+        keys.retainAll { it.taskId in keep }
+        keys += key
+    }
+}
+
+/** The check alarm and the unlock listener of "Zaten yaptın mı?" (NUD-129), as last set. */
+class RecordingHeadsUpChecks : HeadsUpChecks {
+    var nextCheck: Instant? = null
+    var watching = false
+
+    override fun checkAt(at: Instant?) {
+        nextCheck = at
+    }
+
+    override fun watchUnlocks(active: Boolean) {
+        watching = active
     }
 }
