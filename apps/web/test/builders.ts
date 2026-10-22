@@ -50,6 +50,7 @@ class TaskBuilder {
     planVersion: 1,
     statusChangedAt: new Date("2026-10-11T20:00:00+03:00"),
     contact: null,
+    examplePhotoPath: null,
     removedByRecipientAt: null,
     repeat: null,
     seriesId: null,
@@ -80,6 +81,12 @@ class TaskBuilder {
 
   withFinishMode(mode: Task["finishMode"]): this {
     this.task.finishMode = mode;
+    return this;
+  }
+
+  /** The sender's example photo (NUD-138). */
+  withExamplePhoto(path = `tasks/${this.task.id}/example.jpg`): this {
+    this.task.examplePhotoPath = path;
     return this;
   }
 

@@ -350,7 +350,7 @@ function effectsOfStatus(
           },
           ...photoCleanup(task, now),
         ],
-        deletePhotos: task.finishMode === "photo",
+        deletePhotos: hasPhotos(task),
         planEvent: null,
       };
     case "DONE":
@@ -359,15 +359,23 @@ function effectsOfStatus(
       return {
         plan: stop,
         scheduledActions: photoCleanup(task, now),
-        deletePhotos: task.finishMode === "photo",
+        deletePhotos: hasPhotos(task),
         planEvent: null,
       };
   }
 }
 
-/** The later retry of the photo deletion for a photo task that closes (NUD-25). */
+/**
+ * Whether the task's folder may hold files: the recipient's photos of a photo task, or the
+ * sender's example photo (NUD-138). Both go when the task closes.
+ */
+function hasPhotos(task: Task): boolean {
+  return task.finishMode === "photo" || task.examplePhotoPath !== null;
+}
+
+/** The later retry of the photo deletion for a task with photos that closes (NUD-25). */
 function photoCleanup(task: Task, now: Date): ScheduledAction[] {
-  return task.finishMode === "photo"
+  return hasPhotos(task)
     ? [
         {
           kind: "photo_cleanup",
@@ -436,6 +444,9 @@ function hintsFor(task: Task, e: TaskEvent): PushMessage[] {
       return [push(recipientId, "plan_changed", task, e.type)];
     case "photo_sent":
       return self ? [] : [push(senderId, "sync", task, e.type)];
+    // The recipient's phone fetches the sender's picture with the next sync (NUD-138).
+    case "example_photo_set":
+      return self ? [] : [push(recipientId, "sync", task, e.type)];
     case "dropped":
       return self ? [] : [push(senderId, "sync", task, e.type)];
     case "approved":
@@ -707,6 +718,8 @@ export function applyCommand(
     snooze?.until,
   );
   if (effects.planEvent) events.push(effects.planEvent);
+  // The example photo's file goes with the folder: the task no longer points at it (NUD-138).
+  if (effects.deletePhotos) next.examplePhotoPath = null;
 
   return {
     ok: true,
@@ -749,6 +762,49 @@ export function adoptPlan(
       scheduledActions: effects.scheduledActions,
       pushes: [push(next.recipientId, "plan_changed", next, "plan_generated")],
       deletePhotos: false,
+    },
+  };
+}
+
+/** The statuses in which the sender may still attach an example photo (NUD-138). */
+const EXAMPLE_PHOTO_STATUSES: ReadonlySet<TaskStatus> = new Set([
+  "SCHEDULED",
+  "REJECTED",
+  "AWAITING_APPROVAL",
+]);
+
+/** Why [actorId] may not attach an example photo to the task now, or null when they may. */
+export function examplePhotoRefusal(task: Task, actorId: PersonId): DomainError | null {
+  if (actorId !== task.senderId) return "not_sender";
+  if (!EXAMPLE_PHOTO_STATUSES.has(task.status)) return "wrong_status";
+  return null;
+}
+
+/**
+ * The sender's example photo is uploaded (NUD-138, docs/domain.md, Example photo): the task keeps
+ * its path and the recipient's phone syncs. Never proof: no status, plan or timer changes. A path
+ * that replaces another is returned as `replaced` so the caller deletes that file.
+ */
+export function setExamplePhoto(
+  task: Task,
+  actorId: PersonId,
+  photoPath: string,
+  now: Date,
+): Result<{ task: Task; events: TaskEvent[]; pushes: PushMessage[]; replaced: string | null }> {
+  const refused = examplePhotoRefusal(task, actorId);
+  if (refused) return { ok: false, error: refused };
+  if (task.examplePhotoPath === photoPath) {
+    return { ok: true, value: { task, events: [], pushes: [], replaced: null } };
+  }
+  const next: Task = { ...task, examplePhotoPath: photoPath };
+  const set = event(next, actorId, "example_photo_set", {}, now);
+  return {
+    ok: true,
+    value: {
+      task: next,
+      events: [set],
+      pushes: pushesFor(next, set),
+      replaced: task.examplePhotoPath,
     },
   };
 }
@@ -872,6 +928,8 @@ export function createTask(input: CreateTaskInput): Result<Outcome> {
     repeat: input.repeat ?? null,
     seriesId: input.repeat ? (input.seriesId ?? input.id) : null,
     contact: input.contact ?? null,
+    // Uploaded after the task exists, then set with set_example_photo (NUD-138).
+    examplePhotoPath: null,
     status: "SCHEDULED",
     late: false,
     planVersion: 1,

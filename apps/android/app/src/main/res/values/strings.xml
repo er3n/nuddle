@@ -341,6 +341,12 @@
     <string name="photo_pick">Galeriden seç</string>
     <string name="photo_flip">Kamerayı çevir</string>
     <string name="photo_close">Kapat</string>
+    <!-- The sender's example photo (NUD-138): never proof, never "kanıt" (glossary.md). -->
+    <string name="compose_attach_photo">Fotoğraf ekle</string>
+    <string name="compose_remove_photo">Fotoğrafı çıkar</string>
+    <string name="example_photo">Ekli fotoğraf</string>
+    <string name="example_photo_from">%1$s ekledi</string>
+    <string name="example_photo_open">Ekli fotoğraf, büyütmek için dokun</string>
     <string name="photo_no_camera_title">Kamera kullanılamıyor</string>
     <string name="photo_no_camera_body">Kamera izni olmadan fotoğraf çekemem. Fotoğrafsız da bitirebilirsin.</string>
     <string name="photo_done_without">Fotoğrafsız bitti</string>

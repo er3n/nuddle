@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -18,12 +19,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.content.ContextCompat
 import app.nuddle.MainActivity
 import app.nuddle.api.model.FinishMode
 import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.isMoment
+import app.nuddle.data.example.ExampleFiles
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.Diagnostics
 import app.nuddle.domain.PokeLevel
@@ -43,8 +47,10 @@ import app.nuddle.ui.screens.poke.PokeUiState
 import app.nuddle.ui.screens.poke.SnoozeUi
 import app.nuddle.ui.theme.DurtTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
@@ -80,6 +86,8 @@ class PokeActivity : ComponentActivity() {
     @Inject lateinit var clock: Clock
 
     @Inject lateinit var timeZone: TimeZone
+
+    @Inject lateinit var examples: ExampleFiles
 
     /** Over a locked phone Bitti is a slide (NUD-131, screens.md 3b). */
     private var locked by mutableStateOf(false)
@@ -163,6 +171,12 @@ class PokeActivity : ComponentActivity() {
         }
     }
 
+    /** The sender's picture the phone keeps for the task (NUD-138); none when it did not arrive or cannot be read. */
+    private suspend fun examplePhotoOf(taskId: String): ImageBitmap? =
+        withContext(Dispatchers.IO) {
+            runCatching { examples.current(taskId) }.getOrNull()?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() }
+        }
+
     @Composable
     private fun PokeRoute(key: AlarmKey) {
         var state by remember { mutableStateOf<PokeUiState?>(null) }
@@ -198,6 +212,7 @@ class PokeActivity : ComponentActivity() {
                     contact = task.contactPersonId?.takeUnless { notice }?.let { pokeContact(task, connections.get(it)) },
                     // The line the notification shows too (NUD-130); this screen only opens for a full screen ring.
                     pokeTitle = pokeTitle(step, PokeLevel.FULL_SCREEN).takeUnless { notice },
+                    examplePhoto = examplePhotoOf(task.id),
                 )
         }
         // Closed on the other phone or on the server while it is up (cancelled, missed): the poke goes (NUD-64).

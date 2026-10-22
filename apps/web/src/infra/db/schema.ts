@@ -85,6 +85,7 @@ export const taskEventType = pgEnum("task_event_type", [
   "delivered",
   "seen",
   "start_set",
+  "example_photo_set",
 ]);
 export const pokeLevel = pgEnum("poke_level", ["SILENT", "SOUND", "FULL_SCREEN", "HUMAN"]);
 export const scheduledActionKind = pgEnum("scheduled_action_kind", [
@@ -204,6 +205,8 @@ export const tasks = pgTable(
     // Whom the recipient calls or messages from the poke (NUD-128); both null for most tasks.
     contactPersonId: uuid("contact_person_id").references(() => people.id),
     contactAction: contactAction("contact_action"),
+    // The sender's example photo in the private bucket (NUD-138); null without one or once closed.
+    examplePhotoPath: text("example_photo_path"),
     status: taskStatus("status").notNull().default("SCHEDULED"),
     // TODO(open-questions#9): "Sonradan yaptım" after MISSED closes as DONE with late = true.
     late: boolean("late").notNull().default(false),

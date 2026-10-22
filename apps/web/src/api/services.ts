@@ -63,6 +63,8 @@ import {
   isOpen,
   MISSED_CARD_TTL_MS,
   removeMissedCard,
+  examplePhotoRefusal,
+  setExamplePhoto as setExamplePhotoDomain,
   acknowledge as acknowledgeDomain,
   PHOTO_CLEANUP_RETRY_MS,
   takenInTime,
@@ -129,6 +131,7 @@ import {
   markActionDone,
   markPersonDeleted,
   markMissedCardRemoved,
+  saveExamplePhoto,
   markStepFired,
   rescheduleAction,
   persistOutcome,
@@ -1067,6 +1070,73 @@ export async function photoViewUrl(
   const path = sent?.payload.photoPath;
   if (!sent || typeof path !== "string") throw new ApiError("not_found");
   return { url: await deps.photos.createViewUrl(path), sentAt: sent.at };
+}
+
+// ---- example photo (NUD-138) -------------------------------------------------------------------
+
+/** The task, for one of its two people. */
+async function exampleTaskOf(deps: AppDeps, caller: Person, taskId: TaskId): Promise<Task> {
+  const task = await findTask(deps.db, taskId);
+  if (!task || (task.senderId !== caller.id && task.recipientId !== caller.id)) {
+    throw new ApiError("not_found");
+  }
+  return task;
+}
+
+/**
+ * Sender: a signed upload URL for the example photo, in the task's folder, so the photo goes with
+ * the folder when the task closes (docs/domain.md, Example photo).
+ */
+export async function examplePhotoUploadUrl(
+  deps: AppDeps,
+  caller: Person,
+  taskId: TaskId,
+): Promise<{ path: string; url: string }> {
+  const task = await exampleTaskOf(deps, caller, taskId);
+  // The same checks as set_example_photo, so a refused upload is not made at all.
+  const refused = examplePhotoRefusal(task, caller.id);
+  if (refused) throw new ApiError(refused);
+  return deps.photos.createUploadUrl(taskId);
+}
+
+/** Sender: the uploaded example photo is the task's; the file it replaces is deleted. */
+export async function setExamplePhoto(
+  deps: AppDeps,
+  caller: Person,
+  input: { idempotencyKey: string; taskId: TaskId; photoPath: string },
+): Promise<{ taskId: TaskId; status: TaskStatus; planVersion: number }> {
+  if (!input.photoPath.startsWith(`tasks/${input.taskId}/`)) {
+    throw new ApiError("validation_failed", "photoPath is not an upload of this task");
+  }
+  return runCommand(deps, caller.id, "set_example_photo", input.idempotencyKey, async (tx, now) => {
+    const task = await lockTaskOf(tx, caller.id, input.taskId);
+    const r = setExamplePhotoDomain(task, caller.id, input.photoPath, now);
+    if (!r.ok) throw new ApiError(r.error);
+    if (r.value.events.length > 0) {
+      await saveExamplePhoto(tx, r.value.task);
+      await insertEvents(tx, r.value.events);
+    }
+    return {
+      result: { taskId: task.id, status: task.status, planVersion: task.planVersion },
+      effects: {
+        pushes: r.value.pushes,
+        deletePhotosFor: [],
+        deleteFiles: r.value.replaced === null ? [] : [r.value.replaced],
+      },
+    };
+  });
+}
+
+/** Either person: a short-lived signed URL to the example photo while the task has one (NUD-138). */
+export async function examplePhotoViewUrl(
+  deps: AppDeps,
+  caller: Person,
+  taskId: TaskId,
+): Promise<{ url: string; examplePhotoPath: string }> {
+  const task = await exampleTaskOf(deps, caller, taskId);
+  const path = task.examplePhotoPath;
+  if (path === null) throw new ApiError("not_found");
+  return { url: await deps.photos.createViewUrl(path), examplePhotoPath: path };
 }
 
 // ---- profile picture (NUD-72) ------------------------------------------------------------------

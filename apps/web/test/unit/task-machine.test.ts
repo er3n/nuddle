@@ -5,6 +5,7 @@ import {
   PHOTO_CLEANUP_RETRY_MS,
   createTask,
   removeMissedCard,
+  setExamplePhoto,
   acknowledge,
   type Command,
   type TaskContext,
@@ -632,5 +633,91 @@ describe("acknowledge (NUD-68)", () => {
     expect(acknowledge(aTask().withStatus("DONE").build(), "eren", true, none, now)).toEqual(empty);
     const self = { ...aTask().build(), senderId: "eren" };
     expect(acknowledge(self, "eren", true, none, now)).toEqual(empty);
+  });
+});
+
+describe("example photo (NUD-138)", () => {
+  const path = "tasks/task-1/example.jpg";
+
+  it("the sender sets it on an open task; nothing else changes and the recipient syncs", () => {
+    const task = aTask().withFinishMode("done").build();
+    const r = setExamplePhoto(task, "sibel", path, now);
+    expect(r).toEqual({
+      ok: true,
+      value: {
+        task: { ...task, examplePhotoPath: path },
+        events: [
+          { taskId: "task-1", actorId: "sibel", type: "example_photo_set", payload: {}, at: now },
+        ],
+        pushes: [
+          { to: "eren", hint: "sync", taskId: "task-1", event: "example_photo_set" },
+          { to: "sibel", hint: "sync", taskId: "task-1", event: "example_photo_set" },
+        ],
+        replaced: null,
+      },
+    });
+  });
+
+  it("a second one replaces the first, the same path again is a no-op", () => {
+    const task = aTask().withExamplePhoto("tasks/task-1/a.jpg").build();
+    const r = setExamplePhoto(task, "sibel", "tasks/task-1/b.jpg", now);
+    expect(r.ok && r.value.replaced).toBe("tasks/task-1/a.jpg");
+    const same = setExamplePhoto(task, "sibel", "tasks/task-1/a.jpg", now);
+    expect(same.ok && same.value.events).toEqual([]);
+  });
+
+  it("only the sender, only before the task closes", () => {
+    expect(setExamplePhoto(aTask().build(), "eren", path, now)).toEqual({
+      ok: false,
+      error: "not_sender",
+    });
+    for (const status of ["DONE", "DROPPED", "MISSED", "CANCELLED"] as const) {
+      expect(setExamplePhoto(aTask().withStatus(status).build(), "sibel", path, now)).toEqual({
+        ok: false,
+        error: "wrong_status",
+      });
+    }
+    for (const status of ["REJECTED", "AWAITING_APPROVAL"] as const) {
+      expect(setExamplePhoto(aTask().withStatus(status).build(), "sibel", path, now).ok).toBe(true);
+    }
+  });
+
+  it("is never proof: Bitti on a done task closes it as before, a photo task still waits for the photo", () => {
+    const done = apply(
+      aTask().withFinishMode("done").withExamplePhoto().build(),
+      { type: "done" },
+      "eren",
+    );
+    expect(done.task.status).toBe("DONE");
+    const photo = aTask().withExamplePhoto().build();
+    expect(applyCommand(photo, { type: "done" }, "eren", ctx())).toEqual({
+      ok: false,
+      error: "wrong_finish_mode",
+    });
+  });
+
+  it("goes with the folder when a done task closes: deleted, retried later, and the path cleared", () => {
+    const task = aTask().withFinishMode("done").withExamplePhoto().build();
+    for (const { cmd, actor } of [
+      { cmd: { type: "done" } as Command, actor: "eren" },
+      { cmd: { type: "cancel", note: null } as Command, actor: "sibel" },
+      { cmd: { type: "deadline_passed" } as Command, actor: null },
+      { cmd: { type: "account_deleted", personId: "sibel" } as Command, actor: null },
+    ]) {
+      const o = apply(task, cmd, actor);
+      expect(o.deletePhotos).toBe(true);
+      expect(o.task.examplePhotoPath).toBeNull();
+      expect(o.scheduledActions.map((a) => a.kind)).toContain("photo_cleanup");
+    }
+    // Still open: the picture stays.
+    const edited = apply(task, { type: "edit", detail: "2 kutu" }, "sibel");
+    expect(edited.deletePhotos).toBe(false);
+    expect(edited.task.examplePhotoPath).toBe(task.examplePhotoPath);
+  });
+
+  it("a done task without one deletes nothing, as before", () => {
+    const o = apply(aTask().withFinishMode("done").build(), { type: "done" }, "eren");
+    expect(o.deletePhotos).toBe(false);
+    expect(o.scheduledActions).toEqual([]);
   });
 });

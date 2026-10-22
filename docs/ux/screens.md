@@ -56,6 +56,9 @@ Changed on 2026-10-15 after the phone test: long titles wrapped into the buttons
 
 **Kime on a written task (NUD-114).** While the task is Kurulu and I have a connection, a tap on the Kime row opens the "Kime?" choices of 4a (Kendine and each connection, the current one selected). The sheet says "Görev seçtiğin kişiye geçer, dürtmeler ona başlar." and Kaydet does it: the task closes for the old person and starts for the new one with its own plan; the detail goes back to home, where the task shows under the new person. The old person's phone stops the pokes and shows "Sibel bu görevi başka birine verdi: "Çöpü at"" in the place of the "iptal etti" row, without the new person's name; nothing is shown for a task to self.
 
+**Ekli fotoğraf on the detail (NUD-138).** When the sender attached a picture, both sides see it under the title as a 64 dp rounded thumbnail with the line "Ekli fotoğraf" and, for the recipient, "Sibel ekledi" under it (no suffix after a name, open-questions #35); a tap opens it full screen on `ink` with a close button. It is never shown as the recipient's photo and changes nothing in the actions.
+**Copy (NUD-138):** Ekli fotoğraf | Sibel ekledi | Kapat
+
 The screen goes back by itself once the task leaves that list (done, cancelled, approved, handled). Yeni zaman ver and Süreyi uzat open the 5d deadline sheet over the detail.
 **Copy:** Bana | Gönderdiklerim | Sonra | Cevabını bekliyor | Devam eden | Bitenler zilde yazar. | Henüz kimseye görev yazmadın. | Kimden | Listeden kaldır | Kaldır
 
@@ -171,6 +174,8 @@ On home only while nobody is connected yet, as in the PNG. Once someone is conne
 
 ### 2a Compose, to self · `TaskCompose.png`
 ComposeBar focused with keyboard. Text that is not a task ("merhaba") gets the extractor's one-sentence reply in a ReplyNote above the bar, the bar is emptied, and nothing is created (NUD-52, components.md 6). Text shared from another app (NUD-127, platform.md, Other) lands in the bar after what is already typed, as `Typing`; nothing goes out until the arrow.
+**Ekli fotoğraf (NUD-138).** No design PNG. A gallery button (the Gallery icon, 44 dp, no fill) sits at the start of the bar while it is idle or typing; it opens the system photo picker. The picked picture shows above the bar as a 64 dp rounded thumbnail (`photoThumb`) with a small ✕ that takes it off; one picture per task, a new pick replaces it. An image shared to dürt lands there the same way, its text (if any) in the box. The arrow still needs text; the picture goes out with the task on the direct path (4i) and after the preview (2b, 4a), and stays with the text when the write fails or waits offline (6a, 6b). The picture is not read (domain.md, Example photo).
+**Copy (NUD-138):** Fotoğraf ekle | Fotoğrafı çıkar
 **Copy:** Kime, ne, ne zaman. Yazınca mikrofon gönder butonuna dönüşür. | Yeni görev | (example input) 1000 tl çek
 
 ### 2b Preview, only when info is missing · `TaskPreview.png`
@@ -211,6 +216,8 @@ System notification (shell is the system's, content and actions are ours).
 
 **Poke titles (NUD-130).** The PNG shows the task as the title. Built since NUD-130: the title is the step's poke title (glossary.md, Poke titles: "Ben buradayım"), the text is the task ("Para çek · 1.000 TL"), and the expanded notification adds the time line under it ("Son zamana 1 saat var."). A one-time message keeps the message as the title.
 
+**Ekli fotoğraf (NUD-138).** A task with the sender's picture, once the phone has its copy, expands as a big picture notification: the picture, with the task as the text and the time line as the summary. Collapsed it looks as above, with the picture as the large icon in place of the sender's picture.
+
 **Zaten yaptın mı? (NUD-129).** No design PNG. A quiet system notification before a loud poke when the phone is in use (domain.md, Already done?): the poke's icon and color, title "Zaten yaptın mı?", text the task's title, the sender's picture as for 3a, one action Bitti. No time and no poke count.
 **Copy:** Zaten yaptın mı? | Para çek | Bitti
 
@@ -219,6 +226,9 @@ System notification (shell is the system's, content and actions are ours).
 **Copy:** 3. dürtme · 08:15 | Para çek | 1.000 TL · son zamana 45 dk | İki dürtmeyi geçtin. Bu sefer ciddiyim, 09:00'a az kaldı. | Bitti | 10 dk ertele · son hakkın (built as "Ertele · 08:25 · son hakkın", open-questions #1) | Bugün yapamayacağım
 
 **Poke title (NUD-130).** No design PNG. The step's poke title (glossary.md, Poke titles: "Pes etmem") sits under the rings in `bodyLarge`, `onPokeSoft`, above the task's title, which stays the heading. None on a one-time message.
+
+**Ekli fotoğraf (NUD-138).** No design PNG. When the phone has the sender's picture for the task, a 64 dp rounded thumbnail with a thin `onPokeSoft` border sits under the detail line; a tap opens it full screen over the poke, a second tap or back closes it. The sound and the voice keep going; only the answers stop them. The demo poke (2d) never shows it.
+**Copy:** Ekli fotoğraf, büyütmek için dokun
 
 **Ara or Mesaj at (NUD-128).** No design PNG. When the task has a contact (domain.md, Call or message from the poke: "annemi ara", "Sibel'e mesaj at") and the phone has that connection's number, an outline button under Bitti, with the phone or the message icon: "Ara" opens the dialer with the number (`ACTION_DIAL`, after the lock screen is unlocked), "Mesaj at" the `smsto:` chooser. The tap stops this poke's sound and voice and closes the full screen; the task stays open and its card stays on home, so only Bitti closes it and the next pokes ring as planned. Without a contact, or without the number (the connection is gone), the screen is as above. The notification (3a) keeps Bitti, Ertele and Bugün olmaz; the action is on the full screen only (open-questions #58). The demo poke (2d) never shows it.
 **Copy:** Ara | Mesaj at

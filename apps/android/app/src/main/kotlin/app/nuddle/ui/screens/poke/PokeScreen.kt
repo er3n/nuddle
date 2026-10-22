@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -26,6 +27,7 @@ import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.DurtButton
 import app.nuddle.ui.components.DurtButtonKind
 import app.nuddle.ui.components.DurtButtonSize
+import app.nuddle.ui.components.ExamplePhotoThumb
 import app.nuddle.ui.components.SlideToConfirm
 import app.nuddle.ui.components.TextLink
 import app.nuddle.ui.icons.DurtIcons
@@ -68,6 +70,8 @@ data class PokeUiState(
     val pokeTitle: String? = null,
     /** Shown over a locked phone (NUD-131): Bitti or Tamam is a slide, so a pocket tap cannot close the task. */
     val locked: Boolean = false,
+    /** The sender's example photo once the phone has it (NUD-138); a tap opens it large. Never proof. */
+    val examplePhoto: ImageBitmap? = null,
 )
 
 @Composable
@@ -157,6 +161,8 @@ fun PokeScreen(
             color = colors.onPokeSoft,
             textAlign = TextAlign.Center,
         )
+        // The sender's picture (NUD-138); the sound goes on while it is open large.
+        state.examplePhoto?.let { ExamplePhotoThumb(it, border = colors.onPokeSoft) }
         if (state.message != null) {
             Text(
                 text = state.message,

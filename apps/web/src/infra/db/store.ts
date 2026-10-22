@@ -201,6 +201,7 @@ export function toTask(r: TaskRow): Task {
       r.contactPersonId !== null && r.contactAction !== null
         ? { personId: r.contactPersonId, action: r.contactAction }
         : null,
+    examplePhotoPath: r.examplePhotoPath,
     status: r.status,
     late: r.late,
     planVersion: r.planVersion,
@@ -674,6 +675,7 @@ export async function persistOutcome(tx: Tx, o: Outcome, now: Date): Promise<voi
       seriesId: t.seriesId,
       contactPersonId: t.contact?.personId ?? null,
       contactAction: t.contact?.action ?? null,
+      examplePhotoPath: t.examplePhotoPath,
       status: t.status,
       late: t.late,
       leadMinutes: t.leadMinutes,
@@ -694,6 +696,7 @@ export async function persistOutcome(tx: Tx, o: Outcome, now: Date): Promise<voi
         late: t.late,
         leadMinutes: t.leadMinutes,
         pokeFrom: t.pokeFrom,
+        examplePhotoPath: t.examplePhotoPath,
         planVersion: t.planVersion,
         updatedAt: t.statusChangedAt,
         changeSeq: nextSeq,
@@ -756,6 +759,14 @@ export async function markMissedCardRemoved(tx: Tx, task: Task): Promise<void> {
   await tx
     .update(tasks)
     .set({ removedByRecipientAt: task.removedByRecipientAt, changeSeq: nextSeq })
+    .where(eq(tasks.id, task.id));
+}
+
+/** The sender's example photo was set (NUD-138): stored, and synced through a new change_seq. */
+export async function saveExamplePhoto(tx: Tx, task: Task): Promise<void> {
+  await tx
+    .update(tasks)
+    .set({ examplePhotoPath: task.examplePhotoPath, changeSeq: nextSeq })
     .where(eq(tasks.id, task.id));
 }
 

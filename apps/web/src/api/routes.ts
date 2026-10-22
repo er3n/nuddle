@@ -203,6 +203,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
             pokeFrom: t.pokeFrom === null ? null : iso(t.pokeFrom),
             reRequestNote: t.reRequestNote,
             contact: t.contact,
+            examplePhotoPath: t.examplePhotoPath,
           })),
           sentInvites: r.sentInvites.map((i) => ({
             id: i.id,
@@ -354,6 +355,63 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
       );
       return c.json({ url: r.url, sentAt: iso(r.sentAt) }, 200);
     },
+  );
+
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/v1/photos/example-upload-url",
+      operationId: "createExamplePhotoUploadUrl",
+      summary:
+        "Sender: a signed upload URL for the example photo of a task; set_example_photo with its path (NUD-138)",
+      tags: ["photos"],
+      security: [{ bearer: [] }],
+      request: { body: { required: true, content: json(s.ExamplePhotoUploadUrlRequest) } },
+      responses: {
+        200: {
+          description: "Upload URL and the path to send with set_example_photo",
+          content: json(s.PhotoUploadUrlResult),
+        },
+        ...errors([400, 401, 403, 404, 409]),
+      },
+    }),
+    async (c) =>
+      c.json(
+        await svc.examplePhotoUploadUrl(
+          deps,
+          await person(c.get("caller")),
+          c.req.valid("json").taskId,
+        ),
+        200,
+      ),
+  );
+
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/v1/photos/example-view-url",
+      operationId: "createExamplePhotoViewUrl",
+      summary: "A short-lived signed URL to the example photo of an open task, for its two people",
+      tags: ["photos"],
+      security: [{ bearer: [] }],
+      request: { body: { required: true, content: json(s.ExamplePhotoViewUrlRequest) } },
+      responses: {
+        200: {
+          description: "Where to load the picture from",
+          content: json(s.ExamplePhotoViewUrlResult),
+        },
+        ...errors([400, 401, 403, 404]),
+      },
+    }),
+    async (c) =>
+      c.json(
+        await svc.examplePhotoViewUrl(
+          deps,
+          await person(c.get("caller")),
+          c.req.valid("json").taskId,
+        ),
+        200,
+      ),
   );
 
   app.openapi(
@@ -514,6 +572,20 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
       photoPath: b.photoPath,
       takenAt: b.takenAt === undefined ? undefined : new Date(b.takenAt),
     }),
+  );
+  app.openapi(
+    command(
+      "set_example_photo",
+      "setExamplePhoto",
+      "Sender: the example photo is uploaded; it shows what to do and is never proof (NUD-138)",
+      s.SetExamplePhotoCommand,
+      s.TaskCommandResult,
+    ),
+    async (c) =>
+      c.json(
+        await svc.setExamplePhoto(deps, await person(c.get("caller")), c.req.valid("json")),
+        200,
+      ),
   );
   taskCommand(
     "cant_today",

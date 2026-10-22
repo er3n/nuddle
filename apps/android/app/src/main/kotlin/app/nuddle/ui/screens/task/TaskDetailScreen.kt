@@ -36,6 +36,7 @@ import app.nuddle.ui.components.DurtBottomSheetContent
 import app.nuddle.ui.components.DurtButton
 import app.nuddle.ui.components.DurtButtonKind
 import app.nuddle.ui.components.DurtButtonSize
+import app.nuddle.ui.components.ExamplePhotoRow
 import app.nuddle.ui.components.GroupDivider
 import app.nuddle.ui.components.LineRow
 import app.nuddle.ui.components.PillStatus
@@ -188,6 +189,7 @@ fun TaskDetailScreen(
             }
         }
         Text(state.title, style = DurtTheme.type.h1, color = colors.ink, modifier = Modifier.semantics { heading() })
+        state.examplePhoto?.let { ExamplePhotoRow(it, from = from?.name) }
         StatusCard(state, callbacks.onStart)
         DetailRows(state, callbacks)
         if (state.editable) {

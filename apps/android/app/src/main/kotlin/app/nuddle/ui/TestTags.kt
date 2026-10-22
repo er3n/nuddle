@@ -153,6 +153,12 @@ object TestTags {
     const val COMPOSE_MIC_STOP = "compose.mic.stop"
     const val COMPOSE_RETRY = "compose.retry"
     const val COMPOSE_HINT = "compose.hint"
+    const val COMPOSE_ATTACH = "compose.attach"
+    const val COMPOSE_PHOTO = "compose.photo"
+    const val COMPOSE_PHOTO_REMOVE = "compose.photo.remove"
+    const val EXAMPLE_PHOTO = "example.photo"
+    const val EXAMPLE_PHOTO_VIEWER = "example.photo.viewer"
+    const val EXAMPLE_PHOTO_CLOSE = "example.photo.close"
     const val VOICE_LISTENING = "voice.listening"
     const val VOICE_HEARD = "voice.heard"
 

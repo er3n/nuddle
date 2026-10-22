@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -106,7 +107,8 @@ private val ComposeState.text: String
  * Text and voice input for a new task (docs/ux/components.md, 3). Idle shows the orange mic; with text the mic turns
  * into a send arrow in the same place. A tap on the mic dictates (4h, NUD-48): [ComposeState.Listening] shows the live
  * transcript in the box and the mic pulses as the stop button; a second tap ([onVoiceEnd]) or silence ends it, and the
- * text stays in the box to be sent with the arrow. [notice] shows a note about voice input. Callers place it above the
+ * text stays in the box to be sent with the arrow. [notice] shows a note about voice input. With [photo] the gallery
+ * button sits at the start of the bar and the attached example photo above it (NUD-138). Callers place it above the
  * keyboard with `imePadding()`.
  */
 @Composable
@@ -118,6 +120,7 @@ fun ComposeBar(
     onVoiceEnd: (cancelled: Boolean) -> Unit,
     modifier: Modifier = Modifier,
     notice: VoiceNotice? = null,
+    photo: ComposePhoto? = null,
 ) {
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
@@ -133,6 +136,10 @@ fun ComposeBar(
     ) {
         if (notice != null) HintBubble(stringResource(notice.text))
         if (state is ComposeState.Listening) ListeningLine()
+        AttachedPhoto(photo, Modifier.fillMaxWidth().padding(bottom = dimens.space8))
+        val canAttach = photo.attachable(state)
+        // With the gallery button at the start, its own 44 dp target takes the place of the inset.
+        val (start, gap) = if (canAttach) dimens.space4 to dimens.space4 else dimens.space16 to dimens.space8
         Row(
             modifier =
                 Modifier
@@ -143,10 +150,11 @@ fun ComposeBar(
                         if (active) dimens.borderFocused else dimens.borderCard,
                         if (active) colors.ink else colors.border,
                         shape,
-                    ).padding(start = dimens.space16, end = dimens.space4, top = dimens.space4, bottom = dimens.space4),
+                    ).padding(start = start, end = dimens.space4, top = dimens.space4, bottom = dimens.space4),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(dimens.space8),
+            horizontalArrangement = Arrangement.spacedBy(gap),
         ) {
+            photo?.takeIf { canAttach }?.let { GalleryButton(it.onAttach) }
             if (state is ComposeState.Listening) {
                 Heard(state.heard, Modifier.weight(1f))
             } else {
@@ -411,5 +419,26 @@ private fun ComposeBarPreview() {
 private fun ComposeBarListeningPreview() {
     PreviewSurface {
         ComposeBar(ComposeState.Listening("eren yarın dokuzdan önce temizlikçi için bin lira çeksin"), {}, {}, {}, {})
+    }
+}
+
+private const val PREVIEW_PHOTO_W = 120
+private const val PREVIEW_PHOTO_H = 160
+
+@PreviewComponent
+@Composable
+private fun ComposeBarPhotoPreview() {
+    PreviewSurface {
+        Column(verticalArrangement = Arrangement.spacedBy(DurtTheme.dimens.space16)) {
+            ComposeBar(ComposeState.Idle, {}, {}, {}, {}, photo = ComposePhoto())
+            ComposeBar(
+                ComposeState.Typing("eren markete gitsin fotodakileri alsın"),
+                {},
+                {},
+                {},
+                {},
+                photo = ComposePhoto(ImageBitmap(PREVIEW_PHOTO_W, PREVIEW_PHOTO_H)),
+            )
+        }
     }
 }

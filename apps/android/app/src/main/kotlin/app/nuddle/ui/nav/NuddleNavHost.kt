@@ -3,6 +3,9 @@ package app.nuddle.ui.nav
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -21,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import app.nuddle.data.InviteLinks
+import app.nuddle.data.SharedImage
 import app.nuddle.ui.components.ComposeState
 import app.nuddle.ui.screens.LightSystemBarIcons
 import app.nuddle.ui.screens.announcement.AnnouncementScreen
@@ -34,6 +38,7 @@ import app.nuddle.ui.screens.errors.GenericErrorCallbacks
 import app.nuddle.ui.screens.errors.GenericErrorScreen
 import app.nuddle.ui.screens.errors.InvalidInviteCallbacks
 import app.nuddle.ui.screens.errors.InvalidInviteScreen
+import app.nuddle.ui.screens.home.ComposePhotoCallbacks
 import app.nuddle.ui.screens.home.HomeInvitesViewModel
 import app.nuddle.ui.screens.home.HomeIssuesViewModel
 import app.nuddle.ui.screens.home.HomeScreen
@@ -144,6 +149,8 @@ fun NuddleNavHost(
     onOpenRouteTake: () -> Unit = {},
     sharedText: String? = null,
     onSharedTextTake: () -> Unit = {},
+    sharedImage: SharedImage? = null,
+    onSharedImageTake: () -> Unit = {},
     onRouteChange: (String) -> Unit = {},
 ) {
     val nav = rememberNavController()
@@ -156,7 +163,7 @@ fun NuddleNavHost(
         nav.addOnDestinationChangedListener(listener)
         onDispose { nav.removeOnDestinationChangedListener(listener) }
     }
-    BackToHomeOnShare(nav, sharedText)
+    BackToHomeOnShare(nav, sharedText, sharedImage)
     NavHost(navController = nav, startDestination = startRoute) {
         composable(Routes.WELCOME) {
             LightSystemBarIcons()
@@ -245,6 +252,12 @@ fun NuddleNavHost(
             val voice: VoiceViewModel = hiltViewModel()
             val typed = state?.compose.typedText()
             SharedTextEffect(sharedText, typed, onSharedTextTake, viewModel::onComposeTextChange)
+            SharedImageEffect(sharedImage, typed, onSharedImageTake, viewModel::onComposeTextChange, viewModel.composePhoto::onAttach)
+            // The example photo from the gallery (NUD-138): the system photo picker, no storage permission.
+            val pickPhoto =
+                rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+                    uri?.let(viewModel.composePhoto::onAttach)
+                }
             val listening by voice.listening.collectAsStateWithLifecycle()
             val voiceNotice by voice.notice.collectAsStateWithLifecycle()
             val voiceInput =
@@ -318,6 +331,11 @@ fun NuddleNavHost(
                         PendingInviteCallbacks(
                             onReshare = { activity?.shareInvite(InviteLinks.of(it.code)) },
                             onRevoke = invites::onRevoke,
+                        ),
+                    photo =
+                        ComposePhotoCallbacks(
+                            onAttach = { pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                            onRemove = viewModel.composePhoto::onRemove,
                         ),
                 )
             }

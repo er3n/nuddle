@@ -141,6 +141,13 @@
       "when": 1792646175618,
       "tag": "20261022051615_task_contact",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792686333911,
+      "tag": "20261022162533_example_photo",
+      "breakpoints": true
     }
   ]
 }

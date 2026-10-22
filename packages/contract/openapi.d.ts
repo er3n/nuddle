@@ -170,6 +170,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/photos/example-upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sender: a signed upload URL for the example photo of a task; set_example_photo with its path (NUD-138) */
+        post: operations["createExamplePhotoUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/photos/example-view-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A short-lived signed URL to the example photo of an open task, for its two people */
+        post: operations["createExamplePhotoViewUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/avatar/upload-url": {
         parameters: {
             query?: never;
@@ -334,6 +368,23 @@ export interface paths {
         put?: never;
         /** Recipient: the photo is uploaded */
         post: operations["photoSent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/commands/set_example_photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sender: the example photo is uploaded; it shows what to do and is never proof (NUD-138) */
+        post: operations["setExamplePhoto"];
         delete?: never;
         options?: never;
         head?: never;
@@ -921,6 +972,7 @@ export interface components {
             /** Format: uuid */
             seriesId?: string | null;
             contact?: components["schemas"]["TaskContact"];
+            examplePhotoPath?: string | null;
         };
         /** @enum {string} */
         Timing: "at" | "by";
@@ -958,7 +1010,7 @@ export interface components {
             at: string;
         };
         /** @enum {string} */
-        TaskEventType: "created" | "edited" | "plan_generated" | "poke_fired" | "poke_lost" | "snoozed" | "done" | "photo_sent" | "approved" | "re_requested" | "dropped" | "missed" | "cancelled" | "human_notified" | "permission_missing" | "delivered" | "seen" | "start_set";
+        TaskEventType: "created" | "edited" | "plan_generated" | "poke_fired" | "poke_lost" | "snoozed" | "done" | "photo_sent" | "approved" | "re_requested" | "dropped" | "missed" | "cancelled" | "human_notified" | "permission_missing" | "delivered" | "seen" | "start_set" | "example_photo_set";
         SyncPlan: {
             /** Format: uuid */
             taskId: string;
@@ -1063,6 +1115,18 @@ export interface components {
             sentAt: string;
         };
         PhotoViewUrlRequest: {
+            /** Format: uuid */
+            taskId: string;
+        };
+        ExamplePhotoUploadUrlRequest: {
+            /** Format: uuid */
+            taskId: string;
+        };
+        ExamplePhotoViewUrlResult: {
+            url: string;
+            examplePhotoPath: string;
+        };
+        ExamplePhotoViewUrlRequest: {
             /** Format: uuid */
             taskId: string;
         };
@@ -1224,6 +1288,16 @@ export interface components {
              * @example 2026-10-12T09:00:00+03:00
              */
             takenAt?: string;
+        };
+        SetExamplePhotoCommand: {
+            /**
+             * Format: uuid
+             * @description Client generated UUIDv7; a replay returns the first result (ADR 0006)
+             */
+            idempotencyKey: string;
+            /** Format: uuid */
+            taskId: string;
+            photoPath: string;
         };
         CantTodayCommand: {
             /**
@@ -1984,6 +2058,135 @@ export interface operations {
             };
         };
     };
+    createExamplePhotoUploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExamplePhotoUploadUrlRequest"];
+            };
+        };
+        responses: {
+            /** @description Upload URL and the path to send with set_example_photo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoUploadUrlResult"];
+                };
+            };
+            /** @description Error with a DRT code */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createExamplePhotoViewUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExamplePhotoViewUrlRequest"];
+            };
+        };
+        responses: {
+            /** @description Where to load the picture from */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamplePhotoViewUrlResult"];
+                };
+            };
+            /** @description Error with a DRT code */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     createAvatarUploadUrl: {
         parameters: {
             query?: never;
@@ -2647,6 +2850,84 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PhotoSentCommand"];
+            };
+        };
+        responses: {
+            /** @description The result; a replay with the same key returns it again */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskCommandResult"];
+                };
+            };
+            /** @description Error with a DRT code */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    setExamplePhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetExamplePhotoCommand"];
             };
         };
         responses: {

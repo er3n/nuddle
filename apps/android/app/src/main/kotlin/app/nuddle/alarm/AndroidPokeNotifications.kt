@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -17,6 +18,7 @@ import app.nuddle.api.model.FinishMode
 import app.nuddle.data.avatar.AvatarFiles
 import app.nuddle.data.db.TaskEntity
 import app.nuddle.data.db.isMoment
+import app.nuddle.data.example.ExamplePictures
 import app.nuddle.data.photo.circled
 import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeRules
@@ -31,6 +33,10 @@ import kotlinx.datetime.TimeZone
 import javax.inject.Inject
 import kotlin.time.Clock
 import kotlin.time.Instant
+
+/** The sender's example photo the phone keeps for the task (NUD-138); none when it did not arrive yet. */
+private fun ExamplePictures.bitmapOf(taskId: String): Bitmap? =
+    runCatching { current(taskId) }.getOrNull()?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
 
 internal fun Context.timeLeftText(timeLeft: TimeLeft): String =
     when (timeLeft) {
@@ -70,6 +76,7 @@ class AndroidPokeNotifications
         private val volume: AlarmVolume,
         private val avatars: AvatarFiles,
         private val speech: PokeSpeech = PokeSpeech.None,
+        private val examples: ExamplePictures = ExamplePictures.None,
     ) : PokeNotifications {
         override fun show(
             task: TaskEntity,
@@ -86,13 +93,15 @@ class AndroidPokeNotifications
             val channel = if (silent) NotificationChannels.POKE_SILENT else NotificationChannels.POKE_ALARM
             val notice = task.finishMode == FinishMode.NOTICE.value
             val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+            // The sender's example photo takes the large icon's place and expands as a big picture (NUD-138).
+            val example = if (notice) null else examples.bitmapOf(task.id)
             val builder =
                 NotificationCompat
                     .Builder(context, channel)
                     .setSmallIcon(R.drawable.ic_notification)
                     .setColor(ContextCompat.getColor(context, R.color.poke))
-                    .setLargeIcon(senderPicture(task))
-                    .setPokeContent(task, step, level, notice)
+                    .setLargeIcon(example ?: senderPicture(task))
+                    .setPokeContent(task, step, level, notice, example)
                     .setSubText(context.getString(R.string.poke_count, step.number))
                     .setCategory(if (fullScreen) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_REMINDER)
                     .setPriority(if (silent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_HIGH)
@@ -209,6 +218,7 @@ class AndroidPokeNotifications
             step: PokeStep,
             level: PokeLevel,
             notice: Boolean,
+            example: Bitmap?,
         ): NotificationCompat.Builder {
             val taskText = task.detail?.let { context.getString(R.string.separator_dot, task.title, it) } ?: task.title
             val time =
@@ -227,9 +237,20 @@ class AndroidPokeNotifications
                     }
                 }
             if (notice) return setContentTitle(taskText).setContentText(time)
+            val expanded = context.getString(R.string.poke_text_expanded, taskText, time)
             return setContentTitle(context.pokeTitle(step, level))
                 .setContentText(taskText)
-                .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(R.string.poke_text_expanded, taskText, time)))
+                .setStyle(
+                    if (example != null) {
+                        NotificationCompat
+                            .BigPictureStyle()
+                            .bigPicture(example)
+                            .bigLargeIcon(null as Bitmap?)
+                            .setSummaryText(expanded)
+                    } else {
+                        NotificationCompat.BigTextStyle().bigText(expanded)
+                    },
+                )
         }
 
         /** The sender's cached picture as a circle (components.md 7, NUD-80); none for a task to self or without one. */
