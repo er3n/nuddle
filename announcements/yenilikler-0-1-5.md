@@ -27,10 +27,6 @@ Görev Bizimkiler'den birini aramak ya da ona yazmaksa, tam ekran dürtmede **Ar
 
 ![Annemi ara](/announcements/yenilikler-0-1-5/ara.png)
 
-## 💬 WhatsApp'tan görev yaz
-
-Biri sana WhatsApp'ta bir şey mi yazdı? Mesaja uzun bas, **Paylaş**'a dokun ve **dürt**'ü seç. Mesaj yazma kutusuna gelir, istediğin gibi düzeltip gönderirsin.
-
 ## 🤔 "Zaten yaptın mı?"
 
 Yüksek sesle dürtmeden hemen önce telefonunu kullanıyorsan önce sessizce sorarım. İşi bitirdiysen **Bitti** de, seni hiç rahatsız etmem.
