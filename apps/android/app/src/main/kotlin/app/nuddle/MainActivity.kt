@@ -100,6 +100,7 @@ class MainActivity : ComponentActivity() {
                                 sharedImage = sharedPicture,
                                 onSharedImageTake = { sharedImage.value = null },
                                 onRouteChange = diagnostics::routeShown,
+                                signedOut = start.signedOut,
                             )
                         }
                     }

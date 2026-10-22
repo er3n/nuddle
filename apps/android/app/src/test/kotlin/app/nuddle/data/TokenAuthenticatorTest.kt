@@ -15,8 +15,10 @@ import mockwebserver3.MockWebServer
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Before
+import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class TokenAuthenticatorTest {
@@ -24,17 +26,29 @@ class TokenAuthenticatorTest {
     private val sessions = InMemorySessionStore(aSession())
     private lateinit var syncApi: SyncApi
 
+    /** The wipe of Çıkış yap (AndroidLocalWipe, LocalWipeTest): here it counts and clears the session as that one does. */
+    private var wipes = 0
+    private val wipe =
+        LocalWipe {
+            wipes++
+            sessions.clear()
+        }
+
     @Before
     fun setUp() {
         server.start()
         val auth = server.retrofit().create(AuthApi::class.java)
+        syncApi = syncApiWith { auth }
+    }
+
+    private fun syncApiWith(auth: () -> AuthApi): SyncApi {
         val client =
             OkHttpClient
                 .Builder()
                 .addInterceptor(AuthInterceptor(sessions))
-                .authenticator(TokenAuthenticator(sessions) { auth })
+                .authenticator(TokenAuthenticator(sessions, auth) { wipe })
                 .build()
-        syncApi = server.retrofit(client).create(SyncApi::class.java)
+        return server.retrofit(client).create(SyncApi::class.java)
     }
 
     @After
@@ -64,7 +78,7 @@ class TokenAuthenticatorTest {
         }
 
     @Test
-    fun `a rejected refresh token signs out locally`() =
+    fun `a rejected refresh token wipes the phone as Çıkış yap does (NUD-141)`() =
         runTest {
             server.enqueue(drtError(401, "DRT-1002", "unauthorized"))
             server.enqueue(drtError(401, "DRT-1006", "invalid_otp"))
@@ -72,6 +86,34 @@ class TokenAuthenticatorTest {
             val response = syncApi.sync()
 
             assertEquals(401, response.code())
+            assertEquals(1, wipes)
             assertTrue(sessions.cleared)
+        }
+
+    @Test
+    fun `offline the refresh never answers and the session stays`() =
+        runTest {
+            server.enqueue(drtError(401, "DRT-1002", "unauthorized"))
+            val offline = syncApiWith { throw IOException("offline") }
+
+            val response = offline.sync()
+
+            assertEquals(401, response.code())
+            assertEquals(0, wipes)
+            assertFalse(sessions.cleared)
+            assertEquals("refresh-1", sessions.current()!!.refreshToken)
+        }
+
+    @Test
+    fun `a server error on refresh keeps the session`() =
+        runTest {
+            server.enqueue(drtError(401, "DRT-1002", "unauthorized"))
+            server.enqueue(drtError(502, "DRT-1099", "upstream_failed"))
+
+            val response = syncApi.sync()
+
+            assertEquals(401, response.code())
+            assertEquals(0, wipes)
+            assertEquals("refresh-1", sessions.current()!!.refreshToken)
         }
 }
