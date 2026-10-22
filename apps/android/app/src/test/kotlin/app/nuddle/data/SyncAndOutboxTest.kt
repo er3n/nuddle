@@ -220,6 +220,21 @@ class SyncAndOutboxTest {
         }
 
     @Test
+    fun `a sync before the undo toast's finish switch is sent keeps the new finish mode here (NUD-137)`() =
+        runTest {
+            db.tasks().upsert(listOf(aTask(planVersion = 2).copy(finishMode = "done")))
+            unsent = setOf(Cast.TASK_ID)
+            server.enqueue(json(200, syncBody))
+            assertTrue(syncRepository().sync())
+            assertEquals("done", db.tasks().get(Cast.TASK_ID)!!.finishMode)
+
+            unsent = emptySet()
+            server.enqueue(json(200, syncBody))
+            assertTrue(syncRepository().sync())
+            assertEquals("photo", db.tasks().get(Cast.TASK_ID)!!.finishMode)
+        }
+
+    @Test
     fun `a sync before my Ertele is sent keeps the snooze here (NUD-64)`() =
         runTest {
             val until = Instant.parse("2026-10-12T08:45:00+03:00").toEpochMilliseconds()
@@ -241,10 +256,11 @@ class SyncAndOutboxTest {
                 OutboxEntity("k1", "done", """{"idempotencyKey":"k1","taskId":"done-task"}""", 1),
                 OutboxEntity("k2", "snooze", """{"idempotencyKey":"k2","taskId":"snoozed-task"}""", 2),
                 OutboxEntity("k3", "report_fired", """{"idempotencyKey":"k3","taskId":"fired-task"}""", 3),
+                OutboxEntity("k4", "edit", """{"idempotencyKey":"k4","taskId":"edited-task","finishMode":"photo"}""", 4),
             ).forEach { db.outbox().enqueue(it) }
 
             assertEquals(
-                setOf("done-task", "snoozed-task", "photo-task"),
+                setOf("done-task", "snoozed-task", "photo-task", "edited-task"),
                 LocalPendingChanges(db.outbox(), photos, testJson).taskIds(),
             )
         }

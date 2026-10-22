@@ -268,7 +268,12 @@ Changed in NUD-48 after the phone test: no press and hold and no panel. A tap on
 
 ### 4i Sent directly, undo · `QuickSent.png`
 Sender home with the new task marked "Yeni" and the UndoToast.
-**Copy:** Eren'e yazdıkların | Temizlikçi için para çek | 1.000 TL · yarın 09:00 · fotoğrafla | Yeni | Eren'e gitti | Para çek · yarın 09:00 · bitince fotoğraf | Geri al | Düzenle
+**Copy:** Eren'e yazdıkların | Temizlikçi için para çek | 1.000 TL · yarın 09:00 · fotoğrafla | Yeni | Eren'e gitti | Para çek · yarın 09:00 · bitince fotoğraf | Bitti | Fotoğrafla | Geri al | Düzenle
+Added in NUD-137 after a tester asked for it (not in the PNG): under the sub line a two-option switch "Bitti" | "Fotoğrafla", the current finish mode selected, so the sender changes how the task ends without opening the preview. One tap on the other option:
+- sends the same `edit` as Nasıl bitsin in 7c, carrying only the finish mode; the recipient sees the usual short change note. It is applied on the phone first and goes through the outbox, so it works offline (as Geri al does). A second tap sends it back with a new edit.
+- keeps the toast on screen and starts its window again (5 s, 10 s with TalkBack), so Geri al and Düzenle are still in reach after the change; the line fills from the start. The sub line follows the choice ("bitince fotoğraf" comes and goes).
+- The switch is there for a task to self too (7c lets it change, NUD-47) and never for a one-time message (NUD-79), which has no finish choice.
+- Layout: the switch is its own row between the text and Geri al | Düzenle, both rows split in equal halves; at 200% font the labels wrap inside their halves and the toast grows in height. Open-questions #62.
 
 ## 5 · Profile, full home, sender side
 

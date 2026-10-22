@@ -79,6 +79,7 @@ class HomeDeliveryTest {
             events,
             { ticks.map { } },
             acks,
+            FakeTaskRepository().finishSwitcher,
         )
     }
 

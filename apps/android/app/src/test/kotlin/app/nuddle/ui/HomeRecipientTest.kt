@@ -72,6 +72,7 @@ class HomeRecipientTest {
             InMemoryTaskEventDao(),
             { flowOf(Unit) },
             RecordingTaskAcks(),
+            tasks.finishSwitcher,
         )
     }
 

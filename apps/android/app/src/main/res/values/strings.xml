@@ -175,6 +175,9 @@
     <string name="issue_new_time_body">%1$s yeni zamanı görür, dürtmeler baştan başlar.</string>
     <string name="sent_photo">fotoğrafla</string>
     <string name="undo_finish_photo">bitince fotoğraf</string>
+    <!-- 4i finish switch (NUD-137, glossary Finish switch): how the task that just went out ends. -->
+    <string name="undo_switch_done">Bitti</string>
+    <string name="undo_switch_photo">Fotoğrafla</string>
     <string name="deadline_today_inline">bugün %1$s</string>
     <string name="deadline_tomorrow_inline">yarın %1$s</string>
     <string name="done_note_title">\"%1$s\" tamamlandı</string>

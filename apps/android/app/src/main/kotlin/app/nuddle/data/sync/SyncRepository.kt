@@ -224,8 +224,9 @@ class SyncRepository
             }
 
         /**
-         * What this phone did and has not sent yet stays as it is here: the status, whether it is on my list and the
-         * snooze. The server's version comes with the sync after the outbox sends it (NUD-64).
+         * What this phone did and has not sent yet stays as it is here: the status, whether it is on my list, the
+         * snooze and the finish mode (the undo toast's switch, NUD-137). The server's version comes with the sync
+         * after the outbox sends it (NUD-64).
          */
         private suspend fun keepLocalChanges(synced: List<TaskEntity>): List<TaskEntity> {
             val unsent = pending.taskIds()
@@ -235,6 +236,7 @@ class SyncRepository
                 task.copy(
                     status = local.status,
                     inRecipientList = local.inRecipientList,
+                    finishMode = local.finishMode,
                     snoozesUsed = maxOf(local.snoozesUsed, task.snoozesUsed),
                     snoozedUntil = local.snoozedUntil ?: task.snoozedUntil,
                 )

@@ -38,6 +38,7 @@ Code and docs are in English. The UI is Turkish first (`values/strings.xml`), En
 | Human channel | (never named in UI) | Telling another person when pokes fail. In MVP: the sender. |
 | Setup | Bir kerelik kurulum | Permission flow. |
 | Missed ring, brand steps | "Son dürtmen çalmadı" (detected), "Dürtmem çalmadı" (profile row), "Dürtmen çalmadı mı?" (2h opened from it) | 2g, 2h. The person's own report uses "çalmadı", never "kayboldu" or "hata". |
+| Finish switch (undo toast) | Bitti / Fotoğrafla | NUD-137, screens.md 4i: how a task that just went out ends, changed with one tap on the toast. Same words as the finish choice elsewhere, short: never "kanıtla" or "fotoğraflı". Resources `undo_switch_done`, `undo_switch_photo`. |
 | Re-install pokes | "Dürtmelerimi yeniden kur", then "Bu telefondaki dürtmelerin yeniden kuruldu." | Last action of 2h (NUD-126): every alarm of this phone set again. Never "yeniden planla" (the plan is the server's). |
 
 ## Spoken poke

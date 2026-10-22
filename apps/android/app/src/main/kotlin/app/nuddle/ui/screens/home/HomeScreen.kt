@@ -134,6 +134,8 @@ data class UndoCallbacks(
     val onUndo: () -> Unit = {},
     val onEdit: () -> Unit = {},
     val onTimeout: () -> Unit = {},
+    /** The finish switch (NUD-137, 4i): true is "Fotoğrafla", false "Bitti". */
+    val onPhoto: (Boolean) -> Unit = {},
     /** The reply note above the bar (NUD-52) is gone. */
     val onReplyTimeout: () -> Unit = {},
 )

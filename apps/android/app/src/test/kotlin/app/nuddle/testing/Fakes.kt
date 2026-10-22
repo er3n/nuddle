@@ -338,6 +338,12 @@ class FakeTaskRepository : TaskRepository {
         return editOutcome
     }
 
+    /** Task and finish mode of every switch on the undo toast (NUD-137), in order. */
+    val finishChanges = mutableListOf<Pair<String, FinishMode>>()
+
+    /** A [app.nuddle.data.FinishSwitcher] that records into [finishChanges]. */
+    val finishSwitcher = app.nuddle.data.FinishSwitcher { taskId, finishMode -> finishChanges += taskId to finishMode }
+
     /** Every Kime change in the task detail (NUD-114): the task and its new recipient. */
     val reassigns = mutableListOf<Pair<String, String>>()
 
@@ -482,6 +488,13 @@ class InMemoryTaskDao : TaskDao {
         until: Long,
     ) {
         tasks.value[id]?.let { tasks.value += id to it.copy(snoozesUsed = it.snoozesUsed + 1, snoozedUntil = until) }
+    }
+
+    override suspend fun setFinishMode(
+        id: String,
+        finishMode: String,
+    ) {
+        tasks.value[id]?.let { tasks.value += id to it.copy(finishMode = finishMode) }
     }
 }
 

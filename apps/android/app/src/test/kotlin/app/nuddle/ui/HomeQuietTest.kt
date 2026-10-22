@@ -73,6 +73,7 @@ class HomeQuietTest {
             InMemoryTaskEventDao(),
             { flowOf(Unit) },
             RecordingTaskAcks(),
+            tasks.finishSwitcher,
         )
     }
 

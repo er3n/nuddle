@@ -35,6 +35,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
@@ -300,6 +301,24 @@ class TaskRepositoryTest {
             assertTrue(""""deadline":"2026-10-12T06:00:00Z"""" in body, body)
             assertTrue(""""detail":"1.000 TL"""" in body, body)
             assertTrue(""""finishMode":"done"""" in body, body)
+        }
+
+    @Test
+    fun `the undo toast's finish switch changes it here at once and queues an edit with only the finish mode (NUD-137)`() =
+        runTest {
+            db.tasks().upsert(listOf(aTask().copy(senderId = Cast.EREN_ID, recipientId = Cast.SIBEL_ID, finishMode = "done")))
+
+            OutboxFinishSwitcher(db.tasks(), Outbox(db.outbox(), testJson, FakeClock(), RecordingDrainer()), IdGenerator(FakeClock()))
+                .switch(Cast.TASK_ID, FinishMode.PHOTO)
+
+            assertEquals("photo", db.tasks().get(Cast.TASK_ID)?.finishMode)
+            val queued = db.outbox().pending().single()
+            assertEquals("edit", queued.command)
+            assertTrue(""""finishMode":"photo"""" in queued.body, queued.body)
+            assertTrue(""""taskId":"${Cast.TASK_ID}"""" in queued.body, queued.body)
+            assertFalse("deadline" in queued.body, queued.body)
+            assertFalse("detail" in queued.body, queued.body)
+            assertEquals(0, server.requestCount)
         }
 
     @Test

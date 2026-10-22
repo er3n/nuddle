@@ -229,7 +229,7 @@ private fun Modifier.dashedBorder(
 
 /**
  * 2a: "Kuruldu · Para çek · yarın 09:00"; 4i: "Gönderildi · Eren · Para çek · yarın 09:00" (open-questions#34). With
- * Geri al and Düzenle (UndoToast, components.md 6).
+ * Geri al and Düzenle, and the "Bitti" | "Fotoğrafla" switch (UndoToast, components.md 6; NUD-137).
  */
 @Composable
 internal fun TaskUndoToast(
@@ -246,6 +246,9 @@ internal fun TaskUndoToast(
         onEdit = callbacks.onEdit,
         onTimeout = callbacks.onTimeout,
         modifier = modifier.testTag(TestTags.HOME_UNDO),
+        // A one-time message has no finish choice (NUD-79).
+        photo = if (task.notice) null else task.photo,
+        onPhoto = callbacks.onPhoto,
     )
 }
 
