@@ -25,6 +25,14 @@ describe("scenarios: LLM call log", () => {
     ]);
     const [extraction, plan] = calls;
     expect(extraction?.input).toMatchObject({ text: TEXT.photoToEren, senderName: "Sibel" });
+    // The extractor sees the sender's own connections by name and relationship only, and the
+    // sender's formats (NUD-132): no phone number, no id.
+    expect(extraction?.input).toMatchObject({
+      connections: [{ name: "Eren", relationship: "spouse" }],
+      formats: { locale: "tr-TR", weekStart: "monday", hour24: true },
+    });
+    const connection = (extraction?.input as { connections: object[] }).connections[0];
+    expect(Object.keys(connection ?? {}).sort()).toEqual(["name", "relationship"]);
     expect(extraction?.writeKey).not.toBeNull();
     expect(plan).toMatchObject({ planVersion: 1, adoptedVersion: 2, model: "scripted" });
     expect(plan?.input).toMatchObject({ task: { title: "Temizlikçi için para çek" } });

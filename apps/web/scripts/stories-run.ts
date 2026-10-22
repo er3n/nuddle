@@ -6,7 +6,12 @@
 import { existsSync, readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { parseEnv } from "node:util";
-import { resolveExtraction, type Extraction, type ExtractionInput } from "../src/domain/extraction";
+import {
+  resolveExtraction,
+  TURKISH_FORMATS,
+  type Extraction,
+  type ExtractionInput,
+} from "../src/domain/extraction";
 import { checkPlan, type PlannerInput } from "../src/domain/planner";
 import { planPokes } from "../src/domain/plan-pokes";
 import { leadMinutesOf, pokeStartOf, scheduleOf } from "../src/domain/timing";
@@ -95,6 +100,7 @@ async function runOne(s: Sentence): Promise<Record<string, unknown>> {
     text: s.text,
     now,
     timeZone: TZ,
+    formats: TURKISH_FORMATS,
     senderName: s.sender,
     connections,
   };
@@ -112,7 +118,7 @@ async function runOne(s: Sentence): Promise<Record<string, unknown>> {
   const resolved = resolveExtraction(
     extraction,
     { id: s.sender },
-    connections.map((c) => ({ personId: c.name, name: c.name })),
+    connections.map((c) => ({ personId: c.name, name: c.name, relationship: c.relationship })),
     now,
     s.text,
   );
