@@ -20,6 +20,8 @@ export interface AuthGateway {
   ensureUser(phone: string): Promise<string>;
   /** Account deletion: the auth user and its phone go; an unknown id is already gone (NUD-89). */
   deleteUser(userId: string): Promise<void>;
+  /** Ends every session of the token's user except the token's own (ADR 0027). */
+  signOutOthers(accessToken: string): Promise<void>;
 }
 
 type SessionLike = {
@@ -97,6 +99,11 @@ export class SupabaseAuthGateway implements AuthGateway {
   async deleteUser(userId: string): Promise<void> {
     const { error } = await this.client.auth.admin.deleteUser(userId);
     if (error && error.status !== 404) throw error;
+  }
+
+  async signOutOthers(accessToken: string): Promise<void> {
+    const { error } = await this.client.auth.admin.signOut(accessToken, "others");
+    if (error) throw error;
   }
 
   async ensureUser(phone: string): Promise<string> {

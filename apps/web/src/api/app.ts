@@ -9,6 +9,7 @@ import { ApiError, errorBody } from "./errors";
 import { registerHealth } from "./health";
 import { internalRoutes } from "./internal";
 import { registerRoutes, type AppEnv } from "./routes";
+import { refuseRevokedSession } from "./services";
 
 export type App = OpenAPIHono<AppEnv>;
 
@@ -56,11 +57,15 @@ export async function createApp(deps: AppDeps): Promise<App> {
     }
     const header = c.req.header("authorization") ?? "";
     const token = header.startsWith("Bearer ") ? header.slice("Bearer ".length) : "";
+    let caller;
     try {
-      c.set("caller", await deps.tokens.verify(token));
+      caller = await deps.tokens.verify(token);
     } catch {
       throw new ApiError("unauthorized", "missing or invalid access token");
     }
+    // A session signed out from another phone stops now, not when its token expires (ADR 0027).
+    await refuseRevokedSession(deps, caller);
+    c.set("caller", caller);
     return next();
   });
 

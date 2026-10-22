@@ -7,6 +7,8 @@ export interface Caller {
   id: string;
   /** E.164 with a leading "+" (Supabase stores phones without it). */
   phone: string;
+  /** The Supabase session the token belongs to (`session_id`, ADR 0027); null if the token has none. */
+  sessionId: string | null;
 }
 
 export interface TokenVerifier {
@@ -28,10 +30,14 @@ export class JoseTokenVerifier implements TokenVerifier {
       typeof this.key === "function"
         ? await jwtVerify(token, this.key, { audience: "authenticated" })
         : await jwtVerify(token, this.key, { audience: "authenticated" });
-    const { sub, phone } = payload;
+    const { sub, phone, session_id: sessionId } = payload;
     if (typeof sub !== "string" || typeof phone !== "string" || phone === "") {
       throw new Error("token has no subject or phone");
     }
-    return { id: sub, phone: phone.startsWith("+") ? phone : `+${phone}` };
+    return {
+      id: sub,
+      phone: phone.startsWith("+") ? phone : `+${phone}`,
+      sessionId: typeof sessionId === "string" ? sessionId : null,
+    };
   }
 }

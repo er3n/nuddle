@@ -34,6 +34,7 @@ import {
   type AnnouncementContent,
 } from "../domain/announcements";
 import { keepContact } from "../domain/contact";
+import type { Caller } from "../infra/auth/jwt";
 import { afterWrongCode, lockedUntil } from "../domain/otp-attempts";
 import { humanChannelAllowed } from "../domain/plan-pokes";
 import { profileIsStale, RECENT_TASKS, type ProfileInput } from "../domain/profile";
@@ -103,6 +104,8 @@ import {
   currentPlan,
   deleteDevice,
   deleteDevicesOf,
+  deleteSessionRecordsOf,
+  deviceIsOf,
   devicesOf,
   edgesTouching,
   eventsOf,
@@ -133,7 +136,12 @@ import {
   markMissedCardRemoved,
   saveExamplePhoto,
   markStepFired,
+  noteSession,
+  recordForeignDevice,
   rescheduleAction,
+  revokeOtherSessions,
+  sessionRevoked,
+  sessionsOf,
   persistOutcome,
   saveAvatarPath,
   pokedTasks,
@@ -1012,10 +1020,20 @@ export async function reportFired(
     firedAt: Date;
     level: DeviceLevel;
     permissionMissing: boolean;
+    /** The caller's session, for a device that is not theirs (ADR 0027). */
+    sessionId?: string | null;
   },
 ): Promise<{ stopRinging: boolean }> {
   return runCommand(deps, caller.id, "report_fired", input.idempotencyKey, async (tx, now) => {
-    await touchDevice(tx, caller.id, input.deviceId, now);
+    if (!(await touchDevice(tx, caller.id, input.deviceId, now))) {
+      await recordForeignDevice(tx, {
+        personId: caller.id,
+        sessionId: input.sessionId ?? null,
+        deviceId: input.deviceId,
+        via: "report_fired",
+        now,
+      });
+    }
     const task = await lockTaskOf(tx, caller.id, input.taskId);
     if (task.recipientId !== caller.id) throw new ApiError("not_recipient");
     const plan = await currentPlan(tx, task);
@@ -1287,10 +1305,18 @@ export async function revokeInviteCommand(
 export async function logOut(
   deps: AppDeps,
   caller: Person,
-  input: { idempotencyKey: string; deviceId: string },
+  input: { idempotencyKey: string; deviceId: string; sessionId?: string | null },
 ): Promise<{ ok: true }> {
-  return runCommand(deps, caller.id, "log_out", input.idempotencyKey, async (tx) => {
-    await deleteDevice(tx, caller.id, input.deviceId);
+  return runCommand(deps, caller.id, "log_out", input.idempotencyKey, async (tx, now) => {
+    if (!(await deleteDevice(tx, caller.id, input.deviceId))) {
+      await recordForeignDevice(tx, {
+        personId: caller.id,
+        sessionId: input.sessionId ?? null,
+        deviceId: input.deviceId,
+        via: "log_out",
+        now,
+      });
+    }
     await touchEdgesTo(tx, caller.id);
     return { result: { ok: true as const }, effects: noEffects };
   });
@@ -1327,6 +1353,7 @@ export async function deleteAccount(
       deletePhotosFor.push(...e.deletePhotosFor);
     }
     await deleteDevicesOf(tx, caller.id);
+    await deleteSessionRecordsOf(tx, caller.id);
     await deleteLlmCallsOf(tx, caller.id);
     await touchEdgesTo(tx, caller.id);
     // The profile picture goes with the account (NUD-72).
@@ -1491,6 +1518,124 @@ export async function removeConnection(
   });
 }
 
+// ---- sessions (ADR 0027) -------------------------------------------------------------------
+
+/** TODO(open-questions#65): a session seen within this long is listed in Cihazlarım. */
+const SESSION_LISTED_FOR_MS = 30 * DAY;
+
+/**
+ * Sync moves the device's and the session's last seen. A device that is not the caller's is
+ * recorded (ids only) and touches nothing.
+ */
+async function noteSync(
+  deps: AppDeps,
+  personId: PersonId,
+  deviceId: string | null,
+  sessionId: string | null,
+  now: Date,
+): Promise<void> {
+  const mine = deviceId !== null && (await touchDevice(deps.db, personId, deviceId, now));
+  if (deviceId !== null && !mine) {
+    await recordForeignDevice(deps.db, { personId, sessionId, deviceId, via: "sync", now });
+  }
+  if (sessionId === null) return;
+  await noteSession(deps.db, {
+    sessionId,
+    personId,
+    deviceId: mine ? deviceId : null,
+    via: "sync",
+    now,
+  });
+}
+
+/**
+ * A new or refreshed session is kept with the app version and the device the phone named. A
+ * failure here never fails the sign-in: the session works without its row.
+ */
+export async function noteSignIn(
+  deps: AppDeps,
+  caller: Caller,
+  via: "verify" | "refresh",
+  origin: { appVersion?: string | undefined; deviceId?: string | undefined },
+): Promise<void> {
+  const { sessionId } = caller;
+  if (sessionId === null) return;
+  const now = deps.clock.now();
+  try {
+    let deviceId = origin.deviceId ?? null;
+    if (deviceId !== null && !(await deviceIsOf(deps.db, caller.id, deviceId))) {
+      await recordForeignDevice(deps.db, { personId: caller.id, sessionId, deviceId, via, now });
+      deviceId = null;
+    }
+    await noteSession(deps.db, {
+      sessionId,
+      personId: caller.id,
+      deviceId,
+      appVersion: origin.appVersion ?? null,
+      via,
+      now,
+    });
+  } catch (error) {
+    console.error("noting the session failed", error);
+  }
+}
+
+/** The middleware refuses an access token of a session signed out from another phone. */
+export async function refuseRevokedSession(deps: AppDeps, caller: Caller): Promise<void> {
+  if (caller.sessionId !== null && (await sessionRevoked(deps.db, caller.sessionId))) {
+    throw new ApiError("unauthorized", "this session was signed out from another device");
+  }
+}
+
+/** Cihazlarım: my sessions, newest first, and which one is this one. */
+export async function listSessions(deps: AppDeps, caller: Caller) {
+  const since = addMs(deps.clock.now(), -SESSION_LISTED_FOR_MS);
+  const rows = await sessionsOf(deps.db, caller.id, since);
+  return {
+    sessions: rows.map((r) => ({
+      deviceModel: r.deviceModel,
+      appVersion: r.appVersion,
+      lastSeenAt: r.lastSeenAt.toISOString(),
+      current: r.sessionId === caller.sessionId,
+    })),
+  };
+}
+
+/**
+ * Diğer cihazlardan çıkış yap: Supabase ends the other sessions first (so a failure there stores
+ * nothing and the phone may try again), then their rows are marked revoked and the person's
+ * phones get a sync hint, so the others hear the 401 at once and wipe themselves (NUD-141).
+ */
+export async function signOutOthers(
+  deps: AppDeps,
+  caller: Person,
+  input: { idempotencyKey: string; sessionId: string | null; accessToken: string },
+): Promise<{ signedOut: number }> {
+  const prior = await findIdempotentResult(deps.db, caller.id, input.idempotencyKey);
+  if (prior) {
+    if (prior.command !== "sign_out_others") throw new ApiError("idempotency_key_reused");
+    return prior.result as { signedOut: number };
+  }
+  const { sessionId } = input;
+  if (sessionId === null) throw new ApiError("unauthorized", "the token names no session");
+  try {
+    await deps.auth.signOutOthers(input.accessToken);
+  } catch (error) {
+    console.error("sign out others failed", error);
+    throw new ApiError("upstream_failed", "could not sign out the other sessions");
+  }
+  return runCommand(deps, caller.id, "sign_out_others", input.idempotencyKey, async (tx, now) => {
+    const signedOut = await revokeOtherSessions(tx, caller.id, sessionId, now);
+    return {
+      result: { signedOut },
+      effects: {
+        pushes: [{ to: caller.id, hint: "sync", taskId: null, event: "signed_out_others" }],
+        deletePhotosFor: [],
+      },
+    };
+  });
+}
+
 // ---- devices --------------------------------------------------------------------------------
 
 /** Sent on every launch and whenever a permission or channel changes (docs/domain.md). */
@@ -1502,17 +1647,31 @@ export async function registerDevice(
     fid: string;
     platform: "android" | "ios";
     appVersion: string;
+    model?: string;
     permissions: PermissionSummary;
+    /** The caller's session: tied to this device (ADR 0027). */
+    sessionId?: string | null;
   },
 ): Promise<{ deviceId: string; reachability: Reachability }> {
   const now = deps.clock.now();
+  const { sessionId, ...device } = input;
   return inWriteTx(deps.db, async (tx) => {
     const deviceId = await upsertDevice(tx, {
-      ...input,
+      ...device,
       id: input.deviceId,
       personId: caller.id,
       now,
     });
+    if (sessionId) {
+      await noteSession(tx, {
+        sessionId,
+        personId: caller.id,
+        deviceId,
+        appVersion: input.appVersion,
+        via: "device",
+        now,
+      });
+    }
     // Connections see the new reachability.
     await touchEdgesTo(tx, caller.id);
     return { deviceId, reachability: await reachabilityOf(tx, caller.id) };
@@ -1524,10 +1683,10 @@ export async function registerDevice(
 export async function sync(
   deps: AppDeps,
   caller: Person,
-  query: { cursor: number; deviceId: string | null },
+  query: { cursor: number; deviceId: string | null; sessionId?: string | null },
 ) {
   const now = deps.clock.now();
-  if (query.deviceId !== null) await touchDevice(deps.db, caller.id, query.deviceId, now);
+  await noteSync(deps, caller.id, query.deviceId, query.sessionId ?? null, now);
   const rows = await inSyncReadTx(deps.db, (tx) => syncRows(tx, caller, query.cursor));
   const recipientOf = new Map(rows.tasks.map((t) => [t.id, t.recipientId]));
   return {

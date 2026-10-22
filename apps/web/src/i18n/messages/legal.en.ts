@@ -8,7 +8,7 @@ const deleted = [
   "The tasks you wrote and the tasks written to you, with their notes and photos.",
   "Your poke history and the poke summary we learned for you.",
   "The records of the AI calls.",
-  "The notification keys of your phones.",
+  "The notification keys and session records of your phones.",
 ];
 
 export const legalEn: Legal = {
@@ -17,7 +17,7 @@ export const legalEn: Legal = {
   privacy: {
     metaTitle: "Privacy · Nuddle",
     title: "Privacy notice",
-    updated: "Last updated: 16 October 2026",
+    updated: "Last updated: 23 October 2026",
     intro:
       "Nuddle is an app where someone says a task once and the person who forgets is poked until it is done. This notice explains which of your data we process and why, who we share it with, how long we keep it and what your rights are, under the Turkish Personal Data Protection Law No. 6698 (KVKK).",
     sections: [
@@ -38,7 +38,7 @@ export const legalEn: Legal = {
           "Your poke history: which poke rang when, after which one you acted, snoozes. From it a short summary of how you should be poked is written.",
           "Photos: the photo you send to show that a task is done.",
           "Your settings: quiet hours, time zone and whether people you know may be told.",
-          "Device data: your phone's notification key so we can reach it, whether permissions are on, whether pokes rang on time on the phone, and if the app crashes or an action fails, an error report (phone model, Android version, the screen that was open, the app's last steps and the error log; never task text, names, numbers or photos).",
+          "Device data: your phone's notification key so we can reach it, whether permissions are on, whether pokes rang on time on the phone, each phone's model, app version and when it was last seen so you can see in My devices where you are signed in (we keep no IP addresses), and if the app crashes or an action fails, an error report (phone model, Android version, the screen that was open, the app's last steps and the error log; never task text, names, numbers or photos).",
         ],
       },
       {

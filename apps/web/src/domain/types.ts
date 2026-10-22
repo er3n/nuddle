@@ -195,5 +195,5 @@ export interface PushMessage {
   to: PersonId;
   hint: "sync" | "plan_changed" | "task_cancelled";
   taskId: TaskId | null;
-  event: TaskEventType | "invite_accepted" | "announcement";
+  event: TaskEventType | "invite_accepted" | "announcement" | "signed_out_others";
 }

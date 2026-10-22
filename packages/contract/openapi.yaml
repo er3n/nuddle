@@ -150,6 +150,13 @@ components:
         code:
           type: string
           pattern: ^\d{6}$
+        appVersion:
+          type: string
+          minLength: 1
+          maxLength: 64
+        deviceId:
+          type: string
+          format: uuid
       required:
         - phone
         - code
@@ -159,6 +166,13 @@ components:
         refreshToken:
           type: string
           minLength: 1
+        appVersion:
+          type: string
+          minLength: 1
+          maxLength: 64
+        deviceId:
+          type: string
+          format: uuid
       required:
         - refreshToken
     SyncResponse:
@@ -691,6 +705,10 @@ components:
         appVersion:
           type: string
           minLength: 1
+        model:
+          type: string
+          minLength: 1
+          maxLength: 100
         permissions:
           $ref: "#/components/schemas/PermissionSummary"
       required:
@@ -723,6 +741,36 @@ components:
         - exactAlarm
         - fullScreen
         - channels
+    SessionsResponse:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SignedInSession"
+      required:
+        - sessions
+    SignedInSession:
+      type: object
+      properties:
+        deviceModel:
+          type: string
+          nullable: true
+        appVersion:
+          type: string
+          nullable: true
+        lastSeenAt:
+          type: string
+          format: date-time
+          example: 2026-10-12T09:00:00+03:00
+          description: ISO 8601 with offset
+        current:
+          type: boolean
+      required:
+        - deviceModel
+        - appVersion
+        - lastSeenAt
+        - current
     InvitePreview:
       type: object
       properties:
@@ -1551,6 +1599,23 @@ components:
       required:
         - idempotencyKey
         - deviceId
+    SignOutOthersResult:
+      type: object
+      properties:
+        signedOut:
+          type: integer
+          minimum: 0
+      required:
+        - signedOut
+    SignOutOthersCommand:
+      type: object
+      properties:
+        idempotencyKey:
+          type: string
+          format: uuid
+          description: Client generated UUIDv7; a replay returns the first result (ADR 0006)
+      required:
+        - idempotencyKey
     DeleteAccountCommand:
       type: object
       properties:
@@ -1779,6 +1844,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/sessions:
+    get:
+      operationId: listSessions
+      summary: The phones signed in to my account, newest first (Cihazlarım, ADR 0027)
+      tags:
+        - devices
+      security:
+        - bearer: []
+      responses:
+        "200":
+          description: My sessions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionsResponse"
         "401":
           description: Error with a DRT code
           content:
@@ -3785,6 +3877,69 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "422":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/commands/sign_out_others:
+    post:
+      operationId: signOutOthers
+      summary: Sign out every other phone of my account (ADR 0027)
+      tags:
+        - commands
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignOutOthersCommand"
+      responses:
+        "200":
+          description: The result; a replay with the same key returns it again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignOutOthersResult"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
           description: Error with a DRT code
           content:
             application/json:

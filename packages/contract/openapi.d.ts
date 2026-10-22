@@ -102,6 +102,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The phones signed in to my account, newest first (Cihazlarım, ADR 0027) */
+        get: operations["listSessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/invites/{code}/preview": {
         parameters: {
             query?: never;
@@ -731,6 +748,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/commands/sign_out_others": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign out every other phone of my account (ADR 0027) */
+        post: operations["signOutOthers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/commands/delete_account": {
         parameters: {
             query?: never;
@@ -810,9 +844,15 @@ export interface components {
              */
             phone: string;
             code: string;
+            appVersion?: string;
+            /** Format: uuid */
+            deviceId?: string;
         };
         RefreshRequest: {
             refreshToken: string;
+            appVersion?: string;
+            /** Format: uuid */
+            deviceId?: string;
         };
         SyncResponse: {
             cursor: string;
@@ -1057,6 +1097,7 @@ export interface components {
             /** @enum {string} */
             platform: "android" | "ios";
             appVersion: string;
+            model?: string;
             permissions: components["schemas"]["PermissionSummary"];
         };
         PermissionSummary: {
@@ -1067,6 +1108,20 @@ export interface components {
                 poke_silent: boolean;
                 poke_alarm: boolean;
             };
+        };
+        SessionsResponse: {
+            sessions: components["schemas"]["SignedInSession"][];
+        };
+        SignedInSession: {
+            deviceModel: string | null;
+            appVersion: string | null;
+            /**
+             * Format: date-time
+             * @description ISO 8601 with offset
+             * @example 2026-10-12T09:00:00+03:00
+             */
+            lastSeenAt: string;
+            current: boolean;
         };
         InvitePreview: {
             inviterName: string;
@@ -1529,6 +1584,16 @@ export interface components {
             /** Format: uuid */
             deviceId: string;
         };
+        SignOutOthersResult: {
+            signedOut: number;
+        };
+        SignOutOthersCommand: {
+            /**
+             * Format: uuid
+             * @description Client generated UUIDv7; a replay returns the first result (ADR 0006)
+             */
+            idempotencyKey: string;
+        };
         DeleteAccountCommand: {
             /**
              * Format: uuid
@@ -1817,6 +1882,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description My sessions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionsResponse"];
                 };
             };
             /** @description Error with a DRT code */
@@ -4547,6 +4650,93 @@ export interface operations {
             };
             /** @description Error with a DRT code */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    signOutOthers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignOutOthersCommand"];
+            };
+        };
+        responses: {
+            /** @description The result; a replay with the same key returns it again */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignOutOthersResult"];
+                };
+            };
+            /** @description Error with a DRT code */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -108,6 +108,82 @@ describe("local Supabase adapters", () => {
     expect(b?.userId).toBe(second.userId);
   });
 
+  it("keeps each phone's session and signs the other phones out through the admin API (ADR 0027)", async () => {
+    const clock = new FakeClock("2026-10-11T20:00:00+03:00");
+    const app = await createApp({
+      db: t.db,
+      clock,
+      push: new RecordingPushSender(clock),
+      otp: new RecordingOtpSender(),
+      extractor: new FixtureExtractor(new Map()),
+      planner: null,
+      profiler: null,
+      background: (job) => job(),
+      photos: new SupabasePhotoStorage(url, secretKey),
+      tokens: JoseTokenVerifier.forSupabase(url),
+      auth: new SupabaseAuthGateway(url, secretKey),
+      tickSecret: "unused-in-this-test",
+      smsHookSecret: "v1,whsec_dW51c2Vk",
+      version: "test",
+      e2e: null,
+    });
+    // Two phones sign in to one test number (supabase/config.toml). A test number's fixed code
+    // works once the user exists, so no code is sent: the auth server allows one send per phone
+    // every few seconds, and the first test sent one to this number just before.
+    await new SupabaseAuthGateway(url, secretKey).ensureUser("+905320000006");
+    const signIn = async (appVersion: string) => {
+      const res = await app.request(
+        "/api/v1/auth/verify",
+        json({ phone: "+905320000006", code: "123456", appVersion }),
+      );
+      expect(res.status).toBe(200);
+      return (await res.json()) as { accessToken: string; refreshToken: string; personId: string };
+    };
+    const first = await signIn("0.1.7");
+    const second = await signIn("0.1.6");
+    const headers = (token: string) => ({
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json",
+    });
+    const reg = await app.request("/api/v1/commands/register", {
+      method: "POST",
+      headers: headers(first.accessToken),
+      body: JSON.stringify({
+        idempotencyKey: uuidv7(),
+        displayName: "Test",
+        timeZone: "Europe/Istanbul",
+      }),
+    });
+    expect(reg.status).toBe(200);
+
+    // Real Supabase tokens carry a session id: both sessions are kept, the first is this one.
+    const listed = await app.request("/api/v1/sessions", { headers: headers(first.accessToken) });
+    const sessions = ((await listed.json()) as { sessions: { current: boolean }[] }).sessions;
+    // The first test's session of this number is there too: one current, the rest others.
+    expect(sessions.filter((x) => x.current)).toHaveLength(1);
+    expect(sessions.length).toBeGreaterThanOrEqual(2);
+
+    const out = await app.request("/api/v1/commands/sign_out_others", {
+      method: "POST",
+      headers: headers(first.accessToken),
+      body: JSON.stringify({ idempotencyKey: uuidv7() }),
+    });
+    expect(out.status).toBe(200);
+    expect(await out.json()).toEqual({ signedOut: sessions.length - 1 });
+
+    // Supabase refuses the other phone's refresh token; the first phone still refreshes.
+    const stale = await app.request(
+      "/api/v1/auth/refresh",
+      json({ refreshToken: second.refreshToken }),
+    );
+    expect(stale.status).toBe(401);
+    const fresh = await app.request(
+      "/api/v1/auth/refresh",
+      json({ refreshToken: first.refreshToken }),
+    );
+    expect(fresh.status).toBe(200);
+  });
+
   it("uploads to a signed URL in the private bucket and deletes the task's photos", async () => {
     const photos = new SupabasePhotoStorage(url, secretKey);
     const taskId = uuidv7();
