@@ -149,7 +149,7 @@ Each device step also gets a `lost_poke_check` timer at planned time + 5 minutes
 
 1. Server sends the plan to the recipient's device as a high priority FCM data message and also exposes it through sync.
 2. The device stores steps in Room and sets one `AlarmManager.setAlarmClock()` per step. A step that arrives up to 2 minutes after its planned time rings at once (the first step of a plan is planned at the moment the task is written, NUD-41); an older one is not rung late, and the lost poke check covers it.
-3. On `BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`, `TIME_SET` and `TIMEZONE_CHANGED`, all pending alarms are re-set from Room.
+3. On `BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`, `TIME_SET` and `TIMEZONE_CHANGED`, all pending alarms are re-set from Room. After a reboot they are set again before the first unlock too (`LOCKED_BOOT_COMPLETED`), from a minimal copy of the armed steps in device-protected storage, and about every hour while pokes are armed the phone checks that every alarm it should have is really set and sets the missing ones again (docs/ux/platform.md, Alarms and pokes; NUD-125).
 4. When an alarm fires, a receiver re-checks quiet hours and plan version, shows the notification for the level, and for `FULL_SCREEN` opens `PokeActivity` via `setFullScreenIntent` (`showWhenLocked`, `turnScreenOn`).
 5. Every fired step reports planned and actual time to the server.
 6. Done, Snooze and Can't today are applied locally first (remaining alarms cancelled immediately, even offline), then sent to the server with WorkManager. Done carries the moment it was tapped (`doneAt`).

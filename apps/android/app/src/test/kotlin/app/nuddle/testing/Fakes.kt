@@ -2,6 +2,8 @@ package app.nuddle.testing
 
 import android.graphics.Bitmap
 import android.net.Uri
+import app.nuddle.alarm.AlarmCheckScheduling
+import app.nuddle.alarm.DirectBootStore
 import app.nuddle.alarm.FullScreenPermission
 import app.nuddle.alarm.PokeNotifications
 import app.nuddle.api.model.EdgeType
@@ -44,6 +46,8 @@ import app.nuddle.data.sync.TaskClose
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.AlarmScheduler
 import app.nuddle.domain.GrantedPermissions
+import app.nuddle.domain.LockedFire
+import app.nuddle.domain.LockedPlan
 import app.nuddle.domain.PermissionReader
 import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeStep
@@ -180,6 +184,8 @@ class RecordingScheduler : AlarmScheduler {
         cancelled += key
         scheduled.remove(key)
     }
+
+    override fun isScheduled(key: AlarmKey): Boolean = key in scheduled
 }
 
 class RecordingNotifications : PokeNotifications {
@@ -706,6 +712,49 @@ class InMemoryMissedRingStore : MissedRingStore {
 
     override suspend fun markStopHandled(at: Instant) {
         handled = at
+    }
+
+    var alarmCheck: Instant? = null
+
+    override suspend fun lastAlarmCheck(): Instant? = alarmCheck
+
+    override suspend fun markAlarmCheck(at: Instant) {
+        alarmCheck = at
+    }
+}
+
+class InMemoryDirectBootStore : DirectBootStore {
+    var plan = LockedPlan()
+    val fires = mutableListOf<LockedFire>()
+    var cleared = false
+
+    override suspend fun plan(): LockedPlan = plan
+
+    override suspend fun savePlan(plan: LockedPlan) {
+        this.plan = plan
+    }
+
+    override suspend fun fires(): List<LockedFire> = fires.toList()
+
+    override suspend fun recordFire(fire: LockedFire) {
+        fires += fire
+    }
+
+    override suspend fun takeFires(): List<LockedFire> = fires.toList().also { fires.clear() }
+
+    override suspend fun clear() {
+        plan = LockedPlan()
+        fires.clear()
+        cleared = true
+    }
+}
+
+/** Whether the hourly alarm check is kept running, as the last call left it. */
+class RecordingAlarmChecks : AlarmCheckScheduling {
+    var active: Boolean? = null
+
+    override fun keepChecking(active: Boolean) {
+        this.active = active
     }
 }
 
