@@ -80,8 +80,11 @@
             android:turnScreenOn="true"
             tools:targetApi="o_mr1" />
 
+        <!-- Direct boot aware (docs/ux/platform.md, Direct boot; NUD-125): pokes ring after a reboot before the first
+             unlock, from the copy in device-protected storage. -->
         <receiver
             android:name=".alarm.PokeAlarmReceiver"
+            android:directBootAware="true"
             android:exported="false" />
 
         <receiver
@@ -90,8 +93,10 @@
 
         <receiver
             android:name=".alarm.RearmReceiver"
+            android:directBootAware="true"
             android:exported="true">
             <intent-filter>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="android.intent.action.TIME_SET" />

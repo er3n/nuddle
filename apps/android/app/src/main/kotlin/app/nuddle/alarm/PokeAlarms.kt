@@ -10,6 +10,7 @@ import app.nuddle.data.sync.OPEN_STATUSES
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.AlarmScheduler
 import app.nuddle.domain.LocalTaskState
+import app.nuddle.domain.LockedStep
 import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeRules
 import app.nuddle.domain.PokeStep
@@ -33,15 +34,31 @@ class PokeAlarms
         private val scheduler: AlarmScheduler,
         private val clock: Clock,
         private val notifications: PokeNotifications,
+        private val armedPokes: ArmedPokes = ArmedPokes.None,
     ) : AlarmRearmer {
-        /** The steps that should have an alarm now. */
-        private suspend fun toArm(): List<PokeStep> {
+        /** The steps that should have an alarm now; also what the hourly check compares with AlarmManager (NUD-125). */
+        suspend fun toArm(): List<PokeStep> {
             val all = steps.all()
             val taskList = tasks.all()
             val states = taskList.associate { it.id to it.toLocalState() }
             val fired = all.filter { it.firedAt != null }.map { it.toStep().key }.toSet()
             val now = clock.now()
             return PokeRules.stepsToArm(all.map { it.toStep() }, states, fired, now) + snoozedRings(taskList, all, now)
+        }
+
+        /**
+         * The armed set changed: keep the direct boot copy equal to it and the hourly check running while it is not
+         * empty (docs/ux/platform.md, Alarms and pokes).
+         */
+        suspend fun remember(toArm: List<PokeStep>? = null) {
+            val armed = toArm ?: toArm()
+            val moments =
+                tasks
+                    .all()
+                    .filter { it.isMoment }
+                    .map { it.id }
+                    .toSet()
+            armedPokes.armed(armed.map { LockedStep(it, moment = it.taskId in moments) })
         }
 
         override suspend fun rearm() {
@@ -51,6 +68,7 @@ class PokeAlarms
             val armed = toArm.map { it.key }.toSet()
             all.map { it.toStep().key }.filterNot { it in armed }.forEach(scheduler::cancel)
             toArm.forEach(scheduler::schedule)
+            remember(toArm)
             // A task closed on the other phone or on the server (cancelled, missed, connection removed): the poke that
             // rang for it goes too, not only its alarms (NUD-64). Asked of the system, because the sync that closed it
             // has already replaced the steps that rang.
@@ -94,11 +112,13 @@ class PokeAlarms
         /** Done, Snooze and Can't today stop the task's alarms at once, even offline (docs/domain.md, step 6). */
         suspend fun stopTask(taskId: String) {
             steps.forTask(taskId).forEach { scheduler.cancel(it.toStep().key) }
+            remember()
         }
 
         /** Signing out: no alarm of this person may ring on this phone any more. */
         suspend fun stopAll() {
             steps.all().forEach { scheduler.cancel(it.toStep().key) }
+            armedPokes.cleared()
         }
 
         suspend fun step(key: AlarmKey): PokeStep? = steps.get(key.taskId, key.planVersion, key.seq)?.toStep()
