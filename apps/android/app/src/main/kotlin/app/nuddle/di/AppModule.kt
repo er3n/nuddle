@@ -8,11 +8,22 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.work.WorkManager
 import app.nuddle.BuildConfig
+import app.nuddle.alarm.AlarmCheckScheduling
 import app.nuddle.alarm.AlarmManagerScheduler
+import app.nuddle.alarm.AndroidLockedPokeNotification
 import app.nuddle.alarm.AndroidPokeNotifications
+import app.nuddle.alarm.AndroidPokeSpeech
+import app.nuddle.alarm.ArmedPokes
+import app.nuddle.alarm.ArmedPokesKeeper
+import app.nuddle.alarm.DirectBootStore
+import app.nuddle.alarm.FileDirectBootStore
 import app.nuddle.alarm.FullScreenPermission
+import app.nuddle.alarm.LockedPokeNotification
 import app.nuddle.alarm.PokeAlarms
 import app.nuddle.alarm.PokeNotifications
+import app.nuddle.alarm.PokeSpeech
+import app.nuddle.alarm.WorkManagerAlarmChecks
+import app.nuddle.alarm.userUnlocked
 import app.nuddle.data.ApiAuthRepository
 import app.nuddle.data.AuthRepository
 import app.nuddle.data.SessionStarter
@@ -43,11 +54,14 @@ import kotlin.time.Clock
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
-    /** The `e2e` flavor runs on fake time the orchestrator moves (TestTime). */
+    /**
+     * The `e2e` flavor runs on fake time the orchestrator moves (TestTime). Its offset is kept where it cannot be read
+     * before the first unlock; the phone's own clock is used then (docs/ux/platform.md, Direct boot).
+     */
     @Provides
     fun clock(
         @ApplicationContext context: Context,
-    ): Clock = if (BuildConfig.FAKE_TIME) TestTime.clock(context) else Clock.System
+    ): Clock = if (BuildConfig.FAKE_TIME && context.userUnlocked()) TestTime.clock(context) else Clock.System
 
     /** Not a singleton: the user can change the zone while the app runs. */
     @Provides
@@ -78,8 +92,14 @@ object AppModule {
         @ApplicationContext context: Context,
     ): AlarmScheduler =
         AlarmManagerScheduler(context, context.getSystemService(AlarmManager::class.java)) { at ->
-            if (BuildConfig.FAKE_TIME) TestTime.shift(context, at) else at
+            if (BuildConfig.FAKE_TIME && context.userUnlocked()) TestTime.shift(context, at) else at
         }
+
+    /** Only built once the phone is unlocked: WorkManager cannot open its database before (Direct boot). */
+    @Provides
+    fun alarmChecks(
+        @ApplicationContext context: Context,
+    ): AlarmCheckScheduling = WorkManagerAlarmChecks(WorkManager.getInstance(context))
 
     @Provides
     @Singleton
@@ -107,6 +127,9 @@ abstract class BindingsModule {
     abstract fun pokeNotifications(impl: AndroidPokeNotifications): PokeNotifications
 
     @Binds
+    abstract fun pokeSpeech(impl: AndroidPokeSpeech): PokeSpeech
+
+    @Binds
     abstract fun fullScreenPermission(impl: DevicePermissions): FullScreenPermission
 
     @Binds
@@ -117,4 +140,18 @@ abstract class BindingsModule {
 
     @Binds
     abstract fun sessionStarter(impl: AppSessionStarter): SessionStarter
+}
+
+/** The direct boot copy of the armed pokes and the hourly check (docs/ux/platform.md, Alarms and pokes; NUD-125). */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class DirectBootModule {
+    @Binds
+    abstract fun armedPokes(impl: ArmedPokesKeeper): ArmedPokes
+
+    @Binds
+    abstract fun directBootStore(impl: FileDirectBootStore): DirectBootStore
+
+    @Binds
+    abstract fun lockedPokeNotification(impl: AndroidLockedPokeNotification): LockedPokeNotification
 }

@@ -606,6 +606,11 @@
     <string name="poke_cant_today">Bugün yapamayacağım</string>
     <!-- NUD-79: the only answer to a one-time message. -->
     <string name="poke_ok">Tamam</string>
+    <!-- NUD-124: said aloud while a sound or full screen poke rings (glossary, Spoken poke); no suffix after the name or the title (#21). -->
+    <string name="poke_speech_from">%1$s diyor ki: %2$s</string>
+    <!-- A poke before the first unlock after a reboot: the task cannot be read yet (docs/ux/platform.md, Direct boot). -->
+    <string name="poke_locked_title">Bir dürtmen var</string>
+    <string name="poke_locked_text">Kilidi açınca görürsün.</string>
     <!-- 7f: the optional note after Bugün yapamayacağım (open-questions#36) -->
     <string name="drop_title">Tamam, bugün olmuyor</string>
     <string name="drop_body">%1$s için bir not bırakmak ister misin? Zorunlu değil.</string>

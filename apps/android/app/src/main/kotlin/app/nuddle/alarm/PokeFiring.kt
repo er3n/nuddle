@@ -21,6 +21,7 @@ import app.nuddle.domain.AlarmScheduler
 import app.nuddle.domain.Diagnostics
 import app.nuddle.domain.FireDecision
 import app.nuddle.domain.IdGenerator
+import app.nuddle.domain.LockedFire
 import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeRules
 import app.nuddle.domain.PokeStep
@@ -67,6 +68,7 @@ class PokeFiring
         private val timeZone: TimeZone,
         private val missedRings: MissedRingStore,
         private val diagnostics: Diagnostics = Diagnostics.None,
+        private val directBoot: DirectBootStore = DirectBootStore.None,
     ) {
         suspend fun fire(key: AlarmKey) {
             val step = alarms.step(key) ?: return
@@ -77,9 +79,45 @@ class PokeFiring
             diagnostics.log("poke ${key.taskId} v${key.planVersion} #${key.seq} ${decision.breadcrumb()}")
             if (decision !is FireDecision.Ring || task == null) return
             notifications.show(task, step, decision.level)
-            steps.markFired(key.taskId, key.planVersion, key.seq, now.toEpochMilliseconds())
+            rang(key, now, decision.level, decision.permissionMissing)
+        }
+
+        /**
+         * After the first unlock (docs/ux/platform.md, Direct boot; NUD-125): the pokes that rang before it are marked
+         * fired and reported with the time they really rang, and one still up is shown again in full, with its buttons.
+         */
+        suspend fun takeOverLockedFires() {
+            val fires = directBoot.takeFires()
+            if (fires.isEmpty()) return
+            diagnostics.log("direct boot handover ${fires.size}")
+            val showing = notifications.showing()
+            fires.forEach { takeOver(it, showing) }
+        }
+
+        private suspend fun takeOver(
+            fire: LockedFire,
+            showing: Set<String>,
+        ) {
+            val step = alarms.step(fire.key) ?: return
+            val task = tasks.get(fire.key.taskId) ?: return
+            if (steps.get(fire.key.taskId, fire.key.planVersion, fire.key.seq)?.firedAt != null) return
+            rang(fire.key, fire.firedAt, fire.level, permissionMissing = false)
+            val state = task.toLocalState()
+            if (fire.key.taskId in showing && state.open && state.currentPlanVersion == fire.key.planVersion) {
+                notifications.show(task, step, fire.level)
+            }
+        }
+
+        /** A poke rang: remembered, so it is not set again, and reported with planned and actual time. */
+        private suspend fun rang(
+            key: AlarmKey,
+            at: Instant,
+            level: PokeLevel,
+            permissionMissing: Boolean,
+        ) {
+            steps.markFired(key.taskId, key.planVersion, key.seq, at.toEpochMilliseconds())
             // A poke rang again: an older "Son dürtmen çalmadı" no longer applies (2g).
-            missedRings.rang(now)
+            missedRings.rang(at)
             // TODO(NUD-26): without a registered device (no Firebase config) the fired report cannot name the device.
             val deviceId = sessions.deviceId() ?: return
             val id = ids.next()
@@ -93,9 +131,9 @@ class PokeFiring
                         deviceId = deviceId,
                         planVersion = key.planVersion,
                         seq = key.seq,
-                        firedAt = now.toString(),
-                        level = DeviceLevel.valueOf(decision.level.name),
-                        permissionMissing = decision.permissionMissing,
+                        firedAt = at.toString(),
+                        level = DeviceLevel.valueOf(level.name),
+                        permissionMissing = permissionMissing,
                     ),
                 serializer = ReportFiredCommand.serializer(),
             )
@@ -206,6 +244,7 @@ class PokeActions
             val step = alarms.step(key) ?: return
             scheduler.schedule(step.copy(plannedAt = snooze.until))
             tasks.countSnooze(key.taskId, snooze.until.toEpochMilliseconds())
+            alarms.remember()
             val id = ids.next()
             outbox.enqueue("snooze", id, SnoozeCommand(idempotencyKey = id, taskId = key.taskId), SnoozeCommand.serializer())
         }

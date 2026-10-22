@@ -37,6 +37,17 @@ Code and docs are in English. The UI is Turkish first (`values/strings.xml`), En
 | Missed ring, brand steps | "Son dürtmen çalmadı" (detected), "Dürtmem çalmadı" (profile row), "Dürtmen çalmadı mı?" (2h opened from it) | 2g, 2h. The person's own report uses "çalmadı", never "kayboldu" or "hata". |
 | Re-install pokes | "Dürtmelerimi yeniden kur", then "Bu telefondaki dürtmelerin yeniden kuruldu." | Last action of 2h (NUD-126): every alarm of this phone set again. Never "yeniden planla" (the plan is the server's). |
 
+## Spoken poke
+
+The sound and full screen steps say the task aloud (NUD-124, product.md Poking). The spoken text follows the same rules as written copy: the user content (name, title) takes no suffix (open-questions #21).
+
+| Case | Spoken (Turkish) | Resource |
+|---|---|---|
+| Task from someone else | "Sibel diyor ki: ilacını iç" | `poke_speech_from` = `%1$s diyor ki: %2$s` |
+| Task to self, or the sender's name is not on the phone | "İlacını iç" (the title as written) | none, the title itself |
+
+Only the title is read, never the detail. A one-time message reads the same way ("Sibel diyor ki: seni seviyorum").
+
 ## Words the UI never uses
 
 - "ev", "hane" (household)

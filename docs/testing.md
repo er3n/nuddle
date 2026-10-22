@@ -131,6 +131,7 @@ The full set runs on demand. Because the repo is public, standard GitHub-hosted 
 - Xiaomi and Samsung: leave the phone idle for a few hours with a task scheduled; confirm it rings, or that "Son dürtmen çalmadı" appears with the brand steps.
 - Full screen poke over the lock screen is loud and annoying enough.
 - DND on a real phone: `SOUND` and `FULL_SCREEN` pierce it.
+- Direct boot on a phone with a PIN: reboot with a task's next step a few minutes away and do not unlock; the poke rings ("Bir dürtmen var"), and after the unlock it shows in full with its buttons (NUD-125).
 - Real OTP delivery over WhatsApp and SMS.
 
 ## Commands

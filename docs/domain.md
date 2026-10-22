@@ -116,6 +116,8 @@ All of these live in pure functions that receive `now` from an injected `Clock` 
 | `FULL_SCREEN` | `PokeActivity` over the lock screen with alarm sound. | Notifications + full screen intent + exact alarm |
 | `HUMAN` | "Eren'e ulaşamıyorum" notification to the sender (MVP) or later another connection. | Server side only |
 
+`SOUND` and `FULL_SCREEN` also say the task aloud while they ring (NUD-124, product.md Poking): Android `TextToSpeech` on the alarm stream with a Turkish voice, the first time a few seconds after the tone starts, then twice more with a pause, and only while the poke is still up. Answering the poke, a sync that closes it or a swipe stops the voice. No Turkish voice or engine: the tone rings alone. The utterance (`PokeUtterances`, pure) is "<sender> diyor ki: <title>" for a task from someone else and the title alone for a task to self or when the sender's name is not on the phone; a `SILENT` step says nothing. The detail is not read. Not before the first unlock (no task text then).
+
 If full screen is not permitted, `FULL_SCREEN` silently degrades to `SOUND` on the device and the event is reported as `permission_missing`.
 
 ## Poke plan
@@ -147,7 +149,7 @@ Each device step also gets a `lost_poke_check` timer at planned time + 5 minutes
 
 1. Server sends the plan to the recipient's device as a high priority FCM data message and also exposes it through sync.
 2. The device stores steps in Room and sets one `AlarmManager.setAlarmClock()` per step. A step that arrives up to 2 minutes after its planned time rings at once (the first step of a plan is planned at the moment the task is written, NUD-41); an older one is not rung late, and the lost poke check covers it.
-3. On `BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`, `TIME_SET` and `TIMEZONE_CHANGED`, all pending alarms are re-set from Room.
+3. On `BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`, `TIME_SET` and `TIMEZONE_CHANGED`, all pending alarms are re-set from Room. After a reboot they are set again before the first unlock too (`LOCKED_BOOT_COMPLETED`), from a minimal copy of the armed steps in device-protected storage, and about every hour while pokes are armed the phone checks that every alarm it should have is really set and sets the missing ones again (docs/ux/platform.md, Alarms and pokes; NUD-125).
 4. When an alarm fires, a receiver re-checks quiet hours and plan version, shows the notification for the level, and for `FULL_SCREEN` opens `PokeActivity` via `setFullScreenIntent` (`showWhenLocked`, `turnScreenOn`).
 5. Every fired step reports planned and actual time to the server.
 6. Done, Snooze and Can't today are applied locally first (remaining alarms cancelled immediately, even offline), then sent to the server with WorkManager. Done carries the moment it was tapped (`doneAt`).

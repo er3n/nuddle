@@ -23,10 +23,14 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
-    <!-- SpeechRecognizer binds to the phone's recognition service (package visibility, Android 11+). -->
+    <!-- SpeechRecognizer binds to the phone's recognition service, and TextToSpeech to the speech engine that says the
+         task aloud during a poke (NUD-124) (package visibility, Android 11+). -->
     <queries>
         <intent>
             <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
         </intent>
     </queries>
 
@@ -80,8 +84,11 @@
             android:turnScreenOn="true"
             tools:targetApi="o_mr1" />
 
+        <!-- Direct boot aware (docs/ux/platform.md, Direct boot; NUD-125): pokes ring after a reboot before the first
+             unlock, from the copy in device-protected storage. -->
         <receiver
             android:name=".alarm.PokeAlarmReceiver"
+            android:directBootAware="true"
             android:exported="false" />
 
         <receiver
@@ -90,8 +97,10 @@
 
         <receiver
             android:name=".alarm.RearmReceiver"
+            android:directBootAware="true"
             android:exported="true">
             <intent-filter>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="android.intent.action.TIME_SET" />
