@@ -41,8 +41,18 @@ class AlarmManagerScheduler(
     }
 
     override fun cancel(key: AlarmKey) {
-        firePendingIntent(context, key, PendingIntent.FLAG_NO_CREATE)?.let(alarmManager::cancel)
+        // The PendingIntent goes too, so that its existence says whether the alarm is set (isScheduled).
+        firePendingIntent(context, key, PendingIntent.FLAG_NO_CREATE)?.let { operation ->
+            alarmManager.cancel(operation)
+            operation.cancel()
+        }
     }
+
+    /**
+     * AlarmManager cannot be asked which alarms are set; the step's PendingIntent can. It exists from [schedule] until
+     * [cancel], and a force stop or a reboot takes it away together with the alarm.
+     */
+    override fun isScheduled(key: AlarmKey): Boolean = firePendingIntent(context, key, PendingIntent.FLAG_NO_CREATE) != null
 }
 
 internal fun firePendingIntent(

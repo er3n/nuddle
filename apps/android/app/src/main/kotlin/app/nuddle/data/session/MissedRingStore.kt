@@ -42,6 +42,11 @@ interface MissedRingStore {
     suspend fun handledStop(): Instant?
 
     suspend fun markStopHandled(at: Instant)
+
+    /** When the hourly alarm check last ran (NUD-125), so a loss is looked for only since then. */
+    suspend fun lastAlarmCheck(): Instant?
+
+    suspend fun markAlarmCheck(at: Instant)
 }
 
 /** In the session's DataStore, so signing out clears it. */
@@ -56,6 +61,7 @@ class DataStoreMissedRingStore
             val fixedAt = longPreferencesKey("missed_ring_fixed_at")
             val opened = stringSetPreferencesKey("missed_ring_opened")
             val handledStop = longPreferencesKey("missed_ring_handled_stop")
+            val alarmCheck = longPreferencesKey("missed_ring_alarm_check")
         }
 
         override val state: Flow<MissedRingState> =
@@ -94,6 +100,12 @@ class DataStoreMissedRingStore
 
         override suspend fun markStopHandled(at: Instant) {
             store.edit { it[Keys.handledStop] = at.toEpochMilliseconds() }
+        }
+
+        override suspend fun lastAlarmCheck(): Instant? = store.data.first()[Keys.alarmCheck]?.let(Instant::fromEpochMilliseconds)
+
+        override suspend fun markAlarmCheck(at: Instant) {
+            store.edit { it[Keys.alarmCheck] = at.toEpochMilliseconds() }
         }
 
         private companion object {

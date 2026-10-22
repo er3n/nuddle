@@ -3,13 +3,18 @@ package app.nuddle.alarm
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import app.nuddle.domain.Diagnostics
+import dagger.Lazy
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+/** Before the first unlock Crashlytics cannot write its files; the log still gets the line. */
+private const val TAG = "Nuddle"
 
 /** Runs suspend work from a receiver without blocking the main thread; the system keeps us alive until it ends. */
 private fun BroadcastReceiver.runAsync(block: suspend () -> Unit) {
@@ -23,17 +28,30 @@ private fun BroadcastReceiver.runAsync(block: suspend () -> Unit) {
     }
 }
 
-/** An alarm for one poke step fired. */
+/**
+ * An alarm for one poke step fired. Direct boot aware: before the first unlock after a reboot it rings from the
+ * device-protected copy (docs/ux/platform.md, Direct boot). Everything that opens Room, DataStore or WorkManager is
+ * behind a [Lazy] so it is not even built then.
+ */
 @AndroidEntryPoint
 class PokeAlarmReceiver : BroadcastReceiver() {
-    @Inject lateinit var firing: PokeFiring
+    @Inject lateinit var firing: Lazy<PokeFiring>
+
+    @Inject lateinit var lockedFiring: Lazy<LockedPokeFiring>
 
     override fun onReceive(
         context: Context,
         intent: Intent,
     ) {
         val key = PokeIntents.key(intent) ?: return
-        runAsync { firing.fire(key) }
+        if (!context.userUnlocked()) {
+            runAsync {
+                val decision = lockedFiring.get().fire(key)
+                Log.i(TAG, "locked poke ${key.taskId} v${key.planVersion} #${key.seq} $decision")
+            }
+            return
+        }
+        runAsync { firing.get().fire(key) }
     }
 }
 
@@ -60,25 +78,42 @@ class PokeActionReceiver : BroadcastReceiver() {
     }
 }
 
-/** Boot, app update, time and time zone changes: set every pending alarm again from Room (ADR 0005). */
+/**
+ * Boot, app update, time and time zone changes: set every pending alarm again from Room (ADR 0005). Before the first
+ * unlock after a reboot (`LOCKED_BOOT_COMPLETED`) from the device-protected copy instead; after it, the pokes that rang
+ * meanwhile are handed over first (docs/ux/platform.md, Direct boot; NUD-125).
+ */
 @AndroidEntryPoint
 class RearmReceiver : BroadcastReceiver() {
-    @Inject lateinit var alarms: PokeAlarms
+    @Inject lateinit var alarms: Lazy<PokeAlarms>
 
-    @Inject lateinit var diagnostics: Diagnostics
+    @Inject lateinit var firing: Lazy<PokeFiring>
+
+    @Inject lateinit var lockedFiring: Lazy<LockedPokeFiring>
+
+    @Inject lateinit var diagnostics: Lazy<Diagnostics>
 
     override fun onReceive(
         context: Context,
         intent: Intent,
     ) {
         if (intent.action !in REARM_ACTIONS) return
-        diagnostics.log("rearm ${intent.action?.substringAfterLast('.')}")
-        runAsync { alarms.rearm() }
+        val action = intent.action?.substringAfterLast('.')
+        if (!context.userUnlocked()) {
+            runAsync { Log.i(TAG, "locked rearm $action ${lockedFiring.get().rearm()}") }
+            return
+        }
+        diagnostics.get().log("rearm $action")
+        runAsync {
+            firing.get().takeOverLockedFires()
+            alarms.get().rearm()
+        }
     }
 
     private companion object {
         val REARM_ACTIONS =
             setOf(
+                Intent.ACTION_LOCKED_BOOT_COMPLETED,
                 Intent.ACTION_BOOT_COMPLETED,
                 Intent.ACTION_MY_PACKAGE_REPLACED,
                 Intent.ACTION_TIME_CHANGED,
