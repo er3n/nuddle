@@ -35,6 +35,7 @@ fun MissedRingRoute(
                 onBack = onBack,
                 onOpen = { stepId -> if (activity?.openFirst(viewModel.targets(stepId)) == true) viewModel.onOpened(stepId) },
                 onRetry = viewModel::onRetry,
+                onRearm = viewModel::onRearm,
             ),
     )
 }

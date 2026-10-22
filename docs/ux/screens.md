@@ -199,6 +199,9 @@ PermissionStep list: 1 Notifications (done), 2 Alarms and reminders (active, "Ge
 ### 2h Poke did not ring, brand-specific · `OemFix.png`
 Steps come from the server brand JSON (example: Xiaomi).
 **Copy:** Son dürtmen çalmadı | Dün 08:15'te seni dürtecektim, telefonun beni kapatmış. Xiaomi telefonlar uygulamaları arka planda durdurabiliyor. İki ayarla düzelir. | Otomatik başlatma | Tamam | Pil tasarrufu: Kısıtlama yok | Açılan sayfada "dürt"ü bul, "Kısıtlama yok"u seç. | Ayarı aç | Bu adımları sadece dürtmesi kaybolan telefonlarda gösteririm. Adımlar markaya göre değişir.
+Built with a last action under the steps (NUD-126): "Dürtmelerimi yeniden kur" re-installs every alarm of this phone from the stored plans (the same re-arm as after a reboot or a sync) and then says "Bu telefondaki dürtmelerin yeniden kuruldu." in place of the button. It works while the steps load or failed to load. The footer says "Adımlar markaya göre değişir." only, since the person can open the screen without a loss.
+The person can open 2h themselves from profile (5a, "Dürtmem çalmadı") when no loss was detected (NUD-126). Then the title is "Dürtmen çalmadı mı?" and the body says "Telefonun beni arka planda kapatmış olabilir." before the brand reason and the step count; every step starts again (a step opened before this visit is not counted as done, a step the phone can check still is). When the bell is warning about a loss, the same row opens the detected version above.
+**Copy (NUD-126):** Dürtmen çalmadı mı? | Telefonun beni arka planda kapatmış olabilir. | Dürtmelerimi yeniden kur | Bu telefondaki dürtmelerin yeniden kuruldu. | Adımlar markaya göre değişir.
 
 ## 3 · The poke
 
@@ -260,6 +263,7 @@ Sender home with the new task marked "Yeni" and the UndoToast.
 **Copy:** Profil | Düzenle | Fotoğraf | Galeriden seç | Fotoğrafı kaldır | Bizimkiler | Eşin | + Birini davet et | Dürtme | Benim işlerimde tanıdıklarımı kullanabilirsin | Her şeyi kaçırırsam bir yakınıma haber verebilirsin. | Başkalarının işleri için bana haber verilebilir | Bir tanıdığım işini kaçırırsa bana söyleyebilirsin. | Sessiz saatler | Kimse dürtülmez | 23:00 – 07:00 | İzinler | Bildirimler | Alarmlar ve hatırlatıcılar | Tam ekran alarm | Kapalı · Düzelt | Çıkış yap | Hesabı sil
 Note: the canvas shows "23:00 – 07:00" with an en dash. Use "23:00-07:00" or "23:00 ile 07:00" in strings; never an em dash.
 An open invite I sent is a row under Bizimkiler with "Bekliyor"; a tap opens a sheet with the 1g content: "Sibel henüz katılmadı", when it was shared and as what, the body, "Tekrar paylaş" (the system share sheet with the same link) and "İptal et" (NUD-100).
+Under İzinler a last row "Dürtmem çalmadı" opens 2h (NUD-126), so the person can walk through the brand steps and re-install the pokes without a detected loss.
 Since NUD-72 the avatar at the top opens the picture sheet ("Fotoğraf"): "Galeriden seç" opens the system photo picker and uploads the picture; "Fotoğrafı kaldır" shows the initial again. Connections see the picture after their next sync.
 
 ### 5b Person detail · `PersonDetail.png`

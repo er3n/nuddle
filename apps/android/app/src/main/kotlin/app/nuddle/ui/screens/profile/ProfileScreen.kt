@@ -61,7 +61,8 @@ internal fun LocalTime.hhmm(): String = format(HHMM)
 internal val EdgeType.yours: Int get() = asYours ?: R.string.relationship_other
 
 /**
- * 5a: who I am, "Bizimkiler", the two human channel switches, quiet hours, permissions, Çıkış yap and Hesabı sil.
+ * 5a: who I am, "Bizimkiler", the two human channel switches, quiet hours, permissions with "Dürtmem çalmadı", Çıkış
+ * yap and Hesabı sil.
  * The settings sheets (rename, 7g, 7h, 7i) open on top.
  */
 @Composable
@@ -102,7 +103,7 @@ fun ProfileScreen(
                 modifier = Modifier.testTag(TestTags.PROFILE_QUIET),
             )
         }
-        Permissions(state.permissions, callbacks.onFixPermission)
+        Permissions(state.permissions, callbacks.onFixPermission, callbacks.onMissedRing)
         Row(Modifier.fillMaxWidth().padding(horizontal = dimens.space4), horizontalArrangement = Arrangement.SpaceBetween) {
             TextLink(
                 text = stringResource(R.string.profile_log_out),
@@ -205,6 +206,7 @@ private fun People(
 private fun Permissions(
     granted: GrantedPermissions,
     onFix: (SetupStep) -> Unit,
+    onMissedRing: () -> Unit,
 ) {
     SettingsGroup(stringResource(R.string.profile_permissions)) {
         granted.steps.forEachIndexed { i, step ->
@@ -229,6 +231,13 @@ private fun Permissions(
                 )
             }
         }
+        // NUD-126: the brand steps and "Dürtmelerimi yeniden kur" without a detected loss.
+        GroupDivider()
+        LineRow(
+            label = stringResource(R.string.profile_missed_ring),
+            onClick = onMissedRing,
+            modifier = Modifier.testTag(TestTags.PROFILE_MISSED_RING),
+        )
     }
 }
 

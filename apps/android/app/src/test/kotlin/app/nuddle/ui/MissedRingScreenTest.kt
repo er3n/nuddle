@@ -15,6 +15,7 @@ import app.nuddle.ui.screens.inbox.PokeDay
 import app.nuddle.ui.screens.missedring.MissedRingCallbacks
 import app.nuddle.ui.screens.missedring.MissedRingScreen
 import app.nuddle.ui.screens.missedring.MissedRingUiState
+import app.nuddle.ui.screens.missedring.RearmUi
 import app.nuddle.ui.screens.missedring.previewMissedRing
 import app.nuddle.ui.theme.DurtTheme
 import org.junit.Rule
@@ -38,7 +39,14 @@ class MissedRingScreenTest {
     private fun showSteps(state: MissedRingUiState = previewMissedRing) {
         compose.setContent {
             DurtTheme {
-                MissedRingScreen(state, MissedRingCallbacks(onOpen = { did += "open $it" }, onRetry = { did += "retry" }))
+                MissedRingScreen(
+                    state,
+                    MissedRingCallbacks(
+                        onOpen = { did += "open $it" },
+                        onRetry = { did += "retry" },
+                        onRearm = { did += "rearm" },
+                    ),
+                )
             }
         }
     }
@@ -61,6 +69,26 @@ class MissedRingScreenTest {
         compose.onNodeWithText("Seni dürtecektim, telefonun beni kapatmış.").assertIsDisplayed()
         compose.onNodeWithText("Tekrar dene").performClick()
         assertEquals(listOf("retry"), did)
+    }
+
+    @Test
+    fun `2h opened by the person asks, and ends with re-installing the pokes (NUD-126)`() {
+        showSteps(previewMissedRing.copy(lostAt = null, reported = true))
+        compose.onNodeWithText("Dürtmen çalmadı mı?").assertIsDisplayed()
+        compose
+            .onNodeWithText(
+                "Telefonun beni arka planda kapatmış olabilir. " +
+                    "Xiaomi telefonlar uygulamaları arka planda durdurabiliyor. İki ayarla düzelir.",
+            ).assertIsDisplayed()
+        compose.onNodeWithTag(TestTags.MISSED_RING_REARM).performScrollTo().performClick()
+        assertEquals(listOf("rearm"), did)
+    }
+
+    @Test
+    fun `2h says the pokes were re-installed in place of the button (NUD-126)`() {
+        showSteps(previewMissedRing.copy(rearm = RearmUi.Done))
+        compose.onNodeWithText("Bu telefondaki dürtmelerin yeniden kuruldu.").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag(TestTags.MISSED_RING_REARM).assertDoesNotExist()
     }
 
     @Test

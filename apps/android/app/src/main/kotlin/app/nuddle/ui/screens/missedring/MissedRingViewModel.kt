@@ -10,9 +10,11 @@ import app.nuddle.data.BrandFixRepository
 import app.nuddle.data.MissedRings
 import app.nuddle.data.session.MissedRingState
 import app.nuddle.data.session.MissedRingStore
+import app.nuddle.data.sync.AlarmRearmer
 import app.nuddle.domain.MissedRingRules
 import app.nuddle.ui.screens.home.writtenText
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -38,7 +40,10 @@ private sealed interface Load {
     ) : Load
 }
 
-/** 2h. Opening a step's page is remembered; coming back re-checks what the phone can tell by itself. */
+/**
+ * 2h. Opening a step's page is remembered; coming back re-checks what the phone can tell by itself. Opened while the bell
+ * warns about no loss, the person reports it themselves (NUD-126): the steps start again from that moment.
+ */
 @HiltViewModel
 class MissedRingViewModel
     @Inject
@@ -47,29 +52,52 @@ class MissedRingViewModel
         private val store: MissedRingStore,
         private val fixes: BrandFixRepository,
         private val battery: BatteryOptimization,
+        private val alarms: AlarmRearmer,
         private val clock: Clock,
         private val timeZone: TimeZone,
     ) : ViewModel() {
         private val load = MutableStateFlow<Load>(Load.Loading)
         private val batteryIgnored = MutableStateFlow(battery.ignored())
 
-        val state: StateFlow<MissedRingUiState> =
-            combine(missedRings.latest, store.state, load, batteryIgnored) { lost, local, load, ignored ->
+        /** When the person opened 2h without a warned loss; null while unknown or for a detected loss. */
+        private val reportedAt = MutableStateFlow<Instant?>(null)
+        private val rearm = MutableStateFlow(RearmUi.Idle)
+
+        private val withoutRearm: Flow<MissedRingUiState> =
+            combine(missedRings.latest, store.state, load, batteryIgnored, reportedAt) { lost, local, load, ignored, reported ->
                 val loaded = (load as? Load.Loaded)?.fix
+                // A self report starts the steps again: only what was opened after it counts.
+                val since = reported ?: lost
                 MissedRingUiState(
-                    lostAt = lost?.let { writtenText(it, clock.now(), timeZone) },
+                    lostAt = lost?.takeIf { reported == null }?.let { writtenText(it, clock.now(), timeZone) },
                     reason = loaded?.reason,
                     steps =
                         loaded?.steps.orEmpty().map {
-                            BrandStepUi(it.id, it.title, it.hint, done = it.done(local, lost, ignored))
+                            BrandStepUi(it.id, it.title, it.hint, done = it.done(local, since, ignored))
                         },
                     loading = load == Load.Loading,
                     failed = load == Load.Failed,
+                    reported = reported != null,
                 )
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), MissedRingUiState())
+            }
+
+        val state: StateFlow<MissedRingUiState> =
+            combine(withoutRearm, rearm) { ui, rearm -> ui.copy(rearm = rearm) }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), MissedRingUiState())
 
         init {
+            viewModelScope.launch { if (missedRings.warning.first() == null) reportedAt.value = clock.now() }
             fetch()
+        }
+
+        /** "Dürtmelerimi yeniden kur": every alarm of this phone set again from the stored plans (NUD-126). */
+        fun onRearm() {
+            if (rearm.value == RearmUi.Busy) return
+            rearm.value = RearmUi.Busy
+            viewModelScope.launch {
+                alarms.rearm()
+                rearm.value = RearmUi.Done
+            }
         }
 
         fun onRetry() = fetch()

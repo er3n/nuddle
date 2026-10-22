@@ -5,6 +5,8 @@ import app.nuddle.api.model.BrandFixStep
 import app.nuddle.api.model.BrandFixTarget
 import app.nuddle.data.BrandFixRepository
 import app.nuddle.data.MissedRings
+import app.nuddle.data.db.PokeStepEntity
+import app.nuddle.data.sync.AlarmRearmer
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.InMemoryMissedRingStore
 import app.nuddle.testing.InMemorySessionStore
@@ -14,6 +16,7 @@ import app.nuddle.testing.MainDispatcherRule
 import app.nuddle.testing.aSession
 import app.nuddle.ui.screens.home.WrittenText
 import app.nuddle.ui.screens.missedring.MissedRingViewModel
+import app.nuddle.ui.screens.missedring.RearmUi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -57,8 +60,22 @@ class MissedRingViewModelTest {
     private val answers = ArrayDeque<BrandFix?>()
     private val fixes = BrandFixRepository { answers.removeFirstOrNull() }
 
+    private var rearms = 0
+    private val alarms =
+        object : AlarmRearmer {
+            override suspend fun applyPlan(
+                taskId: String,
+                version: Int,
+                steps: List<PokeStepEntity>,
+            ) = Unit
+
+            override suspend fun rearm() {
+                rearms++
+            }
+        }
+
     private val vm by lazy {
-        MissedRingViewModel(rings, store, fixes, { batteryIgnored }, clock, TimeZone.of("Europe/Istanbul"))
+        MissedRingViewModel(rings, store, fixes, { batteryIgnored }, alarms, clock, TimeZone.of("Europe/Istanbul"))
     }
 
     private fun TestScope.watch() = backgroundScope.launch { vm.state.collect {} }
@@ -124,5 +141,45 @@ class MissedRingViewModelTest {
             vm.onRetry()
             assertFalse(vm.state.value.failed)
             assertEquals(2, vm.state.value.steps.size)
+        }
+
+    @Test
+    fun `opened without a warned loss, the person reports it and every step starts again (NUD-126)`() =
+        runTest(main.dispatcher) {
+            // An old loss, fixed since: the bell no longer warns.
+            store.lost(Instant.parse("2026-10-01T08:15:00+03:00"))
+            store.opened("autostart", Instant.parse("2026-10-02T12:00:00+03:00"))
+            store.fixed(Instant.parse("2026-10-02T12:01:00+03:00"))
+            answers += xiaomi
+            watch()
+            val state = vm.state.value
+            assertTrue(state.reported)
+            assertNull(state.lostAt)
+            assertEquals("autostart", state.active)
+
+            clock.advance(1.minutes)
+            vm.onOpened("autostart")
+            vm.onResume()
+            assertEquals("battery", vm.state.value.active)
+        }
+
+    @Test
+    fun `a detected loss is not a report`() =
+        runTest(main.dispatcher) {
+            store.lost(Instant.parse("2026-10-12T08:15:00+03:00"))
+            answers += xiaomi
+            watch()
+            assertFalse(vm.state.value.reported)
+        }
+
+    @Test
+    fun `Dürtmelerimi yeniden kur sets this phone's alarms again and says so (NUD-126)`() =
+        runTest(main.dispatcher) {
+            answers += xiaomi
+            watch()
+            assertEquals(RearmUi.Idle, vm.state.value.rearm)
+            vm.onRearm()
+            assertEquals(1, rearms)
+            assertEquals(RearmUi.Done, vm.state.value.rearm)
         }
 }

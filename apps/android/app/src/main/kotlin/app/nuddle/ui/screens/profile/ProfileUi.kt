@@ -93,6 +93,8 @@ data class ProfileCallbacks(
     val onNotifyMe: (Boolean) -> Unit = {},
     val onQuietHours: () -> Unit = {},
     val onFixPermission: (SetupStep) -> Unit = {},
+    /** "Dürtmem çalmadı": 2h without a detected loss (NUD-126). */
+    val onMissedRing: () -> Unit = {},
     val onLogOut: () -> Unit = {},
     val onDelete: () -> Unit = {},
 )
