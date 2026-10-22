@@ -35,13 +35,28 @@ describe("scenarios: one-time messages", () => {
     expect(world.eventsOf(taskId).some((e) => e.type === "missed")).toBe(false);
   });
 
-  it("a message without a time goes out at once", async () => {
+  it("a message without a time goes out at once: its time is when it was written", async () => {
     const { world, sibel } = await sibelAndEren();
     const taskId = await writeTask(sibel, TEXT.dinnerToEren);
-    expect(world.task(taskId).remindAt).toEqual(at("2026-10-11T20:05:00"));
+    expect(world.task(taskId).remindAt).toEqual(at("2026-10-11T20:00:00"));
     const plan = world.currentPlan(taskId) ?? { steps: [] };
     expect(plan.steps.map((s) => [s.level, s.plannedAt])).toEqual([
       ["SOUND", at("2026-10-11T20:00:00")],
+    ]);
+  });
+
+  it("a message with a time a minute away rings at that time, not at once (NUD-140)", async () => {
+    const { world, sibel, eren } = await sibelAndEren();
+    const taskId = await writeTask(sibel, TEXT.kissToErenInAMinute);
+    expect(world.task(taskId).remindAt).toEqual(at("2026-10-11T20:01:00"));
+    const plan = world.currentPlan(taskId) ?? { steps: [] };
+    expect(plan.steps.map((s) => [s.level, s.plannedAt])).toEqual([
+      ["SOUND", at("2026-10-11T20:01:00")],
+    ]);
+    // Eren's phone has the step armed for 20:01, nothing earlier.
+    await eren.phone.sync();
+    expect(eren.phone.pendingAlarms().map((a) => [a.level, a.at])).toEqual([
+      ["SOUND", at("2026-10-11T20:01:00")],
     ]);
   });
 

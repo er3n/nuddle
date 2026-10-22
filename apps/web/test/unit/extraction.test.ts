@@ -299,6 +299,48 @@ describe("resolveExtraction, the contact (NUD-128)", () => {
     });
   });
 
+  it("creates a one-time message without a time for now, and asks for one in the past (NUD-140)", () => {
+    const dinner: Extraction = {
+      ...complete,
+      title: "Yemek hazır",
+      detail: null,
+      deadline: null,
+      timing: "at",
+      missAfterMinutes: 60,
+      finishMode: "notice",
+    };
+    expect(resolveExtraction(dinner, { id: "sibel" }, connections, now)).toMatchObject({
+      kind: "create",
+      deadline: now,
+      finishMode: "notice",
+    });
+    // The model said "deadline" is missing anyway: a notice is never a question about its time.
+    expect(
+      resolveExtraction({ ...dinner, missing: ["deadline"] }, { id: "sibel" }, connections, now),
+    ).toMatchObject({ kind: "create", deadline: now });
+    const oneMinute = "2026-10-11T20:01:00+03:00";
+    expect(
+      resolveExtraction({ ...dinner, deadline: oneMinute }, { id: "sibel" }, connections, now),
+    ).toMatchObject({ kind: "create", deadline: new Date(oneMinute) });
+    expect(
+      resolveExtraction(
+        { ...dinner, deadline: "2026-10-11T19:00:00+03:00" },
+        { id: "sibel" },
+        connections,
+        now,
+      ),
+    ).toEqual({ kind: "ask", question: "deadline" });
+    // A task without a time still asks for one.
+    expect(
+      resolveExtraction(
+        { ...complete, deadline: null, missing: ["deadline"] },
+        { id: "sibel" },
+        connections,
+        now,
+      ),
+    ).toEqual({ kind: "ask", question: "deadline" });
+  });
+
   it("no contact for a name that is no connection, nor on a one-time message", () => {
     expect(resolveExtraction(call, { id: "sibel" }, connections, now)).toMatchObject({
       contact: null,

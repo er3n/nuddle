@@ -49,7 +49,10 @@ export interface Extraction {
   recipient: string | null;
   title: string | null;
   detail: string | null;
-  /** ISO 8601 with offset, or null when the text gives no time. For an `at` task the moment. */
+  /**
+   * ISO 8601 with offset, or null when the text gives no time. For an `at` task the moment. A
+   * notice without a time has null and nothing missing: it goes out at once (NUD-140).
+   */
   deadline: string | null;
   /** `at` for a moment ("2 dakika sonra", "9'da"), `by` for a deadline ("9'a kadar"). ADR 0017. */
   timing: Timing;
@@ -79,7 +82,7 @@ export type Resolution =
       recipientId: PersonId;
       title: string;
       detail: string | null;
-      /** The picked time: the moment of an `at` task. */
+      /** The picked time: the moment of an `at` task; `now` for a notice without a time. */
       deadline: Date;
       timing: Timing;
       missAfterMinutes: number | null;
@@ -269,13 +272,14 @@ export function resolveExtraction(
   }
   if (recipientId === null) return { kind: "ask", question: "recipient" };
 
+  // A message to pass on without a time goes out at once (NUD-140): its time is now.
+  const sendNow = e.finishMode === "notice" && e.deadline === null;
   // A repeating task's deadline was set from its rule by `withFirstOccurrence`, so it is ahead.
-  const deadline = e.deadline === null ? null : new Date(e.deadline);
+  const deadline = sendNow ? now : e.deadline === null ? null : new Date(e.deadline);
   if (
     deadline === null ||
     Number.isNaN(deadline.getTime()) ||
-    deadline.getTime() <= now.getTime() ||
-    e.missing.includes("deadline")
+    (!sendNow && (deadline.getTime() <= now.getTime() || e.missing.includes("deadline")))
   ) {
     return { kind: "ask", question: "deadline" };
   }

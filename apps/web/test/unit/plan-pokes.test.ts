@@ -332,3 +332,37 @@ describe("planPokes v0, an at task (ADR 0017)", () => {
     ).toEqual([]);
   });
 });
+
+describe("planPokes v0, a one-time message (NUD-79)", () => {
+  function planNotice(moment: string, now: string) {
+    return planPokes({
+      task: aTask().from(sibel).forRecipient(eren).at(moment).withFinishMode("notice").build(),
+      recipient: eren,
+      sender: sibel,
+      reachability: "FULL_SCREEN",
+      history: [],
+      now: new Date(now),
+    });
+  }
+
+  it("rings a time given a minute away at that time, not at once (NUD-140)", () => {
+    // "bir dakika sonra Sibel'e yanakau de" written at 21:19:39, the time 21:20:38.
+    const steps = planNotice("2026-10-22T21:20:38+03:00", "2026-10-22T21:19:39+03:00");
+    expect(steps).toEqual([
+      { seq: 1, plannedAt: new Date("2026-10-22T18:20:38Z"), level: "SOUND", firedAt: null },
+    ]);
+  });
+
+  it("rings a message without a time now: its time is the moment it was written", () => {
+    const steps = planNotice("2026-10-22T21:19:39+03:00", "2026-10-22T21:19:39+03:00");
+    expect(summary(steps)).toEqual(["SOUND@18:19"]);
+    expect(steps[0]?.plannedAt).toEqual(new Date("2026-10-22T18:19:39Z"));
+  });
+
+  it("rings at once when its time passed before planning, and never after the deadline", () => {
+    expect(summary(planNotice("2026-10-22T21:19:00+03:00", "2026-10-22T21:19:39+03:00"))).toEqual([
+      "SOUND@18:19",
+    ]);
+    expect(planNotice("2026-10-22T20:00:00+03:00", "2026-10-22T21:30:00+03:00")).toEqual([]);
+  });
+});

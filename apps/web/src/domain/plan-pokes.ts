@@ -31,8 +31,6 @@ import type { DeviceLevel, Edge, Person, PokeLevel, PokeStep, Task, TaskEvent } 
 const POKE_WINDOW_MS = 60 * MINUTE;
 const MIN_WINDOW_MS = 2 * MINUTE;
 const HUMAN_OFFSET_MS = 5 * MINUTE;
-/** A one-time message due within this long goes out at once (NUD-79): "yemek hazır" does not wait. */
-const NOTICE_NOW_MS = 5 * MINUTE;
 
 const ladder: readonly { level: DeviceLevel; offsetMs: number }[] = [
   { level: "SILENT", offsetMs: 60 * MINUTE },
@@ -138,10 +136,11 @@ function planAt(input: PlanPokesInput, remindAt: Date): PokeStep[] {
 
 export function planPokes(input: PlanPokesInput): PokeStep[] {
   const { task, recipient, now } = input;
-  // A one-time message (NUD-79): delivered once at its time, no escalation, no HUMAN.
+  // A one-time message (NUD-79): delivered once at its time, no escalation, no HUMAN. One with a
+  // time rings at that time, even a minute away; one without has now as its time (NUD-140).
   if (task.finishMode === "notice") {
     const due = (task.remindAt ?? task.deadline).getTime();
-    const at = new Date(due - now.getTime() <= NOTICE_NOW_MS ? now.getTime() : due);
+    const at = new Date(Math.max(due, now.getTime()));
     return at.getTime() < task.deadline.getTime()
       ? [{ seq: 1, plannedAt: at, level: "SOUND", firedAt: null }]
       : [];

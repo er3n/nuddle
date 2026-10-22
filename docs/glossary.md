@@ -25,7 +25,7 @@ Code and docs are in English. The UI is Turkish first (`values/strings.xml`), En
 | Missed | Kaçırıldı | Deadline passed without done or photo. |
 | Photo | fotoğraf | **Never** "kanıt" (proof). |
 | Example photo | ekli fotoğraf | The sender's picture of what to do (NUD-138). Never proof, never "kanıt"; the recipient's photo stays "fotoğraf". |
-| One-time message, notice | mesaj | Finish mode `notice` (NUD-79): the card shows the message with "Tamam" only. Never "bildiri" or "duyuru". |
+| One-time message, notice | mesaj | Finish mode `notice` (NUD-79): the card shows the message with "Tamam" only. Never "bildiri" or "duyuru". The sender's detail (7c) says "Bu mesajı bir kez, sesli bildirimle iletirim." instead of the strongest poke: a message rings once with sound, never full screen (NUD-140). |
 | Awaiting approval | Onayını bekliyor / Onay bekleniyor | |
 | Re-request | Tekrar iste / Tekrar istendi | |
 | Cancel | İptal et / İptal edildi | Sender only. On a repeating task it ends the series. |
