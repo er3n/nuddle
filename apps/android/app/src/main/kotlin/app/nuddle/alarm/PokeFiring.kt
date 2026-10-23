@@ -27,6 +27,8 @@ import app.nuddle.domain.PokeRules
 import app.nuddle.domain.PokeStep
 import app.nuddle.domain.QuietHours
 import app.nuddle.domain.SnoozeRules
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
 import javax.inject.Inject
 import kotlin.time.Clock
@@ -196,7 +198,7 @@ class PokeActions
         override suspend fun done(
             taskId: String,
             cameraUnavailable: Boolean,
-        ) {
+        ) = whole {
             diagnostics.log("done $taskId")
             close(taskId, TaskStatus.DONE)
             val id = ids.next()
@@ -212,17 +214,18 @@ class PokeActions
             outbox.enqueue("done", id, command, DoneCommand.serializer())
         }
 
-        override suspend fun photoTaken(taskId: String) {
-            val task = tasks.get(taskId) ?: return
-            diagnostics.log("photo taken $taskId")
-            close(taskId, if (task.senderId == task.recipientId) TaskStatus.DONE else TaskStatus.AWAITING_APPROVAL)
-        }
+        override suspend fun photoTaken(taskId: String) =
+            whole {
+                val task = tasks.get(taskId) ?: return@whole
+                diagnostics.log("photo taken $taskId")
+                close(taskId, if (task.senderId == task.recipientId) TaskStatus.DONE else TaskStatus.AWAITING_APPROVAL)
+            }
 
         /** The sender takes the task back: "Geri al" on the undo toast, or "İptal et" in 7d with an optional note. */
         override suspend fun cancel(
             taskId: String,
             note: String?,
-        ) {
+        ) = whole {
             diagnostics.log("cancel $taskId")
             close(taskId, TaskStatus.CANCELLED)
             val id = ids.next()
@@ -239,7 +242,7 @@ class PokeActions
         override suspend fun cantToday(
             taskId: String,
             note: String?,
-        ) {
+        ) = whole {
             diagnostics.log("cant_today $taskId")
             close(taskId, TaskStatus.DROPPED)
             val id = ids.next()
@@ -256,19 +259,20 @@ class PokeActions
          * which counts snoozes, refuses one too many and shifts the rest of the plan (NUD-22, NUD-36). Ertele is not
          * offered when no snooze is left, so a late tap on an old notification does nothing.
          */
-        suspend fun snooze(key: AlarmKey) {
-            val task = tasks.get(key.taskId) ?: return
-            val now = clock.now()
-            val snooze = SnoozeRules.next(task.snoozesUsed, now, Instant.fromEpochMilliseconds(task.deadline)) ?: return
-            diagnostics.log("snooze ${key.taskId}")
-            notifications.cancel(key.taskId)
-            val step = alarms.step(key) ?: return
-            scheduler.schedule(step.copy(plannedAt = snooze.until))
-            tasks.countSnooze(key.taskId, snooze.until.toEpochMilliseconds())
-            alarms.remember()
-            val id = ids.next()
-            outbox.enqueue("snooze", id, SnoozeCommand(idempotencyKey = id, taskId = key.taskId), SnoozeCommand.serializer())
-        }
+        suspend fun snooze(key: AlarmKey) =
+            whole {
+                val task = tasks.get(key.taskId) ?: return@whole
+                val now = clock.now()
+                val snooze = SnoozeRules.next(task.snoozesUsed, now, Instant.fromEpochMilliseconds(task.deadline)) ?: return@whole
+                diagnostics.log("snooze ${key.taskId}")
+                notifications.cancel(key.taskId)
+                val step = alarms.step(key) ?: return@whole
+                scheduler.schedule(step.copy(plannedAt = snooze.until))
+                tasks.countSnooze(key.taskId, snooze.until.toEpochMilliseconds())
+                alarms.remember()
+                val id = ids.next()
+                outbox.enqueue("snooze", id, SnoozeCommand(idempotencyKey = id, taskId = key.taskId), SnoozeCommand.serializer())
+            }
 
         /**
          * Ara or Mesaj at on the full screen poke (NUD-128): this poke stops ringing and speaking, and nothing else
@@ -278,6 +282,13 @@ class PokeActions
             diagnostics.log("contact ${key.taskId}")
             notifications.cancel(key.taskId)
         }
+
+        /**
+         * Once started, an answer closes the task here and queues its command as one step (NUD-143): the screen that
+         * started it may close at once (the task detail goes home), and a task closed on this phone but never sent stays
+         * open on the server.
+         */
+        private suspend fun <T> whole(answer: suspend () -> T): T = withContext(NonCancellable) { answer() }
 
         private suspend fun close(
             taskId: String,

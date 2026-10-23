@@ -1,8 +1,11 @@
 package app.nuddle.alarm
 
+import app.nuddle.api.model.TaskStatus
 import app.nuddle.data.DoneNote
 import app.nuddle.data.DoneNotes
 import app.nuddle.data.db.NuddleDatabase
+import app.nuddle.data.db.OutboxDao
+import app.nuddle.data.db.OutboxEntity
 import app.nuddle.data.outbox.Outbox
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.IdGenerator
@@ -21,6 +24,10 @@ import app.nuddle.testing.aStep
 import app.nuddle.testing.aTask
 import app.nuddle.testing.inMemoryDatabase
 import app.nuddle.testing.testJson
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.TimeZone
 import org.junit.After
@@ -257,6 +264,37 @@ class PokeAlarmTest {
             val queued = db.outbox().pending().single()
             assertEquals("cancel", queued.command)
             assertTrue(""""note":null""" in queued.body, queued.body)
+        }
+
+    @Test
+    fun `İptal et is queued even when the screen that started it closes meanwhile (NUD-143)`() =
+        runTest {
+            givenPlan()
+            // The task detail's scope dies as soon as it navigates home, here while the alarms stop.
+            var started: Job? = null
+            val closing =
+                object : PokeNotifications by notifications {
+                    override fun cancel(taskId: String) {
+                        notifications.cancel(taskId)
+                        started?.cancel()
+                    }
+                }
+            // Room on a phone switches to its own dispatcher, which a cancelled caller never reaches; in memory it does not.
+            val roomLike =
+                object : OutboxDao by db.outbox() {
+                    override suspend fun enqueue(entry: OutboxEntity) {
+                        currentCoroutineContext().ensureActive()
+                        db.outbox().enqueue(entry)
+                    }
+                }
+            val queue = Outbox(roomLike, testJson, clock, drainer)
+            val detail = PokeActions(db.tasks(), alarms, scheduler, closing, queue, IdGenerator(clock), clock, doneNotes)
+
+            started = launch { detail.cancel(Cast.TASK_ID, note = null) }
+            started.join()
+
+            assertEquals(TaskStatus.CANCELLED.value, db.tasks().get(Cast.TASK_ID)?.status)
+            assertEquals(listOf("cancel"), db.outbox().pending().map { it.command })
         }
 
     @Test
