@@ -8,6 +8,9 @@ import { LegalPage, linked } from "../../src/landing/LegalPage";
 import { landingMetadata, legalMetadata } from "../../src/landing/metadata";
 import { nextLevel } from "../../src/landing/PokeDemo";
 import { embedUrl, promoVideo } from "../../src/landing/PromoVideo";
+import { landingJsonLd } from "../../src/landing/structured-data";
+import robots from "../../src/app/robots";
+import sitemap from "../../src/app/sitemap";
 
 const text = (html: string) =>
   html
@@ -120,6 +123,37 @@ describe("the features since the first landing (NUD-94)", () => {
   });
 });
 
+describe("what happens while a poke rings (NUD-120 to NUD-138)", () => {
+  it("shows the newer poke features in the app's words (glossary)", () => {
+    const tr = text(renderToStaticMarkup(<Landing locale="tr" />));
+    for (const words of [
+      '"Sibel diyor ki: ilacını iç"',
+      "Pes etmem",
+      "Zaten yaptın mı?",
+      "Kaydırarak bitir",
+      "Ara · Mesaj at",
+      "Ben hallederim",
+      "Dürtmem çalmadı",
+      "Ekli fotoğraf",
+      "Anneme söyle",
+    ]) {
+      expect(tr).toContain(words);
+    }
+    expect(tr).not.toMatch(/kanıt|oturum|kayboldu/);
+    const en = text(renderToStaticMarkup(<Landing locale="en" />));
+    expect(en).toContain("Slide to finish");
+    expect(en).not.toMatch(/proof/i);
+  });
+
+  it("has the same cards and questions in every language", () => {
+    expect(messages.en.ringing.items).toHaveLength(messages.tr.ringing.items.length);
+    expect(messages.en.faq.items).toHaveLength(messages.tr.faq.items.length);
+    expect(messages.en.pricing.free.features).toHaveLength(
+      messages.tr.pricing.free.features.length,
+    );
+  });
+});
+
 describe("StoreButton", () => {
   it("links to the listing once there is one", () => {
     const url = "https://play.google.com/store/apps/details?id=app.nuddle";
@@ -149,6 +183,72 @@ describe("landingMetadata", () => {
     expect(tr.alternates?.canonical).toBe("/tr");
     expect(tr.alternates?.languages).toEqual({ en: "/", tr: "/tr", "x-default": "/" });
     expect(landingMetadata("en").title).toBe(messages.en.meta.title);
+  });
+
+  it("gives a share preview with the promo poster in the page's language", () => {
+    const tr = landingMetadata("tr");
+    expect(tr.openGraph).toMatchObject({
+      url: "/tr",
+      locale: "tr_TR",
+      alternateLocale: ["en_US"],
+      siteName: "dürt",
+      images: [{ url: "/promo/durt-promo-tr.jpg", width: 1280, height: 720 }],
+    });
+    expect(tr.twitter).toMatchObject({ card: "summary_large_image" });
+  });
+
+  it("keeps the description short enough for a search result", () => {
+    for (const m of Object.values(messages))
+      expect(m.meta.description.length).toBeLessThanOrEqual(160);
+  });
+});
+
+describe("structured data", () => {
+  it("describes the free Android app and the FAQ of the page", () => {
+    const graph = landingJsonLd("tr")["@graph"];
+    expect(graph[1]).toMatchObject({
+      "@type": "MobileApplication",
+      name: "dürt",
+      url: "https://nuddle.app/tr",
+      operatingSystem: "Android",
+      offers: { price: "0", priceCurrency: "TRY" },
+    });
+    expect(graph[1]).not.toHaveProperty("installUrl");
+    expect(graph[2]).toMatchObject({ "@type": "FAQPage" });
+    expect(graph[2]?.mainEntity).toHaveLength(messages.tr.faq.items.length);
+  });
+
+  it("is on the page as JSON-LD that no text can break out of", () => {
+    const html = renderToStaticMarkup(<Landing locale="en" />);
+    const json = /<script type="application\/ld\+json">(.*?)<\/script>/.exec(html)?.[1];
+    expect(json).toBeDefined();
+    expect(JSON.parse(json ?? "")).toEqual(landingJsonLd("en"));
+    expect(json).not.toContain("<");
+  });
+});
+
+describe("robots.txt and the sitemap", () => {
+  it("lists every landing and legal page with its other language", () => {
+    const urls = sitemap().map((entry) => entry.url);
+    expect(urls).toEqual([
+      "https://nuddle.app/",
+      "https://nuddle.app/tr",
+      "https://nuddle.app/privacy",
+      "https://nuddle.app/tr/privacy",
+      "https://nuddle.app/delete-account",
+      "https://nuddle.app/tr/delete-account",
+    ]);
+    expect(sitemap()[1]?.alternates?.languages).toEqual({
+      en: "https://nuddle.app/",
+      tr: "https://nuddle.app/tr",
+    });
+  });
+
+  it("points crawlers to the sitemap and keeps them out of the API", () => {
+    expect(robots()).toEqual({
+      rules: { userAgent: "*", allow: "/", disallow: "/api/" },
+      sitemap: "https://nuddle.app/sitemap.xml",
+    });
   });
 });
 

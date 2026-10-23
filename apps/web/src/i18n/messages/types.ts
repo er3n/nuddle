@@ -21,7 +21,16 @@ interface StoryPanel {
 export interface Messages {
   brand: string;
   domain: string;
-  meta: { title: string; description: string };
+  meta: {
+    title: string;
+    description: string;
+    /** The app's name for search engines, as the store lists it before the colon ("dürt"). */
+    appName: string;
+    /** The Open Graph locale ("tr_TR"). */
+    ogLocale: string;
+    /** The currency of the free plan's price in structured data (ISO 4217). */
+    currency: string;
+  };
   nav: {
     label: string;
     how: string;
@@ -76,6 +85,8 @@ export interface Messages {
     note: string;
   };
   features: { title: string; titleAccent: string; items: Feature[] };
+  /** What happens while a poke rings, from NUD-120 on (screens.md, Landing). */
+  ringing: { title: string; titleAccent: string; lead: string; items: Feature[] };
   /** One everyday use spelled out for search: the medicine reminder (NUD-106). */
   medicine: {
     title: string;
