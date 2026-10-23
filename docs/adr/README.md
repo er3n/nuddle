@@ -34,3 +34,4 @@ To change a decision: add a new ADR that supersedes the old one, set the old one
 | 0026 | Releases reach Play internal testing from the command line (Gradle Play Publisher) |
 | 0027 | Our API keeps which device holds each Supabase session; people can sign out their other sessions |
 | 0028 | Production ships as `com.dokukoza.nuddle` from the older Play account; `app.nuddle` stays on the testing account |
+| 0029 | Sign-in codes go as a WhatsApp authentication template via Twilio, with an SMS of the same code as fallback |

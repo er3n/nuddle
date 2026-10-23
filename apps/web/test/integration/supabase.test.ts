@@ -5,12 +5,28 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../../src/api/app";
 import { createProductionApp } from "../../src/api/production";
 import { JoseTokenVerifier } from "../../src/infra/auth/jwt";
+import { noCodeCipher } from "../../src/infra/otp/code-cipher";
 import { SupabaseAuthGateway } from "../../src/infra/auth/supabase-auth";
 import { SupabasePhotoStorage } from "../../src/infra/storage/supabase-photos";
 import { FixtureExtractor } from "../../src/infra/llm/fixture-extractor";
-import { FakeClock, RecordingOtpSender, RecordingPushSender } from "../fakes";
+import {
+  FakeClock,
+  FakeDelay,
+  PendingWork,
+  RecordingOtpSender,
+  RecordingPushSender,
+} from "../fakes";
 import { createTestDatabase, type TestDatabase } from "../support/db";
 import { localSupabase } from "../support/local-supabase";
+
+/** No WhatsApp here: test numbers never reach the Send SMS hook (ADR 0029). */
+const testOtpDelivery = () => ({
+  delay: new FakeDelay(),
+  waitUntil: new PendingWork().waitUntil,
+  cipher: noCodeCipher,
+  twilioAuthToken: null,
+  statusUrl: "https://nuddle.test/api/internal/twilio-status",
+});
 
 const json = (body: object): RequestInit => ({
   method: "POST",
@@ -37,6 +53,7 @@ describe("local Supabase adapters", () => {
       clock,
       push: new RecordingPushSender(clock),
       otp: new RecordingOtpSender(),
+      otpDelivery: testOtpDelivery(),
       extractor: new FixtureExtractor(new Map()),
       planner: null,
       profiler: null,
@@ -51,9 +68,10 @@ describe("local Supabase adapters", () => {
     });
 
     // +905320000006 is a test number with code 123456 (supabase/config.toml).
-    expect((await app.request("/api/v1/auth/otp", json({ phone: "+905320000006" }))).status).toBe(
-      200,
-    );
+    const sent = await app.request("/api/v1/auth/otp", json({ phone: "+905320000006" }));
+    expect(sent.status).toBe(200);
+    // A test number never reaches the Send SMS hook: no row, so the answer is SMS (ADR 0029).
+    expect(await sent.json()).toEqual({ ok: true, channel: "sms" });
     const wrong = await app.request(
       "/api/v1/auth/verify",
       json({ phone: "+905320000006", code: "000000" }),
@@ -115,6 +133,7 @@ describe("local Supabase adapters", () => {
       clock,
       push: new RecordingPushSender(clock),
       otp: new RecordingOtpSender(),
+      otpDelivery: testOtpDelivery(),
       extractor: new FixtureExtractor(new Map()),
       planner: null,
       profiler: null,

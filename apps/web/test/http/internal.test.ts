@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { SMS_PHONE_DAILY_CAP, SMS_TOTAL_DAILY_CAP } from "../../src/domain/cost-caps";
 import type { OtpSender } from "../../src/domain/ports";
 import { HOUR } from "../../src/domain/time";
-import { smsSends } from "../../src/infra/db/schema";
+import { otpSends } from "../../src/infra/db/schema";
 import { type FakeAuthGateway, type FakeClock, RecordingOtpSender } from "../fakes";
 import { SMS_HOOK_SECRET, startTestServer, TICK_SECRET, type TestServer } from "../support/server";
 
@@ -32,7 +32,13 @@ describe("http: internal endpoints", () => {
   let server: TestServer;
   let failing: TestServer;
   const otp = new RecordingOtpSender();
-  const broken: OtpSender = { send: () => Promise.reject(new Error("provider down")) };
+  const down = () => Promise.reject(new Error("provider down"));
+  const broken: OtpSender = {
+    whatsApp: false,
+    sendWhatsApp: down,
+    sendSms: down,
+    priceOf: () => Promise.resolve(null),
+  };
 
   beforeAll(async () => {
     server = await startTestServer({ otp });
@@ -116,7 +122,7 @@ describe("http: internal endpoints", () => {
     const full = await startTestServer({ otp: recording });
     try {
       const now = full.deps.clock.now();
-      await full.database.db.insert(smsSends).values(
+      await full.database.db.insert(otpSends).values(
         Array.from({ length: SMS_TOTAL_DAILY_CAP }, (_, i) => ({
           id: randomUUID(),
           phone: `+90532${String(i).padStart(7, "0")}`,

@@ -30,7 +30,7 @@ Android app (Kotlin, Compose)                       Vercel
 | Android | Kotlin, Jetpack Compose, single Activity + Navigation Compose, `PokeActivity` separate. Hilt, Retrofit client with kotlinx.serialization (generated), Room, WorkManager, CameraX, kotlinx-datetime. Min SDK 26, target current (35+). |
 | API | Next.js on Vercel. The API is Hono mounted in a Next route handler (`app/api/[[...route]]/route.ts`) with `@hono/zod-openapi`. Next itself serves the landing page and later the sender web page (ADR 0003). |
 | Database | Supabase Postgres, Drizzle ORM. Drizzle generates SQL into `supabase/migrations/`. Hand-written SQL migrations (grants, `pg_cron` jobs, auth hooks) live in the same folder (ADR 0002). |
-| Auth | Supabase Auth, phone OTP, reached through our API (`/api/v1/auth/*`). Send SMS hook calls our endpoint, which sends via SMS (Twilio) and later a WhatsApp template. Supabase issues the JWT, the API verifies it against Supabase's JWKS; the person id is the JWT `sub` (ADR 0011, 0014). |
+| Auth | Supabase Auth, phone OTP, reached through our API (`/api/v1/auth/*`). Send SMS hook calls our endpoint, which sends a WhatsApp authentication template through Twilio and falls back to an SMS of the same code on failure, after 12 s without delivery, or on "SMS ile gönder"; a number without WhatsApp in the last 30 days gets the SMS directly (ADR 0029). Supabase issues the JWT, the API verifies it against Supabase's JWKS; the person id is the JWT `sub` (ADR 0011, 0014). |
 | Storage | Supabase Storage, private bucket, signed upload URLs. Photos deleted when the task closes, and again by a `photo_cleanup` timer 15 minutes later that keeps retrying until Storage answers (NUD-25). |
 | Scheduler | `scheduled_actions` table + pure `tick(now)`. In the cloud, `pg_cron` calls `POST /api/internal/tick` every minute via `pg_net`. Locally, `mise run tick` (ADR 0007). |
 | Push | FCM data messages, sent with `firebase-admin`. Crashlytics (crashes, plus breadcrumbs and non-fatal reports without personal data, ADR 0023) and App Distribution from the same Firebase project. One project, debug build registered as `app.nuddle.debug`. |
@@ -74,7 +74,7 @@ nuddle/
 - `apps/web/src/domain` is pure: no imports from `infra`, `api`, Drizzle, Hono, `fetch`, or wall clock. It receives `now` and data, returns decisions.
 - `apps/web/src/api` validates input with zod, calls domain, persists through `infra`, returns zod-typed output.
 - Android `domain` package has no `android.*` imports. Screens are stateless composables taking `UiState` and callbacks; ViewModels are never passed into screens.
-- External services sit behind interfaces with fakes: `Clock`, `PushSender`, `OtpSender`, `TaskExtractor`, `PhotoStorage` (web); `Clock`, `AlarmScheduler`, `Diagnostics`, `PushReceiver` boundary (Android).
+- External services sit behind interfaces with fakes: `Clock`, `PushSender`, `OtpSender`, `Delay` and `CodeCipher` (the WhatsApp code's SMS fallback, ADR 0029), `TaskExtractor`, `PhotoStorage` (web); `Clock`, `AlarmScheduler`, `Diagnostics`, `PushReceiver` boundary (Android).
 
 ## Sync model (ADR 0006)
 
@@ -94,8 +94,8 @@ nuddle/
 
 ## API
 
-- Public routes under `/api/v1` are defined with `@hono/zod-openapi` (ADR 0003, 0008): `auth/otp`, `auth/verify` (Turkish mobile numbers only until the global launch, open-questions #45), `auth/refresh`, `health` (no token), `sync`, `devices`, `sessions` (my signed-in phones, ADR 0027), `photos/upload-url`, `photos/view-url` (a short-lived signed URL to the photo awaiting approval, for the two people on the task), `photos/example-upload-url` and `photos/example-view-url` (the sender's example photo under the task's folder, NUD-138, domain.md), `avatar/upload-url` and `avatar/view-url` (the profile picture: mine or an active connection's, in the same private bucket under `avatars/<person>/`; NUD-72), and one `commands/<name>` per action in `domain.md`. Every command body carries a UUIDv7 `idempotencyKey`; a replay returns the stored result, a failed command stores nothing.
-- Internal routes: `POST /api/internal/tick` (bearer `TICK_SECRET`), `POST /api/internal/delete-account` (bearer `TICK_SECRET`; `{ phone, confirm }`, a dry run without `confirm`; the in-app deletion for an email request, `mise run account:delete`, NUD-88), `POST /api/internal/announce` (bearer `TICK_SECRET`; `{ announcement, to: phones | "*", confirm }`, a dry run without `confirm`; `mise run announce`, ADR 0025), `POST /api/internal/otp-hook` (Supabase Send SMS hook, Standard Webhooks signature with `SEND_SMS_HOOK_SECRET`). Not in the contract.
+- Public routes under `/api/v1` are defined with `@hono/zod-openapi` (ADR 0003, 0008): `auth/otp` (answers the channel the code went to), `auth/otp/sms` (the same code again by SMS, ADR 0029), `auth/verify` (Turkish mobile numbers only until the global launch, open-questions #45), `auth/refresh`, `health` (no token), `sync`, `devices`, `sessions` (my signed-in phones, ADR 0027), `photos/upload-url`, `photos/view-url` (a short-lived signed URL to the photo awaiting approval, for the two people on the task), `photos/example-upload-url` and `photos/example-view-url` (the sender's example photo under the task's folder, NUD-138, domain.md), `avatar/upload-url` and `avatar/view-url` (the profile picture: mine or an active connection's, in the same private bucket under `avatars/<person>/`; NUD-72), and one `commands/<name>` per action in `domain.md`. Every command body carries a UUIDv7 `idempotencyKey`; a replay returns the stored result, a failed command stores nothing.
+- Internal routes: `POST /api/internal/tick` (bearer `TICK_SECRET`), `POST /api/internal/delete-account` (bearer `TICK_SECRET`; `{ phone, confirm }`, a dry run without `confirm`; the in-app deletion for an email request, `mise run account:delete`, NUD-88), `POST /api/internal/announce` (bearer `TICK_SECRET`; `{ announcement, to: phones | "*", confirm }`, a dry run without `confirm`; `mise run announce`, ADR 0025), `POST /api/internal/otp-hook` (Supabase Send SMS hook, Standard Webhooks signature with `SEND_SMS_HOOK_SECRET`), `POST /api/internal/twilio-status` (Twilio status callback for sign-in codes, `X-Twilio-Signature`; ADR 0029). Not in the contract.
 - Every response carries `X-Request-Id`. Errors have the shape `{ "error": { "code", "name", "message", "requestId" } }`.
 
 ### Error codes
@@ -114,6 +114,7 @@ The app shows the code on the unrecoverable error screen (6f) and sends it to Cr
 | DRT-1008 | `otp_locked` | 429 | Too many wrong codes for the phone: no code is checked or sent until `details.retryAt` (screen 6c) |
 | DRT-1009 | `otp_limit` | 429 | Too many codes sent to the phone, or to everyone, in the last 24 hours: none is sent until `details.retryAt` (ADR 0024) |
 | DRT-1010 | `write_limit` | 429 | The caller wrote too many texts in the last 24 hours: nothing is extracted until `details.retryAt` (ADR 0024) |
+| DRT-1011 | `otp_resend_unavailable` | 409 | No code for the phone can go by SMS now: none held, expired, or already sent by SMS (ADR 0029) |
 | DRT-4001 | `wrong_status` | 409 | The task's status does not allow the command |
 | DRT-4002 | `not_sender` | 403 | Only the sender can do this |
 | DRT-4003 | `not_recipient` | 403 | Only the recipient can do this |
@@ -154,11 +155,11 @@ Production wiring (stage 7):
 
 Beta: Supabase free, Vercel hobby, Firebase free, LLM usage small. Launch: Supabase Pro ~25 USD + Vercel Pro ~20 USD per month plus usage. Note that Supabase free projects pause after a week of inactivity; the per-minute `pg_cron` job keeps it active.
 
-Per task: two LLM calls (extraction and plan), each kept in `llm_calls` with its tokens and what OpenRouter charged (`cost_usd`, ADR 0024); the cost of a task is the sum over its rows, and `mise run golden:export` carries them. Per sign-in: one SMS, 0.0305 USD to Turkey (open-questions #45).
+Per task: two LLM calls (extraction and plan), each kept in `llm_calls` with its tokens and what OpenRouter charged (`cost_usd`, ADR 0024); the cost of a task is the sum over its rows, and `mise run golden:export` carries them. Per sign-in: one WhatsApp authentication message, or one SMS (0.0305 USD to Turkey) for numbers without WhatsApp, or both when the fallback runs; each send keeps Twilio's price in `otp_sends.cost_usd` (ADR 0029, open-questions #45).
 
 ### Cost guardrails (ADR 0024)
 
 What one person, a bug or an attacker can spend is bounded twice:
 
-- **In code**, counted over the last 24 hours (`apps/web/src/domain/cost-caps.ts`, open-questions #54): extractions per writer (`write_limit` over the cap), plans and profiles per person (plan v0 over the cap), sign-in codes per phone and in total (the Send SMS hook sends nothing over the cap; `otp_limit` from `/v1/auth/otp`). Supabase Auth's own SMS limits (per hour for the project, seconds between codes to one phone) are in `supabase/cloud/auth.json`.
-- **Outside the code**, set by the human (`human-checklist.md`, Cost limits): a prepaid OpenRouter credit with a limit on the key and no auto top-up; Twilio SMS Geo permissions to Turkey only, no auto-recharge and a low balance alert; Vercel spend management with a cap that pauses the project. These hold even if the code is wrong.
+- **In code**, counted over the last 24 hours (`apps/web/src/domain/cost-caps.ts`, open-questions #54): extractions per writer (`write_limit` over the cap), plans and profiles per person (plan v0 over the cap), sign-in codes per phone and in total, WhatsApp and SMS together, a code and its SMS fallback counted once (the Send SMS hook sends nothing over the cap; `otp_limit` from `/v1/auth/otp`). Supabase Auth's own SMS limits (per hour for the project, seconds between codes to one phone) are in `supabase/cloud/auth.json`.
+- **Outside the code**, set by the human (`human-checklist.md`, Cost limits): a prepaid OpenRouter credit with a limit on the key and no auto top-up; Twilio SMS and WhatsApp Geo permissions to Turkey only, no auto-recharge and a low balance alert; Vercel spend management with a cap that pauses the project. These hold even if the code is wrong.

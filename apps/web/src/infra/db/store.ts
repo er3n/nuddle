@@ -16,6 +16,7 @@ import {
   isNull,
   lt,
   lte,
+  max,
   min,
   ne,
   notInArray,
@@ -27,6 +28,11 @@ import type { AnnouncementContent } from "../../domain/announcements";
 import type { Invite, InviteStatus } from "../../domain/connections";
 import type { CapWindow, LlmCallKind } from "../../domain/cost-caps";
 import { noAttempts, type OtpAttempts } from "../../domain/otp-attempts";
+import {
+  DELIVERED_STATUSES,
+  type OtpChannel,
+  UNDELIVERED_STATUSES,
+} from "../../domain/otp-channel";
 import type { Device, PermissionSummary } from "../../domain/reachability";
 import type { ClaimedAction } from "../../domain/tick";
 import type { Outcome } from "../../domain/task-machine";
@@ -56,7 +62,7 @@ import {
   pokeSteps,
   scheduledActions,
   sessionDevices,
-  smsSends,
+  otpSends,
   taskEvents,
   tasks,
 } from "./schema";
@@ -1343,29 +1349,197 @@ export async function llmCallWindow(
   return { count: row?.count ?? 0, oldest: row?.oldest ?? null };
 }
 
-/** Sign-in codes sent after a time, to one phone or (null) to all (ADR 0024). */
-export async function smsSendWindow(
+/** Sign-in codes sent after a time, to one phone or (null) to all (ADR 0024). One per code. */
+export async function otpSendWindow(
   ex: Executor,
   phone: string | null,
   since: Date,
 ): Promise<CapWindow> {
   const [row] = await ex
-    .select({ count: sql<number>`count(*)::int`, oldest: min(smsSends.sentAt) })
-    .from(smsSends)
-    .where(and(gt(smsSends.sentAt, since), phone === null ? undefined : eq(smsSends.phone, phone)));
+    .select({ count: sql<number>`count(*)::int`, oldest: min(otpSends.sentAt) })
+    .from(otpSends)
+    .where(and(gt(otpSends.sentAt, since), phone === null ? undefined : eq(otpSends.phone, phone)));
   return { count: row?.count ?? 0, oldest: row?.oldest ?? null };
 }
 
-/** One code handed to the provider; rows from before the window are no longer needed. */
-export async function insertSmsSend(
+export type OtpSendRow = typeof otpSends.$inferSelect;
+
+/** One code handed to Twilio (ADR 0029); rows sent before the retention start go. */
+export async function insertOtpSend(
+  ex: Executor,
+  row: {
+    id: string;
+    phone: string;
+    sentAt: Date;
+    channel: OtpChannel;
+    twilioSid: string;
+    codeCiphertext: string | null;
+  },
+  retentionStart: Date,
+): Promise<void> {
+  await ex.delete(otpSends).where(lt(otpSends.sentAt, retentionStart));
+  await ex.insert(otpSends).values(row);
+}
+
+/** When a WhatsApp send to the phone last failed or went undelivered after `since`, if ever. */
+export async function lastWhatsAppFailure(
+  ex: Executor,
+  phone: string,
+  since: Date,
+): Promise<Date | null> {
+  const [row] = await ex
+    .select({ at: max(otpSends.sentAt) })
+    .from(otpSends)
+    .where(
+      and(
+        eq(otpSends.phone, phone),
+        eq(otpSends.channel, "whatsapp"),
+        inArray(otpSends.status, [...UNDELIVERED_STATUSES]),
+        gt(otpSends.sentAt, since),
+      ),
+    );
+  return row?.at ?? null;
+}
+
+/** The newest code sent to the phone after `since`. */
+export async function newestOtpSend(
+  ex: Executor,
+  phone: string,
+  since: Date,
+): Promise<OtpSendRow | null> {
+  const [row] = await ex
+    .select()
+    .from(otpSends)
+    .where(and(eq(otpSends.phone, phone), gt(otpSends.sentAt, since)))
+    .orderBy(desc(otpSends.sentAt))
+    .limit(1);
+  return row ?? null;
+}
+
+/**
+ * Claims a WhatsApp code's SMS: `fallback_at` is set in the same update, so the SMS goes at most
+ * once whichever path comes first (ADR 0029). Only a code still held and not expired; unless
+ * `evenIfDelivered` ("SMS ile gönder"), only while WhatsApp has not said delivered or read.
+ */
+export async function claimFallback(
   ex: Executor,
   id: string,
-  phone: string,
   now: Date,
-  windowStart: Date,
+  expiredAtOrBefore: Date,
+  evenIfDelivered: boolean,
+): Promise<{ phone: string; codeCiphertext: string } | null> {
+  const [row] = await ex
+    .update(otpSends)
+    .set({ fallbackAt: now })
+    .where(
+      and(
+        eq(otpSends.id, id),
+        eq(otpSends.channel, "whatsapp"),
+        isNull(otpSends.fallbackAt),
+        isNotNull(otpSends.codeCiphertext),
+        gt(otpSends.sentAt, expiredAtOrBefore),
+        evenIfDelivered
+          ? undefined
+          : or(isNull(otpSends.status), notInArray(otpSends.status, [...DELIVERED_STATUSES])),
+      ),
+    )
+    .returning({ phone: otpSends.phone, codeCiphertext: otpSends.codeCiphertext });
+  if (!row || row.codeCiphertext === null) return null;
+  return { phone: row.phone, codeCiphertext: row.codeCiphertext };
+}
+
+/** The SMS went out: the code is no longer held. */
+export async function completeFallback(ex: Executor, id: string, sid: string): Promise<void> {
+  await ex
+    .update(otpSends)
+    .set({ fallbackSid: sid, codeCiphertext: null })
+    .where(eq(otpSends.id, id));
+}
+
+/** The SMS could not be sent: the claim is given back so the tick tries again. */
+export async function releaseFallback(ex: Executor, id: string): Promise<void> {
+  await ex.update(otpSends).set({ fallbackAt: null }).where(eq(otpSends.id, id));
+}
+
+/** WhatsApp codes sent at or before `dueAtOrBefore` with neither delivery nor fallback, still held. */
+export async function dueFallbacks(
+  ex: Executor,
+  dueAtOrBefore: Date,
+  expiredAtOrBefore: Date,
+): Promise<string[]> {
+  const rows = await ex
+    .select({ id: otpSends.id })
+    .from(otpSends)
+    .where(
+      and(
+        eq(otpSends.channel, "whatsapp"),
+        isNull(otpSends.fallbackAt),
+        isNotNull(otpSends.codeCiphertext),
+        lte(otpSends.sentAt, dueAtOrBefore),
+        gt(otpSends.sentAt, expiredAtOrBefore),
+        or(isNull(otpSends.status), notInArray(otpSends.status, [...DELIVERED_STATUSES])),
+      ),
+    )
+    .orderBy(asc(otpSends.sentAt));
+  return rows.map((r) => r.id);
+}
+
+/** Codes held past their life, or (with a phone) every code of a phone that signed in. */
+export async function clearHeldCodes(
+  ex: Executor,
+  by: { expiredAtOrBefore: Date } | { phone: string },
 ): Promise<void> {
-  await ex.delete(smsSends).where(lt(smsSends.sentAt, windowStart));
-  await ex.insert(smsSends).values({ id, phone, sentAt: now });
+  await ex
+    .update(otpSends)
+    .set({ codeCiphertext: null })
+    .where(
+      and(
+        isNotNull(otpSends.codeCiphertext),
+        "phone" in by ? eq(otpSends.phone, by.phone) : lte(otpSends.sentAt, by.expiredAtOrBefore),
+      ),
+    );
+}
+
+/** The row a Twilio message belongs to, as its first message or its SMS fallback, locked. */
+export async function lockOtpSendBySid(
+  tx: Tx,
+  sid: string,
+): Promise<{ row: OtpSendRow; fallback: boolean } | null> {
+  const [row] = await tx
+    .select()
+    .from(otpSends)
+    .where(or(eq(otpSends.twilioSid, sid), eq(otpSends.fallbackSid, sid)))
+    .for("update");
+  if (!row) return null;
+  return { row, fallback: row.twilioSid !== sid };
+}
+
+export async function updateOtpSendStatus(
+  tx: Tx,
+  id: string,
+  patch:
+    | { status: string; errorCode: string | null }
+    | { fallbackStatus: string; errorCode?: undefined },
+): Promise<void> {
+  await tx
+    .update(otpSends)
+    .set(
+      "status" in patch
+        ? {
+            status: patch.status,
+            ...(patch.errorCode === null ? {} : { errorCode: patch.errorCode }),
+          }
+        : { fallbackStatus: patch.fallbackStatus },
+    )
+    .where(eq(otpSends.id, id));
+}
+
+/** Twilio priced one of the code's messages: the row keeps the sum. */
+export async function addOtpCost(ex: Executor, id: string, usd: number): Promise<void> {
+  await ex
+    .update(otpSends)
+    .set({ costUsd: sql`coalesce(${otpSends.costUsd}, 0) + ${usd}` })
+    .where(eq(otpSends.id, id));
 }
 
 /**
@@ -1436,7 +1610,7 @@ export async function deleteInvitesOf(tx: Tx, personId: PersonId, phone: string)
 /** The phone's wrong-code count and the codes sent to it (ADR 0011, 0024). */
 export async function deleteSignInRecordsOf(tx: Tx, phone: string): Promise<void> {
   await tx.delete(otpAttempts).where(eq(otpAttempts.phone, phone));
-  await tx.delete(smsSends).where(eq(smsSends.phone, phone));
+  await tx.delete(otpSends).where(eq(otpSends.phone, phone));
 }
 
 export async function insertScheduledAction(

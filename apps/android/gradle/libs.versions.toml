@@ -40,6 +40,8 @@ commonmark = "0.30.1"
 coil = "3.6.3"
 # NUD-117, newest stable at least 14 days old on 2026-10-20 (ADR 0026).
 play-publisher = "4.1.1"
+# NUD-147, newest stable at least 14 days old on 2026-10-23 (ADR 0029): 1.0.0 of 2026-03-26.
+whatsapp-otp = "1.0.0"
 
 [libraries]
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "core" }
@@ -88,6 +90,7 @@ firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
 firebase-installations = { module = "com.google.firebase:firebase-installations" }
 firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 play-services-auth-api-phone = { module = "com.google.android.gms:play-services-auth-api-phone", version = "18.3.1" }
+whatsapp-otp = { module = "com.whatsapp.otp:whatsapp-otp-android-sdk", version.ref = "whatsapp-otp" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
 roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }

@@ -74,7 +74,7 @@ fun PhoneScreen(
         modifier = modifier,
         bottom = {
             DurtButton(
-                text = stringResource(R.string.phone_send_sms),
+                text = stringResource(R.string.phone_send_code),
                 onClick = onSend,
                 enabled = state.canSend || state.sending,
                 loading = state.sending,

@@ -34,6 +34,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/otp/sms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send the code already sent to the phone again, by SMS ("SMS ile gönder", ADR 0029)
+         * @description Never creates a code and adds nothing to the daily caps. otp_resend_unavailable (409) when no code is held for the phone, it expired, or it already went by SMS.
+         */
+        post: operations["resendOtpBySms"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/verify": {
         parameters: {
             query?: never;
@@ -797,16 +817,19 @@ export interface components {
             /** @enum {string} */
             database: "ok" | "down" | "not_configured";
         };
-        Ok: {
+        OtpSent: {
             /** @enum {boolean} */
             ok: true;
+            channel: components["schemas"]["OtpChannel"];
         };
+        /** @enum {string} */
+        OtpChannel: "whatsapp" | "sms";
         Error: {
             error: {
                 /** @example DRT-4001 */
                 code: string;
                 /** @enum {string} */
-                name: "validation_failed" | "unauthorized" | "not_registered" | "not_found" | "idempotency_key_reused" | "invalid_otp" | "forbidden" | "otp_locked" | "otp_limit" | "write_limit" | "wrong_status" | "not_sender" | "not_recipient" | "wrong_finish_mode" | "deadline_not_in_future" | "not_connected" | "recipient_unavailable" | "snooze_not_allowed" | "start_not_in_window" | "invite_not_open" | "wrong_invitee" | "self_invite" | "not_inviter" | "internal" | "upstream_failed";
+                name: "validation_failed" | "unauthorized" | "not_registered" | "not_found" | "idempotency_key_reused" | "invalid_otp" | "forbidden" | "otp_locked" | "otp_limit" | "write_limit" | "otp_resend_unavailable" | "wrong_status" | "not_sender" | "not_recipient" | "wrong_finish_mode" | "deadline_not_in_future" | "not_connected" | "recipient_unavailable" | "snooze_not_allowed" | "start_not_in_window" | "invite_not_open" | "wrong_invitee" | "self_invite" | "not_inviter" | "internal" | "upstream_failed";
                 message: string;
                 requestId: string;
                 details?: {
@@ -818,6 +841,13 @@ export interface components {
             };
         };
         SendOtpRequest: {
+            /**
+             * @description A Turkish mobile number, E.164
+             * @example +905320000002
+             */
+            phone: string;
+        };
+        ResendOtpBySmsRequest: {
             /**
              * @description A Turkish mobile number, E.164
              * @example +905320000002
@@ -1506,6 +1536,10 @@ export interface components {
             relationship: components["schemas"]["EdgeType"];
             prefilledName: string;
         };
+        Ok: {
+            /** @enum {boolean} */
+            ok: true;
+        };
         AcceptInviteCommand: {
             /**
              * Format: uuid
@@ -1652,13 +1686,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Code sent */
+            /** @description Code sent, and the channel it went to */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Ok"];
+                    "application/json": components["schemas"]["OtpSent"];
                 };
             };
             /** @description Error with a DRT code */
@@ -1672,6 +1706,57 @@ export interface operations {
             };
             /** @description Error with a DRT code */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    resendOtpBySms: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResendOtpBySmsRequest"];
+            };
+        };
+        responses: {
+            /** @description The same code went by SMS */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtpSent"];
+                };
+            };
+            /** @description Error with a DRT code */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error with a DRT code */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

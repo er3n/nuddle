@@ -22,13 +22,6 @@ import {
   type MissingField,
 } from "../domain/extraction";
 import {
-  capReachedUntil,
-  capWindowStart,
-  laterOf,
-  SMS_PHONE_DAILY_CAP,
-  SMS_TOTAL_DAILY_CAP,
-} from "../domain/cost-caps";
-import {
   announcementProblems,
   announcementPushes,
   type AnnouncementContent,
@@ -160,8 +153,6 @@ import {
   upsertEdges,
   upsertPerson,
   type Tx,
-  insertSmsSend,
-  smsSendWindow,
   findAnnouncement,
   livePeopleByPhone,
   saveAnnouncement,
@@ -169,6 +160,7 @@ import {
 import type { AppDeps } from "./deps";
 import { ApiError } from "./errors";
 import { errorText, LlmCall, llmCapReachedUntil } from "./llm-log";
+import { forgetHeldCodes, runOtpSafetyNet, smsCapReachedUntil } from "./sign-in-codes";
 
 interface Effects {
   pushes: readonly PushMessage[];
@@ -1912,9 +1904,10 @@ async function purgeAccountOnce(
   });
 }
 
-/** Run every due server timer once. */
-export function runTick(deps: AppDeps): Promise<number> {
-  return tickDomain(deps.clock.now(), new PgTickPort(deps));
+/** Run every due server timer once, and the sign-in codes' SMS safety net (ADR 0029). */
+export async function runTick(deps: AppDeps): Promise<number> {
+  const handled = await tickDomain(deps.clock.now(), new PgTickPort(deps));
+  return handled + (await runOtpSafetyNet(deps));
 }
 
 // ---- sign-in code attempts (screen 6c, ADR 0011) ---------------------------------------------
@@ -1928,18 +1921,6 @@ export async function refuseWhileOtpLocked(deps: AppDeps, phone: string): Promis
   if (until) throw otpLocked(until);
 }
 
-/** When the next code to the phone may go out, over the cap per phone or in total (ADR 0024). */
-async function smsCapReachedUntil(deps: AppDeps, phone: string): Promise<Date | null> {
-  const now = deps.clock.now();
-  const since = capWindowStart(now);
-  const perPhone = await smsSendWindow(deps.db, phone, since);
-  const total = await smsSendWindow(deps.db, null, since);
-  return laterOf(
-    capReachedUntil(perPhone, SMS_PHONE_DAILY_CAP, now),
-    capReachedUntil(total, SMS_TOTAL_DAILY_CAP, now),
-  );
-}
-
 /** No code is asked for over the daily SMS caps; the hook checks them again (ADR 0024). */
 export async function refuseOverSmsCaps(deps: AppDeps, phone: string): Promise<void> {
   const until = await smsCapReachedUntil(deps, phone);
@@ -1948,19 +1929,6 @@ export async function refuseOverSmsCaps(deps: AppDeps, phone: string): Promise<v
       retryAt: until.toISOString(),
     });
   }
-}
-
-/**
- * The Send SMS hook's code to the provider, unless a daily cap is reached (ADR 0024). Every place
- * a sign-in starts ends here, so the caps hold even for a request that skipped our API. Returns
- * whether it was sent.
- */
-export async function sendSignInCode(deps: AppDeps, phone: string, code: string): Promise<boolean> {
-  if (await smsCapReachedUntil(deps, phone)) return false;
-  await deps.otp.send(phone, code);
-  const now = deps.clock.now();
-  await insertSmsSend(deps.db, randomUUID(), phone, now, capWindowStart(now));
-  return true;
 }
 
 /** The session for a right code; a wrong one counts, and the last one starts the wait. */
@@ -1973,6 +1941,8 @@ export async function verifyOtp(
   const session = await deps.auth.verifyOtp(phone, code);
   if (session) {
     await clearOtpAttempts(deps.db, phone);
+    // Signed in: the code held for the SMS fallback is no longer needed (ADR 0029).
+    await forgetHeldCodes(deps, phone);
     return session;
   }
   const now = deps.clock.now();

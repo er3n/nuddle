@@ -25,7 +25,7 @@ describe("recording fakes", () => {
     expect(push.to("eren")).toHaveLength(1);
 
     const otp = new RecordingOtpSender();
-    await otp.send("+905320000002", "123456");
+    await otp.sendSms("+905320000002", "123456");
     expect(otp.sent).toEqual([{ phone: "+905320000002", code: "123456" }]);
 
     const photos = new FakePhotoStorage();

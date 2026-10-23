@@ -73,6 +73,8 @@ describe("http: auth and errors", () => {
     expect((await api.POST("/api/v1/auth/otp", { body: { phone: "+905320000005" } })).data).toEqual(
       {
         ok: true,
+        // ADR 0029: the answer names the channel; the fake Supabase calls no hook here.
+        channel: "sms",
       },
     );
 

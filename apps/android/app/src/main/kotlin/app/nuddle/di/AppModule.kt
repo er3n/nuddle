@@ -28,7 +28,11 @@ import app.nuddle.alarm.WorkManagerAlarmChecks
 import app.nuddle.alarm.userUnlocked
 import app.nuddle.data.ApiAuthRepository
 import app.nuddle.data.AuthRepository
+import app.nuddle.data.SdkWhatsAppHandshake
 import app.nuddle.data.SessionStarter
+import app.nuddle.data.WhatsAppCodes
+import app.nuddle.data.WhatsAppHandshake
+import app.nuddle.data.WhatsAppOtp
 import app.nuddle.data.outbox.OutboxDrainer
 import app.nuddle.data.outbox.WorkManagerScheduling
 import app.nuddle.data.session.DataStoreHeadsUpStore
@@ -157,6 +161,17 @@ abstract class BindingsModule {
 
     @Binds
     abstract fun sessionStarter(impl: AppSessionStarter): SessionStarter
+}
+
+/** WhatsApp sign-in codes (ADR 0029): Meta's SDK behind the handshake port, one [WhatsAppCodes] for the app. */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class WhatsAppOtpModule {
+    @Binds
+    abstract fun whatsAppHandshake(impl: SdkWhatsAppHandshake): WhatsAppHandshake
+
+    @Binds
+    abstract fun whatsAppOtp(impl: WhatsAppCodes): WhatsAppOtp
 }
 
 /** The direct boot copy of the armed pokes and the hourly check (docs/ux/platform.md, Alarms and pokes; NUD-125). */

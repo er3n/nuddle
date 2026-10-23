@@ -10,6 +10,7 @@ import { repeatRuleOf } from "../domain/repeat";
 import { ApiError } from "./errors";
 import * as s from "./schemas";
 import * as svc from "./services";
+import * as codes from "./sign-in-codes";
 
 export interface AppEnv {
   Variables: { requestId: string; caller: Caller };
@@ -82,7 +83,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
       security: [],
       request: { body: { required: true, content: json(s.SendOtpRequest) } },
       responses: {
-        200: { description: "Code sent", content: json(s.Ok) },
+        200: { description: "Code sent, and the channel it went to", content: json(s.OtpSent) },
         ...errors([400, 429, 502]),
       },
     }),
@@ -96,7 +97,34 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
         console.error("send otp failed", error);
         throw new ApiError("upstream_failed", "could not send the code");
       }
-      return c.json({ ok: true as const }, 200);
+      // Supabase Auth called the hook before answering: its row says the channel (ADR 0029).
+      return c.json(
+        { ok: true as const, channel: await codes.channelOfLatestCode(deps, phone) },
+        200,
+      );
+    },
+  );
+
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/v1/auth/otp/sms",
+      operationId: "resendOtpBySms",
+      summary: 'Send the code already sent to the phone again, by SMS ("SMS ile gönder", ADR 0029)',
+      description:
+        "Never creates a code and adds nothing to the daily caps. otp_resend_unavailable (409) when no code is held for the phone, it expired, or it already went by SMS.",
+      tags: ["auth"],
+      security: [],
+      request: { body: { required: true, content: json(s.ResendOtpBySmsRequest) } },
+      responses: {
+        200: { description: "The same code went by SMS", content: json(s.OtpSent) },
+        ...errors([400, 409, 502]),
+      },
+    }),
+    async (c) => {
+      const { phone } = c.req.valid("json");
+      await codes.resendCodeBySms(deps, phone);
+      return c.json({ ok: true as const, channel: "sms" as const }, 200);
     },
   );
 
