@@ -36,19 +36,6 @@ import { twoPerson, twoPersonExtractions } from "./sync/two-person";
 
 const SETS = ["smoke", "sync"] as const;
 type SetName = (typeof SETS)[number];
-const APK = join(
-  repoRoot,
-  "apps",
-  "android",
-  "app",
-  "build",
-  "outputs",
-  "apk",
-  "e2e",
-  "debug",
-  "app-e2e-debug.apk",
-);
-
 const { values } = parseArgs({
   options: {
     set: { type: "string", default: "smoke" },
@@ -57,6 +44,8 @@ const { values } = parseArgs({
     cases: { type: "string" },
     /** The two-person set without a warm start: new database, clean install, sign-up in the app. */
     fresh: { type: "boolean", default: false },
+    /** The app as R8 shrinks it for Play (`minified` build type), instead of the debug build (NUD-118). */
+    minified: { type: "boolean", default: false },
   },
 });
 function chosenSet(name: string | undefined): SetName {
@@ -66,6 +55,19 @@ function chosenSet(name: string | undefined): SetName {
   process.exit(2);
 }
 const set = chosenSet(values.set);
+const buildType = values.minified ? "minified" : "debug";
+const APK = join(
+  repoRoot,
+  "apps",
+  "android",
+  "app",
+  "build",
+  "outputs",
+  "apk",
+  "e2e",
+  buildType,
+  `app-e2e-${buildType}.apk`,
+);
 const TIMEOUT_MS: Record<SetName, number> = { smoke: 30 * 60_000, sync: 20 * 60_000 };
 
 const ctx = new RunContext(new Date());
@@ -174,11 +176,15 @@ async function main(): Promise<void> {
   });
 
   await ctx.step("build", () =>
-    run("./gradlew", ["--console=plain", "assembleE2eDebug"], {
-      cwd: join(repoRoot, "apps", "android"),
-      timeoutMs: 15 * 60_000,
-      logFile: ctx.path("gradle.log"),
-    }),
+    run(
+      "./gradlew",
+      ["--console=plain", values.minified ? "assembleE2eMinified" : "assembleE2eDebug"],
+      {
+        cwd: join(repoRoot, "apps", "android"),
+        timeoutMs: 15 * 60_000,
+        logFile: ctx.path("gradle.log"),
+      },
+    ),
   );
 
   await ctx.step("install", async () => {

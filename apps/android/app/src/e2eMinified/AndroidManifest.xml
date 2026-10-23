@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The minified E2E build (NUD-118, docs/testing.md): debuggable only for the orchestrator's run-as (fake time, the
+     injected photo and speech). Set here and not with isDebuggable, which would run R8 in debug mode, without the
+     obfuscation and optimization the Play build gets. Never in a build that ships. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:debuggable="true"
+        tools:ignore="HardcodedDebugMode"
+        tools:replace="android:debuggable" />
+</manifest>

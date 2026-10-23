@@ -1,5 +1,6 @@
 // The Android app (ADR 0004). Flavors: dev and e2e run as app.nuddle.debug against the local API, prod is app.nuddle.
 import com.github.triplet.gradle.androidpublisher.ReleaseStatus
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
 
 plugins {
@@ -64,6 +65,21 @@ android {
         release {
             // Play App Signing re-signs with the app signing key; this only proves the upload came from us.
             signingConfig = signingConfigs.findByName("upload")
+            // R8 shrinks, optimizes and obfuscates the release (Play's DEX code optimization check, NUD-118).
+            // Libraries bring their own keep rules; proguard-rules.pro holds only what they miss. The mapping
+            // file goes to Crashlytics (its Gradle plugin) and to Play with the bundle (ADR 0026).
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+        // The R8 output under E2E (`--minified`, e2e/README.md): the release R8 run, signed with the debug key. Only
+        // the e2e flavor builds it (below). Not `isDebuggable`: that puts R8 in debug mode, which neither obfuscates
+        // nor optimizes. The orchestrator's `run-as` gets a debuggable app from src/e2eMinified/AndroidManifest.xml.
+        create("minified") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+            configure<CrashlyticsExtension> { mappingFileUploadEnabled = false }
         }
     }
 
@@ -154,6 +170,10 @@ android {
     packaging {
         resources.excludes += setOf("META-INF/{AL2.0,LGPL2.1}", "META-INF/LICENSE*.md")
     }
+}
+
+androidComponents {
+    beforeVariants(selector().withBuildType("minified")) { it.enable = it.productFlavors.contains("env" to "e2e") }
 }
 
 kotlin {
