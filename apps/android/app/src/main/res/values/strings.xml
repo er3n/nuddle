@@ -287,6 +287,8 @@
          rephrased so the name takes no suffix. "Dürtmeler başladı" is left out: the plan is hidden from the sender. -->
     <string name="task_detail_title">Görev</string>
     <string name="task_reach">Şu an %1$s için en güçlü dürtme: %2$s. Bitince sana yazarım.</string>
+    <!-- 7c for a one-time message (NUD-140): it rings once with sound, never full screen. -->
+    <string name="task_reach_notice">Bu mesajı bir kez, sesli bildirimle iletirim.</string>
     <!-- 7c for a task to self, opened from the next-up card (NUD-47). -->
     <string name="task_reach_self">Zamanı gelince seni dürterim.</string>
     <string name="task_edit_hint_self">Bir satıra dokunup değiştirebilirsin.</string>

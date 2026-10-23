@@ -18,6 +18,7 @@ export const TEXT = {
   weeklyTrashToEren: "eren her salı akşam 7de çöpü çıkarsın",
   loveToEren: "erene 3te seni seviyorum de",
   dinnerToEren: "erene yemek hazır de",
+  kissToErenInAMinute: "bir dakika sonra erene öptüm de",
   weekdaysWakeSelf: "beni hafta içi her gün 7'de kaldır",
   earlyWakeSelf: "yarın sabah beni 5.00'te uyandır",
   earlyWakeEren: "eren yarın sabah 5te kalksın",
@@ -200,12 +201,23 @@ const fixtures: Record<string, FixtureExtraction> = {
     finishMode: "notice",
     missing: [],
   },
-  // No time: the next five-minute mark (the app sends it at once).
+  // No time: no deadline and nothing missing, so it goes out at once (NUD-140).
   [TEXT.dinnerToEren]: {
     recipient: "Eren",
     title: "Yemek hazır",
     detail: null,
-    deadline: "2026-10-11T20:05:00+03:00",
+    deadline: null,
+    timing: "at",
+    missAfterMinutes: 60,
+    finishMode: "notice",
+    missing: [],
+  },
+  // A time a minute away rings at that time, not at once (NUD-140).
+  [TEXT.kissToErenInAMinute]: {
+    recipient: "Eren",
+    title: "Öptüm",
+    detail: null,
+    deadline: "2026-10-11T20:01:00+03:00",
     timing: "at",
     missAfterMinutes: 60,
     finishMode: "notice",

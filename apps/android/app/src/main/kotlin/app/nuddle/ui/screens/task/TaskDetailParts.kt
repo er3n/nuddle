@@ -238,11 +238,15 @@ private fun photoSentence(
     return listOf(waiting, sent, stringResource(R.string.photo_auto_approve, fromName)).joinToString(" ")
 }
 
-/** "Şu an Eren için en güçlü dürtme: **tam ekran**. Bitince sana yazarım." (open-questions#34). */
+/**
+ * "Şu an Eren için en güçlü dürtme: **tam ekran**. Bitince sana yazarım." (open-questions#34). A one-time message rings once
+ * with sound, so it says that instead (NUD-140).
+ */
 @Composable
 private fun reachSentence(state: TaskDetailUiState): AnnotatedString {
     val level = state.reachability.level?.let { stringResource(it) }
     if (level == null) return AnnotatedString(stringResource(R.string.task_reach_none, state.toName))
+    if (state.notice) return AnnotatedString(stringResource(R.string.task_reach_notice))
     val full = stringResource(R.string.task_reach, state.toName, level)
     val start = full.indexOf(level)
     return buildAnnotatedString {
@@ -267,6 +271,25 @@ private fun TaskDetailScreenToMePreview() {
                 detail = null,
                 photo = false,
                 snoozedUntil = "15:20",
+            ),
+            TaskDetailCallbacks(),
+        )
+    }
+}
+
+/** Sibel opens the message she sent Eren: one ring with sound, never the strongest poke (NUD-140). */
+@PreviewScreens
+@Composable
+private fun TaskDetailScreenNoticePreview() {
+    DurtTheme {
+        TaskDetailScreen(
+            previewState.copy(
+                title = "Yemek hazır",
+                rawText = "erene yemek hazır de",
+                deadline = DeadlineText.Today("20:00"),
+                detail = null,
+                photo = false,
+                notice = true,
             ),
             TaskDetailCallbacks(),
         )

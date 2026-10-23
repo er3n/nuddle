@@ -53,7 +53,9 @@ const digits = (s: string | null): string => (s ?? "").replace(/\D/g, "");
 function score(c: GoldenCase, got: Extraction): Record<string, boolean> {
   const replied = (got.reply ?? "").trim() !== "";
   if (c.expected.chat === true) return { chat: replied };
-  const question = got.recipient === null || got.missing.length > 0 || got.deadline === null;
+  // A notice without a time has no deadline and is no question: it goes out at once (NUD-140).
+  const noTime = got.deadline === null && got.finishMode !== "notice";
+  const question = got.recipient === null || got.missing.length > 0 || noTime;
   const result: Record<string, boolean> = {
     recipient: (got.recipient ?? null) === c.expected.recipient,
     question: question === c.expected.question,
@@ -71,9 +73,9 @@ function score(c: GoldenCase, got: Extraction): Record<string, boolean> {
   }
   if (!c.expected.question) {
     result.deadline =
-      got.deadline !== null &&
-      c.expected.deadline !== null &&
-      new Date(got.deadline).getTime() === new Date(c.expected.deadline).getTime();
+      got.deadline === null || c.expected.deadline === null
+        ? got.deadline === c.expected.deadline
+        : new Date(got.deadline).getTime() === new Date(c.expected.deadline).getTime();
     result.finishMode = got.finishMode === c.expected.finishMode;
     result.detail = digits(got.detail) === digits(c.expected.detail);
     if (c.expected.timing !== undefined) result.timing = got.timing === c.expected.timing;

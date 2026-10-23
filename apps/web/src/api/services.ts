@@ -726,11 +726,14 @@ export async function writeTask(
     "write_task",
     input.idempotencyKey,
     async (tx, txNow) => {
+      // A notice going out now was timed before the model call; it goes out when it is written.
+      const deadline =
+        resolved.finishMode === "notice" && resolved.deadline < txNow ? txNow : resolved.deadline;
       const created = await createTaskTx(
         tx,
         deps,
         caller.id,
-        { ...resolved, rawText: input.text },
+        { ...resolved, deadline, rawText: input.text },
         txNow,
       );
       const result: WriteTaskResult = {
