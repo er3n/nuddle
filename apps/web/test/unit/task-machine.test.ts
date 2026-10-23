@@ -312,6 +312,28 @@ describe("task state machine", () => {
     expect(o.plan.steps[0]?.plannedAt).toEqual(new Date("2026-10-12T18:00:00+03:00"));
   });
 
+  it("drops the recipient's start when an edit moves the deadline before it, so the task is still poked (NUD-170)", () => {
+    // Due 15:00, Eren chose to start at 14:30; Sibel moves the deadline to 14:00.
+    const task = {
+      ...aTask().withDeadline("2026-10-12T15:00:00+03:00").build(),
+      pokeFrom: new Date("2026-10-12T14:30:00+03:00"),
+    };
+    const o = apply(
+      task,
+      { type: "edit", deadline: new Date("2026-10-12T14:00:00+03:00") },
+      "sibel",
+    );
+    expect(o.task.pokeFrom).toBeNull();
+    expect(o.plan.steps.filter((s) => s.level !== "HUMAN").length).toBeGreaterThan(0);
+
+    const later = apply(
+      task,
+      { type: "edit", deadline: new Date("2026-10-12T18:00:00+03:00") },
+      "sibel",
+    );
+    expect(later.task.pokeFrom).toEqual(new Date("2026-10-12T14:30:00+03:00"));
+  });
+
   it("rejects a deadline in the past", () => {
     const task = aTask().build();
     expect(
