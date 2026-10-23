@@ -16,9 +16,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -69,6 +71,30 @@ private val HOUR_MINUTE =
         minute()
     }
 
+/** The sender's picture the phone keeps for the task (NUD-138); none when it did not arrive or cannot be read. */
+private suspend fun ExampleFiles.photoOf(taskId: String): ImageBitmap? =
+    withContext(Dispatchers.IO) {
+        runCatching { current(taskId) }.getOrNull()?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() }
+    }
+
+/**
+ * Closed on the other phone or on the server while it is up (cancelled, missed): the poke goes (NUD-64). So does a
+ * snooze from the notification (NUD-157), or a second Ertele here would use up the last one.
+ */
+@Composable
+private fun CloseWhenAnsweredElsewhere(
+    tasks: TaskDao,
+    key: AlarmKey,
+    close: () -> Unit,
+) {
+    val onClose by rememberUpdatedState(close)
+    LaunchedEffect(key) {
+        val snoozes = tasks.get(key.taskId)?.snoozesUsed ?: 0
+        tasks.observe(key.taskId).first { it == null || !it.toLocalState().open || it.snoozesUsed > snoozes }
+        onClose()
+    }
+}
+
 /**
  * The full screen poke over the lock screen (3b). Opened by the `FULL_SCREEN` notification's full screen intent;
  * `showWhenLocked` and `turnScreenOn` are set in the manifest.
@@ -96,6 +122,10 @@ class PokeActivity : ComponentActivity() {
     /** The first volume key silenced the ring (NUD-155); later ones change the volume as usual. */
     private var silenced = false
 
+    /** The poke on the screen; a newer one replaces it (NUD-157). */
+    internal var shown by mutableStateOf(AlarmKey("", 0, 0))
+        private set
+
     /** Over a locked phone Bitti is a slide (NUD-131, screens.md 3b). */
     private var locked by mutableStateOf(false)
 
@@ -113,13 +143,34 @@ class PokeActivity : ComponentActivity() {
         showOverLockScreen()
         readLock()
         enableEdgeToEdge()
-        val key = PokeIntents.key(intent)
-        if (key == null) {
+        val opened = PokeIntents.key(intent)
+        if (opened == null) {
             finish()
             return
         }
+        diagnostics.log("poke screen ${opened.taskId}")
+        shown = opened
+        setContent {
+            DurtTheme {
+                TestTagsRoot {
+                    // A new poke starts its screen afresh: nothing of the one before (its sheet, its photo) stays.
+                    key(shown) { PokeRoute(shown) }
+                }
+            }
+        }
+    }
+
+    /**
+     * singleTop: while 3b is up, the next full screen poke (the task's next step, or another task ringing at the same
+     * time) arrives here and takes the screen over, with its own key for the answers and the volume key (NUD-157).
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val key = PokeIntents.key(intent) ?: return
         diagnostics.log("poke screen ${key.taskId}")
-        setContent { DurtTheme { TestTagsRoot { PokeRoute(key) } } }
+        setIntent(intent)
+        silenced = false
+        shown = key
     }
 
     override fun onResume() {
@@ -193,12 +244,6 @@ class PokeActivity : ComponentActivity() {
         }
     }
 
-    /** The sender's picture the phone keeps for the task (NUD-138); none when it did not arrive or cannot be read. */
-    private suspend fun examplePhotoOf(taskId: String): ImageBitmap? =
-        withContext(Dispatchers.IO) {
-            runCatching { examples.current(taskId) }.getOrNull()?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() }
-        }
-
     @Composable
     private fun PokeRoute(key: AlarmKey) {
         var state by remember { mutableStateOf<PokeUiState?>(null) }
@@ -234,14 +279,10 @@ class PokeActivity : ComponentActivity() {
                     contact = task.contactPersonId?.takeUnless { notice }?.let { pokeContact(task, connections.get(it)) },
                     // The line the notification shows too (NUD-130); this screen only opens for a full screen ring.
                     pokeTitle = pokeTitle(step, PokeLevel.FULL_SCREEN).takeUnless { notice },
-                    examplePhoto = examplePhotoOf(task.id),
+                    examplePhoto = examples.photoOf(task.id),
                 )
         }
-        // Closed on the other phone or on the server while it is up (cancelled, missed): the poke goes (NUD-64).
-        LaunchedEffect(key) {
-            tasks.observe(key.taskId).first { it == null || !it.toLocalState().open }
-            finish()
-        }
+        CloseWhenAnsweredElsewhere(tasks, key, ::finish)
         LightSystemBarIcons()
         val current = state ?: return
 
