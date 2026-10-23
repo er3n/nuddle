@@ -566,6 +566,27 @@ describe("createTask", () => {
     );
   });
 
+  it("takes now as the time of a one-time message without one, never a time before now (NUD-140)", () => {
+    const notice = {
+      ...input,
+      timing: "at" as const,
+      finishMode: "notice" as const,
+      deadline: now,
+    };
+    const r = createTask(notice);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.value.task.remindAt).toEqual(now);
+    expect(r.value.plan.steps.map((s) => [s.level, s.plannedAt])).toEqual([["SOUND", now]]);
+    expect(createTask({ ...notice, deadline: addMs(now, -MINUTE) })).toEqual({
+      ok: false,
+      error: "deadline_not_in_future",
+    });
+    expect(createTask({ ...input, deadline: now })).toEqual({
+      ok: false,
+      error: "deadline_not_in_future",
+    });
+  });
+
   it("refuses a recipient who is not connected (pending invite)", () => {
     expect(createTask({ ...input, edge: null })).toEqual({ ok: false, error: "not_connected" });
     expect(createTask({ ...input, edge: { ...edge, status: "pending" } })).toEqual({

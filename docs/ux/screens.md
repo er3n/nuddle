@@ -345,6 +345,7 @@ Note: Turkish suffixes after a quoted title ("Çöpü at"ı) depend on the title
 
 ### 7c Sibel: ongoing task · `SibelTaskDetail.png`
 **Copy:** Görev | Yazdığın: "eren yarın 9dan önce temizlikçi için 1000 tl çeksin" | Kurulu | Dürtmeler başladı | Eren'e şu an en fazla tam ekranla ulaşabilirim. Bitince sana yazarım. | Kime | Son zaman | Detay | Nasıl bitsin | Fotoğrafla, sen onayla | Bir satıra dokunup değiştirebilirsin. Değişiklik Eren'e kısa bir notla gider. | Görevi iptal et
+For a one-time message (NUD-79) the reachability sentence is "Bu mesajı bir kez, sesli bildirimle iletirim.": a message rings once with sound, so the strongest poke would be wrong (NUD-140). When the phone cannot be poked at all the "dürtülemiyor" sentence stays.
 
 ### 7d Sibel: cancel task · `SibelCancel.png`
 Bottom sheet, Danger primary.

@@ -136,7 +136,7 @@ deadline
 - After midnight, before 05:00, the sender has not slept yet: "yarın" ("yarın sabah", "yarın akşam") means the day that starts when they wake up, which is today's date. "Yarın sabah 9" at 00:40 on the 12th is the 12th 09:00, not the 13th.
 - Relative times ("2 saat içinde", "20 dakika sonra") count from the sender's local time.
 - A weekday means its next occurrence after today.
-- No time and no day at all: null and add "deadline" to missing.
+- No time and no day at all: null and add "deadline" to missing. A "notice" (below) is the one exception: null, and "deadline" is not missing.
 
 timing
 - "by" when the time is a limit the task must be done before: "9'a kadar", "9dan önce", "akşama kadar", "2 saat içinde", "cumaya kadar", "yarın" with no hour.
@@ -155,7 +155,7 @@ missAfterMinutes
 
 finishMode
 - "photo" for money: withdrawing, sending, paying bills, rent, dues, taxes, or any task with a money amount.
-- "notice" for a message to pass on with nothing for the person to do (NUD-79): "X'e seni seviyorum de", "baban seni alabilir de", "iyi ki doğdun de", "yemek hazır de" when it only informs. Then the title is the message itself as the person will read it, capitalized, without the "de" ("Seni seviyorum", "Baban seni alabilir", "Yemek hazır"), timing "at"; deadline is the moment the message goes out: the time given ("3te" is 15:00 today, or tomorrow when it has passed), else the next five-minute mark after now (at 19:00 that is 19:05), and the app sends it at once; never null, never a question; missAfterMinutes 60, leadMinutes 0. When the message asks the person to do something ("ona uyuması gerektiğini ilet", "yemeğe gelsin de"), that is their task, finishMode "done": title the action ("Uyu", "Yemeğe gel"). A question to a person ("dışarıdan bir şey istiyor musun", "erene akşam ne yiyelim diye sor", "eve ne zaman geliyorsun") is also "notice" (NUD-116): the app has no chat, so the question is passed on and they answer by calling. The title is the question as they will read it, capitalized, with a question mark ("Dışarıdan bir şey istiyor musun?"); never turn it into a task such as "Dışarıdan bir şey al", and never ask for a deadline.
+- "notice" for a message to pass on with nothing for the person to do (NUD-79): "X'e seni seviyorum de", "baban seni alabilir de", "iyi ki doğdun de", "yemek hazır de" when it only informs. Then the title is the message itself as the person will read it, capitalized, without the "de" ("Seni seviyorum", "Baban seni alabilir", "Yemek hazır"), timing "at"; deadline is the moment the message goes out: the time given ("3te" is 15:00 today, or tomorrow when it has passed; "bir dakika sonra" is now plus one minute), else null with nothing missing, and the app sends it at once; never a question; missAfterMinutes 60, leadMinutes 0. When the message asks the person to do something ("ona uyuması gerektiğini ilet", "yemeğe gelsin de"), that is their task, finishMode "done": title the action ("Uyu", "Yemeğe gel"). A question to a person ("dışarıdan bir şey istiyor musun", "erene akşam ne yiyelim diye sor", "eve ne zaman geliyorsun") is also "notice" (NUD-116): the app has no chat, so the question is passed on and they answer by calling. The title is the question as they will read it, capitalized, with a question mark ("Dışarıdan bir şey istiyor musun?"); never turn it into a task such as "Dışarıdan bir şey al", and never ask for a deadline.
 - Otherwise "done".
 
 missing
@@ -183,7 +183,7 @@ Worked examples (sender's local time Sunday 21:00, connections Eren: spouse, Ay�
 - "yarın çiçekleri sula": nobody named, so recipient "self"; tomorrow 19:00, timing "by".
 - "1 saat sonra parkmetreyi uzat": "self", now plus one hour, timing "at", leadMinutes 0, missAfterMinutes 15.
 - "eren yarın 14.30da diş randevusu var": recipient Eren, title "Diş randevusuna git", 14:30 tomorrow, timing "at", leadMinutes 45, missAfterMinutes 15.
-- "erene yemek hazır de": nothing to do but come: recipient Eren, title "Yemeğe gel", now plus 5 minutes, timing "at".
+- "erene yemek hazır de": a message that only informs: recipient Eren, finishMode "notice", title "Yemek hazır", deadline null (no time given, so it goes out at once), nothing missing, timing "at".
 - "eşim sabah 6da kalkacak ona uyuması gerektiğini ilet": the 6 is why, not when; Sibel should sleep now: recipient Sibel, title "Uyu", now plus 5 minutes, timing "at".
 - "annem her gün 9da ilacını alsın": recipient Ayşe, title "İlacını al", repeat {every "day", days null, time "09:00"}; the first occurrence is tomorrow 09:00 (today's has passed), timing "at".
 - "eren her salı akşam 7de çöpü çıkarsın": recipient Eren, repeat {every "week", days [2], time "19:00"}; the first occurrence is the next Tuesday 19:00, timing "at".

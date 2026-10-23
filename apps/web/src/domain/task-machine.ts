@@ -907,9 +907,12 @@ export function createTask(input: CreateTaskInput): Result<Outcome> {
   ) {
     return { ok: false, error: "not_connected" };
   }
-  if (input.deadline.getTime() <= now.getTime()) {
-    return { ok: false, error: "deadline_not_in_future" };
-  }
+  // A notice without a time has the moment it is written as its time (NUD-140).
+  const notAhead =
+    input.finishMode === "notice"
+      ? input.deadline.getTime() < now.getTime()
+      : input.deadline.getTime() <= now.getTime();
+  if (notAhead) return { ok: false, error: "deadline_not_in_future" };
 
   // A `by` time a few minutes away is a moment (NUD-116).
   const timing = timingFor(input.timing ?? "by", input.deadline, now);

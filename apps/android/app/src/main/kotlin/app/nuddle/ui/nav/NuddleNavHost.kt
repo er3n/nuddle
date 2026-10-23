@@ -64,6 +64,8 @@ import app.nuddle.ui.screens.photo.UnsentPhotoViewModel
 import app.nuddle.ui.screens.task.TaskDetailViewModel
 import app.nuddle.ui.screens.welcome.WelcomeScreen
 import app.nuddle.ui.screens.welcome.WelcomeViewModel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 /** Route names from docs/ux/screens.md (Routes). */
 object Routes {
@@ -141,6 +143,17 @@ private fun NavHostController.replaceAll(route: String) {
     }
 }
 
+/** The phone was wiped (sign-out, deletion, a rejected refresh, NUD-141): nothing of the person stays on screen. */
+@Composable
+private fun WelcomeOnSignOut(
+    nav: NavHostController,
+    signedOut: Flow<Unit>,
+) {
+    LaunchedEffect(nav, signedOut) {
+        signedOut.collect { if (nav.currentDestination?.route != Routes.WELCOME) nav.replaceAll(Routes.WELCOME) }
+    }
+}
+
 @Composable
 fun NuddleNavHost(
     startRoute: String,
@@ -153,6 +166,8 @@ fun NuddleNavHost(
     sharedImage: SharedImage? = null,
     onSharedImageTake: () -> Unit = {},
     onRouteChange: (String) -> Unit = {},
+    /** The session went while the app is open (StartViewModel.signedOut, NUD-141). */
+    signedOut: Flow<Unit> = emptyFlow(),
 ) {
     val nav = rememberNavController()
     val takeInviteCode by rememberUpdatedState(onInviteCodeTake)
@@ -165,6 +180,7 @@ fun NuddleNavHost(
         onDispose { nav.removeOnDestinationChangedListener(listener) }
     }
     BackToHomeOnShare(nav, sharedText, sharedImage)
+    WelcomeOnSignOut(nav, signedOut)
     NavHost(navController = nav, startDestination = startRoute) {
         composable(Routes.WELCOME) {
             LightSystemBarIcons()

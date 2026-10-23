@@ -4,6 +4,7 @@ import app.nuddle.BuildConfig
 import app.nuddle.api.AuthApi
 import app.nuddle.api.model.RefreshRequest
 import app.nuddle.api.model.Session
+import app.nuddle.data.LocalWipe
 import app.nuddle.data.session.SessionStore
 import app.nuddle.data.session.StoredSession
 import kotlinx.coroutines.runBlocking
@@ -43,11 +44,13 @@ class AuthInterceptor(
 
 /**
  * On a 401, exchanges the refresh token once through `POST /api/v1/auth/refresh` (ADR 0014) and retries. A refresh
- * the server rejects signs the user out locally; the next launch starts at the welcome screen.
+ * the server rejects signs the user out locally with the same wipe as Çıkış yap (NUD-141): nothing of the person may
+ * stay on a phone whose session is gone, and the welcome screen shows (docs/ux/platform.md, Sign-out).
  */
 class TokenAuthenticator(
     private val sessions: SessionStore,
     private val authApi: () -> AuthApi,
+    private val wipe: () -> LocalWipe,
 ) : Authenticator {
     private val mutex = Mutex()
 
@@ -81,7 +84,7 @@ class TokenAuthenticator(
                         }
 
                         refreshed.code() == HTTP_UNAUTHORIZED -> {
-                            sessions.clear()
+                            wipe().wipe()
                             null
                         }
 
