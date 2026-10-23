@@ -5,11 +5,14 @@ import android.app.Application
 import android.app.Notification
 import android.app.NotificationManager
 import android.graphics.Bitmap
+import android.media.AudioManager
+import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
 import androidx.test.core.app.ApplicationProvider
 import app.nuddle.R
 import app.nuddle.data.avatar.AvatarFiles
 import app.nuddle.data.photo.toJpeg
+import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeStep
 import app.nuddle.domain.PokeTitles
@@ -163,6 +166,52 @@ class PokeNotificationsTest {
         val done = show(seq = 1, finishMode = "done").actions.first().actionIntent
         assertTrue(done.isBroadcast)
         assertEquals(PokeIntents.ACTION_DONE, shadowOf(done).savedIntent.action)
+    }
+
+    @Test
+    fun `a swipe tells the app, so the voice stops and the volume comes back (NUD-154)`() {
+        val swiped = show(seq = 1).deleteIntent
+        assertTrue(swiped.isBroadcast)
+        assertEquals(PokeIntents.ACTION_DISMISSED, shadowOf(swiped).savedIntent.action)
+        assertEquals(AlarmKey(Cast.TASK_ID, 1, 1), PokeIntents.key(shadowOf(swiped).savedIntent))
+    }
+
+    @Test
+    fun `a silenced full screen poke stays up with its answers, without sound or full screen (NUD-155)`() {
+        val manager = app.getSystemService<NotificationManager>()!!
+        val task = aTask().copy(finishMode = "done")
+        val step = PokeStep(Cast.TASK_ID, 1, 3, Instant.parse("2026-10-12T08:00:00+03:00"), PokeLevel.FULL_SCREEN)
+        notifications.show(task, step, PokeLevel.FULL_SCREEN)
+
+        notifications.silence(task, step, PokeLevel.FULL_SCREEN)
+
+        val quiet = shadowOf(manager).allNotifications.single()
+        assertEquals(NotificationChannels.POKE_SILENT, quiet.channelId)
+        assertEquals(0, quiet.flags and Notification.FLAG_INSISTENT)
+        assertEquals(0, quiet.flags and Notification.FLAG_ONGOING_EVENT)
+        assertNull(quiet.fullScreenIntent)
+        assertEquals(PokeIntents.ACTION_DONE, shadowOf(quiet.actions.first().actionIntent).savedIntent.action)
+        assertEquals(setOf(Cast.TASK_ID), notifications.showing())
+    }
+
+    @Test
+    fun `the alarm volume comes back when the answered poke is still listed by the system (NUD-159)`() {
+        val audio = app.getSystemService<AudioManager>()!!
+        audio.setStreamVolume(AudioManager.STREAM_ALARM, 1, 0)
+        show(seq = 2)
+        assertTrue(audio.getStreamVolume(AudioManager.STREAM_ALARM) > 1)
+        // The system applies a cancel later: right after it, the poke's group can still be among the active ones.
+        val lingering =
+            NotificationCompat
+                .Builder(app, NotificationChannels.POKE_SILENT)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setGroup(NotificationIds.pokeGroup(Cast.TASK_ID))
+                .build()
+        app.getSystemService<NotificationManager>()!!.notify("lingering".hashCode(), lingering)
+
+        notifications.cancel(Cast.TASK_ID)
+
+        assertEquals(1, audio.getStreamVolume(AudioManager.STREAM_ALARM))
     }
 
     @Test

@@ -12,6 +12,9 @@ object PokeIntents {
     const val ACTION_SNOOZE = "app.nuddle.action.POKE_SNOOZE"
     const val ACTION_CANT_TODAY = "app.nuddle.action.POKE_CANT_TODAY"
 
+    /** The poke was swiped away (NUD-154). */
+    const val ACTION_DISMISSED = "app.nuddle.action.POKE_DISMISSED"
+
     /** Bitti on "Zaten yaptın mı?" (NUD-129). */
     const val ACTION_HEADS_UP_DONE = "app.nuddle.action.HEADS_UP_DONE"
     const val ACTION_HEADS_UP_CHECK = "app.nuddle.action.HEADS_UP_CHECK"

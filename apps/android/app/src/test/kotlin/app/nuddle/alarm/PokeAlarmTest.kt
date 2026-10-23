@@ -62,6 +62,7 @@ class PokeAlarmTest {
     private lateinit var alarms: PokeAlarms
     private lateinit var firing: PokeFiring
     private lateinit var actions: PokeActions
+    private lateinit var quiet: QuietPokes
 
     @Before
     fun setUp() {
@@ -86,6 +87,7 @@ class PokeAlarmTest {
                 missedRings,
             )
         actions = PokeActions(db.tasks(), alarms, scheduler, notifications, outbox, ids, clock, doneNotes)
+        quiet = QuietPokes(db.tasks(), alarms, notifications)
     }
 
     @After
@@ -479,6 +481,40 @@ class PokeAlarmTest {
             alarms.rearm()
             assertEquals(listOf(Cast.TASK_ID), rearmNotifications.cancelled)
             assertTrue(scheduler.scheduled.isEmpty())
+        }
+
+    @Test
+    fun `a swiped poke goes quiet but is no answer, the plan rings on and nothing is sent (NUD-154)`() =
+        runTest {
+            givenPlan()
+            alarms.rearm()
+            firing.fire(key(1))
+
+            quiet.dismissed(key(1))
+
+            assertEquals(listOf(Cast.TASK_ID), notifications.cancelled)
+            assertEquals("SCHEDULED", db.tasks().get(Cast.TASK_ID)!!.status)
+            assertTrue(key(2) in scheduler.scheduled.keys)
+            assertTrue(db.outbox().pending().none { it.command != "report_fired" })
+        }
+
+    @Test
+    fun `a volume key silences the ringing poke, nothing else changes, and an answered poke is left alone (NUD-155)`() =
+        runTest {
+            givenPlan()
+            alarms.rearm()
+            firing.fire(key(1))
+
+            quiet.silence(key(1))
+
+            assertEquals(listOf(Cast.TASK_ID), notifications.silenced)
+            assertEquals("SCHEDULED", db.tasks().get(Cast.TASK_ID)!!.status)
+            assertTrue(key(2) in scheduler.scheduled.keys)
+            assertTrue(db.outbox().pending().none { it.command != "report_fired" })
+
+            actions.done(key(1))
+            quiet.silence(key(1))
+            assertEquals(listOf(Cast.TASK_ID), notifications.silenced)
         }
 
     @Test
