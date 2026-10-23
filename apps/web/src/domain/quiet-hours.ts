@@ -9,7 +9,7 @@ import {
   parseClockTime,
   zonedInstant,
 } from "./time";
-import { leadMinutesOf } from "./timing";
+import { leadMinutesOf, timingFor } from "./timing";
 import type { QuietHours, Timing } from "./types";
 
 export interface Interval {
@@ -80,13 +80,17 @@ export function latestQuietOverlap(from: Date, to: Date, qh: QuietHours): Interv
  * A moment written as text whose pokes would start inside the recipient's quiet hours (NUD-120,
  * open-questions#47): its start (the moment minus the lead) up to the moment overlaps them. The
  * preview then asks before the task exists; `suggested` is the moment that starts poking as quiet
- * hours end. Null for a `by` task or a free moment.
+ * hours end. Null for a `by` task or a free moment. Given `now`, a `by` time so near that it will be
+ * written as a moment is asked about like one.
  */
 export function quietMomentOf(
   task: { timing: Timing; moment: Date; leadMinutes: number | null },
   qh: QuietHours,
+  /** When the task is about to be written: a `by` time minutes away becomes a moment (NUD-116, NUD-171). */
+  now?: Date,
 ): { interval: Interval; suggested: Date } | null {
-  if (task.timing !== "at") return null;
+  const timing = now === undefined ? task.timing : timingFor(task.timing, task.moment, now);
+  if (timing !== "at") return null;
   const leadMs = leadMinutesOf("at", task.leadMinutes) * MINUTE;
   const start = addMs(task.moment, -leadMs);
   const interval = latestQuietOverlap(start, addMs(task.moment, 1), qh);

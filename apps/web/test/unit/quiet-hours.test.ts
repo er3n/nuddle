@@ -126,6 +126,18 @@ describe("a moment inside quiet hours (NUD-120)", () => {
     expect(at("2026-10-21T06:30:00+03:00", 20)).toBeNull();
   });
 
+  it("a `by` time minutes away is written as a moment, so inside quiet hours it is asked about (NUD-171)", () => {
+    const task = {
+      timing: "by" as const,
+      moment: new Date("2026-10-21T00:08:00+03:00"),
+      leadMinutes: null,
+    };
+    expect(quietMomentOf(task, eren, new Date("2026-10-21T00:00:00+03:00"))?.suggested).toEqual(
+      new Date("2026-10-21T06:00:00+03:00"),
+    );
+    expect(quietMomentOf(task, eren, new Date("2026-10-20T23:30:00+03:00"))).toBeNull();
+  });
+
   it("a `by` deadline is never asked about: its pokes move before quiet hours", () => {
     expect(
       quietMomentOf(
