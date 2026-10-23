@@ -8,7 +8,10 @@ export const en: Messages = {
   meta: {
     title: "Nuddle · Reminders and alarms for someone who always forgets",
     description:
-      "You say it once. Nuddle pokes them until it is done, and remembers how many pokes it took.",
+      "A reminder app that nags: say it once and Nuddle pokes them until it's done. Pills, bills, rent, bread. Reads it aloud, rings full screen. Free on Android.",
+    appName: "Nuddle",
+    ogLocale: "en_US",
+    currency: "USD",
   },
   nav: {
     label: "Main menu",
@@ -107,14 +110,19 @@ export const en: Messages = {
         body: "Tap the mic and say it. What you say lands in the box, so you can fix it before you send.",
       },
       {
-        tag: "Remind me at 17:00",
-        title: "Not now, later",
-        body: "Whoever gets poked can move the time the pokes start. The deadline stays put, and so does the job.",
+        tag: "Attached photo",
+        title: "Show what you mean",
+        body: "Send a photo of the shopping list or the right medicine box with the task. They see it on the task and on the poke.",
       },
       {
-        tag: "Snooze · 22:37",
-        title: "Even snoozing has rules",
-        body: "Snoozes are limited and shrink to fit the time left. The button says when it rings again, and when it's the last one.",
+        tag: "Share · Nuddle",
+        title: "A job from WhatsApp",
+        body: "Share a message or a photo from another app to Nuddle and it lands in the box. Check it, fix it, send it. Nothing goes out on its own.",
+      },
+      {
+        tag: "Tell mom",
+        title: "It knows who you mean",
+        body: '"Tell mom", "remind my wife" is enough. If you have one mom in Your people, the task goes straight to her.',
       },
       {
         tag: "✓✓ Seen",
@@ -133,6 +141,58 @@ export const en: Messages = {
       },
     ],
   },
+  ringing: {
+    title: "When the poke rings,",
+    titleAccent: "there's no escape.",
+    lead: "First a quiet notification, then sound if needed, and finally the full screen. Each step a little more insistent than the last, but always fair.",
+    items: [
+      {
+        tag: '"Sam says: take your pills"',
+        title: "It reads the task aloud",
+        body: "On a poke with sound, the phone says the task out loud. Even with the phone in your pocket, you hear what to do.",
+      },
+      {
+        tag: "I won't give up",
+        title: "A little more insistent each time",
+        body: 'First "Just so you know", then "Still here" once it makes noise, and on the full screen "I won\'t give up". No blame, no counting, it just doesn\'t let go.',
+      },
+      {
+        tag: "Already done?",
+        title: "It asks quietly first",
+        body: 'If you are using your phone right before a loud poke, it asks quietly first. Already did it? Say "Done" and it never rings.',
+      },
+      {
+        tag: "Slide to finish",
+        title: "No accidental Done in a pocket",
+        body: "On a locked phone, Done is a slide. One stray tap in a pocket doesn't finish the task, and the bread doesn't go unbought.",
+      },
+      {
+        tag: "Call · Message",
+        title: 'When it says "call mom"',
+        body: "If the task is to call or text someone in Your people, the full screen poke shows Call or Message. One tap and the phone is dialing.",
+      },
+      {
+        tag: "Remind me at 17:00",
+        title: "Not now, later",
+        body: "Whoever gets poked can move the time the pokes start. The deadline stays put, and so does the job.",
+      },
+      {
+        tag: "Snooze · 22:37",
+        title: "Even snoozing has rules",
+        body: "Snoozes are limited and shrink to fit the time left. The button says when it rings again, and when it's the last one.",
+      },
+      {
+        tag: "I'll handle it",
+        title: "When today won't work",
+        body: 'They say "Not today" and can leave a note. Whoever wrote the task gives a new time or says "I\'ll handle it", and the job moves to their list.',
+      },
+      {
+        tag: "My poke didn't ring",
+        title: "It rings even after a restart",
+        body: "Pokes ring after the phone restarts, even before you unlock it. If one didn't ring, Profile shows the settings for your phone and sets your pokes again in one tap.",
+      },
+    ],
+  },
   medicine: {
     title: "Medicine reminder:",
     titleAccent: "mom won't forget.",
@@ -141,12 +201,12 @@ export const en: Messages = {
       {
         tag: "Every day 09:00",
         title: "Said once",
-        body: "It rings at the same time every day. No sticky notes on the fridge, no alarms to set. Cancel it when the course ends.",
+        body: "It rings at the same time every day. No sticky notes on the fridge, no alarms to set. Add a photo of the right box if you like. Cancel it when the course ends.",
       },
       {
         tag: "Full screen",
         title: "Hard to ignore",
-        body: 'Miss the notification and it gets louder, then a full screen alarm. It keeps poking until she taps "Done".',
+        body: 'Miss the notification and it gets louder and reads the task aloud: "Sam says: take your pills." Then a full screen alarm. It keeps poking until she taps "Done".',
       },
       {
         tag: "✓ Done",
@@ -208,8 +268,9 @@ export const en: Messages = {
       features: [
         "Write tasks freely in the app, or say them",
         "Repeating tasks and one-time messages",
-        "Adaptive pokes and a full screen alarm",
+        "Adaptive pokes, read aloud, and a full screen alarm",
         "A photo if you want it, approved by the sender",
+        "Attached photos and sharing from other apps",
         "Your people: unlimited forgetful ones",
       ],
       cta: "Start",
@@ -237,7 +298,7 @@ export const en: Messages = {
       {
         question: "Does it poke at night?",
         answer:
-          "No. It stays quiet from 23:00 to 07:00. We're human too. Well, software, but you get it.",
+          "No. It stays quiet from 23:00 to 07:00. Pick a time inside those hours and it asks first. We're human too. Well, software, but you get it.",
       },
       {
         question: "Does it start the night before?",
@@ -258,6 +319,21 @@ export const en: Messages = {
         question: "What if I upload an old photo from the gallery?",
         answer:
           "You can. But whoever wrote the task approves it, and they know yesterday's bread when they see it.",
+      },
+      {
+        question: "What if I tap Done by accident in my pocket?",
+        answer:
+          "You can't. On a locked phone Done is a slide, and your pocket isn't that talented.",
+      },
+      {
+        question: "Can I turn a WhatsApp message into a task?",
+        answer:
+          "Share the message and pick Nuddle. The text lands in the box, you check it and send it. Nuddle never reads your WhatsApp on its own.",
+      },
+      {
+        question: "A poke didn't ring. What do I do?",
+        answer:
+          "In Profile, tap My poke didn't ring. It shows the settings for your phone and sets your pokes again in one tap.",
       },
       {
         question: "Is there an iPhone app?",

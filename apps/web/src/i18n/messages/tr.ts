@@ -8,7 +8,10 @@ export const tr: Messages = {
   meta: {
     title: "dürt · Hatırlatıcı ve alarm: evde biri hep unutuyor",
     description:
-      "Sen bir kere yaz. dürt, o iş bitene kadar dürter. Kaç dürtmede öğrendiğini de hatırlar.",
+      "Hatırlatma uygulaması: bir kere yaz ya da söyle, dürt iş bitene kadar dürter. İlaç, fatura, kira, ekmek. Sesli okur, tam ekran çalar. Android için ücretsiz.",
+    appName: "dürt",
+    ogLocale: "tr_TR",
+    currency: "TRY",
   },
   nav: {
     label: "Ana menü",
@@ -106,14 +109,19 @@ export const tr: Messages = {
         body: "Mikrofona dokun, söyle. Söylediğin kutuya yazılır, istersen düzeltip gönderirsin.",
       },
       {
-        tag: "Saat 17:00 olunca",
-        title: "Şimdi değil, sonra",
-        body: "Dürtülen, dürtmelerin başlayacağı saati kaydırabilir. Son zaman yerinde kalır, bahane kalmaz.",
+        tag: "Ekli fotoğraf",
+        title: "Ne istediğini göster",
+        body: "Alışveriş listesinin ya da doğru ilaç kutusunun fotoğrafını görevle gönder. Dürtülen onu görevde de, dürtmede de görür.",
       },
       {
-        tag: "Ertele · 22:37",
-        title: "Ertelemenin de hesabı var",
-        body: "Hakkı sınırlı, kalan süreye göre kısalır. Düğme ne zaman tekrar çalacağını söyler, son hakkı olduğunu da.",
+        tag: "Paylaş · dürt",
+        title: "WhatsApp'tan gelen iş",
+        body: "Bir mesajı ya da fotoğrafı başka bir uygulamadan dürt'e paylaş, yazı kutusuna düşer. Bakar, düzeltir, gönderirsin. Kendiliğinden gitmez.",
+      },
+      {
+        tag: "Anneme söyle",
+        title: "Kimi kastettiğini anlar",
+        body: '"Anneme söyle", "eşime hatırlat" yazman yeter. Bizimkiler\'de tek bir annen varsa görev doğrudan ona gider.',
       },
       {
         tag: "✓✓ Gördü",
@@ -132,6 +140,58 @@ export const tr: Messages = {
       },
     ],
   },
+  ringing: {
+    title: "Dürtme çalınca",
+    titleAccent: "kaçış yok.",
+    lead: "Önce sessiz bir bildirim, gerekirse ses, en sonunda tam ekran. Her adım bir öncekinden biraz daha ısrarcı, ama hep adil.",
+    items: [
+      {
+        tag: '"Sibel diyor ki: ilacını iç"',
+        title: "Görevi sesli okur",
+        body: "Sesli dürtmede telefon görevi yüksek sesle söyler. Telefon cebindeyken bile ne yapman gerektiğini duyarsın.",
+      },
+      {
+        tag: "Pes etmem",
+        title: "Her seferinde biraz daha ısrarcı",
+        body: 'Önce "Aklında olsun" der, ses çıkarınca "Hâlâ buradayım", tam ekranda "Pes etmem". Suçlamaz, saymaz, sadece bırakmaz.',
+      },
+      {
+        tag: "Zaten yaptın mı?",
+        title: "Önce sessizce sorar",
+        body: 'Yüksek sesli dürtmeden hemen önce telefonunu kullanıyorsan önce sessizce sorar. İşi bitirdiysen "Bitti" dersin, hiç çalmaz.',
+      },
+      {
+        tag: "Kaydırarak bitir",
+        title: "Cepte yanlışlıkla bitmez",
+        body: "Telefon kilitliyken Bitti bir kaydırmadır. Cebinde bir dokunuşla iş bitmiş sayılmaz, ekmek de alınmadan kalmaz.",
+      },
+      {
+        tag: "Ara · Mesaj at",
+        title: '"Annemi ara" diyorsan',
+        body: "Görev Bizimkiler'den birini aramaksa ya da ona yazmaksa, tam ekran dürtmede Ara ya da Mesaj at çıkar. Tek dokunuşla telefon açılır.",
+      },
+      {
+        tag: "Saat 17:00 olunca",
+        title: "Şimdi değil, sonra",
+        body: "Dürtülen, dürtmelerin başlayacağı saati kaydırabilir. Son zaman yerinde kalır, bahane kalmaz.",
+      },
+      {
+        tag: "Ertele · 22:37",
+        title: "Ertelemenin de hesabı var",
+        body: "Hakkı sınırlı, kalan süreye göre kısalır. Düğme ne zaman tekrar çalacağını söyler, son hakkı olduğunu da.",
+      },
+      {
+        tag: "Ben hallederim",
+        title: "Bugün olmazsa",
+        body: 'Dürtülen "Bugün olmaz" der, istersen bir not bırakır. Görevi yazan yeni zaman verir ya da "Ben hallederim" der, iş onun listesine geçer.',
+      },
+      {
+        tag: "Dürtmem çalmadı",
+        title: "Telefon kapansa da çalar",
+        body: "Telefon yeniden başlasa da dürtmeler çalar, kilidi açmasan bile. Bir dürtme çalmadıysa Profil'den telefonuna özel ayarları görür, dürtmelerini tek dokunuşla yeniden kurarsın.",
+      },
+    ],
+  },
   medicine: {
     title: "İlaç hatırlatıcı:",
     titleAccent: "annen unutmasın.",
@@ -140,12 +200,12 @@ export const tr: Messages = {
       {
         tag: "Her gün 09:00",
         title: "Bir kere yazılır",
-        body: "Her gün aynı saatte çalar. Buzdolabına not, telefonda alarm kurmak yok. Bitince iptal edersin.",
+        body: "Her gün aynı saatte çalar. Buzdolabına not, telefonda alarm kurmak yok. Doğru kutunun fotoğrafını da ekleyebilirsin. Bitince iptal edersin.",
       },
       {
         tag: "Tam ekran",
         title: "Görmezden gelinmez",
-        body: 'Bildirimi kaçırırsa ses yükselir, sonra tam ekran alarm gelir. "Bitti" diyene kadar dürter.',
+        body: 'Bildirimi kaçırırsa ses yükselir ve görevi sesli okur: "Sibel diyor ki: ilacını iç." Sonra tam ekran alarm gelir. "Bitti" diyene kadar dürter.',
       },
       {
         tag: "✓ Bitti",
@@ -204,8 +264,9 @@ export const tr: Messages = {
       features: [
         "Uygulama içinden serbest yazma, istersen sesle",
         "Tekrarlayan görevler ve tek seferlik mesajlar",
-        "Adaptif dürtme ve tam ekran alarm",
+        "Adaptif dürtme, sesli okuma ve tam ekran alarm",
         "İstersen fotoğraf, onayı yazan verir",
+        "Ekli fotoğraf, başka uygulamadan paylaşma",
         "Bizimkiler: sınırsız unutkan",
       ],
       cta: "Başla",
@@ -233,7 +294,7 @@ export const tr: Messages = {
       {
         question: "Gece de dürter mi?",
         answer:
-          "Hayır. 23:00 ile 07:00 arası sessiz. Biz de insanız, yani yazılımız ama anlıyorsun.",
+          "Hayır. 23:00 ile 07:00 arası sessiz. Sessiz saate denk gelen bir saat yazarsan önce sorar. Biz de insanız, yani yazılımız ama anlıyorsun.",
       },
       {
         question: "Bir akşam önceden mi başlar?",
@@ -253,6 +314,21 @@ export const tr: Messages = {
       {
         question: "Galeriden eski fotoğraf yüklesem?",
         answer: "Yükleyebilirsin. Ama onayı işi yazan verir, o da dünkü ekmeği tanır.",
+      },
+      {
+        question: "Cebimde yanlışlıkla Bitti'ye basarsam?",
+        answer:
+          "Basamazsın. Telefon kilitliyken Bitti kaydırarak olur, cebin o kadar becerikli değil.",
+      },
+      {
+        question: "WhatsApp'taki bir mesajı görev yapabilir miyim?",
+        answer:
+          "Mesajı paylaş, dürt'ü seç. Yazı kutuya düşer, bakıp gönderirsin. dürt WhatsApp'ını kendi kendine okumaz.",
+      },
+      {
+        question: "Bir dürtme çalmadı. Ne yapayım?",
+        answer:
+          "Profil'de Dürtmem çalmadı'ya dokun. Telefonuna özel ayarları gösterir, dürtmelerini tek dokunuşla yeniden kurar.",
       },
       {
         question: "iPhone var mı?",

@@ -6,6 +6,7 @@ import { cx } from "./cx";
 import styles from "./landing.module.css";
 import { PokeButton, PokeDemoProvider, PokedBadge, PokeLevels } from "./PokeDemo";
 import { PromoVideo } from "./PromoVideo";
+import { landingJsonLd } from "./structured-data";
 import { Story } from "./Story";
 import { PLAY_STORE_URL } from "./store";
 
@@ -206,6 +207,30 @@ function Features({ m }: { m: Messages }) {
   );
 }
 
+function Ringing({ m }: { m: Messages }) {
+  return (
+    <section id="ringing" className={styles.dark}>
+      <div className={styles.container}>
+        <h2 className={styles.sectionTitle}>
+          {m.ringing.title}
+          <br />
+          <span className={styles.accentText}>{m.ringing.titleAccent}</span>
+        </h2>
+        <p className={styles.ringingLead}>{m.ringing.lead}</p>
+        <div className={styles.cards}>
+          {m.ringing.items.map((item) => (
+            <div key={item.title} className={styles.darkCard}>
+              <span className={styles.darkCardTag}>{item.tag}</span>
+              <h3 className={styles.stepTitle}>{item.title}</h3>
+              <p className={styles.darkCardBody}>{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Medicine({ m }: { m: Messages }) {
   return (
     <section id="medicine" className={styles.light}>
@@ -346,6 +371,13 @@ export function Landing({ locale }: { locale: Locale }) {
   return (
     <PokeDemoProvider>
       <div className={styles.page}>
+        <script
+          type="application/ld+json"
+          // Structured data for search engines; `<` is escaped so no text can close the tag.
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(landingJsonLd(locale)).replace(/</g, "\\u003c"),
+          }}
+        />
         <Header locale={locale} m={m} />
         <main>
           <Hero locale={locale} m={m} />
@@ -360,6 +392,7 @@ export function Landing({ locale }: { locale: Locale }) {
           </section>
           <Steps m={m} />
           <Features m={m} />
+          <Ringing m={m} />
           <Medicine m={m} />
           <Levels locale={locale} m={m} />
           <Excuses m={m} />
