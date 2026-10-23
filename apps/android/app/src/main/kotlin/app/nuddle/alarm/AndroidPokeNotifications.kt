@@ -126,7 +126,7 @@ class AndroidPokeNotifications
         ) {
             NotificationManagerCompat.from(context).cancel(notificationId(task.id))
             speech.stop(task.id)
-            if (showing().isEmpty()) volume.restore()
+            if ((showing() - task.id).isEmpty()) volume.restore()
             post(task, step, level, quiet = true)
         }
 
@@ -244,7 +244,9 @@ class AndroidPokeNotifications
             NotificationManagerCompat.from(context).cancel(notificationId(taskId))
             NotificationManagerCompat.from(context).cancel(NotificationIds.headsUp(taskId))
             speech.stop(taskId)
-            if (showing().isEmpty()) volume.restore()
+            // The person's alarm volume comes back once no other poke is up (NUD-68). The system applies a cancel later,
+            // so the poke just taken away may still be listed and does not count (NUD-159).
+            if ((showing() - taskId).isEmpty()) volume.restore()
         }
 
         // Each poke is in a group of its own task (NotificationIds.pokeGroup), which names the task.
