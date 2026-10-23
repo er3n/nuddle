@@ -179,7 +179,12 @@ class AndroidPokeSpeech
                     .Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
                     .setAudioAttributes(ATTRIBUTES)
                     .build()
-            audio?.requestAudioFocus(focus)
+            // A phone call (or a voice chat) holds the focus and refuses it: the task is not said over the call, this
+            // round is skipped and the tone rings as the system allows during a call (NUD-151).
+            if (audio != null && (audio.inCall() || audio.requestAudioFocus(focus) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED)) {
+                diagnostics.log("speech skipped in call")
+                return
+            }
             val id = UUID.randomUUID().toString()
             val done = CompletableDeferred<Unit>().also { spoken[id] = it }
             try {
@@ -195,6 +200,8 @@ class AndroidPokeSpeech
                 audio?.abandonAudioFocusRequest(focus)
             }
         }
+
+        private fun AudioManager.inCall() = mode == AudioManager.MODE_IN_CALL || mode == AudioManager.MODE_IN_COMMUNICATION
 
         private suspend fun release() =
             engineLock.withLock {
