@@ -682,11 +682,16 @@ export async function writeTask(
   // A moment inside the recipient's quiet hours waits for the sender to choose (NUD-120).
   const quiet =
     resolved.kind === "create"
-      ? await quietMomentFor(deps, resolved.recipientId, {
-          timing: resolved.timing,
-          moment: resolved.deadline,
-          leadMinutes: resolved.leadMinutes,
-        })
+      ? await quietMomentFor(
+          deps,
+          resolved.recipientId,
+          {
+            timing: resolved.timing,
+            moment: resolved.deadline,
+            leadMinutes: resolved.leadMinutes,
+          },
+          now,
+        )
       : null;
   if (resolved.kind === "ask" || quiet !== null) {
     const question = resolved.kind === "ask" ? resolved.question : "quiet_hours";
@@ -754,11 +759,12 @@ async function quietMomentFor(
   deps: AppDeps,
   recipientId: PersonId,
   task: { timing: Timing; moment: Date; leadMinutes: number | null },
+  now: Date,
 ): Promise<{ start: string; end: string; suggested: string } | null> {
-  if (task.timing !== "at") return null;
   const recipient = await findPerson(deps.db, recipientId);
   if (!recipient) return null;
-  const hit = quietMomentOf(task, recipient.quietHours);
+  // A `by` time minutes away is written as a moment (NUD-116), so it is asked about like one (NUD-171).
+  const hit = quietMomentOf(task, recipient.quietHours, now);
   if (!hit) return null;
   const { start, end } = recipient.quietHours;
   return { start, end, suggested: hit.suggested.toISOString() };
