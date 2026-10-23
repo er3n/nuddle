@@ -2,19 +2,23 @@ package app.nuddle.ui
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import app.nuddle.data.CodeChannel
 import app.nuddle.data.InvitePreview
 import app.nuddle.data.SendOtpOutcome
+import app.nuddle.data.SmsResendOutcome
 import app.nuddle.data.VerifyOutcome
 import app.nuddle.data.sync.Syncer
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeAuthRepository
 import app.nuddle.testing.FakeInvitePreviews
+import app.nuddle.testing.FakeWhatsAppOtp
 import app.nuddle.testing.MainDispatcherRule
 import app.nuddle.testing.RecordingStarter
 import app.nuddle.ui.screens.code.CodeViewModel
 import app.nuddle.ui.screens.code.SignedInDestination
 import app.nuddle.ui.screens.name.NameUiState
 import app.nuddle.ui.screens.name.NameViewModel
+import app.nuddle.ui.screens.phone.CodeSent
 import app.nuddle.ui.screens.phone.PhoneViewModel
 import app.nuddle.ui.screens.welcome.WelcomeViewModel
 import kotlinx.coroutines.CompletableDeferred
@@ -37,6 +41,7 @@ class SignInViewModelTest {
     @get:Rule val main = MainDispatcherRule()
 
     private val auth = FakeAuthRepository()
+    private val whatsApp = FakeWhatsAppOtp()
     private val starter = RecordingStarter()
     private var syncs = 0
     private var sync = Syncer { true }
@@ -51,8 +56,17 @@ class SignInViewModelTest {
     /** 21:15 in Istanbul: the end of the wait in the 6c tests. */
     private val waitEnds = Instant.parse("2026-10-11T21:15:00+03:00")
 
-    private fun codeViewModel() =
-        CodeViewModel(SavedStateHandle(mapOf(CodeViewModel.ARG_PHONE to Cast.EREN_PHONE)), auth, starter, syncer, istanbul)
+    private fun codeViewModel(channel: CodeChannel? = null) =
+        CodeViewModel(
+            SavedStateHandle(
+                listOfNotNull(CodeViewModel.ARG_PHONE to Cast.EREN_PHONE, channel?.let { CodeViewModel.ARG_CHANNEL to it.name }).toMap(),
+            ),
+            auth,
+            starter,
+            syncer,
+            istanbul,
+            whatsApp,
+        )
 
     @Test
     fun `phone screen sends the code only for a valid mobile number`() =
@@ -66,9 +80,128 @@ class SignInViewModelTest {
                 vm.onNumberChange("0532 000 00 02")
                 assertEquals("5320000002", vm.state.value.national)
                 vm.onSend()
-                assertEquals(Cast.EREN_PHONE, awaitItem())
+                assertEquals(CodeSent(Cast.EREN_PHONE, CodeChannel.Sms), awaitItem())
             }
             assertEquals(listOf(Cast.EREN_PHONE), auth.sentTo)
+        }
+
+    @Test
+    fun `phone screen opens the code screen in the channel the code went by (ADR 0029)`() =
+        runTest(main.dispatcher) {
+            auth.sendOutcome = SendOtpOutcome.Sent(CodeChannel.WhatsApp)
+            val vm = PhoneViewModel(auth, istanbul)
+            vm.codeSent.test {
+                vm.onNumberChange("5320000002")
+                vm.onSend()
+                assertEquals(CodeSent(Cast.EREN_PHONE, CodeChannel.WhatsApp), awaitItem())
+            }
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class) // Reason: advanceTimeBy is how virtual time moves (ADR 0009).
+    @Test
+    fun `an SMS code shows the SMS variant and never offers SMS ile gönder`() =
+        runTest(main.dispatcher) {
+            val vm = codeViewModel(CodeChannel.Sms)
+            assertEquals(CodeChannel.Sms, vm.state.value.channel)
+            advanceTimeBy(30.seconds)
+            assertFalse(vm.state.value.smsOffered)
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class) // Reason: advanceTimeBy is how virtual time moves (ADR 0009).
+    @Test
+    fun `a WhatsApp code shows the WhatsApp variant, SMS ile gönder comes after 5 seconds (open-questions 66)`() =
+        runTest(main.dispatcher) {
+            val vm = codeViewModel(CodeChannel.WhatsApp)
+            assertEquals(CodeChannel.WhatsApp, vm.state.value.channel)
+            advanceTimeBy(CodeViewModel.SMS_OFFER_AFTER - 1.seconds)
+            runCurrent()
+            assertFalse(vm.state.value.smsOffered)
+            vm.onSendSms()
+            assertTrue(auth.smsResentTo.isEmpty())
+            advanceTimeBy(1.seconds)
+            runCurrent()
+            assertTrue(vm.state.value.smsOffered)
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class) // Reason: advanceTimeBy is how virtual time moves (ADR 0009).
+    @Test
+    fun `SMS ile gönder sends the same code by SMS, switches to the SMS variant and the SMS reader listens again`() =
+        runTest(main.dispatcher) {
+            val vm = codeViewModel(CodeChannel.WhatsApp)
+            advanceTimeBy(CodeViewModel.SMS_OFFER_AFTER)
+            runCurrent()
+            val listened = vm.codesSent.value
+            vm.onSendSms()
+            assertEquals(listOf(Cast.EREN_PHONE), auth.smsResentTo)
+            assertEquals(CodeChannel.Sms, vm.state.value.channel)
+            assertTrue(vm.state.value.alsoSentBySms)
+            assertFalse(vm.state.value.smsOffered)
+            assertEquals(listened + 1, vm.codesSent.value)
+            assertTrue(auth.sentTo.isEmpty())
+            assertTrue(vm.state.value.resendInSeconds > 0)
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class) // Reason: advanceTimeBy is how virtual time moves (ADR 0009).
+    @Test
+    fun `no code to send by SMS hides the button and the countdown goes on`() =
+        runTest(main.dispatcher) {
+            auth.smsResendOutcome = SmsResendOutcome.Unavailable
+            val vm = codeViewModel(CodeChannel.WhatsApp)
+            advanceTimeBy(CodeViewModel.SMS_OFFER_AFTER)
+            runCurrent()
+            val left = vm.state.value.resendInSeconds
+            vm.onSendSms()
+            assertFalse(vm.state.value.smsOffered)
+            assertEquals(CodeChannel.WhatsApp, vm.state.value.channel)
+            assertFalse(vm.state.value.alsoSentBySms)
+            assertFalse(vm.state.value.unreachable)
+            assertEquals(left, vm.state.value.resendInSeconds)
+            advanceTimeBy(1.seconds)
+            runCurrent()
+            assertEquals(left - 1, vm.state.value.resendInSeconds)
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class) // Reason: advanceTimeBy is how virtual time moves (ADR 0009).
+    @Test
+    fun `an unreachable server keeps SMS ile gönder and shows the connection error`() =
+        runTest(main.dispatcher) {
+            auth.smsResendOutcome = SmsResendOutcome.Failed
+            val vm = codeViewModel(CodeChannel.WhatsApp)
+            advanceTimeBy(CodeViewModel.SMS_OFFER_AFTER)
+            runCurrent()
+            vm.onSendSms()
+            assertTrue(vm.state.value.unreachable)
+            assertTrue(vm.state.value.smsOffered)
+            assertFalse(vm.state.value.sendingSms)
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class) // Reason: advanceTimeBy is how virtual time moves (ADR 0009).
+    @Test
+    fun `a new code over WhatsApp starts the SMS offer wait again`() =
+        runTest(main.dispatcher) {
+            val vm = codeViewModel(CodeChannel.Sms)
+            advanceTimeBy(61.seconds)
+            runCurrent()
+            auth.sendOutcome = SendOtpOutcome.Sent(CodeChannel.WhatsApp)
+            vm.onResend()
+            assertEquals(CodeChannel.WhatsApp, vm.state.value.channel)
+            assertFalse(vm.state.value.smsOffered)
+            advanceTimeBy(CodeViewModel.SMS_OFFER_AFTER)
+            runCurrent()
+            assertTrue(vm.state.value.smsOffered)
+        }
+
+    @Test
+    fun `a code from WhatsApp fills the boxes and signs in`() =
+        runTest(main.dispatcher) {
+            val vm = codeViewModel(CodeChannel.WhatsApp)
+            vm.signedIn.test {
+                whatsApp.handOver("482913")
+                assertEquals(SignedInDestination.Home, awaitItem())
+            }
+            assertEquals(listOf(Cast.EREN_PHONE to "482913"), auth.verified)
+            assertEquals("482913", vm.state.value.code)
+            assertEquals(listOf("482913"), whatsApp.taken)
         }
 
     @Test

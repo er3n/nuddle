@@ -4,9 +4,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.nuddle.data.AuthRepository
+import app.nuddle.data.CodeChannel
 import app.nuddle.data.SendOtpOutcome
 import app.nuddle.data.SessionStarter
+import app.nuddle.data.SmsResendOutcome
 import app.nuddle.data.VerifyOutcome
+import app.nuddle.data.WhatsAppOtp
 import app.nuddle.data.sync.Syncer
 import app.nuddle.domain.TurkishPhone
 import app.nuddle.ui.components.CODE_LENGTH
@@ -40,9 +43,13 @@ class CodeViewModel
         private val starter: SessionStarter,
         private val syncer: Syncer,
         private val timeZone: TimeZone,
+        private val whatsApp: WhatsAppOtp,
     ) : ViewModel() {
         private val phone: String = checkNotNull(savedState[ARG_PHONE])
-        private val mutableState = MutableStateFlow(CodeUiState(phoneDisplay = TurkishPhone.display(phone)))
+        private val firstChannel =
+            savedState.get<String>(ARG_CHANNEL)?.let { name -> CodeChannel.entries.firstOrNull { it.name == name } } ?: CodeChannel.Sms
+        private val mutableState =
+            MutableStateFlow(CodeUiState(phoneDisplay = TurkishPhone.display(phone), channel = firstChannel))
         val state: StateFlow<CodeUiState> = mutableState.asStateFlow()
 
         private val done = Channel<SignedInDestination>(Channel.BUFFERED)
@@ -50,13 +57,23 @@ class CodeViewModel
 
         private val sends = MutableStateFlow(0)
 
-        /** Counts the codes sent from this screen, so the SMS reader listens again after a resend. */
+        /** Counts the codes sent from this screen and the SMS of one, so the SMS reader listens again after each. */
         val codesSent: StateFlow<Int> = sends.asStateFlow()
 
         private var countdown: Job? = null
+        private var smsOffer: Job? = null
 
         init {
             startCountdown()
+            offerSmsAfterWhatsApp()
+            // A code WhatsApp handed over fills the boxes and goes in like one the SMS Retriever read (ADR 0029).
+            viewModelScope.launch {
+                whatsApp.codes.collect { code ->
+                    whatsApp.take(code)
+                    onCodeChange(code)
+                    onComplete(code)
+                }
+            }
         }
 
         fun onCodeChange(code: String) {
@@ -112,9 +129,11 @@ class CodeViewModel
             mutableState.update { it.copy(code = "", wrongCode = false, unreachable = false) }
             viewModelScope.launch {
                 when (val outcome = auth.sendOtp(phone)) {
-                    SendOtpOutcome.Sent -> {
+                    is SendOtpOutcome.Sent -> {
+                        mutableState.update { it.copy(channel = outcome.channel, smsOffered = false, alsoSentBySms = false) }
                         sends.update { it + 1 }
                         startCountdown()
+                        offerSmsAfterWhatsApp()
                     }
 
                     is SendOtpOutcome.Locked -> {
@@ -133,6 +152,42 @@ class CodeViewModel
             }
         }
 
+        /** "SMS ile gönder": the code already sent, again by SMS (ADR 0029). The countdown for a new code goes on. */
+        fun onSendSms() {
+            val current = mutableState.value
+            if (!current.smsOffered || current.sendingSms) return
+            mutableState.update { it.copy(sendingSms = true, unreachable = false) }
+            viewModelScope.launch {
+                when (auth.resendOtpBySms(phone)) {
+                    SmsResendOutcome.Sent -> {
+                        mutableState.update {
+                            it.copy(channel = CodeChannel.Sms, smsOffered = false, sendingSms = false, alsoSentBySms = true)
+                        }
+                        sends.update { it + 1 }
+                    }
+
+                    SmsResendOutcome.Unavailable -> {
+                        mutableState.update { it.copy(smsOffered = false, sendingSms = false) }
+                    }
+
+                    SmsResendOutcome.Failed -> {
+                        mutableState.update { it.copy(sendingSms = false, unreachable = true) }
+                    }
+                }
+            }
+        }
+
+        /** A WhatsApp code: "SMS ile gönder" shows after [SMS_OFFER_AFTER] (open-questions#66), in coroutine time. */
+        private fun offerSmsAfterWhatsApp() {
+            smsOffer?.cancel()
+            if (mutableState.value.channel != CodeChannel.WhatsApp) return
+            smsOffer =
+                viewModelScope.launch {
+                    delay(SMS_OFFER_AFTER)
+                    mutableState.update { it.copy(smsOffered = it.channel == CodeChannel.WhatsApp) }
+                }
+        }
+
         /** Counts in coroutine time (virtual in tests), not by reading the clock. */
         private fun startCountdown() {
             countdown?.cancel()
@@ -147,6 +202,12 @@ class CodeViewModel
 
         companion object {
             const val ARG_PHONE = "phone"
+
+            /** [CodeChannel] name of the first code, from `auth/otp` (ADR 0029). */
+            const val ARG_CHANNEL = "channel"
+
+            /** "SMS ile gönder" waits this long after a WhatsApp code (open-questions#66). */
+            val SMS_OFFER_AFTER = 5.seconds
 
             /** The design shows a one minute wait before a new code (0d). */
             const val RESEND_AFTER_SECONDS = 60

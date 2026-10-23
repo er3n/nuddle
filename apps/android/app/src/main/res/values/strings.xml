@@ -43,6 +43,11 @@
     <string name="code_resend_wait">Kod gelmedi mi? %1$s sonra tekrar gönderebilirsin.</string>
     <string name="code_hint">Kod SMS ile gelince klavyenin üstünde otomatik çıkar, dokunman yeter.</string>
     <string name="code_resend">Yeni kod gönder</string>
+    <string name="code_title_whatsapp">WhatsApp\'ına baktın mı?</string>
+    <string name="code_body_whatsapp">%1$s numarasına WhatsApp\'tan 6 haneli kod gönderdik.</string>
+    <string name="code_hint_whatsapp">Kod WhatsApp\'a gelince kendiliğinden dolar. WhatsApp\'a ulaşamazsak SMS ile göndeririz.</string>
+    <string name="code_send_sms">SMS ile gönder</string>
+    <string name="code_sent_by_sms_too">Kodu SMS ile de gönderdik.</string>
     <string name="code_wrong_title">Kod tutmadı</string>
     <string name="code_wrong_body">%1$s numarasına gelen 6 haneli kodu tekrar dene.</string>
     <string name="code_wrong_error">Kod yanlış.</string>

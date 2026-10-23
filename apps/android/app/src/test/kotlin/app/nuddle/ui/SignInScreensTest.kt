@@ -16,6 +16,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performFirstLinkClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.text.LinkAnnotation
+import app.nuddle.data.CodeChannel
 import app.nuddle.ui.components.CodeInput
 import app.nuddle.ui.components.UndoToast
 import app.nuddle.ui.screens.code.CodeScreen
@@ -129,6 +130,27 @@ class SignInScreensTest {
         compose.onNodeWithText("Çok fazla yanlış deneme.").assertExists()
         compose.onNodeWithText("Yeni kodu saat 21:15 olunca isteyebilirsin.").assertExists()
         compose.onNodeWithText("Yeni kod gönder").assertIsNotEnabled()
+    }
+
+    @Test
+    fun `the WhatsApp variant says so and offers SMS ile gönder once the wait is over (ADR 0029)`() {
+        var state by mutableStateOf(CodeUiState("+90 532 000 00 02", resendInSeconds = 58, channel = CodeChannel.WhatsApp))
+        var sms = 0
+        content { CodeScreen(state, {}, {}, {}, {}, {}, onSendSms = { sms++ }) }
+        compose.onNodeWithText("WhatsApp'ına baktın mı?").assertExists()
+        compose.onNodeWithText("+90 532 000 00 02 numarasına WhatsApp'tan 6 haneli kod gönderdik.").assertExists()
+        compose.onNodeWithText("Kod WhatsApp'a gelince kendiliğinden dolar. WhatsApp'a ulaşamazsak SMS ile göndeririz.").assertExists()
+        compose.onNodeWithText("SMS ile gönder").assertDoesNotExist()
+
+        state = state.copy(smsOffered = true)
+        compose.onNodeWithText("SMS ile gönder").performClick()
+        assertEquals(1, sms)
+
+        state = state.copy(channel = CodeChannel.Sms, smsOffered = false, alsoSentBySms = true)
+        compose.onNodeWithText("Mesajlarına baktın mı?").assertExists()
+        compose.onNodeWithText("Kodu SMS ile de gönderdik.").assertExists()
+        compose.onNodeWithText("Kod SMS ile gelince klavyenin üstünde otomatik çıkar, dokunman yeter.").assertExists()
+        compose.onNodeWithText("SMS ile gönder").assertDoesNotExist()
     }
 
     @Test

@@ -27,6 +27,7 @@ object TestTags {
     const val CODE_INPUT = "code.input"
     const val CODE_CHANGE_NUMBER = "code.changeNumber"
     const val CODE_RESEND = "code.resend"
+    const val CODE_SEND_SMS = "code.sendSms"
 
     const val NAME_INPUT = "name.input"
     const val NAME_CONTINUE = "name.continue"

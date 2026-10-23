@@ -6,6 +6,7 @@ import app.nuddle.api.CommandsApi
 import app.nuddle.domain.IdGenerator
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
+import app.nuddle.testing.FakeWhatsAppOtp
 import app.nuddle.testing.InMemorySessionStore
 import app.nuddle.testing.drtError
 import app.nuddle.testing.json
@@ -25,6 +26,7 @@ import kotlin.time.Instant
 class AuthRepositoryTest {
     private val server = MockWebServer()
     private val sessions = InMemorySessionStore()
+    private val whatsApp = FakeWhatsAppOtp()
     private lateinit var repo: ApiAuthRepository
 
     @Before
@@ -39,6 +41,7 @@ class AuthRepositoryTest {
                 ids = IdGenerator(FakeClock()),
                 timeZone = TimeZone.of("Europe/Istanbul"),
                 json = testJson,
+                whatsApp = whatsApp,
             )
     }
 
@@ -55,11 +58,39 @@ class AuthRepositoryTest {
     @Test
     fun `sending a code posts the E164 number`() =
         runTest {
-            server.enqueue(json(200, """{"ok":true}"""))
-            assertEquals(SendOtpOutcome.Sent, repo.sendOtp(Cast.EREN_PHONE))
+            server.enqueue(json(200, """{"ok":true,"channel":"sms"}"""))
+            assertEquals(SendOtpOutcome.Sent(CodeChannel.Sms), repo.sendOtp(Cast.EREN_PHONE))
             val request = server.takeRequest()
             assertEquals("/api/v1/auth/otp", request.url.encodedPath)
             assertEquals("""{"phone":"${Cast.EREN_PHONE}"}""", request.body?.utf8())
+        }
+
+    @Test
+    fun `a code sent over WhatsApp says so, after the WhatsApp handshake (ADR 0029)`() =
+        runTest {
+            server.enqueue(json(200, """{"ok":true,"channel":"whatsapp"}"""))
+            assertEquals(SendOtpOutcome.Sent(CodeChannel.WhatsApp), repo.sendOtp(Cast.EREN_PHONE))
+            assertEquals(1, whatsApp.handshakes)
+        }
+
+    @Test
+    fun `SMS ile gönder posts the number to auth otp sms (ADR 0029)`() =
+        runTest {
+            server.enqueue(json(200, """{"ok":true,"channel":"sms"}"""))
+            assertEquals(SmsResendOutcome.Sent, repo.resendOtpBySms(Cast.EREN_PHONE))
+            val request = server.takeRequest()
+            assertEquals("/api/v1/auth/otp/sms", request.url.encodedPath)
+            assertEquals("""{"phone":"${Cast.EREN_PHONE}"}""", request.body?.utf8())
+            assertEquals(0, whatsApp.handshakes)
+        }
+
+    @Test
+    fun `no code to send by SMS is told apart from an unreachable server`() =
+        runTest {
+            server.enqueue(drtError(409, "DRT-1011", "otp_resend_unavailable"))
+            assertEquals(SmsResendOutcome.Unavailable, repo.resendOtpBySms(Cast.EREN_PHONE))
+            server.enqueue(drtError(502, "DRT-5002", "upstream_failed"))
+            assertEquals(SmsResendOutcome.Failed, repo.resendOtpBySms(Cast.EREN_PHONE))
         }
 
     @Test

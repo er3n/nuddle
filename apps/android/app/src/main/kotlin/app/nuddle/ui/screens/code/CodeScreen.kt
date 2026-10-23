@@ -21,6 +21,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import app.nuddle.R
+import app.nuddle.data.CodeChannel
 import app.nuddle.ui.TestTags
 import app.nuddle.ui.components.BackBar
 import app.nuddle.ui.components.CodeInput
@@ -37,8 +38,8 @@ import app.nuddle.ui.theme.DurtTheme
 private const val SECONDS_PER_MINUTE = 60
 
 /**
- * 0d, and 6c after a wrong code. SMS only until WhatsApp exists (NUD-9 decision E). The server does not count
- * attempts yet, so 6c shows no remaining attempts (NUD-9 decision F).
+ * 0d, and 6c after a wrong code. A WhatsApp and an SMS variant by the channel `auth/otp` answered (ADR 0029); in the
+ * WhatsApp one "SMS ile gönder" shows after a few seconds (open-questions#66).
  */
 @Immutable
 data class CodeUiState(
@@ -54,6 +55,12 @@ data class CodeUiState(
     val limitedUntil: String? = null,
     val unreachable: Boolean = false,
     val resendInSeconds: Int = 0,
+    val channel: CodeChannel = CodeChannel.Sms,
+    /** "SMS ile gönder" is offered: a WhatsApp code, a few seconds after it was sent. */
+    val smsOffered: Boolean = false,
+    val sendingSms: Boolean = false,
+    /** "SMS ile gönder" went through: "Kodu SMS ile de gönderdik." */
+    val alsoSentBySms: Boolean = false,
 )
 
 private fun countdown(seconds: Int): String =
@@ -72,7 +79,9 @@ fun CodeScreen(
     onChangeNumber: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onSendSms: () -> Unit = {},
 ) {
+    val whatsApp = state.channel == CodeChannel.WhatsApp
     val colors = DurtTheme.colors
     val dimens = DurtTheme.dimens
     val focus = remember { FocusRequester() }
@@ -99,7 +108,10 @@ fun CodeScreen(
                 stringResource(R.string.code_wrong_body, state.phoneDisplay),
             )
         } else {
-            SignInHeader(stringResource(R.string.code_title), stringResource(R.string.code_body, state.phoneDisplay)) {
+            SignInHeader(
+                stringResource(if (whatsApp) R.string.code_title_whatsapp else R.string.code_title),
+                stringResource(if (whatsApp) R.string.code_body_whatsapp else R.string.code_body, state.phoneDisplay),
+            ) {
                 TextLink(
                     stringResource(R.string.code_change_number),
                     onClick = onChangeNumber,
@@ -145,10 +157,25 @@ fun CodeScreen(
                     TextLink(stringResource(R.string.code_resend), onClick = onResend, modifier = Modifier.testTag(TestTags.CODE_RESEND))
                 }
             }
+            if (!state.wrongCode && state.smsOffered) {
+                TextLink(
+                    stringResource(R.string.code_send_sms),
+                    onClick = onSendSms,
+                    modifier = Modifier.testTag(TestTags.CODE_SEND_SMS),
+                )
+            }
+            if (!state.wrongCode && state.alsoSentBySms) {
+                Text(
+                    stringResource(R.string.code_sent_by_sms_too),
+                    style = DurtTheme.type.bodyStrong,
+                    color = colors.ink,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
+            }
             if (!state.wrongCode) {
                 NoteCard {
                     Text(
-                        stringResource(R.string.code_hint),
+                        stringResource(if (whatsApp) R.string.code_hint_whatsapp else R.string.code_hint),
                         style = DurtTheme.type.bodySmall,
                         color = colors.textBody,
                     )
@@ -198,6 +225,37 @@ private fun ColumnScope.WrongCode(state: CodeUiState) {
 private fun CodeScreenPreview() {
     DurtTheme {
         CodeScreen(CodeUiState("+90 532 123 45 67", code = "481", resendInSeconds = 42), {}, {}, {}, {}, {})
+    }
+}
+
+@PreviewScreens
+@Composable
+private fun CodeScreenWhatsAppPreview() {
+    DurtTheme {
+        CodeScreen(CodeUiState("+90 532 123 45 67", resendInSeconds = 58, channel = CodeChannel.WhatsApp), {}, {}, {}, {}, {})
+    }
+}
+
+@PreviewScreens
+@Composable
+private fun CodeScreenWhatsAppSmsOfferedPreview() {
+    DurtTheme {
+        CodeScreen(
+            CodeUiState("+90 532 123 45 67", resendInSeconds = 54, channel = CodeChannel.WhatsApp, smsOffered = true),
+            {},
+            {},
+            {},
+            {},
+            {},
+        )
+    }
+}
+
+@PreviewScreens
+@Composable
+private fun CodeScreenAlsoSentBySmsPreview() {
+    DurtTheme {
+        CodeScreen(CodeUiState("+90 532 123 45 67", resendInSeconds = 47, alsoSentBySms = true), {}, {}, {}, {}, {})
     }
 }
 

@@ -13,14 +13,17 @@ import app.nuddle.api.model.RepeatRule
 import app.nuddle.data.AccountRepository
 import app.nuddle.data.Approvals
 import app.nuddle.data.AuthRepository
+import app.nuddle.data.CodeChannel
 import app.nuddle.data.InvitePreview
 import app.nuddle.data.InvitePreviews
 import app.nuddle.data.InviteRepository
 import app.nuddle.data.SendOtpOutcome
 import app.nuddle.data.SessionStarter
+import app.nuddle.data.SmsResendOutcome
 import app.nuddle.data.TaskCloser
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.VerifyOutcome
+import app.nuddle.data.WhatsAppOtp
 import app.nuddle.data.WriteOutcome
 import app.nuddle.data.announcement.NewsAnnouncer
 import app.nuddle.data.avatar.AvatarRepository
@@ -61,6 +64,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.datetime.LocalTime
@@ -144,13 +148,20 @@ class FakeAuthRepository : AuthRepository {
     val sentTo = mutableListOf<String>()
     val verified = mutableListOf<Pair<String, String>>()
     val registeredNames = mutableListOf<String>()
-    var sendOutcome: SendOtpOutcome = SendOtpOutcome.Sent
+    var sendOutcome: SendOtpOutcome = SendOtpOutcome.Sent(CodeChannel.Sms)
+    val smsResentTo = mutableListOf<String>()
+    var smsResendOutcome: SmsResendOutcome = SmsResendOutcome.Sent
     var verifyOutcome: VerifyOutcome = VerifyOutcome.SignedIn(registered = true)
     var registerOk = true
 
     override suspend fun sendOtp(e164: String): SendOtpOutcome {
         sentTo += e164
         return sendOutcome
+    }
+
+    override suspend fun resendOtpBySms(e164: String): SmsResendOutcome {
+        smsResentTo += e164
+        return smsResendOutcome
     }
 
     override suspend fun verify(
@@ -164,6 +175,28 @@ class FakeAuthRepository : AuthRepository {
     override suspend fun register(displayName: String): Boolean {
         registeredNames += displayName
         return registerOk
+    }
+}
+
+/** The WhatsApp side of sign-in (ADR 0029): counts handshakes and hands over codes as WhatsApp would. */
+class FakeWhatsAppOtp : WhatsAppOtp {
+    var handshakes = 0
+    private val pending = MutableStateFlow<String?>(null)
+    val taken = mutableListOf<String>()
+
+    override val codes: Flow<String> = pending.filterNotNull()
+
+    override fun handshake() {
+        handshakes++
+    }
+
+    fun handOver(code: String) {
+        pending.value = code
+    }
+
+    override fun take(code: String) {
+        taken += code
+        pending.compareAndSet(code, null)
     }
 }
 

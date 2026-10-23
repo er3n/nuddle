@@ -3,6 +3,7 @@ package app.nuddle.ui.screens.phone
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.nuddle.data.AuthRepository
+import app.nuddle.data.CodeChannel
 import app.nuddle.data.SendOtpOutcome
 import app.nuddle.domain.TurkishPhone
 import app.nuddle.ui.screens.hourMinute
@@ -18,6 +19,12 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import javax.inject.Inject
 
+/** A code went to [e164] over [channel]; the code screen (0d) opens in that variant (ADR 0029). */
+data class CodeSent(
+    val e164: String,
+    val channel: CodeChannel,
+)
+
 @HiltViewModel
 class PhoneViewModel
     @Inject
@@ -28,10 +35,10 @@ class PhoneViewModel
         private val mutableState = MutableStateFlow(PhoneUiState())
         val state: StateFlow<PhoneUiState> = mutableState.asStateFlow()
 
-        private val sent = Channel<String>(Channel.BUFFERED)
+        private val sent = Channel<CodeSent>(Channel.BUFFERED)
 
-        /** E.164 numbers a code was sent to; the screen navigates to the code screen (0d). */
-        val codeSent: Flow<String> = sent.receiveAsFlow()
+        /** Codes sent, with the number and the channel; the screen navigates to the code screen (0d). */
+        val codeSent: Flow<CodeSent> = sent.receiveAsFlow()
 
         fun onNumberChange(input: String) {
             mutableState.update {
@@ -51,9 +58,9 @@ class PhoneViewModel
             mutableState.update { it.copy(sending = true, failed = false, lockedUntil = null, limitedUntil = null) }
             viewModelScope.launch {
                 when (val outcome = auth.sendOtp(e164)) {
-                    SendOtpOutcome.Sent -> {
+                    is SendOtpOutcome.Sent -> {
                         mutableState.update { it.copy(sending = false) }
-                        sent.send(e164)
+                        sent.send(CodeSent(e164, outcome.channel))
                     }
 
                     is SendOtpOutcome.Locked -> {

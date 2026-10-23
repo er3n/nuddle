@@ -23,6 +23,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import app.nuddle.data.CodeChannel
 import app.nuddle.data.InviteLinks
 import app.nuddle.data.SharedImage
 import app.nuddle.ui.components.ComposeState
@@ -57,6 +58,7 @@ import app.nuddle.ui.screens.inbox.InboxViewModel
 import app.nuddle.ui.screens.name.NameScreen
 import app.nuddle.ui.screens.name.NameViewModel
 import app.nuddle.ui.screens.person.PersonViewModel
+import app.nuddle.ui.screens.phone.CodeSent
 import app.nuddle.ui.screens.phone.PhoneScreen
 import app.nuddle.ui.screens.phone.PhoneViewModel
 import app.nuddle.ui.screens.photo.PhotoViewModel
@@ -71,7 +73,8 @@ import kotlinx.coroutines.flow.emptyFlow
 object Routes {
     const val WELCOME = "welcome"
     const val PHONE = "auth/phone"
-    const val CODE = "auth/code?${CodeViewModel.ARG_PHONE}={${CodeViewModel.ARG_PHONE}}"
+    const val CODE =
+        "auth/code?${CodeViewModel.ARG_PHONE}={${CodeViewModel.ARG_PHONE}}&${CodeViewModel.ARG_CHANNEL}={${CodeViewModel.ARG_CHANNEL}}"
     const val NAME = "onboarding/name"
     const val HOME = "home"
     const val SETUP = "setup"
@@ -119,7 +122,8 @@ object Routes {
         setup: Boolean,
     ): String = "matched/${Uri.encode(inviterName)}?$ARG_SETUP=$setup"
 
-    fun code(e164: String): String = "auth/code?${CodeViewModel.ARG_PHONE}=${Uri.encode(e164)}"
+    fun code(sent: CodeSent): String =
+        "auth/code?${CodeViewModel.ARG_PHONE}=${Uri.encode(sent.e164)}&${CodeViewModel.ARG_CHANNEL}=${sent.channel.name}"
 }
 
 /** An announcement's button (ADR 0025): an https target opens the browser; anything else is one of our routes. */
@@ -206,7 +210,14 @@ fun NuddleNavHost(
         }
         composable(
             Routes.CODE,
-            arguments = listOf(navArgument(CodeViewModel.ARG_PHONE) { type = NavType.StringType }),
+            arguments =
+                listOf(
+                    navArgument(CodeViewModel.ARG_PHONE) { type = NavType.StringType },
+                    navArgument(CodeViewModel.ARG_CHANNEL) {
+                        type = NavType.StringType
+                        defaultValue = CodeChannel.Sms.name
+                    },
+                ),
         ) {
             val viewModel: CodeViewModel = hiltViewModel()
             val state by viewModel.state.collectAsStateWithLifecycle()
@@ -225,6 +236,7 @@ fun NuddleNavHost(
                 onCodeChange = viewModel::onCodeChange,
                 onComplete = viewModel::onComplete,
                 onResend = viewModel::onResend,
+                onSendSms = viewModel::onSendSms,
                 onChangeNumber = { nav.popBackStack() },
                 onBack = { nav.popBackStack() },
             )

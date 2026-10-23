@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import app.nuddle.api.model.EdgeType
 import app.nuddle.api.model.Reachability
+import app.nuddle.data.CodeChannel
 import app.nuddle.domain.Ago
 import app.nuddle.domain.SetupStep
 import app.nuddle.domain.TimeLeft
@@ -161,6 +162,22 @@ class TestTagsTest {
         }
         assertShown(TestTags.CODE_INPUT)
         assertTaps(TestTags.CODE_CHANGE_NUMBER to "change", TestTags.CODE_RESEND to "resend", TestTags.BACK to "back")
+    }
+
+    @Test
+    fun `code over WhatsApp`() {
+        content {
+            CodeScreen(
+                CodeUiState("+90 532 000 00 01", resendInSeconds = 50, channel = CodeChannel.WhatsApp, smsOffered = true),
+                onCodeChange = {},
+                onComplete = {},
+                onResend = {},
+                onChangeNumber = {},
+                onBack = {},
+                onSendSms = { clicked += "sms" },
+            )
+        }
+        assertTaps(TestTags.CODE_SEND_SMS to "sms")
     }
 
     @Test
