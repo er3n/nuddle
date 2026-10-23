@@ -1,5 +1,6 @@
 package app.nuddle.alarm
 
+import android.app.NotificationManager
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
@@ -174,6 +175,12 @@ class AndroidPokeSpeech
             text: String,
         ) {
             val audio = context.getSystemService(AudioManager::class.java)
+            // The person silenced the phone (silent, vibrate or Do Not Disturb): the tone still rings as an alarm, but
+            // the task is not said out loud where they asked for quiet (NUD-164).
+            if (audio != null && silenced(audio)) {
+                diagnostics.log("speech skipped silenced")
+                return
+            }
             val focus =
                 AudioFocusRequest
                     .Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
@@ -199,6 +206,14 @@ class AndroidPokeSpeech
                 if (!done.isCompleted) tts.stop()
                 audio?.abandonAudioFocusRequest(focus)
             }
+        }
+
+        private fun silenced(audio: AudioManager): Boolean {
+            val filter = context.getSystemService(NotificationManager::class.java)?.currentInterruptionFilter
+            val doNotDisturb =
+                filter != null && filter != NotificationManager.INTERRUPTION_FILTER_ALL &&
+                    filter != NotificationManager.INTERRUPTION_FILTER_UNKNOWN
+            return audio.ringerMode != AudioManager.RINGER_MODE_NORMAL || doNotDisturb
         }
 
         private fun AudioManager.inCall() = mode == AudioManager.MODE_IN_CALL || mode == AudioManager.MODE_IN_COMMUNICATION
