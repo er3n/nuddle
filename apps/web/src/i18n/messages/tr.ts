@@ -347,6 +347,7 @@ export const tr: Messages = {
     quietHours: "23:00 - 07:00 arası kimse dürtülmez.",
     privacy: "Gizlilik",
     deleteAccount: "Hesabı sil",
+    instagram: "Instagram",
   },
   invite: {
     title: "Seni dürt'e davet ettiler.",

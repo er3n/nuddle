@@ -352,6 +352,7 @@ export const en: Messages = {
     quietHours: "Nobody gets poked between 23:00 and 07:00.",
     privacy: "Privacy",
     deleteAccount: "Delete account",
+    instagram: "Instagram",
   },
   invite: {
     title: "You've been invited to Nuddle.",

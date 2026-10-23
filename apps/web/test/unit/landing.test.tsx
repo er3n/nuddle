@@ -79,6 +79,13 @@ describe("Landing", () => {
     expect(en).toContain('href="/privacy"');
     expect(en).toContain('href="/delete-account"');
   });
+
+  it("links to the brand's Instagram only where the account has posts (NUD-149)", () => {
+    const tr = renderToStaticMarkup(<Landing locale="tr" />);
+    expect(tr).toContain('href="https://www.instagram.com/durt.app/"');
+    expect(tr).toContain('rel="noopener noreferrer"');
+    expect(renderToStaticMarkup(<Landing locale="en" />)).not.toContain("instagram.com");
+  });
 });
 
 describe("the promo video (NUD-94)", () => {
