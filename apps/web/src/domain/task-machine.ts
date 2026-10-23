@@ -275,6 +275,17 @@ function quietRoomMs(
   return start === null ? Infinity : start.getTime() - ctx.now.getTime() - 1;
 }
 
+/**
+ * The recipient's start after the task's time moved (NUD-78, NUD-170): kept while it is still before the new
+ * deadline of a `by` task, dropped otherwise, or the plan window would be empty and the task would be missed
+ * without a single poke.
+ */
+function startKept(task: Pick<Task, "timing" | "deadline" | "pokeFrom">): Date | null {
+  const start = task.pokeFrom;
+  if (start === null || task.timing !== "by") return null;
+  return start.getTime() < task.deadline.getTime() ? start : null;
+}
+
 export function isOpen(status: TaskStatus): boolean {
   return status === "SCHEDULED" || status === "REJECTED";
 }
@@ -687,6 +698,7 @@ export function applyCommand(
           return { ok: false, error: "deadline_not_in_future" };
         }
         Object.assign(next, retime(task, cmd.deadline, now));
+        next.pokeFrom = startKept(next);
       }
       if (cmd.detail !== undefined) next.detail = cmd.detail;
       if (cmd.finishMode !== undefined) next.finishMode = cmd.finishMode;
@@ -696,6 +708,7 @@ export function applyCommand(
         return { ok: false, error: "deadline_not_in_future" };
       }
       Object.assign(next, retime(task, cmd.deadline, now));
+      next.pokeFrom = startKept(next);
       break;
     case "account_deleted":
     case "connection_removed":
