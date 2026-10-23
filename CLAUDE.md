@@ -43,8 +43,8 @@ Use only these. They work the same for you, the human and CI.
 | `mise run contract:gen` | Regenerate `packages/contract/openapi.yaml` |
 | `mise run eval` | LLM golden sets: extraction and poke plans (needs an API key) |
 | `mise run stories` | 100 everyday sentences through the real extractor and planner, for judging plans (needs an API key) |
-| `mise run account:delete -- <phone> [--yes]` | Delete an account by phone for an email request; dry run without `--yes`. `--prod` is the human's (rule 6) |
-| `mise run announce -- <file> --to <phones\|*> [--yes]` | Send a message from Nuddle (ADR 0025); dry run without `--yes`. `--prod` is the human's (rule 6) |
+| `mise run account:delete -- <phone> [--yes]` | Delete an account by phone for an email request; dry run without `--yes`. `--prod` only when the human asks (rule 6) |
+| `mise run announce -- <file> --to <phones\|*> [--yes]` | Send a message from Nuddle (ADR 0025); dry run without `--yes`. `--prod` only when the human asks (rule 6) |
 | `mise run golden:export` | Production task stories with their LLM calls, read-only, to git-ignored `golden/` |
 
 **Long-running commands** (Gradle builds, `test`, any E2E, emulator boot) must run in the background with a timeout. Do not block waiting on them. Poll the log file and keep working or report. Anything that may take more than 1-2 minutes counts as long.
@@ -56,7 +56,7 @@ Use only these. They work the same for you, the human and CI.
 3. **Every behavior change comes with a test** at the lowest layer that catches it. Scenario tests for anything that spans sender and recipient.
 4. **Android talks only to our API.** No direct Supabase table access from the app (ADR 0002).
 5. **Everything is code.** No dashboard-only configuration in Supabase, Vercel or Firebase. Migrations, cron jobs, auth hooks and grants live in `supabase/migrations/`.
-6. **Do not touch production.** Never run `vercel --prod`, `vercel promote`, `supabase link`, anything with `--linked`, or force pushes. The human does those. Until the beta (no users yet, decided 2026-10-11, NUD-33) there is one exception: right after a PR with new migrations is merged, the agent applies them with `mise exec -- supabase/cloud/configure.sh migrate` (never a bare `supabase db push`), and it may delete cloud data when a migration needs it. From the beta on, the human applies migrations again.
+6. **Production only when the human asks.** The agent changes production (Vercel env and deploys, the Supabase cloud project, Play Console, Firebase) when the human asks for it in the conversation, and reports what it changed. Two things stay off even then: force pushes, and a bare `supabase db push` or `supabase config push` (they would push the local test numbers, ADR 0022); cloud migrations go through `mise exec -- supabase/cloud/configure.sh migrate`. Until the beta (no users yet, decided 2026-10-11, NUD-33) the agent also applies merged migrations right after the merge without being asked, and may delete cloud data when a migration needs it. Changed 2026-10-23 at the human's request (NUD-144); before that production was the human's alone.
 7. **Strings live in resources.** No literals in `Text()`. Turkish is the source language. No em dash (U+2014) anywhere: UI copy, docs, code comments.
 8. **Screens are stateless.** A screen composable takes `UiState` and callbacks, never a ViewModel. Every component and screen state has a `@Preview`.
 9. **No hex values or magic numbers in screen code.** Everything comes from the theme built from `docs/ux/tokens.json`.

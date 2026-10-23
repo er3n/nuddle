@@ -1,7 +1,7 @@
 // `mise run account:delete -- <+90 phone> [--prod] [--yes]` (NUD-88): deletes an account asked for
 // by email without the app (nuddle.app/delete-account), through the same service as in-app
 // deletion. Without --yes it only prints what would be deleted. Local by default; --prod targets
-// nuddle.app with ~/.nuddle/prod/TICK_SECRET, and only the human runs that (CLAUDE.md rule 6).
+// nuddle.app with ~/.nuddle/prod/TICK_SECRET, only when the human asks (CLAUDE.md rule 6).
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
