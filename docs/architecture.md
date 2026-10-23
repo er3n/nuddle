@@ -74,7 +74,7 @@ nuddle/
 - `apps/web/src/domain` is pure: no imports from `infra`, `api`, Drizzle, Hono, `fetch`, or wall clock. It receives `now` and data, returns decisions.
 - `apps/web/src/api` validates input with zod, calls domain, persists through `infra`, returns zod-typed output.
 - Android `domain` package has no `android.*` imports. Screens are stateless composables taking `UiState` and callbacks; ViewModels are never passed into screens.
-- External services sit behind interfaces with fakes: `Clock`, `PushSender`, `OtpSender`, `TaskExtractor`, `PhotoStorage` (web); `Clock`, `AlarmScheduler`, `Diagnostics`, `PushReceiver` boundary (Android).
+- External services sit behind interfaces with fakes: `Clock`, `PushSender`, `OtpSender`, `Delay` and `CodeCipher` (the WhatsApp code's SMS fallback, ADR 0029), `TaskExtractor`, `PhotoStorage` (web); `Clock`, `AlarmScheduler`, `Diagnostics`, `PushReceiver` boundary (Android).
 
 ## Sync model (ADR 0006)
 
