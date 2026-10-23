@@ -5,6 +5,8 @@ import android.app.Application
 import android.app.Notification
 import android.app.NotificationManager
 import android.graphics.Bitmap
+import android.media.AudioManager
+import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
 import androidx.test.core.app.ApplicationProvider
 import app.nuddle.R
@@ -190,6 +192,26 @@ class PokeNotificationsTest {
         assertNull(quiet.fullScreenIntent)
         assertEquals(PokeIntents.ACTION_DONE, shadowOf(quiet.actions.first().actionIntent).savedIntent.action)
         assertEquals(setOf(Cast.TASK_ID), notifications.showing())
+    }
+
+    @Test
+    fun `the alarm volume comes back when the answered poke is still listed by the system (NUD-159)`() {
+        val audio = app.getSystemService<AudioManager>()!!
+        audio.setStreamVolume(AudioManager.STREAM_ALARM, 1, 0)
+        show(seq = 2)
+        assertTrue(audio.getStreamVolume(AudioManager.STREAM_ALARM) > 1)
+        // The system applies a cancel later: right after it, the poke's group can still be among the active ones.
+        val lingering =
+            NotificationCompat
+                .Builder(app, NotificationChannels.POKE_SILENT)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setGroup(NotificationIds.pokeGroup(Cast.TASK_ID))
+                .build()
+        app.getSystemService<NotificationManager>()!!.notify("lingering".hashCode(), lingering)
+
+        notifications.cancel(Cast.TASK_ID)
+
+        assertEquals(1, audio.getStreamVolume(AudioManager.STREAM_ALARM))
     }
 
     @Test
