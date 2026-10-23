@@ -218,6 +218,8 @@ System notification (shell is the system's, content and actions are ours).
 
 **Ekli fotoğraf (NUD-138).** A task with the sender's picture, once the phone has its copy, expands as a big picture notification: the picture, with the task as the text and the time line as the summary. Collapsed it looks as above, with the picture as the large icon in place of the sender's picture.
 
+**A tap on a full screen poke (NUD-156).** When a `FULL_SCREEN` step rings while the phone is in use, Android shows only the notification. A tap on its body opens 3b for that step, as on an alarm clock, also after a volume key silenced it; a `SOUND` or `SILENT` poke opens the app.
+
 **Zaten yaptın mı? (NUD-129).** No design PNG. A quiet system notification before a loud poke when the phone is in use (domain.md, Already done?): the poke's icon and color, title "Zaten yaptın mı?", text the task's title, the sender's picture as for 3a, one action Bitti. No time and no poke count.
 **Copy:** Zaten yaptın mı? | Para çek | Bitti
 

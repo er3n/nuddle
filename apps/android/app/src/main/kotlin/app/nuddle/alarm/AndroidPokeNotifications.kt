@@ -47,6 +47,20 @@ private fun Context.fullScreenIntent(step: PokeStep): PendingIntent =
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
+/**
+ * A tap on the poke: a full screen poke opens 3b, as on an alarm clock, since a phone in use shows only the
+ * notification (NUD-156); any other opens the app.
+ */
+private fun Context.pokeContentIntent(
+    step: PokeStep,
+    level: PokeLevel,
+): PendingIntent =
+    if (level == PokeLevel.FULL_SCREEN) {
+        fullScreenIntent(step)
+    } else {
+        PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+    }
+
 /** The sender's cached picture as a circle (components.md 7, NUD-80); none for a task to self or without one. */
 private fun AvatarFiles.senderPicture(task: TaskEntity) =
     of(task.senderId)
@@ -131,7 +145,6 @@ class AndroidPokeNotifications
             val fullScreen = level == PokeLevel.FULL_SCREEN && !quiet
             val channel = if (silent) NotificationChannels.POKE_SILENT else NotificationChannels.POKE_ALARM
             val notice = task.finishMode == FinishMode.NOTICE.value
-            val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
             // The sender's example photo takes the large icon's place and expands as a big picture (NUD-138).
             val example = if (notice) null else examples.bitmapOf(task.id)
             val builder =
@@ -144,7 +157,7 @@ class AndroidPokeNotifications
                     .setSubText(context.getString(R.string.poke_count, step.number))
                     .setCategory(if (fullScreen) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_REMINDER)
                     .setPriority(if (silent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_HIGH)
-                    .setContentIntent(open)
+                    .setContentIntent(context.pokeContentIntent(step, level))
                     // Swiped away: the voice stops and the alarm volume comes back at once (NUD-154).
                     .setDeleteIntent(action(PokeIntents.ACTION_DISMISSED, step))
                     .setGroup(NotificationIds.pokeGroup(task.id))
