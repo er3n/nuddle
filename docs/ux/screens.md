@@ -119,11 +119,11 @@ WhatsApp copy for later: Kodu WhatsApp'tan gönder | SMS ile gönder
 Over a daily SMS cap (`otp_limit`, ADR 0024, open-questions #54) an InlineAlert under the note says when to try again, with the local time of `retryAt`: Çok fazla kod istendi | Şu an yeni kod gönderemiyoruz. Saat 21:15 olunca tekrar dene.
 
 ### 0d Code · `Otp.png`
-Six-box CodeInput, resend countdown, autofill hint. SMS variant until WhatsApp exists (NUD-9); after the one minute countdown "Yeni kod gönder" appears in its place.
+Six-box CodeInput, resend countdown, autofill hint. Two variants by the channel `auth/otp` answers (ADR 0029): WhatsApp and SMS. After the one minute countdown "Yeni kod gönder" appears in its place. In the WhatsApp variant a text button "SMS ile gönder" appears 5 seconds after the code was sent (open-questions #66); a tap sends the same code by SMS, switches the screen to the SMS variant with "Kodu SMS ile de gönderdik." and starts the SMS Retriever. If no code can go by SMS (`otp_resend_unavailable`) the button disappears and the countdown stays.
 After a correct code for an existing account the code screen keeps its spinner until the first sync is in, at most 5 seconds, so home opens with the tasks instead of the empty state (NUD-105). A failed or slow sync opens home anyway.
 **Copy:** Mesajlarına baktın mı? | +90 532 123 45 67 numarasına 6 haneli kod gönderdik. Numarayı değiştir | Kod gelmedi mi? 0:42 sonra tekrar gönderebilirsin. | Kod SMS ile gelince klavyenin üstünde otomatik çıkar, dokunman yeter. | Yeni kod gönder
 If "Yeni kod gönder" meets a daily SMS cap, the same alert as 0c shows and the button stays off until that time; the code already sent can still be typed.
-WhatsApp copy for later: WhatsApp'ına baktın mı? | Kod WhatsApp'a gelince klavyenin üstünde otomatik çıkar, dokunman yeter. | SMS ile dene
+**WhatsApp copy:** WhatsApp'ına baktın mı? | +90 532 123 45 67 numarasına WhatsApp'tan 6 haneli kod gönderdik. | Kod WhatsApp'a gelince kendiliğinden dolar. WhatsApp'a ulaşamazsak SMS ile göndeririz. | SMS ile gönder | Kodu SMS ile de gönderdik.
 
 ### 0e Name · `Name.png`
 Avatar placeholder with camera badge (photo optional; the picture is set later on Profile 5a, NUD-72). When invited, prefilled with the inviter's name for you.

@@ -37,7 +37,7 @@ In code and docs the domain verb is **poke** (`Poke`, `PokeLevel`, `PokeActivity
 
 ### Identity and sign-in
 - The phone number is the only identity. Sign-up and sign-in are the same flow: number, code, the server decides new or existing.
-- OTP: WhatsApp authentication template first, SMS as fallback. The MVP may start with SMS only.
+- OTP: WhatsApp authentication template first, SMS as fallback: at once when WhatsApp cannot deliver, after 12 seconds without delivery, or when the person taps "SMS ile gönder". A number without WhatsApp gets SMS directly for 30 days (ADR 0029). The WhatsApp sender is named Nuddle in every market.
 - Name is asked only on first sign-up. If an inviter typed a name, it comes prefilled.
 - No social login (so Apple's Sign in with Apple requirement is never triggered).
 - **Log out:** pokes stop ringing on that phone, the other side sees the person as unreachable. Data is kept and returns on the next sign-in with the same number.
