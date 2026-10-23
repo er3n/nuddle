@@ -171,4 +171,11 @@ class PokeAlarms
         }
 
         suspend fun step(key: AlarmKey): PokeStep? = steps.get(key.taskId, key.planVersion, key.seq)?.toStep()
+
+        /**
+         * The full screen poke that is up for [key]. A sync may have replaced its plan since it rang (an edit, a replan),
+         * which leaves the poke up for its open task: it then shows its own number, with the time it is looked at.
+         */
+        suspend fun fullScreenStep(key: AlarmKey): PokeStep =
+            step(key) ?: PokeStep(key.taskId, key.planVersion, key.seq, clock.now(), PokeLevel.FULL_SCREEN)
     }

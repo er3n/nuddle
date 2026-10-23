@@ -13,6 +13,7 @@ import app.nuddle.data.TaskCloser
 import app.nuddle.data.db.PokeStepDao
 import app.nuddle.data.db.TaskDao
 import app.nuddle.data.db.TaskEntity
+import app.nuddle.data.db.isMoment
 import app.nuddle.data.outbox.Outbox
 import app.nuddle.data.session.MissedRingStore
 import app.nuddle.data.session.SessionStore
@@ -37,10 +38,12 @@ import kotlin.time.Instant
 
 /** Shows and removes poke notifications (3a) and the full screen poke (3b). */
 interface PokeNotifications {
+    /** [quietHours]: the person's, so Ertele ends before them (NUD-163); null leaves that out. */
     fun show(
         task: TaskEntity,
         step: PokeStep,
         level: PokeLevel,
+        quietHours: QuietHours? = null,
     )
 
     /** "Zaten yaptın mı?" before [step] (NUD-129): quiet, Bitti only, gone when [step] rings. */
@@ -54,6 +57,7 @@ interface PokeNotifications {
         task: TaskEntity,
         step: PokeStep,
         level: PokeLevel,
+        quietHours: QuietHours? = null,
     )
 
     /** Takes the task's poke and its heads-up away. */
@@ -65,6 +69,26 @@ interface PokeNotifications {
     /** The tasks whose heads-up is up now. */
     fun headsUps(): Set<String>
 }
+
+/** The person's quiet hours, for the answers to a poke that need them (Ertele, NUD-163). */
+interface QuietHoursSource {
+    suspend fun quietHours(): QuietHours?
+
+    /** No quiet hours known: tests that do not care. */
+    object None : QuietHoursSource {
+        override suspend fun quietHours(): QuietHours? = null
+    }
+}
+
+/** From the session, the default 23:00-07:00 until the first sync brings the person's own (docs/domain.md). */
+class SessionQuietHours
+    @Inject
+    constructor(
+        private val sessions: SessionStore,
+        private val timeZone: TimeZone,
+    ) : QuietHoursSource {
+        override suspend fun quietHours(): QuietHours = sessions.quietHours() ?: QuietHours.default(timeZone)
+    }
 
 /** Whether the system currently lets the app open a full screen intent (Android 14+ can revoke it). */
 fun interface FullScreenPermission {
@@ -97,7 +121,7 @@ class PokeFiring
             val decision = PokeRules.decideFire(step, task?.toLocalState(), quietHours, now, fullScreen.granted())
             diagnostics.log("poke ${key.taskId} v${key.planVersion} #${key.seq} ${decision.breadcrumb()}")
             if (decision !is FireDecision.Ring || task == null) return
-            notifications.show(task, step, decision.level)
+            notifications.show(task, step, decision.level, quietHours)
             rang(key, now, decision.level, decision.permissionMissing)
         }
 
@@ -125,7 +149,7 @@ class PokeFiring
             rang(fire.key, fire.firedAt, fire.level, permissionMissing = false)
             val state = task.toLocalState()
             if (fire.key.taskId in showing && state.open && state.currentPlanVersion == fire.key.planVersion) {
-                notifications.show(task, step, fire.level)
+                notifications.show(task, step, fire.level, sessions.quietHours() ?: QuietHours.default(timeZone))
             }
         }
 
@@ -183,6 +207,7 @@ class PokeActions
         private val clock: Clock,
         private val doneNotes: DoneNotes,
         private val diagnostics: Diagnostics = Diagnostics.None,
+        private val quietHours: QuietHoursSource = QuietHoursSource.None,
     ) : TaskCloser {
         /** Bitti on the poke: the done note on home says which poke this was (domain.md, Done note). */
         suspend fun done(key: AlarmKey) {
@@ -272,7 +297,9 @@ class PokeActions
             whole {
                 val task = tasks.get(key.taskId) ?: return@whole false
                 val now = clock.now()
-                val snooze = SnoozeRules.next(task.snoozesUsed, now, Instant.fromEpochMilliseconds(task.deadline)) ?: return@whole false
+                val quietStart = SnoozeRules.quietStart(quietHours.quietHours(), task.isMoment, now)
+                val snooze =
+                    SnoozeRules.next(task.snoozesUsed, now, Instant.fromEpochMilliseconds(task.deadline), quietStart) ?: return@whole false
                 diagnostics.log("snooze ${key.taskId}")
                 notifications.cancel(key.taskId)
                 tasks.countSnooze(key.taskId, snooze.until.toEpochMilliseconds())

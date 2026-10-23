@@ -576,6 +576,50 @@ class PokeAlarmTest {
         }
 
     @Test
+    fun `a volume key silences a full screen poke whose plan a sync replaced since it rang (NUD-156)`() =
+        runTest {
+            givenPlan()
+            alarms.rearm()
+            firing.fire(key(2))
+            db.tasks().upsert(listOf(db.tasks().get(Cast.TASK_ID)!!.copy(planVersion = 3)))
+            alarms.applyPlan(Cast.TASK_ID, 3, listOf(aStep(0, "2026-10-12T08:50:00+03:00", planVersion = 3)))
+
+            quiet.silence(key(2))
+
+            assertEquals(listOf(Cast.TASK_ID), notifications.silenced)
+            assertEquals(key(2), alarms.fullScreenStep(key(2)).key)
+        }
+
+    @Test
+    fun `Ertele ends before quiet hours start, where its ring would be skipped (NUD-163)`() =
+        runTest {
+            // Quiet hours 23:00-07:00; a task due 23:30, its poke at 22:50.
+            db.tasks().upsert(listOf(aTask(planVersion = 2, deadline = Instant.parse("2026-10-11T23:30:00+03:00"))))
+            db.pokeSteps().replacePlan(Cast.TASK_ID, 2, listOf(aStep(0, "2026-10-11T22:50:00+03:00", planVersion = 2)))
+            clock.now = Instant.parse("2026-10-11T22:50:00+03:00")
+            val quietActions =
+                PokeActions(
+                    db.tasks(),
+                    alarms,
+                    scheduler,
+                    notifications,
+                    Outbox(db.outbox(), testJson, clock, drainer),
+                    IdGenerator(clock),
+                    clock,
+                    doneNotes,
+                    quietHours =
+                        object : QuietHoursSource {
+                            override suspend fun quietHours() = QuietHours.default(TimeZone.of("Europe/Istanbul"))
+                        },
+                )
+            firing.fire(key(0))
+
+            assertTrue(quietActions.snooze(key(0)))
+
+            assertEquals(Instant.parse("2026-10-11T22:59:00+03:00"), scheduler.scheduled.getValue(key(0)).plannedAt)
+        }
+
+    @Test
     fun `snooze is queued for the server`() =
         runTest {
             givenPlan()

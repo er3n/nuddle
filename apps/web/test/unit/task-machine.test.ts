@@ -448,6 +448,26 @@ describe("snooze (open-questions#1: 2 snoozes, 15 then 10 minutes, 5 left before
     expect(o.events[0]?.payload).toMatchObject({ count: 1, minutes: 9 });
   });
 
+  it("ends before the recipient's quiet hours start, where it could not ring (NUD-163)", () => {
+    // Quiet hours 23:00-07:00, a `by` task due 23:30.
+    const task = aTask().withDeadline(new Date("2026-10-11T23:30:00+03:00")).build();
+    const late = new Date("2026-10-11T22:50:00+03:00");
+    const o = apply(task, { type: "snooze" }, "eren", ctx([fired], late));
+    expect(o.events[0]?.payload).toMatchObject({ minutes: 9, until: "2026-10-11T19:59:00.000Z" });
+    const tooLate = new Date("2026-10-11T22:56:00+03:00");
+    expect(applyCommand(task, { type: "snooze" }, "eren", ctx([fired], tooLate))).toEqual({
+      ok: false,
+      error: "snooze_not_allowed",
+    });
+  });
+
+  it("of an `at` task may end inside quiet hours, its own window rings there (open-questions#47)", () => {
+    const task = aTask().at("2026-10-11T22:50:00+03:00", 120).build();
+    const late = new Date("2026-10-11T22:55:00+03:00");
+    const o = apply(task, { type: "snooze" }, "eren", ctx([fired], late));
+    expect(o.events[0]?.payload).toMatchObject({ minutes: 15 });
+  });
+
   it("is refused when less than 5 minutes would be left for it and 5 for the task", () => {
     const task = aTask()
       .withDeadline(addMs(at, 9 * 60_000 + 59_000))

@@ -9,6 +9,7 @@ import android.media.AudioManager
 import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
 import androidx.test.core.app.ApplicationProvider
+import app.nuddle.MainActivity
 import app.nuddle.R
 import app.nuddle.data.avatar.AvatarFiles
 import app.nuddle.data.photo.toJpeg
@@ -192,6 +193,20 @@ class PokeNotificationsTest {
         assertNull(quiet.fullScreenIntent)
         assertEquals(PokeIntents.ACTION_DONE, shadowOf(quiet.actions.first().actionIntent).savedIntent.action)
         assertEquals(setOf(Cast.TASK_ID), notifications.showing())
+    }
+
+    @Test
+    fun `a tap on a full screen poke opens the full screen poke, on a sound poke the app (NUD-156)`() {
+        val manager = app.getSystemService<NotificationManager>()!!
+        val full = PokeStep(Cast.TASK_ID, 1, 3, Instant.parse("2026-10-12T08:00:00+03:00"), PokeLevel.FULL_SCREEN)
+        notifications.show(aTask(), full, PokeLevel.FULL_SCREEN)
+        val opens = shadowOf(shadowOf(manager).allNotifications.single().contentIntent).savedIntent
+        assertEquals(PokeActivity::class.java.name, opens.component?.className)
+        assertEquals(full.key, PokeIntents.key(opens))
+
+        manager.cancelAll()
+        val sound = shadowOf(show(seq = 2).contentIntent).savedIntent
+        assertEquals(MainActivity::class.java.name, sound.component?.className)
     }
 
     @Test

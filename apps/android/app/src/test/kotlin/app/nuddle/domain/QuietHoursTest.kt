@@ -2,7 +2,9 @@ package app.nuddle.domain
 
 import kotlinx.datetime.TimeZone
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
@@ -11,6 +13,14 @@ class QuietHoursTest {
     private val defaults = QuietHours.default(istanbul)
 
     private fun at(time: String) = Instant.parse("2026-10-12T$time+03:00")
+
+    @Test
+    fun `the next start is today before it, tomorrow after it, none without a window (NUD-163)`() {
+        assertEquals(Instant.parse("2026-10-11T23:00:00+03:00"), defaults.nextStart(Instant.parse("2026-10-11T22:50:00+03:00")))
+        assertEquals(Instant.parse("2026-10-12T23:00:00+03:00"), defaults.nextStart(Instant.parse("2026-10-12T02:00:00+03:00")))
+        assertEquals(Instant.parse("2026-10-12T23:00:00+03:00"), defaults.nextStart(Instant.parse("2026-10-11T23:00:00+03:00")))
+        assertNull(defaults.copy(end = defaults.start).nextStart(Instant.parse("2026-10-11T22:50:00+03:00")))
+    }
 
     @Test
     fun `the default window crosses midnight`() {
