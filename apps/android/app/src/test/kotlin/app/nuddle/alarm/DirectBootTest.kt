@@ -230,6 +230,38 @@ class DirectBootTest {
         }
 
     @Test
+    fun `a snoozed ring before the unlock is handed over too, although its step rang before the reboot (NUD-160)`() =
+        runTest {
+            givenPlan()
+            alarms.rearm()
+            clock.advance(15.minutes)
+            firing.fire(key(1))
+            db.tasks().countSnooze(Cast.TASK_ID, (clock.now() + 15.minutes).toEpochMilliseconds())
+            alarms.rearm()
+            notifications.shown.clear()
+            db.outbox().pending().forEach { db.outbox().remove(it.idempotencyKey) }
+            // Reboot; the snooze ends before the first unlock.
+            clock.advance(15.minutes)
+            val rangAt = clock.now()
+            lockedFiring.fire(key(1))
+            notifications.show(aTask(planVersion = 2), alarms.step(key(1))!!, PokeLevel.SOUND)
+            notifications.shown.clear()
+
+            firing.takeOverLockedFires()
+
+            assertEquals(rangAt.toEpochMilliseconds(), db.pokeSteps().get(Cast.TASK_ID, 2, 1)!!.firedAt)
+            assertEquals(
+                "report_fired",
+                db
+                    .outbox()
+                    .pending()
+                    .single()
+                    .command,
+            )
+            assertEquals(listOf(Cast.TASK_ID to PokeLevel.SOUND), notifications.shown)
+        }
+
+    @Test
     fun `a poke swiped away before the unlock is not shown again`() =
         runTest {
             givenPlan()

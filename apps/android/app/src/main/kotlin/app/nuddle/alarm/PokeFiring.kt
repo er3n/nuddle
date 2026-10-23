@@ -119,7 +119,9 @@ class PokeFiring
         ) {
             val step = alarms.step(fire.key) ?: return
             val task = tasks.get(fire.key.taskId) ?: return
-            if (steps.get(fire.key.taskId, fire.key.planVersion, fire.key.seq)?.firedAt != null) return
+            // Handed over once. A snoozed ring of a step that rang before the reboot rang again later (NUD-160).
+            val firedAt = steps.get(fire.key.taskId, fire.key.planVersion, fire.key.seq)?.firedAt
+            if (firedAt != null && firedAt >= fire.firedAt.toEpochMilliseconds()) return
             rang(fire.key, fire.firedAt, fire.level, permissionMissing = false)
             val state = task.toLocalState()
             if (fire.key.taskId in showing && state.open && state.currentPlanVersion == fire.key.planVersion) {
