@@ -51,7 +51,11 @@ class PokeAlarms
             val states = taskList.associate { it.id to it.toLocalState() }
             val fired = all.filter { it.firedAt != null }.map { it.toStep().key }.toSet()
             val now = clock.now()
-            return PokeRules.stepsToArm(all.map { it.toStep() }, states, fired, now) + snoozedRings(taskList, all, now)
+            // A snoozed ring may be a step that is also due on its own (NUD-158): the snooze's time wins.
+            return (PokeRules.stepsToArm(all.map { it.toStep() }, states, fired, now) + snoozedRings(taskList, all, now))
+                .associateBy { it.key }
+                .values
+                .toList()
         }
 
         /**
@@ -97,12 +101,29 @@ class PokeAlarms
             taskList
                 .filter { it.status in OPEN_STATUSES && (it.snoozedUntil ?: 0) > now.toEpochMilliseconds() }
                 .mapNotNull { task ->
-                    all
-                        .filter { it.taskId == task.id && it.planVersion == task.planVersion && it.firedAt != null }
-                        .maxByOrNull { it.seq }
+                    ringOf(task, all.filter { it.taskId == task.id })
                         ?.toStep()
                         ?.copy(plannedAt = Instant.fromEpochMilliseconds(task.snoozedUntil ?: return@mapNotNull null))
                 }
+
+        /**
+         * The step a snooze rings again: the one that rang last in the task's current plan, or, when a sync replaced the
+         * plan since it rang (the LLM plan follows the first one within seconds, an edit), its first step yet to ring.
+         */
+        private fun ringOf(
+            task: TaskEntity,
+            stepsOfTask: List<PokeStepEntity>,
+        ): PokeStepEntity? {
+            val current = stepsOfTask.filter { it.planVersion == task.planVersion }
+            return current.filter { it.firedAt != null }.maxByOrNull { it.seq }
+                ?: current.filter { it.firedAt == null }.minByOrNull { it.seq }
+        }
+
+        /** What Ertele on [key] rings at the snooze's end (NUD-158); null when the task's plan has no step left. */
+        suspend fun snoozeRing(
+            key: AlarmKey,
+            task: TaskEntity,
+        ): PokeStep? = step(key) ?: ringOf(task, steps.forTask(task.id))?.toStep()
 
         override suspend fun applyPlan(
             taskId: String,

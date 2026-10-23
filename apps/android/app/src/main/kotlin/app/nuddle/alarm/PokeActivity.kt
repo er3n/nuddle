@@ -303,7 +303,12 @@ class PokeActivity : ComponentActivity() {
                     answer(actions::done)
                 }
             },
-            onSnooze = { answer(actions::snooze) },
+            onSnooze = {
+                scope.launch {
+                    // Refused at the tap (too close to the deadline by now): the screen stays, without Ertele (NUD-158).
+                    if (actions.snooze(key)) finish() else state = state?.copy(snooze = null)
+                }
+            },
             onContact = {
                 current.contact?.let { contact ->
                     // Not an answer: the task stays open and the next pokes ring as planned (NUD-128).

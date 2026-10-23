@@ -264,23 +264,26 @@ class PokeActions
         /**
          * Rings the same step again after the snooze the rules allow now (15, then 10 minutes) and tells the server,
          * which counts snoozes, refuses one too many and shifts the rest of the plan (NUD-22, NUD-36). Ertele is not
-         * offered when no snooze is left, so a late tap on an old notification does nothing.
+         * offered when no snooze is left, so a late tap on an old notification does nothing and says so (false).
          */
-        suspend fun snooze(key: AlarmKey) =
+        suspend fun snooze(key: AlarmKey): Boolean =
             whole {
-                val task = tasks.get(key.taskId) ?: return@whole
+                val task = tasks.get(key.taskId) ?: return@whole false
                 val now = clock.now()
-                val snooze = SnoozeRules.next(task.snoozesUsed, now, Instant.fromEpochMilliseconds(task.deadline)) ?: return@whole
+                val snooze = SnoozeRules.next(task.snoozesUsed, now, Instant.fromEpochMilliseconds(task.deadline)) ?: return@whole false
                 diagnostics.log("snooze ${key.taskId}")
                 notifications.cancel(key.taskId)
-                val step = alarms.step(key) ?: return@whole
-                scheduler.schedule(step.copy(plannedAt = snooze.until))
                 tasks.countSnooze(key.taskId, snooze.until.toEpochMilliseconds())
-                // The plan's next steps before the snooze ends lose their alarms now, also offline (NUD-152).
-                alarms.holdForSnooze(key, snooze.until)
+                // The step that rang, or the current plan's next one when a sync replaced its plan since (NUD-158). The
+                // plan's next steps before the snooze ends lose their alarms now, also offline (NUD-152).
+                alarms.snoozeRing(key, task)?.let { step ->
+                    scheduler.schedule(step.copy(plannedAt = snooze.until))
+                    alarms.holdForSnooze(step.key, snooze.until)
+                }
                 alarms.remember()
                 val id = ids.next()
                 outbox.enqueue("snooze", id, SnoozeCommand(idempotencyKey = id, taskId = key.taskId), SnoozeCommand.serializer())
+                true
             }
 
         /**
