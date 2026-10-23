@@ -75,14 +75,14 @@ class SignInScreensTest {
     @Test
     fun `phone send is enabled only for a full mobile number`() {
         content { PhoneScreen(PhoneUiState(national = "53200"), {}, {}, {}) }
-        compose.onNodeWithText("Kodu SMS ile gönder").assertIsNotEnabled()
+        compose.onNodeWithText("Kodu gönder").assertIsNotEnabled()
     }
 
     @Test
     fun `phone send fires for a valid number`() {
         var sent = 0
         content { PhoneScreen(PhoneUiState(national = "5320000002"), {}, onSend = { sent++ }, onBack = {}) }
-        compose.onNodeWithText("Kodu SMS ile gönder").assertIsEnabled().performClick()
+        compose.onNodeWithText("Kodu gönder").assertIsEnabled().performClick()
         assertEquals(1, sent)
     }
 

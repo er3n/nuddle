@@ -34,7 +34,7 @@
     <string name="phone_label">Telefon numarası</string>
     <string name="phone_country">TR +90</string>
     <string name="phone_privacy">Numaran sadece eşleştiğin kişilere görünür. Reklam, pazarlama mesajı, rehber taraması yok.</string>
-    <string name="phone_send_sms">Kodu SMS ile gönder</string>
+    <string name="phone_send_code">Kodu gönder</string>
 
     <!-- 0d Code (SMS variant, NUD-9 decision E) and 6c Wrong code (NUD-9 decision F) -->
     <string name="code_title">Mesajlarına baktın mı?</string>

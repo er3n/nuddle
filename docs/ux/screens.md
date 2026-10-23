@@ -113,9 +113,8 @@ Same as 0a with an inviter chip on top.
 **Copy:** Sibel seni dürt'e davet etti | Önce numaranla giriş yap, sonra Sibel'in davetine bakarız. | Telefonla başla
 
 ### 0c Phone · `Phone.png`
-Country code button (TR +90) + number input. Privacy note card. The design makes WhatsApp the primary channel; until a WhatsApp template exists the code goes by SMS only (ADR 0014, decided in NUD-9), so the screen has one button.
-**Copy:** Numaran ne? | Şifre yok. Numarana tek seferlik bir kod gelir. | Telefon numarası | Numaran sadece eşleştiğin kişilere görünür. Reklam, pazarlama mesajı, rehber taraması yok. | Kodu SMS ile gönder
-WhatsApp copy for later: Kodu WhatsApp'tan gönder | SMS ile gönder
+Country code button (TR +90) + number input. Privacy note card. The server picks the channel (WhatsApp first, SMS for a number without WhatsApp, ADR 0029), so the screen has one neutral button instead of the design's two; the choice of SMS is on 0d ("SMS ile gönder").
+**Copy:** Numaran ne? | Şifre yok. Numarana tek seferlik bir kod gelir. | Telefon numarası | Numaran sadece eşleştiğin kişilere görünür. Reklam, pazarlama mesajı, rehber taraması yok. | Kodu gönder
 Over a daily SMS cap (`otp_limit`, ADR 0024, open-questions #54) an InlineAlert under the note says when to try again, with the local time of `retryAt`: Çok fazla kod istendi | Şu an yeni kod gönderemiyoruz. Saat 21:15 olunca tekrar dene.
 
 ### 0d Code · `Otp.png`
