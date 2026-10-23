@@ -3,9 +3,12 @@
 import { randomUUID } from "node:crypto";
 import type { PlannerInput, PlanProposal } from "../../src/domain/planner";
 import type { ProfileInput } from "../../src/domain/profile";
+import type { OtpLanguage } from "../../src/domain/otp-channel";
 import type {
   Clock,
+  Delay,
   OtpSender,
+  SentMessage,
   PhotoStorage,
   ExchangeSink,
   PersonProfiler,
@@ -56,12 +59,106 @@ export class RecordingPushSender implements PushSender {
   }
 }
 
+/** Twilio for sign-in codes: records what went where and hands out message SIDs (ADR 0029). */
 export class RecordingOtpSender implements OtpSender {
+  /** SMS sent, oldest first. */
   readonly sent: { phone: string; code: string }[] = [];
+  /** The SID of each SMS in `sent`, in the same order. */
+  readonly smsSids: string[] = [];
+  /** WhatsApp templates sent, oldest first. */
+  readonly whatsAppSent: { phone: string; code: string; language: OtpLanguage; sid: string }[] = [];
+  readonly whatsApp: boolean;
+  /** What `priceOf` answers per SID; absent is not priced yet. */
+  readonly prices = new Map<string, number>();
+  /** Twilio refuses the next WhatsApp request itself (not a delivery failure). */
+  failNextWhatsApp = false;
+  private next = 0;
+  private held: Promise<void> | null = null;
+  /** SMS requests waiting on `holdNextSms`. */
+  inFlight = 0;
 
-  send(phone: string, code: string): Promise<void> {
+  /** The next SMS request stays in flight until the returned function is called. */
+  holdNextSms(): () => void {
+    let release: (() => void) | undefined;
+    this.held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    return () => {
+      release?.();
+    };
+  }
+
+  /** WhatsApp is off unless asked for, as before the sender was approved. */
+  constructor(options: { whatsApp?: boolean } = {}) {
+    this.whatsApp = options.whatsApp ?? false;
+  }
+
+  sendWhatsApp(phone: string, code: string, language: OtpLanguage): Promise<SentMessage> {
+    if (this.failNextWhatsApp) {
+      this.failNextWhatsApp = false;
+      return Promise.reject(new Error("twilio: 400 bad request"));
+    }
+    const sid = this.sid("MM");
+    this.whatsAppSent.push({ phone, code, language, sid });
+    return Promise.resolve({ sid });
+  }
+
+  async sendSms(phone: string, code: string): Promise<SentMessage> {
+    const held = this.held;
+    this.held = null;
+    if (held) {
+      this.inFlight++;
+      await held;
+      this.inFlight--;
+    }
+    const sid = this.sid("SM");
     this.sent.push({ phone, code });
-    return Promise.resolve();
+    this.smsSids.push(sid);
+    return { sid };
+  }
+
+  priceOf(sid: string): Promise<number | null> {
+    return Promise.resolve(this.prices.get(sid) ?? null);
+  }
+
+  private sid(prefix: string): string {
+    this.next++;
+    return `${prefix}${String(this.next).padStart(32, "0")}`;
+  }
+}
+
+/** A wait that ends only when the test says so (ADR 0029, the 12 s fallback). */
+export class FakeDelay implements Delay {
+  /** Every wait asked for, in ms. */
+  readonly waits: number[] = [];
+  private pending: (() => void)[] = [];
+
+  wait(ms: number): Promise<void> {
+    this.waits.push(ms);
+    return new Promise((resolve) => {
+      this.pending.push(resolve);
+    });
+  }
+
+  /** Ends every wait asked for so far. */
+  elapse(): void {
+    const ending = this.pending;
+    this.pending = [];
+    for (const resolve of ending) resolve();
+  }
+}
+
+/** Vercel's `waitUntil` for tests: work after the response is collected and awaited on demand. */
+export class PendingWork {
+  private readonly work: Promise<unknown>[] = [];
+
+  readonly waitUntil = (work: Promise<unknown>): void => {
+    this.work.push(work);
+  };
+
+  /** Awaits everything handed over so far, and whatever that hands over in turn. */
+  async settle(): Promise<void> {
+    for (let work = this.work.shift(); work !== undefined; work = this.work.shift()) await work;
   }
 }
 
@@ -116,6 +213,8 @@ export class FakeAuthGateway implements AuthGateway {
   failNextDelete = false;
   /** Makes the next `signOutOthers` throw, as a Supabase outage would. */
   failNextSignOut = false;
+  /** What Supabase Auth does for a real number before it answers: call the Send SMS hook. */
+  onSendOtp: ((phone: string) => Promise<void>) | null = null;
   private readonly users = new Map<string, string>();
   /** Refresh token to its phone and session: a refresh keeps the session id, as in Supabase. */
   private readonly sessions = new Map<string, { phone: string; sessionId: string }>();
@@ -124,9 +223,9 @@ export class FakeAuthGateway implements AuthGateway {
     private readonly mint: (userId: string, phone: string, sessionId: string) => Promise<string>,
   ) {}
 
-  sendOtp(phone: string): Promise<void> {
+  async sendOtp(phone: string): Promise<void> {
     this.otpSentTo.push(phone);
-    return Promise.resolve();
+    await this.onSendOtp?.(phone);
   }
 
   async verifyOtp(phone: string, code: string): Promise<Session | null> {

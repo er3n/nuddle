@@ -85,10 +85,10 @@ describe("scenarios: cost guardrails", () => {
 
   it("deleting the account removes the codes sent to the number", async () => {
     const { world, eren } = await sibelAndEren();
-    await world.fillSmsSends(eren, 2);
-    expect(await world.rowsHolding(eren)).toMatchObject({ smsSends: 2 });
+    await world.fillOtpSends(eren, 2);
+    expect(await world.rowsHolding(eren)).toMatchObject({ otpSends: 2 });
 
     await eren.deleteAccount();
-    expect(await world.rowsHolding(eren)).not.toHaveProperty("smsSends");
+    expect(await world.rowsHolding(eren)).not.toHaveProperty("otpSends");
   });
 });

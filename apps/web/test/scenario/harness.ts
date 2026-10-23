@@ -810,9 +810,9 @@ export class World {
   }
 
   /** Sign-in codes the Send SMS hook sent to the person's number (ADR 0024). */
-  async fillSmsSends(person: Client, count: number): Promise<void> {
+  async fillOtpSends(person: Client, count: number): Promise<void> {
     const { db } = (await this.ready).database;
-    await db.insert(schema.smsSends).values(
+    await db.insert(schema.otpSends).values(
       Array.from({ length: count }, () => ({
         id: randomUUID(),
         phone: person.person.phone,
@@ -875,8 +875,8 @@ export class World {
       otpAttempts: await count(
         db.select().from(schema.otpAttempts).where(eq(schema.otpAttempts.phone, phone)),
       ),
-      smsSends: await count(
-        db.select().from(schema.smsSends).where(eq(schema.smsSends.phone, phone)),
+      otpSends: await count(
+        db.select().from(schema.otpSends).where(eq(schema.otpSends.phone, phone)),
       ),
       announcementRecipients: await count(
         db
