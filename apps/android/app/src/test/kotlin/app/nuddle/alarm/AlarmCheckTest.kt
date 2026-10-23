@@ -128,6 +128,25 @@ class AlarmCheckTest {
         }
 
     @Test
+    fun `a plan that reached the phone after its steps' time is no loss, the server covers it (NUD-162)`() =
+        runTest {
+            db.tasks().upsert(listOf(aTask()))
+            alarms.rearm()
+            check.run()
+            // Offline for an hour: the plan arrives when its steps are past.
+            clock.advance(1.hours)
+            alarms.applyPlan(
+                Cast.TASK_ID,
+                1,
+                listOf(aStep(1, "2026-10-12T08:20:00+03:00"), aStep(2, "2026-10-12T08:40:00+03:00")),
+            )
+            alarms.rearm()
+
+            assertNull(check.run().lostAt)
+            assertNull(missedRings.value.lostAt)
+        }
+
+    @Test
     fun `a step that rang is not lost`() =
         runTest {
             givenPlan()

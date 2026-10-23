@@ -111,6 +111,8 @@ data class PokeStepEntity(
     val plannedAt: Long,
     val level: String,
     val firedAt: Long? = null,
+    /** When the step first reached this phone, epoch milliseconds (NUD-162); null for steps stored before. */
+    val receivedAt: Long? = null,
 )
 
 /** A command waiting to reach the server; the key is the command's idempotency key (ADR 0006). */
