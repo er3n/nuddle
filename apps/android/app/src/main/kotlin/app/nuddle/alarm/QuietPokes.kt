@@ -30,9 +30,8 @@ class QuietPokes
         /** A volume key on the full screen poke (NUD-155): it goes quiet and stays with its answers. */
         suspend fun silence(key: AlarmKey) {
             val task = tasks.get(key.taskId) ?: return
-            val step = alarms.step(key) ?: return
             if (task.id !in notifications.showing()) return
             diagnostics.log("silence ${key.taskId}")
-            notifications.silence(task, step, PokeLevel.FULL_SCREEN)
+            notifications.silence(task, alarms.fullScreenStep(key), PokeLevel.FULL_SCREEN)
         }
     }

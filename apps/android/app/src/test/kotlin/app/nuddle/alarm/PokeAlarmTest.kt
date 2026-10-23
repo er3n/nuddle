@@ -576,6 +576,21 @@ class PokeAlarmTest {
         }
 
     @Test
+    fun `a volume key silences a full screen poke whose plan a sync replaced since it rang (NUD-156)`() =
+        runTest {
+            givenPlan()
+            alarms.rearm()
+            firing.fire(key(2))
+            db.tasks().upsert(listOf(db.tasks().get(Cast.TASK_ID)!!.copy(planVersion = 3)))
+            alarms.applyPlan(Cast.TASK_ID, 3, listOf(aStep(0, "2026-10-12T08:50:00+03:00", planVersion = 3)))
+
+            quiet.silence(key(2))
+
+            assertEquals(listOf(Cast.TASK_ID), notifications.silenced)
+            assertEquals(key(2), alarms.fullScreenStep(key(2)).key)
+        }
+
+    @Test
     fun `snooze is queued for the server`() =
         runTest {
             givenPlan()

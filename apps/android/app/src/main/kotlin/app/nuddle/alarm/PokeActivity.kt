@@ -254,11 +254,12 @@ class PokeActivity : ComponentActivity() {
         val scope = rememberCoroutineScope()
         LaunchedEffect(key) {
             val task = tasks.get(key.taskId)
-            val step = alarms.step(key)
-            if (task == null || step == null) {
+            if (task == null) {
                 finish()
                 return@LaunchedEffect
             }
+            // Also when a sync replaced the plan since this poke rang: the poke still stands for its task (NUD-156).
+            val step = alarms.fullScreenStep(key)
             photo = task.finishMode == FinishMode.PHOTO.value
             val notice = task.finishMode == FinishMode.NOTICE.value
             if (task.senderId != task.recipientId) senderName = connections.get(task.senderId)?.displayName
