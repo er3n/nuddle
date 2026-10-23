@@ -591,6 +591,35 @@ class PokeAlarmTest {
         }
 
     @Test
+    fun `Ertele ends before quiet hours start, where its ring would be skipped (NUD-163)`() =
+        runTest {
+            // Quiet hours 23:00-07:00; a task due 23:30, its poke at 22:50.
+            db.tasks().upsert(listOf(aTask(planVersion = 2, deadline = Instant.parse("2026-10-11T23:30:00+03:00"))))
+            db.pokeSteps().replacePlan(Cast.TASK_ID, 2, listOf(aStep(0, "2026-10-11T22:50:00+03:00", planVersion = 2)))
+            clock.now = Instant.parse("2026-10-11T22:50:00+03:00")
+            val quietActions =
+                PokeActions(
+                    db.tasks(),
+                    alarms,
+                    scheduler,
+                    notifications,
+                    Outbox(db.outbox(), testJson, clock, drainer),
+                    IdGenerator(clock),
+                    clock,
+                    doneNotes,
+                    quietHours =
+                        object : QuietHoursSource {
+                            override suspend fun quietHours() = QuietHours.default(TimeZone.of("Europe/Istanbul"))
+                        },
+                )
+            firing.fire(key(0))
+
+            assertTrue(quietActions.snooze(key(0)))
+
+            assertEquals(Instant.parse("2026-10-11T22:59:00+03:00"), scheduler.scheduled.getValue(key(0)).plannedAt)
+        }
+
+    @Test
     fun `snooze is queued for the server`() =
         runTest {
             givenPlan()

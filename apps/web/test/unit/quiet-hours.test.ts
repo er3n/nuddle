@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isQuiet,
   latestQuietOverlap,
+  nextQuietStart,
   quietIntervalAt,
   quietMomentOf,
 } from "../../src/domain/quiet-hours";
@@ -20,6 +21,18 @@ describe("quiet hours", () => {
     ["2026-10-12T12:00:00+03:00", false],
   ])("%s quiet: %s", (t, expected) => {
     expect(isQuiet(new Date(t), istanbul)).toBe(expected);
+  });
+
+  it("finds the next start of quiet hours, today or tomorrow (NUD-163)", () => {
+    expect(nextQuietStart(new Date("2026-10-11T22:50:00+03:00"), istanbul)).toEqual(
+      new Date("2026-10-11T23:00:00+03:00"),
+    );
+    expect(nextQuietStart(new Date("2026-10-12T02:00:00+03:00"), istanbul)).toEqual(
+      new Date("2026-10-12T23:00:00+03:00"),
+    );
+    expect(
+      nextQuietStart(new Date("2026-10-12T02:00:00+03:00"), { ...istanbul, end: "23:00" }),
+    ).toBeNull();
   });
 
   it("returns the interval spanning midnight", () => {

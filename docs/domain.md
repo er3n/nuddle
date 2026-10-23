@@ -124,7 +124,7 @@ All of these live in pure functions that receive `now` from an injected `Clock` 
 | Done note | 4 seconds. |
 | OTP | 6 digits. 3 wrong codes per phone, the remaining ones shown, then a 15 minute wait in which no code is checked or sent (open-questions #41). A sign-in clears the count; a new code does not. Resend countdown on the code screen. |
 | Social permission request | Same permission, same requester: at most once per week. |
-| Snooze | Limited count, the last one is labeled "son hakkın". Count and lengths are open (design shows 15 min in the notification and 10 min on full screen). |
+| Snooze | Limited count, the last one is labeled "son hakkın". Count and lengths are open (design shows 15 min in the notification and 10 min on full screen). A snooze of a task that is not `at` ends before the recipient's next quiet hours start, where it could not ring (NUD-163). |
 | Lost poke | Planned time + grace with no fired report while the device was seen online counts as lost **(proposed grace: 5 minutes)**. |
 | Human channel trigger | Deadline is close and the full screen step went unanswered. Exact threshold is part of the plan heuristic. |
 | Invite expiry | Open question. |

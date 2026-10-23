@@ -119,6 +119,8 @@ class PokeActivity : ComponentActivity() {
 
     @Inject lateinit var examples: ExampleFiles
 
+    @Inject lateinit var quietHours: QuietHoursSource
+
     /** The first volume key silenced the ring (NUD-155); later ones change the volume as usual. */
     private var silenced = false
 
@@ -273,9 +275,15 @@ class PokeActivity : ComponentActivity() {
                     detail = task.detail,
                     timeLeft = PokeRules.timeLeft(clock.now(), deadline).takeUnless { task.isMoment },
                     snooze =
-                        SnoozeRules.next(task.snoozesUsed, clock.now(), deadline)?.let {
-                            SnoozeUi(it.until.hourMinute(timeZone), it.last)
-                        },
+                        SnoozeRules
+                            .next(
+                                task.snoozesUsed,
+                                clock.now(),
+                                deadline,
+                                SnoozeRules.quietStart(quietHours.quietHours(), task.isMoment, clock.now()),
+                            )?.let {
+                                SnoozeUi(it.until.hourMinute(timeZone), it.last)
+                            },
                     notice = notice,
                     contact = task.contactPersonId?.takeUnless { notice }?.let { pokeContact(task, connections.get(it)) },
                     // The line the notification shows too (NUD-130); this screen only opens for a full screen ring.

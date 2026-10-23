@@ -24,6 +24,7 @@ import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeRules
 import app.nuddle.domain.PokeStep
 import app.nuddle.domain.PokeTitles
+import app.nuddle.domain.QuietHours
 import app.nuddle.domain.Snooze
 import app.nuddle.domain.SnoozeRules
 import app.nuddle.domain.TimeLeft
@@ -112,7 +113,8 @@ class AndroidPokeNotifications
             task: TaskEntity,
             step: PokeStep,
             level: PokeLevel,
-        ) = post(task, step, level, quiet = false)
+            quietHours: QuietHours?,
+        ) = post(task, step, level, quiet = false, quietHours)
 
         /**
          * A volume key on 3b (NUD-155): the poke stays with its title and answers, but on `poke_silent`, without the
@@ -123,11 +125,12 @@ class AndroidPokeNotifications
             task: TaskEntity,
             step: PokeStep,
             level: PokeLevel,
+            quietHours: QuietHours?,
         ) {
             NotificationManagerCompat.from(context).cancel(notificationId(task.id))
             speech.stop(task.id)
             if ((showing() - task.id).isEmpty()) volume.restore()
-            post(task, step, level, quiet = true)
+            post(task, step, level, quiet = true, quietHours)
         }
 
         private fun post(
@@ -135,6 +138,7 @@ class AndroidPokeNotifications
             step: PokeStep,
             level: PokeLevel,
             quiet: Boolean,
+            quietHours: QuietHours?,
         ) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
@@ -164,7 +168,12 @@ class AndroidPokeNotifications
                     .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_ALL)
                     .addPokeActions(
                         step,
-                        SnoozeRules.next(task.snoozesUsed, clock.now(), Instant.fromEpochMilliseconds(task.deadline)),
+                        SnoozeRules.next(
+                            task.snoozesUsed,
+                            clock.now(),
+                            Instant.fromEpochMilliseconds(task.deadline),
+                            SnoozeRules.quietStart(quietHours, task.isMoment, clock.now()),
+                        ),
                         photo = task.finishMode == FinishMode.PHOTO.value,
                         notice = notice,
                     )

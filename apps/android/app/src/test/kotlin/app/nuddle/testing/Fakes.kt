@@ -233,6 +233,7 @@ class RecordingNotifications : PokeNotifications {
         task: TaskEntity,
         step: PokeStep,
         level: PokeLevel,
+        quietHours: QuietHours?,
     ) {
         shown += task.id to level
         up += task.id
@@ -256,6 +257,7 @@ class RecordingNotifications : PokeNotifications {
         task: TaskEntity,
         step: PokeStep,
         level: PokeLevel,
+        quietHours: QuietHours?,
     ) {
         silenced += task.id
     }

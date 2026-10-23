@@ -1,7 +1,11 @@
 package app.nuddle.domain
 
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
 
@@ -21,6 +25,15 @@ data class QuietHours(
             start < end -> time >= start && time < end
             else -> time >= start || time < end
         }
+    }
+
+    /** The first start of the window after [after]; null without a window (start equals end). NUD-163. */
+    fun nextStart(after: Instant): Instant? {
+        if (start == end) return null
+        val today = after.toLocalDateTime(timeZone).date
+        return listOf(today, today.plus(1, DateTimeUnit.DAY))
+            .map { LocalDateTime(it, start).toInstant(timeZone) }
+            .firstOrNull { it > after }
     }
 
     companion object {

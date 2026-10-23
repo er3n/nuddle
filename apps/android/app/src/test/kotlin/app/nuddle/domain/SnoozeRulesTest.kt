@@ -1,5 +1,6 @@
 package app.nuddle.domain
 
+import kotlinx.datetime.TimeZone
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -25,5 +26,22 @@ class SnoozeRulesTest {
         assertEquals(Snooze(15, now + 15.minutes, last = false), SnoozeRules.next(0, now, now + 20.minutes))
         assertEquals(Snooze(5, now + 5.minutes, last = true), SnoozeRules.next(1, now, now + 10.minutes))
         assertNull(SnoozeRules.next(0, now, now + 9.minutes + 59.seconds))
+    }
+
+    @Test
+    fun `ends before quiet hours start, where it could not ring, an at task and a quiet now aside (NUD-163)`() {
+        val quiet = QuietHours.default(TimeZone.of("Europe/Istanbul"))
+        val late = Instant.parse("2026-10-11T22:50:00+03:00")
+        val deadline = Instant.parse("2026-10-11T23:30:00+03:00")
+
+        val start = SnoozeRules.quietStart(quiet, moment = false, now = late)
+        assertEquals(Instant.parse("2026-10-11T23:00:00+03:00"), start)
+        assertEquals(Snooze(9, late + 9.minutes, last = false), SnoozeRules.next(0, late, deadline, start))
+        val tooLate = late + 6.minutes
+        assertNull(SnoozeRules.next(0, tooLate, deadline, SnoozeRules.quietStart(quiet, moment = false, now = tooLate)))
+
+        assertNull(SnoozeRules.quietStart(quiet, moment = true, now = late))
+        assertNull(SnoozeRules.quietStart(quiet, moment = false, now = Instant.parse("2026-10-11T23:10:00+03:00")))
+        assertNull(SnoozeRules.quietStart(null, moment = false, now = late))
     }
 }
