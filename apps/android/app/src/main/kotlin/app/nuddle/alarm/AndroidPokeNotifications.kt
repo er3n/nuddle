@@ -31,6 +31,7 @@ import app.nuddle.domain.TimeLeft
 import app.nuddle.ui.screens.hourMinute
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.datetime.TimeZone
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -127,9 +128,10 @@ class AndroidPokeNotifications
             level: PokeLevel,
             quietHours: QuietHours?,
         ) {
+            taken += task.id
             NotificationManagerCompat.from(context).cancel(notificationId(task.id))
             speech.stop(task.id)
-            if ((showing() - task.id).isEmpty()) volume.restore()
+            if (showing().isEmpty()) volume.restore()
             post(task, step, level, quiet = true, quietHours)
         }
 
@@ -193,6 +195,7 @@ class AndroidPokeNotifications
             // SOUND and FULL_SCREEN ring until silenced (docs/domain.md, Poke levels): without the flag the channel plays
             // the alarm tone once and stops, which a tester heard as one soft ring and no more.
             if (!silent) notification.flags = notification.flags or Notification.FLAG_INSISTENT
+            taken -= task.id
             manager.notify(notificationId(task.id), notification)
             // The task said aloud between the tone while this poke is up (NUD-124); a silent step says nothing.
             if (!quiet) speech.start(task, level) { task.id in showing() }
@@ -250,21 +253,26 @@ class AndroidPokeNotifications
                 .toSet()
 
         override fun cancel(taskId: String) {
+            taken += taskId
             NotificationManagerCompat.from(context).cancel(notificationId(taskId))
             NotificationManagerCompat.from(context).cancel(NotificationIds.headsUp(taskId))
             speech.stop(taskId)
-            // The person's alarm volume comes back once no other poke is up (NUD-68). The system applies a cancel later,
-            // so the poke just taken away may still be listed and does not count (NUD-159).
-            if ((showing() - taskId).isEmpty()) volume.restore()
+            // The person's alarm volume comes back once no other poke is up (NUD-68).
+            if (showing().isEmpty()) volume.restore()
         }
 
         // Each poke is in a group of its own task (NotificationIds.pokeGroup), which names the task.
-        override fun showing(): Set<String> =
-            NotificationManagerCompat
-                .from(context)
-                .activeNotifications
-                .mapNotNull { it.notification.group?.let(NotificationIds::taskOfPokeGroup) }
-                .toSet()
+        override fun showing(): Set<String> {
+            val listed =
+                NotificationManagerCompat
+                    .from(context)
+                    .activeNotifications
+                    .mapNotNull { it.notification.group?.let(NotificationIds::taskOfPokeGroup) }
+                    .toSet()
+            // Once the system no longer lists a poke taken away here, it need not be remembered.
+            taken.retainAll(listed)
+            return listed - taken
+        }
 
         /**
          * Title and text (3a, NUD-130): the poke title over the task, the time line in the expanded text. A one-time
@@ -354,4 +362,12 @@ class AndroidPokeNotifications
             )
 
         private fun notificationId(taskId: String) = NotificationIds.poke(taskId)
+
+        private companion object {
+            /**
+             * Pokes taken away on this phone (answered, silenced, closed by a sync). The system applies a cancel later and
+             * may still list them for a moment; they count as gone at once (NUD-159, NUD-165). Shared by every instance.
+             */
+            val taken: MutableSet<String> = ConcurrentHashMap.newKeySet()
+        }
     }
