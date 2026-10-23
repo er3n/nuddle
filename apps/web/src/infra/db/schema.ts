@@ -10,6 +10,7 @@ import {
   doublePrecision,
   index,
   jsonb,
+  numeric,
   pgEnum,
   pgSequence,
   pgTable,
@@ -448,14 +449,31 @@ export const llmCalls = pgTable(
   (t) => [index("llm_calls_task_idx").on(t.taskId), index("llm_calls_person_idx").on(t.personId)],
 );
 
-// Every sign-in code the Send SMS hook handed to the provider, for the daily caps per phone and in
-// total (ADR 0024). Rows older than the window are deleted when a new code is sent.
-export const smsSends = pgTable(
-  "sms_sends",
+// Every sign-in code the Send SMS hook handed to Twilio, whatever the channel (ADR 0024, 0029):
+// the daily caps per phone and in total, the 30 day "no WhatsApp" memory and what each code cost.
+// A code and its SMS fallback are one row. Rows older than 31 days are deleted when a new code is
+// sent.
+export const otpSends = pgTable(
+  "otp_sends",
   {
     id: uuid("id").primaryKey(),
     phone: text("phone").notNull(),
     sentAt: timestamp("sent_at", { withTimezone: true }).notNull(),
+    // whatsapp, sms: how the code went first.
+    channel: text("channel").$type<"whatsapp" | "sms">().notNull().default("sms"),
+    // The first message (Twilio's MessageSid) and its last status from the status callback.
+    twilioSid: text("twilio_sid").unique(),
+    status: text("status"),
+    errorCode: text("error_code"),
+    // When the SMS of the same code went out, its MessageSid and last status.
+    fallbackAt: timestamp("fallback_at", { withTimezone: true }),
+    fallbackSid: text("fallback_sid").unique(),
+    fallbackStatus: text("fallback_status"),
+    // Twilio's price for the messages of this code together; null while Twilio has not priced it.
+    costUsd: numeric("cost_usd", { precision: 12, scale: 6, mode: "number" }),
+    // The code, AES-256-GCM with OTP_CODE_KEY, for at most 10 minutes; null once it went by SMS,
+    // signed in or expired.
+    codeCiphertext: text("code_ciphertext"),
   },
-  (t) => [index("sms_sends_sent_at_idx").on(t.sentAt), index("sms_sends_phone_idx").on(t.phone)],
+  (t) => [index("otp_sends_sent_at_idx").on(t.sentAt), index("otp_sends_phone_idx").on(t.phone)],
 );
