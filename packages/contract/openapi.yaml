@@ -39,15 +39,23 @@ components:
         - status
         - version
         - database
-    Ok:
+    OtpSent:
       type: object
       properties:
         ok:
           type: boolean
           enum:
             - true
+        channel:
+          $ref: "#/components/schemas/OtpChannel"
       required:
         - ok
+        - channel
+    OtpChannel:
+      type: string
+      enum:
+        - whatsapp
+        - sms
     Error:
       type: object
       properties:
@@ -70,6 +78,7 @@ components:
                 - otp_locked
                 - otp_limit
                 - write_limit
+                - otp_resend_unavailable
                 - wrong_status
                 - not_sender
                 - not_recipient
@@ -107,6 +116,16 @@ components:
       required:
         - error
     SendOtpRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+          pattern: ^\+905\d{9}$
+          example: "+905320000002"
+          description: A Turkish mobile number, E.164
+      required:
+        - phone
+    ResendOtpBySmsRequest:
       type: object
       properties:
         phone:
@@ -1472,6 +1491,15 @@ components:
         - phone
         - relationship
         - prefilledName
+    Ok:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+      required:
+        - ok
     AcceptInviteCommand:
       type: object
       properties:
@@ -1662,11 +1690,11 @@ paths:
               $ref: "#/components/schemas/SendOtpRequest"
       responses:
         "200":
-          description: Code sent
+          description: Code sent, and the channel it went to
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Ok"
+                $ref: "#/components/schemas/OtpSent"
         "400":
           description: Error with a DRT code
           content:
@@ -1674,6 +1702,45 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "429":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/auth/otp/sms:
+    post:
+      operationId: resendOtpBySms
+      summary: Send the code already sent to the phone again, by SMS ("SMS ile gönder", ADR 0029)
+      description: Never creates a code and adds nothing to the daily caps. otp_resend_unavailable (409) when no code is held for the phone, it expired, or it already went by SMS.
+      tags:
+        - auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResendOtpBySmsRequest"
+      responses:
+        "200":
+          description: The same code went by SMS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OtpSent"
+        "400":
+          description: Error with a DRT code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
           description: Error with a DRT code
           content:
             application/json:
