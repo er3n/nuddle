@@ -2,7 +2,7 @@
 // and the pure rule check every answer passes before it is stored. Plan v0 (plan-pokes.ts) stays
 // the first plan and the fallback.
 import { humanChannelAllowed, type PlanPokesInput } from "./plan-pokes";
-import { isQuiet } from "./quiet-hours";
+import { isQuiet, quietIntervalAt } from "./quiet-hours";
 import type { Reachability } from "./reachability";
 import { MINUTE } from "./time";
 import { pokeStartOf } from "./timing";
@@ -154,16 +154,21 @@ export function checkPlan(proposal: PlanProposal, input: CheckInput): PokeStep[]
   }
   if (devices === 0 || kept.every((s) => s.level === "SILENT")) return null;
 
-  // One HUMAN step, after the last device step, and within the last hour before the deadline: the
-  // model's earlier one is moved there, so the sender is told late rather than not at all.
+  // One HUMAN step, after the last device step, and within the last hour before the deadline (or
+  // right before quiet hours when that hour is quiet): the model's earlier one is moved there, so the
+  // sender is told late rather than not at all.
   const proposed = sorted.find((s) => s.level === "HUMAN");
   if (proposed && humanChannelAllowed(input) && !Number.isNaN(proposed.at.getTime())) {
-    const at = Math.max(
+    let at = Math.max(
       proposed.at.getTime(),
       deadline - HUMAN_LAST_MS,
       lastDeviceAt + MIN_STEP_GAP_MS,
       earliest,
     );
+    // That hour inside quiet hours: right before they start, as plan v0 does, not dropped (NUD-172).
+    const quiet = quietApplies(at) ? quietIntervalAt(new Date(at), recipient.quietHours) : null;
+    if (quiet)
+      at = Math.max(quiet.start.getTime() - MINUTE, lastDeviceAt + MIN_STEP_GAP_MS, earliest);
     if (at < deadline && (!quietApplies(at) || !isQuiet(new Date(at), recipient.quietHours))) {
       kept.push({ at: new Date(at), level: "HUMAN" });
     }
