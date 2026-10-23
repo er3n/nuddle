@@ -148,6 +148,13 @@
       "when": 1792686333911,
       "tag": "20261022162533_example_photo",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792707280373,
+      "tag": "20261022221440_session_devices",
+      "breakpoints": true
     }
   ]
 }

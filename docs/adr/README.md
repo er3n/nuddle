@@ -32,3 +32,4 @@ To change a decision: add a new ADR that supersedes the old one, set the old one
 | 0024 | Daily caps per person on LLM calls and per phone on SMS; every LLM call keeps its tokens and cost |
 | 0025 | Announcements are markdown files sent by a CLI and delivered through sync |
 | 0026 | Releases reach Play internal testing from the command line (Gradle Play Publisher) |
+| 0027 | Our API keeps which device holds each Supabase session; people can sign out their other sessions |

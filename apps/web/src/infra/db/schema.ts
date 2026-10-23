@@ -326,6 +326,8 @@ export const devices = pgTable(
     fid: text("fid").notNull().unique(),
     platform: devicePlatform("platform").notNull(),
     appVersion: text("app_version").notNull(),
+    // "Samsung SM-S911B" as the app reports it, shown in Cihazlarım (ADR 0027); null before it does.
+    model: text("model"),
     // Notifications, exact alarm, full screen and channel states as reported by the device.
     permissions: jsonb("permissions")
       .$type<PermissionSummary>()
@@ -335,6 +337,52 @@ export const devices = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index("devices_person_idx").on(t.personId)],
+);
+
+export const sessionSeenVia = pgEnum("session_seen_via", ["verify", "refresh", "device", "sync"]);
+
+// Which device holds each Supabase session (ADR 0027): ids, the app version and times only, never
+// IPs, user agents or tokens. No foreign keys: a session starts before `register` creates the
+// person, and log out deletes the device row while the session row stays.
+export const sessionDevices = pgTable(
+  "session_devices",
+  {
+    // The access token's `session_id` claim.
+    sessionId: uuid("session_id").primaryKey(),
+    personId: uuid("person_id").notNull(),
+    deviceId: uuid("device_id"),
+    appVersion: text("app_version"),
+    createdAt: createdAt(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+    lastSeenVia: sessionSeenVia("last_seen_via").notNull(),
+    // Ended by sign_out_others; the middleware refuses its access tokens.
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  },
+  (t) => [index("session_devices_person_idx").on(t.personId)],
+);
+
+export const foreignDeviceVia = pgEnum("foreign_device_via", [
+  "verify",
+  "refresh",
+  "sync",
+  "report_fired",
+  "log_out",
+]);
+
+// A request named a device that is not the caller's (ADR 0027): ids only. `ownerId` is null when
+// no device has that id.
+export const foreignDeviceUses = pgTable(
+  "foreign_device_uses",
+  {
+    id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    personId: uuid("person_id").notNull(),
+    sessionId: uuid("session_id"),
+    deviceId: uuid("device_id").notNull(),
+    ownerId: uuid("owner_id"),
+    via: foreignDeviceVia("via").notNull(),
+    at: timestamp("at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("foreign_device_uses_person_idx").on(t.personId)],
 );
 
 // Replayed commands return the stored result (ADR 0006).

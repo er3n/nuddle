@@ -9,7 +9,7 @@ const deleted = [
   "Yazdığın ve sana yazılan görevler, notlar ve fotoğraflar.",
   "Dürtme geçmişin ve senin için öğrendiğimiz dürtme özeti.",
   "Yapay zekâ çağrılarının kayıtları.",
-  "Telefonlarının bildirim anahtarları.",
+  "Telefonlarının bildirim anahtarları ve oturum kayıtları.",
 ];
 
 export const legalTr: Legal = {
@@ -18,7 +18,7 @@ export const legalTr: Legal = {
   privacy: {
     metaTitle: "Gizlilik · dürt",
     title: "Gizlilik metni",
-    updated: "Son güncelleme: 16 Ekim 2026",
+    updated: "Son güncelleme: 23 Ekim 2026",
     intro:
       "dürt, birinin bir kere yazdığı işi, unutan kişiye iş bitene kadar hatırlatan bir uygulama. Bu metin, 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamında hangi verilerini neden işlediğimizi, kimlerle paylaştığımızı, ne kadar sakladığımızı ve haklarını anlatır.",
     sections: [
@@ -39,7 +39,7 @@ export const legalTr: Legal = {
           "Dürtme geçmişin: hangi dürtmenin ne zaman çaldığı, hangisinden sonra harekete geçtiğin, ertelemeler. Bundan, seni nasıl dürtmemiz gerektiğini anlatan kısa bir özet çıkarılır.",
           "Fotoğraflar: bir işi bitirdiğini göstermek için gönderdiğin fotoğraf.",
           "Ayarların: sessiz saatler, saat dilimi ve tanıdıklarına haber verilip verilemeyeceği.",
-          "Cihaz bilgileri: bildirim gönderebilmek için telefonun bildirim anahtarı, izinlerin açık olup olmadığı, dürtmelerin telefonda zamanında çalıp çalmadığı ve uygulama çökerse ya da bir işlem hata verirse hata raporu (telefon modeli, Android sürümü, açık olan ekran, uygulamanın son adımları ve hata kaydı; görev metni, isim, numara ve fotoğraf içermez).",
+          "Cihaz bilgileri: bildirim gönderebilmek için telefonun bildirim anahtarı, izinlerin açık olup olmadığı, dürtmelerin telefonda zamanında çalıp çalmadığı, Cihazlarım'da hangi telefonlarda oturumun açık olduğunu görebilmen için her telefonun modeli, uygulama sürümü ve son görülme zamanı (IP adresi tutmayız) ve uygulama çökerse ya da bir işlem hata verirse hata raporu (telefon modeli, Android sürümü, açık olan ekran, uygulamanın son adımları ve hata kaydı; görev metni, isim, numara ve fotoğraf içermez).",
         ],
       },
       {

@@ -47,6 +47,7 @@ import {
   announcements,
   devices,
   edges,
+  foreignDeviceUses,
   idempotencyKeys,
   invites,
   llmCalls,
@@ -54,6 +55,7 @@ import {
   people,
   pokeSteps,
   scheduledActions,
+  sessionDevices,
   smsSends,
   taskEvents,
   tasks,
@@ -442,6 +444,8 @@ export async function upsertDevice(
     fid: string;
     platform: "android" | "ios";
     appVersion: string;
+    /** Absent from apps before ADR 0027: the stored model stays. */
+    model?: string | null;
     permissions: PermissionSummary;
     now: Date;
   },
@@ -451,6 +455,7 @@ export async function upsertDevice(
     fid: d.fid,
     platform: d.platform,
     appVersion: d.appVersion,
+    ...(d.model === undefined ? {} : { model: d.model }),
     permissions: d.permissions,
     lastSeenAt: d.now,
   };
@@ -474,26 +479,192 @@ export async function upsertDevice(
   return row.id;
 }
 
-/** Logout deletes the row (decided in NUD-8); `fid` stays NOT NULL. */
-export async function deleteDevice(tx: Tx, personId: PersonId, deviceId: string): Promise<void> {
-  await tx.delete(devices).where(and(eq(devices.id, deviceId), eq(devices.personId, personId)));
+/** Logout deletes the row (decided in NUD-8); `fid` stays NOT NULL. False when it is not the person's. */
+export async function deleteDevice(tx: Tx, personId: PersonId, deviceId: string): Promise<boolean> {
+  const gone = await tx
+    .delete(devices)
+    .where(and(eq(devices.id, deviceId), eq(devices.personId, personId)))
+    .returning({ id: devices.id });
+  return gone.length > 0;
 }
 
 export async function deleteDevicesOf(tx: Tx, personId: PersonId): Promise<void> {
   await tx.delete(devices).where(eq(devices.personId, personId));
 }
 
-/** The device was seen online. Not part of the sync feed, so no write lock is needed. */
+/**
+ * The device was seen online. Not part of the sync feed, so no write lock is needed. False when
+ * the device is not the person's (ADR 0027: the caller then records a foreign device use).
+ */
 export async function touchDevice(
   ex: Executor,
   personId: PersonId,
   deviceId: string,
   now: Date,
-): Promise<void> {
-  await ex
+): Promise<boolean> {
+  const touched = await ex
     .update(devices)
     .set({ lastSeenAt: now })
+    .where(and(eq(devices.id, deviceId), eq(devices.personId, personId)))
+    .returning({ id: devices.id });
+  return touched.length > 0;
+}
+
+/** Whether the device row exists and is the person's. */
+export async function deviceIsOf(
+  ex: Executor,
+  personId: PersonId,
+  deviceId: string,
+): Promise<boolean> {
+  const [row] = await ex
+    .select({ id: devices.id })
+    .from(devices)
     .where(and(eq(devices.id, deviceId), eq(devices.personId, personId)));
+  return row !== undefined;
+}
+
+// ---- sessions (ADR 0027) --------------------------------------------------------------------
+
+export type SessionSeenVia = "verify" | "refresh" | "device" | "sync";
+export type ForeignDeviceVia = "verify" | "refresh" | "sync" | "report_fired" | "log_out";
+
+/**
+ * Creates or moves the session's row. A device id or an app version that is not given keeps the
+ * stored one; the person never changes, so a session id seen for someone else is left alone.
+ */
+export async function noteSession(
+  ex: Executor,
+  s: {
+    sessionId: string;
+    personId: PersonId;
+    deviceId?: string | null;
+    appVersion?: string | null;
+    via: SessionSeenVia;
+    now: Date;
+  },
+): Promise<void> {
+  const known = {
+    ...(s.deviceId ? { deviceId: s.deviceId } : {}),
+    ...(s.appVersion ? { appVersion: s.appVersion } : {}),
+  };
+  await ex
+    .insert(sessionDevices)
+    .values({
+      sessionId: s.sessionId,
+      personId: s.personId,
+      deviceId: s.deviceId ?? null,
+      appVersion: s.appVersion ?? null,
+      createdAt: s.now,
+      lastSeenAt: s.now,
+      lastSeenVia: s.via,
+    })
+    .onConflictDoUpdate({
+      target: sessionDevices.sessionId,
+      set: { ...known, lastSeenAt: s.now, lastSeenVia: s.via },
+      setWhere: eq(sessionDevices.personId, s.personId),
+    });
+}
+
+export async function sessionRevoked(ex: Executor, sessionId: string): Promise<boolean> {
+  const [row] = await ex
+    .select({ revokedAt: sessionDevices.revokedAt })
+    .from(sessionDevices)
+    .where(eq(sessionDevices.sessionId, sessionId));
+  return row !== undefined && row.revokedAt !== null;
+}
+
+export interface SessionRow {
+  sessionId: string;
+  deviceModel: string | null;
+  appVersion: string | null;
+  lastSeenAt: Date;
+}
+
+/** The person's sessions not revoked and seen since `since`, newest first, with the device's model. */
+export async function sessionsOf(
+  ex: Executor,
+  personId: PersonId,
+  since: Date,
+): Promise<SessionRow[]> {
+  const rows = await ex
+    .select({
+      sessionId: sessionDevices.sessionId,
+      deviceModel: devices.model,
+      sessionAppVersion: sessionDevices.appVersion,
+      deviceAppVersion: devices.appVersion,
+      lastSeenAt: sessionDevices.lastSeenAt,
+    })
+    .from(sessionDevices)
+    .leftJoin(
+      devices,
+      and(eq(devices.id, sessionDevices.deviceId), eq(devices.personId, sessionDevices.personId)),
+    )
+    .where(
+      and(
+        eq(sessionDevices.personId, personId),
+        isNull(sessionDevices.revokedAt),
+        gte(sessionDevices.lastSeenAt, since),
+      ),
+    )
+    .orderBy(desc(sessionDevices.lastSeenAt));
+  return rows.map((r) => ({
+    sessionId: r.sessionId,
+    deviceModel: r.deviceModel,
+    appVersion: r.deviceAppVersion ?? r.sessionAppVersion,
+    lastSeenAt: r.lastSeenAt,
+  }));
+}
+
+/** Marks every other open session of the person revoked; returns how many. */
+export async function revokeOtherSessions(
+  tx: Tx,
+  personId: PersonId,
+  keep: string,
+  now: Date,
+): Promise<number> {
+  const revoked = await tx
+    .update(sessionDevices)
+    .set({ revokedAt: now })
+    .where(
+      and(
+        eq(sessionDevices.personId, personId),
+        ne(sessionDevices.sessionId, keep),
+        isNull(sessionDevices.revokedAt),
+      ),
+    )
+    .returning({ sessionId: sessionDevices.sessionId });
+  return revoked.length;
+}
+
+/** A request named a device that is not the caller's: ids only (ADR 0027). */
+export async function recordForeignDevice(
+  ex: Executor,
+  u: {
+    personId: PersonId;
+    sessionId: string | null;
+    deviceId: string;
+    via: ForeignDeviceVia;
+    now: Date;
+  },
+): Promise<void> {
+  const [owner] = await ex
+    .select({ personId: devices.personId })
+    .from(devices)
+    .where(eq(devices.id, u.deviceId));
+  await ex.insert(foreignDeviceUses).values({
+    personId: u.personId,
+    sessionId: u.sessionId,
+    deviceId: u.deviceId,
+    ownerId: owner?.personId ?? null,
+    via: u.via,
+    at: u.now,
+  });
+}
+
+/** Account deletion: the person's session and foreign device rows go with the devices. */
+export async function deleteSessionRecordsOf(tx: Tx, personId: PersonId): Promise<void> {
+  await tx.delete(sessionDevices).where(eq(sessionDevices.personId, personId));
+  await tx.delete(foreignDeviceUses).where(eq(foreignDeviceUses.personId, personId));
 }
 
 export async function fidsOf(ex: Executor, personId: PersonId): Promise<string[]> {

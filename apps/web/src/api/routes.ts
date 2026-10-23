@@ -100,9 +100,15 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
     },
   );
 
-  const sessionDto = async (session: Awaited<ReturnType<typeof deps.auth.refresh>>) => {
+  const sessionDto = async (
+    session: Awaited<ReturnType<typeof deps.auth.refresh>>,
+    via: "verify" | "refresh",
+    origin: { appVersion?: string | undefined; deviceId?: string | undefined },
+  ) => {
     if (!session) throw new ApiError("invalid_otp");
     const p = await deps.tokens.verify(session.accessToken);
+    // Which phone holds the session (ADR 0027).
+    await svc.noteSignIn(deps, p, via, origin);
     const existing = await svc.requirePerson(deps, p.id).catch(() => null);
     return {
       accessToken: session.accessToken,
@@ -128,9 +134,9 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
       },
     }),
     async (c) => {
-      const { phone, code } = c.req.valid("json");
+      const { phone, code, ...origin } = c.req.valid("json");
       const session = await svc.verifyOtp(deps, phone, code);
-      return c.json(await sessionDto(session), 200);
+      return c.json(await sessionDto(session, "verify", origin), 200);
     },
   );
 
@@ -148,8 +154,13 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
         ...errors([400, 401, 502]),
       },
     }),
-    async (c) =>
-      c.json(await sessionDto(await deps.auth.refresh(c.req.valid("json").refreshToken)), 200),
+    async (c) => {
+      const { refreshToken, ...origin } = c.req.valid("json");
+      return c.json(
+        await sessionDto(await deps.auth.refresh(refreshToken), "refresh", origin),
+        200,
+      );
+    },
   );
 
   // ---- sync, devices, photos ----------------------------------------------------------------
@@ -173,6 +184,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
       const r = await svc.sync(deps, await person(c.get("caller")), {
         cursor: Number(q.cursor ?? "0"),
         deviceId: q.deviceId ?? null,
+        sessionId: c.get("caller").sessionId,
       });
       return c.json(
         {
@@ -264,9 +276,32 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
     }),
     async (c) =>
       c.json(
-        await svc.registerDevice(deps, await person(c.get("caller")), c.req.valid("json")),
+        await svc.registerDevice(deps, await person(c.get("caller")), {
+          ...c.req.valid("json"),
+          sessionId: c.get("caller").sessionId,
+        }),
         200,
       ),
+  );
+
+  app.openapi(
+    createRoute({
+      method: "get",
+      path: "/v1/sessions",
+      operationId: "listSessions",
+      summary: "The phones signed in to my account, newest first (Cihazlarım, ADR 0027)",
+      tags: ["devices"],
+      security: [{ bearer: [] }],
+      responses: {
+        200: { description: "My sessions", content: json(s.SessionsResponse) },
+        ...errors([401, 403]),
+      },
+    }),
+    async (c) => {
+      const caller = c.get("caller");
+      await person(caller);
+      return c.json(await svc.listSessions(deps, caller), 200);
+    },
   );
 
   app.openapi(
@@ -697,6 +732,7 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
         await svc.reportFired(deps, await person(c.get("caller")), {
           ...b,
           firedAt: new Date(b.firedAt),
+          sessionId: c.get("caller").sessionId,
         }),
         200,
       );
@@ -812,7 +848,35 @@ export function registerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
   app.openapi(
     command("log_out", "logOut", "Log out this device: its pokes stop", s.LogOutCommand, s.Ok),
     async (c) =>
-      c.json(await svc.logOut(deps, await person(c.get("caller")), c.req.valid("json")), 200),
+      c.json(
+        await svc.logOut(deps, await person(c.get("caller")), {
+          ...c.req.valid("json"),
+          sessionId: c.get("caller").sessionId,
+        }),
+        200,
+      ),
+  );
+  app.openapi(
+    command(
+      "sign_out_others",
+      "signOutOthers",
+      "Sign out every other phone of my account (ADR 0027)",
+      s.SignOutOthersCommand,
+      s.SignOutOthersResult,
+      [502],
+    ),
+    async (c) => {
+      const caller = c.get("caller");
+      const header = c.req.header("authorization") ?? "";
+      return c.json(
+        await svc.signOutOthers(deps, await person(caller), {
+          ...c.req.valid("json"),
+          sessionId: caller.sessionId,
+          accessToken: header.slice("Bearer ".length),
+        }),
+        200,
+      );
+    },
   );
   app.openapi(
     command(

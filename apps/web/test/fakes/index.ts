@@ -14,6 +14,7 @@ import type {
 } from "../../src/domain/ports";
 import type { PersonId, PushMessage, TaskId } from "../../src/domain/types";
 import type { AuthGateway, Session } from "../../src/infra/auth/supabase-auth";
+import { decodeJwt } from "jose";
 
 export class FakeClock implements Clock {
   private current: Date;
@@ -109,11 +110,19 @@ export class FakePhotoStorage implements PhotoStorage {
 export class FakeAuthGateway implements AuthGateway {
   readonly otpSentTo: string[] = [];
   readonly deletedUsers: string[] = [];
+  /** Access tokens `signOutOthers` was called with (ADR 0027). */
+  readonly signedOutOthersOf: string[] = [];
   /** Makes the next `deleteUser` throw, as a Supabase outage would. */
   failNextDelete = false;
+  /** Makes the next `signOutOthers` throw, as a Supabase outage would. */
+  failNextSignOut = false;
   private readonly users = new Map<string, string>();
+  /** Refresh token to its phone and session: a refresh keeps the session id, as in Supabase. */
+  private readonly sessions = new Map<string, { phone: string; sessionId: string }>();
 
-  constructor(private readonly mint: (userId: string, phone: string) => Promise<string>) {}
+  constructor(
+    private readonly mint: (userId: string, phone: string, sessionId: string) => Promise<string>,
+  ) {}
 
   sendOtp(phone: string): Promise<void> {
     this.otpSentTo.push(phone);
@@ -122,18 +131,41 @@ export class FakeAuthGateway implements AuthGateway {
 
   async verifyOtp(phone: string, code: string): Promise<Session | null> {
     if (code !== "123456") return null;
+    return this.session(phone, randomUUID());
+  }
+
+  async refresh(refreshToken: string): Promise<Session | null> {
+    const entry = this.sessions.get(refreshToken);
+    if (!entry) return null;
+    this.sessions.delete(refreshToken);
+    return this.session(entry.phone, entry.sessionId);
+  }
+
+  private async session(phone: string, sessionId: string): Promise<Session> {
     const userId = await this.ensureUser(phone);
+    const refreshToken = `refresh-${randomUUID()}`;
+    this.sessions.set(refreshToken, { phone, sessionId });
     return {
-      accessToken: await this.mint(userId, phone),
-      refreshToken: `refresh-${userId}`,
+      accessToken: await this.mint(userId, phone, sessionId),
+      refreshToken,
       expiresAt: new Date("2030-01-01T00:00:00Z"),
       userId,
     };
   }
 
-  async refresh(refreshToken: string): Promise<Session | null> {
-    const entry = [...this.users].find(([, id]) => `refresh-${id}` === refreshToken);
-    return entry ? this.verifyOtp(entry[0], "123456") : null;
+  /** Ends every other session of the token's user: their refresh tokens stop working. */
+  signOutOthers(accessToken: string): Promise<void> {
+    if (this.failNextSignOut) {
+      this.failNextSignOut = false;
+      return Promise.reject(new Error("auth unavailable"));
+    }
+    this.signedOutOthersOf.push(accessToken);
+    const { sub, session_id: keep } = decodeJwt(accessToken);
+    const phone = [...this.users].find(([, id]) => id === sub)?.[0];
+    for (const [token, s] of this.sessions) {
+      if (s.phone === phone && s.sessionId !== keep) this.sessions.delete(token);
+    }
+    return Promise.resolve();
   }
 
   ensureUser(phone: string): Promise<string> {

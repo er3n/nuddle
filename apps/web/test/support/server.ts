@@ -1,6 +1,7 @@
 // The API under test (docs/testing.md, HTTP and Scenario layers): the real Hono app on a fresh
 // copy of the migrated template database, with recording fakes for every external service and
 // access tokens signed by a key generated per server. Requests go through `app.request()`.
+import { randomUUID } from "node:crypto";
 import { generateKeyPair, SignJWT } from "jose";
 import createClient, { type Client } from "openapi-fetch";
 import { inject } from "vitest";
@@ -29,7 +30,7 @@ export interface TestServer {
   deps: AppDeps;
   database: TestDatabase;
   /** A Supabase-shaped access token (`sub`, `phone` without "+", audience authenticated). */
-  tokenFor(userId: string, phone: string): Promise<string>;
+  tokenFor(userId: string, phone: string, sessionId?: string): Promise<string>;
   /** The generated TS client (ADR 0008) calling the app in-process, optionally signed in. */
   client(token?: string): ApiClient;
   close(): Promise<void>;
@@ -38,8 +39,13 @@ export interface TestServer {
 export async function startTestServer(overrides: Partial<AppDeps> = {}): Promise<TestServer> {
   const database = await createDatabaseFromTemplate(inject("templateDatabase"));
   const { privateKey, publicKey } = await generateKeyPair("ES256");
-  const tokenFor = (userId: string, phone: string) =>
-    new SignJWT({ phone: phone.replace(/^\+/, ""), role: "authenticated" })
+  // Every Supabase access token names its session (ADR 0027).
+  const tokenFor = (userId: string, phone: string, sessionId: string = randomUUID()) =>
+    new SignJWT({
+      phone: phone.replace(/^\+/, ""),
+      role: "authenticated",
+      session_id: sessionId,
+    })
       .setProtectedHeader({ alg: "ES256" })
       .setSubject(userId)
       .setAudience("authenticated")

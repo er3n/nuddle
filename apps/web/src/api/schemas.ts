@@ -102,11 +102,18 @@ const PermissionSummary = z
 // ---- auth -----------------------------------------------------------------------------------
 
 export const SendOtpRequest = z.object({ phone: SignInPhone }).openapi("SendOtpRequest");
+/** Who signs in from where (ADR 0027): kept with the session, never an IP or the token. */
+const SessionOrigin = {
+  /** `BuildConfig.VERSION_NAME`. */
+  appVersion: z.string().min(1).max(64).optional(),
+  /** The id `POST /devices` returned on this phone, when it has one. */
+  deviceId: Id.optional(),
+};
 export const VerifyOtpRequest = z
-  .object({ phone: SignInPhone, code: z.string().regex(/^\d{6}$/) })
+  .object({ phone: SignInPhone, code: z.string().regex(/^\d{6}$/), ...SessionOrigin })
   .openapi("VerifyOtpRequest");
 export const RefreshRequest = z
-  .object({ refreshToken: z.string().min(1) })
+  .object({ refreshToken: z.string().min(1), ...SessionOrigin })
   .openapi("RefreshRequest");
 export const Session = z
   .object({
@@ -318,6 +325,13 @@ export const SetAvatarCommand = keyed({
   avatarPath: z.string().min(1).max(200).nullable(),
 }).openapi("SetAvatarCommand");
 export const LogOutCommand = keyed({ deviceId: Id }).openapi("LogOutCommand");
+export const SignOutOthersCommand = keyed({}).openapi("SignOutOthersCommand");
+export const SignOutOthersResult = z
+  .object({
+    /** How many of the listed sessions ended; sessions never seen by our API end too but are not counted. */
+    signedOut: z.int().nonnegative(),
+  })
+  .openapi("SignOutOthersResult");
 export const DeleteAccountCommand = keyed({}).openapi("DeleteAccountCommand");
 
 const LocalTime = z
@@ -352,6 +366,8 @@ export const RegisterDeviceRequest = z
     fid: z.string().min(1),
     platform: z.enum(["android", "ios"]),
     appVersion: z.string().min(1),
+    /** "Samsung SM-S911B": manufacturer and model, shown in Cihazlarım (ADR 0027). */
+    model: z.string().min(1).max(100).optional(),
     permissions: PermissionSummary,
   })
   .openapi("RegisterDeviceRequest");
@@ -455,6 +471,24 @@ export const PhotoViewUrlResult = z
   .openapi("PhotoViewUrlResult");
 
 // ---- sync -----------------------------------------------------------------------------------
+
+/** One phone signed in to my account (ADR 0027). */
+const SignedInSession = z
+  .object({
+    /** Null until the phone registers its device with a model. */
+    deviceModel: z.string().nullable(),
+    appVersion: z.string().nullable(),
+    lastSeenAt: Instant,
+    /** The session making this call. */
+    current: z.boolean(),
+  })
+  .openapi("SignedInSession");
+export const SessionsResponse = z
+  .object({
+    /** Newest first; sessions seen in the last 30 days and not signed out. */
+    sessions: z.array(SignedInSession),
+  })
+  .openapi("SessionsResponse");
 
 export const SyncQuery = z.object({
   cursor: z
