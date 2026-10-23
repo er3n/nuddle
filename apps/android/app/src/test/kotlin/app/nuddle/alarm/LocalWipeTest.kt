@@ -2,6 +2,7 @@ package app.nuddle.alarm
 
 import android.app.NotificationManager
 import android.content.Context
+import android.media.AudioManager
 import androidx.core.app.NotificationCompat
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.WorkInfo
@@ -13,6 +14,8 @@ import app.nuddle.data.db.NuddleDatabase
 import app.nuddle.data.outbox.WorkManagerScheduling
 import app.nuddle.data.photo.PendingPhoto
 import app.nuddle.data.photo.PhotoFiles
+import app.nuddle.domain.LockedStep
+import app.nuddle.domain.PokeLevel
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
 import app.nuddle.testing.InMemorySessionStore
@@ -37,7 +40,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
-/** Çıkış yap (7h) and Hesabımı sil (7i) leave nothing of the person on the phone. */
+/** Çıkış yap (7h), Hesabımı sil (7i) and a rejected refresh (NUD-141) leave nothing of the person on the phone. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class LocalWipeTest {
@@ -59,7 +62,9 @@ class LocalWipeTest {
     fun `wiping stops alarms, notifications and queued work, and empties the database, photos and session`() =
         runTest {
             val clock = FakeClock(Instant.parse("2026-10-12T08:00:00+03:00"))
-            val alarms = PokeAlarms(db.tasks(), db.pokeSteps(), scheduler, clock, RecordingNotifications())
+            val pokes = RecordingNotifications()
+            val armed = RecordingArmedPokes()
+            val alarms = PokeAlarms(db.tasks(), db.pokeSteps(), scheduler, clock, pokes, armed)
             db.tasks().upsert(listOf(aTask()))
             db.connections().upsert(listOf(sibelConnection()))
             alarms.applyPlan(Cast.TASK_ID, 1, listOf(aStep(1, "2026-10-12T08:30:00+03:00")))
@@ -73,8 +78,19 @@ class LocalWipeTest {
             avatars.save(ME, "avatars/me/1.jpg", byteArrayOf(2))
             val manager = context.getSystemService(NotificationManager::class.java)
             manager.notify(1, NotificationCompat.Builder(context, "test").setSmallIcon(android.R.drawable.ic_dialog_info).build())
+            // A poke is up and raised the alarm volume from the person's own 1.
+            pokes.show(aTask(), aStep(1, "2026-10-12T08:00:00+03:00").toStep(), PokeLevel.SOUND)
+            val audio = context.getSystemService(AudioManager::class.java)
+            audio.setStreamVolume(AudioManager.STREAM_ALARM, 1, 0)
+            val volume = AlarmVolume(context)
+            volume.raise()
 
-            AndroidLocalWipe(context, alarms, work, db, photos, avatars, sessions).wipe()
+            AndroidLocalWipe(context, alarms, work, db, photos, avatars, sessions, pokes, volume).wipe()
+
+            assertTrue(armed.cleared, "the direct boot copy is emptied")
+            assertEquals(listOf(Cast.TASK_ID), pokes.cancelled, "the poke that was up closes with its voice")
+            assertTrue(pokes.showing().isEmpty())
+            assertEquals(1, audio.getStreamVolume(AudioManager.STREAM_ALARM), "the alarm volume goes back")
 
             assertNull(avatars.pathOf(ME))
             assertTrue(scheduler.scheduled.isEmpty())
@@ -88,4 +104,15 @@ class LocalWipeTest {
             assertNull(photos.pending(Cast.TASK_ID))
             assertNull(sessions.current())
         }
+}
+
+/** Records whether the armed set was cleared (the direct boot copy and the hourly check follow it, NUD-125). */
+private class RecordingArmedPokes : ArmedPokes {
+    var cleared = false
+
+    override suspend fun armed(steps: List<LockedStep>) = Unit
+
+    override suspend fun cleared() {
+        cleared = true
+    }
 }

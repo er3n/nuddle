@@ -6,6 +6,7 @@ import app.nuddle.api.CommandsApi
 import app.nuddle.api.DevicesApi
 import app.nuddle.api.PhotosApi
 import app.nuddle.api.SyncApi
+import app.nuddle.data.LocalWipe
 import app.nuddle.data.api.AuthInterceptor
 import app.nuddle.data.api.DiagnosticsInterceptor
 import app.nuddle.data.api.RawCommandApi
@@ -71,12 +72,13 @@ object NetworkModule {
         json: Json,
         sessions: SessionStore,
         authApi: Lazy<AuthApi>,
+        wipe: Lazy<LocalWipe>,
         diagnostics: Diagnostics,
     ): Retrofit {
         val client =
             baseClient(diagnostics)
                 .addInterceptor(AuthInterceptor(sessions))
-                .authenticator(TokenAuthenticator(sessions) { authApi.get() })
+                .authenticator(TokenAuthenticator(sessions, { authApi.get() }, { wipe.get() }))
                 .build()
         return retrofit(client, json)
     }
