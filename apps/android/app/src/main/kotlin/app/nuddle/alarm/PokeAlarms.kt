@@ -101,29 +101,33 @@ class PokeAlarms
             taskList
                 .filter { it.status in OPEN_STATUSES && (it.snoozedUntil ?: 0) > now.toEpochMilliseconds() }
                 .mapNotNull { task ->
-                    ringOf(task, all.filter { it.taskId == task.id })
+                    all
+                        .filter { it.taskId == task.id && it.planVersion == task.planVersion && it.firedAt != null }
+                        .maxByOrNull { it.seq }
                         ?.toStep()
                         ?.copy(plannedAt = Instant.fromEpochMilliseconds(task.snoozedUntil ?: return@mapNotNull null))
                 }
 
         /**
-         * The step a snooze rings again: the one that rang last in the task's current plan, or, when a sync replaced the
-         * plan since it rang (the LLM plan follows the first one within seconds, an edit), its first step yet to ring.
+         * What Ertele on [key] rings at the snooze's end (NUD-158): the step that rang. When a sync replaced its plan since
+         * (the LLM plan follows the first one within seconds, an edit), the current plan's first step yet to ring takes
+         * its place and counts as rung [at], so a re-arm keeps the snoozed ring and holds the steps before its end. Null
+         * when the plan has no step left.
          */
-        private fun ringOf(
-            task: TaskEntity,
-            stepsOfTask: List<PokeStepEntity>,
-        ): PokeStepEntity? {
-            val current = stepsOfTask.filter { it.planVersion == task.planVersion }
-            return current.filter { it.firedAt != null }.maxByOrNull { it.seq }
-                ?: current.filter { it.firedAt == null }.minByOrNull { it.seq }
-        }
-
-        /** What Ertele on [key] rings at the snooze's end (NUD-158); null when the task's plan has no step left. */
         suspend fun snoozeRing(
             key: AlarmKey,
             task: TaskEntity,
-        ): PokeStep? = step(key) ?: ringOf(task, steps.forTask(task.id))?.toStep()
+            at: Instant,
+        ): PokeStep? {
+            step(key)?.let { return it }
+            val next =
+                steps
+                    .forTask(task.id)
+                    .filter { it.planVersion == task.planVersion && it.firedAt == null }
+                    .minByOrNull { it.seq } ?: return null
+            steps.markFired(next.taskId, next.planVersion, next.seq, at.toEpochMilliseconds())
+            return next.toStep()
+        }
 
         override suspend fun applyPlan(
             taskId: String,

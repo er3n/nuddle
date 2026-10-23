@@ -278,7 +278,7 @@ class PokeActions
                 tasks.countSnooze(key.taskId, snooze.until.toEpochMilliseconds())
                 // The step that rang, or the current plan's next one when a sync replaced its plan since (NUD-158). The
                 // plan's next steps before the snooze ends lose their alarms now, also offline (NUD-152).
-                alarms.snoozeRing(key, task)?.let { step ->
+                alarms.snoozeRing(key, task, now)?.let { step ->
                     scheduler.schedule(step.copy(plannedAt = snooze.until))
                     alarms.holdForSnooze(step.key, snooze.until)
                 }
