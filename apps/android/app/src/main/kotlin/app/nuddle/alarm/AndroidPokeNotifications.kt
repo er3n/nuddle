@@ -106,6 +106,8 @@ class AndroidPokeNotifications
                     .setCategory(if (fullScreen) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_REMINDER)
                     .setPriority(if (silent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_HIGH)
                     .setContentIntent(open)
+                    // Swiped away: the voice stops and the alarm volume comes back at once (NUD-154).
+                    .setDeleteIntent(action(PokeIntents.ACTION_DISMISSED, step))
                     .setGroup(NotificationIds.pokeGroup(task.id))
                     .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_ALL)
                     .addPokeActions(

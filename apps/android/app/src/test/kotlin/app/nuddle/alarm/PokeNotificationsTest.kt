@@ -10,6 +10,7 @@ import androidx.test.core.app.ApplicationProvider
 import app.nuddle.R
 import app.nuddle.data.avatar.AvatarFiles
 import app.nuddle.data.photo.toJpeg
+import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.PokeLevel
 import app.nuddle.domain.PokeStep
 import app.nuddle.domain.PokeTitles
@@ -163,6 +164,14 @@ class PokeNotificationsTest {
         val done = show(seq = 1, finishMode = "done").actions.first().actionIntent
         assertTrue(done.isBroadcast)
         assertEquals(PokeIntents.ACTION_DONE, shadowOf(done).savedIntent.action)
+    }
+
+    @Test
+    fun `a swipe tells the app, so the voice stops and the volume comes back (NUD-154)`() {
+        val swiped = show(seq = 1).deleteIntent
+        assertTrue(swiped.isBroadcast)
+        assertEquals(PokeIntents.ACTION_DISMISSED, shadowOf(swiped).savedIntent.action)
+        assertEquals(AlarmKey(Cast.TASK_ID, 1, 1), PokeIntents.key(shadowOf(swiped).savedIntent))
     }
 
     @Test

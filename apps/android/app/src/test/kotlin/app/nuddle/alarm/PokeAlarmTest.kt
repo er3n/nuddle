@@ -457,6 +457,21 @@ class PokeAlarmTest {
         }
 
     @Test
+    fun `a swiped poke goes quiet but is no answer, the plan rings on and nothing is sent (NUD-154)`() =
+        runTest {
+            givenPlan()
+            alarms.rearm()
+            firing.fire(key(1))
+
+            QuietPokes(notifications).dismissed(key(1))
+
+            assertEquals(listOf(Cast.TASK_ID), notifications.cancelled)
+            assertEquals("SCHEDULED", db.tasks().get(Cast.TASK_ID)!!.status)
+            assertTrue(key(2) in scheduler.scheduled.keys)
+            assertTrue(db.outbox().pending().none { it.command != "report_fired" })
+        }
+
+    @Test
     fun `snooze is queued for the server`() =
         runTest {
             givenPlan()

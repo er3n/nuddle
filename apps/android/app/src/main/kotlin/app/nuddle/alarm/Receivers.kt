@@ -55,10 +55,12 @@ class PokeAlarmReceiver : BroadcastReceiver() {
     }
 }
 
-/** Notification actions: Bitti, Ertele, Bugün olmaz (3a), and Bitti on "Zaten yaptın mı?" (NUD-129). */
+/** Notification actions: Bitti, Ertele, Bugün olmaz (3a), Bitti on "Zaten yaptın mı?" (NUD-129), and a swipe (NUD-154). */
 @AndroidEntryPoint
 class PokeActionReceiver : BroadcastReceiver() {
     @Inject lateinit var actions: PokeActions
+
+    @Inject lateinit var quiet: QuietPokes
 
     @Inject lateinit var diagnostics: Diagnostics
 
@@ -73,6 +75,7 @@ class PokeActionReceiver : BroadcastReceiver() {
                 PokeIntents.ACTION_DONE -> actions.done(key)
                 PokeIntents.ACTION_SNOOZE -> actions.snooze(key)
                 PokeIntents.ACTION_CANT_TODAY -> actions.cantToday(key)
+                PokeIntents.ACTION_DISMISSED -> quiet.dismissed(key)
                 PokeIntents.ACTION_HEADS_UP_DONE -> actions.doneFromHeadsUp(key)
             }
         }
