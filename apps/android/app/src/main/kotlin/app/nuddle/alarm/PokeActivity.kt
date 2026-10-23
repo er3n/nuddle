@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -22,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import app.nuddle.MainActivity
 import app.nuddle.api.model.FinishMode
 import app.nuddle.data.db.ConnectionDao
@@ -83,11 +85,16 @@ class PokeActivity : ComponentActivity() {
 
     @Inject lateinit var actions: PokeActions
 
+    @Inject lateinit var quiet: QuietPokes
+
     @Inject lateinit var clock: Clock
 
     @Inject lateinit var timeZone: TimeZone
 
     @Inject lateinit var examples: ExampleFiles
+
+    /** The first volume key silenced the ring (NUD-155); later ones change the volume as usual. */
+    private var silenced = false
 
     /** Over a locked phone Bitti is a slide (NUD-131, screens.md 3b). */
     private var locked by mutableStateOf(false)
@@ -129,6 +136,21 @@ class PokeActivity : ComponentActivity() {
     override fun onStop() {
         unregisterReceiver(unlocked)
         super.onStop()
+    }
+
+    /** A volume key silences the ring, as on an alarm clock (NUD-155, screens.md 3b). */
+    override fun onKeyDown(
+        keyCode: Int,
+        event: KeyEvent,
+    ): Boolean {
+        val volumeKey = keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
+        val key = PokeIntents.key(intent)
+        if (!volumeKey || silenced || key == null) {
+            return super.onKeyDown(keyCode, event)
+        }
+        silenced = true
+        lifecycleScope.launch { quiet.silence(key) }
+        return true
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

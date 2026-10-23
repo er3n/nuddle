@@ -38,6 +38,22 @@ import kotlin.time.Instant
 private fun ExamplePictures.bitmapOf(taskId: String): Bitmap? =
     runCatching { current(taskId) }.getOrNull()?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
 
+/** Opens the full screen poke (3b) for [step]. */
+private fun Context.fullScreenIntent(step: PokeStep): PendingIntent =
+    PendingIntent.getActivity(
+        this,
+        step.key.hashCode(),
+        PokeIntents.fullScreen(this, step.key),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+
+/** The sender's cached picture as a circle (components.md 7, NUD-80); none for a task to self or without one. */
+private fun AvatarFiles.senderPicture(task: TaskEntity) =
+    of(task.senderId)
+        .takeIf { task.senderId != task.recipientId && it.exists() }
+        ?.let { BitmapFactory.decodeFile(it.path) }
+        ?.circled()
+
 internal fun Context.timeLeftText(timeLeft: TimeLeft): String =
     when (timeLeft) {
         is TimeLeft.Minutes -> getString(R.string.duration_minutes, timeLeft.value)
@@ -82,14 +98,37 @@ class AndroidPokeNotifications
             task: TaskEntity,
             step: PokeStep,
             level: PokeLevel,
+        ) = post(task, step, level, quiet = false)
+
+        /**
+         * A volume key on 3b (NUD-155): the poke stays with its title and answers, but on `poke_silent`, without the
+         * full screen intent and the voice. The notification goes first, since only taking it away stops a tone that
+         * rings; the next step rings as planned.
+         */
+        override fun silence(
+            task: TaskEntity,
+            step: PokeStep,
+            level: PokeLevel,
+        ) {
+            NotificationManagerCompat.from(context).cancel(notificationId(task.id))
+            speech.stop(task.id)
+            if (showing().isEmpty()) volume.restore()
+            post(task, step, level, quiet = true)
+        }
+
+        private fun post(
+            task: TaskEntity,
+            step: PokeStep,
+            level: PokeLevel,
+            quiet: Boolean,
         ) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
             ) {
                 return
             }
-            val silent = level == PokeLevel.SILENT
-            val fullScreen = level == PokeLevel.FULL_SCREEN
+            val silent = level == PokeLevel.SILENT || quiet
+            val fullScreen = level == PokeLevel.FULL_SCREEN && !quiet
             val channel = if (silent) NotificationChannels.POKE_SILENT else NotificationChannels.POKE_ALARM
             val notice = task.finishMode == FinishMode.NOTICE.value
             val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
@@ -100,7 +139,7 @@ class AndroidPokeNotifications
                     .Builder(context, channel)
                     .setSmallIcon(R.drawable.ic_notification)
                     .setColor(ContextCompat.getColor(context, R.color.poke))
-                    .setLargeIcon(example ?: senderPicture(task))
+                    .setLargeIcon(example ?: avatars.senderPicture(task))
                     .setPokeContent(task, step, level, notice, example)
                     .setSubText(context.getString(R.string.poke_count, step.number))
                     .setCategory(if (fullScreen) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_REMINDER)
@@ -118,7 +157,7 @@ class AndroidPokeNotifications
                     )
             val manager = NotificationManagerCompat.from(context)
             if (fullScreen) {
-                builder.setFullScreenIntent(fullScreenIntent(step), true).setOngoing(true)
+                builder.setFullScreenIntent(context.fullScreenIntent(step), true).setOngoing(true)
                 // SystemUI launches a full screen intent only for a newly posted notification, never for an update of
                 // the earlier step's notification with the same id (found by E2E smoke 1), so that one goes first.
                 manager.cancel(notificationId(task.id))
@@ -134,7 +173,7 @@ class AndroidPokeNotifications
             if (!silent) notification.flags = notification.flags or Notification.FLAG_INSISTENT
             manager.notify(notificationId(task.id), notification)
             // The task said aloud between the tone while this poke is up (NUD-124); a silent step says nothing.
-            speech.start(task, level) { task.id in showing() }
+            if (!quiet) speech.start(task, level) { task.id in showing() }
         }
 
         /**
@@ -169,7 +208,7 @@ class AndroidPokeNotifications
                     .setColor(ContextCompat.getColor(context, R.color.poke))
                     .setContentTitle(context.getString(R.string.heads_up_title))
                     .setContentText(task.title)
-                    .setLargeIcon(senderPicture(task))
+                    .setLargeIcon(avatars.senderPicture(task))
                     .setCategory(NotificationCompat.CATEGORY_REMINDER)
                     .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                     .setSilent(true)
@@ -187,14 +226,6 @@ class AndroidPokeNotifications
                 .activeNotifications
                 .mapNotNull { it.notification.group?.let(NotificationIds::taskOfHeadsUpGroup) }
                 .toSet()
-
-        private fun fullScreenIntent(step: PokeStep): PendingIntent =
-            PendingIntent.getActivity(
-                context,
-                step.key.hashCode(),
-                PokeIntents.fullScreen(context, step.key),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
 
         override fun cancel(taskId: String) {
             NotificationManagerCompat.from(context).cancel(notificationId(taskId))
@@ -254,14 +285,6 @@ class AndroidPokeNotifications
                     },
                 )
         }
-
-        /** The sender's cached picture as a circle (components.md 7, NUD-80); none for a task to self or without one. */
-        private fun senderPicture(task: TaskEntity) =
-            avatars
-                .of(task.senderId)
-                .takeIf { task.senderId != task.recipientId && it.exists() }
-                ?.let { BitmapFactory.decodeFile(it.path) }
-                ?.circled()
 
         /**
          * At most three actions (docs/ux/components.md, 7): Bitti, Ertele, Bugün olmaz. Ertele shows the length of the

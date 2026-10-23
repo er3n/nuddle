@@ -1,7 +1,9 @@
 package app.nuddle.alarm
 
+import app.nuddle.data.db.TaskDao
 import app.nuddle.domain.AlarmKey
 import app.nuddle.domain.Diagnostics
+import app.nuddle.domain.PokeLevel
 import javax.inject.Inject
 
 /**
@@ -11,6 +13,8 @@ import javax.inject.Inject
 class QuietPokes
     @Inject
     constructor(
+        private val tasks: TaskDao,
+        private val alarms: PokeAlarms,
         private val notifications: PokeNotifications,
         private val diagnostics: Diagnostics = Diagnostics.None,
     ) {
@@ -21,5 +25,14 @@ class QuietPokes
         fun dismissed(key: AlarmKey) {
             diagnostics.log("dismissed ${key.taskId}")
             notifications.cancel(key.taskId)
+        }
+
+        /** A volume key on the full screen poke (NUD-155): it goes quiet and stays with its answers. */
+        suspend fun silence(key: AlarmKey) {
+            val task = tasks.get(key.taskId) ?: return
+            val step = alarms.step(key) ?: return
+            if (task.id !in notifications.showing()) return
+            diagnostics.log("silence ${key.taskId}")
+            notifications.silence(task, step, PokeLevel.FULL_SCREEN)
         }
     }

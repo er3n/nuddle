@@ -49,6 +49,13 @@ interface PokeNotifications {
         step: PokeStep,
     )
 
+    /** Stops the ringing poke's tone and voice and keeps it up without sound (NUD-155). */
+    fun silence(
+        task: TaskEntity,
+        step: PokeStep,
+        level: PokeLevel,
+    )
+
     /** Takes the task's poke and its heads-up away. */
     fun cancel(taskId: String)
 

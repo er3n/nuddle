@@ -175,6 +175,24 @@ class PokeNotificationsTest {
     }
 
     @Test
+    fun `a silenced full screen poke stays up with its answers, without sound or full screen (NUD-155)`() {
+        val manager = app.getSystemService<NotificationManager>()!!
+        val task = aTask().copy(finishMode = "done")
+        val step = PokeStep(Cast.TASK_ID, 1, 3, Instant.parse("2026-10-12T08:00:00+03:00"), PokeLevel.FULL_SCREEN)
+        notifications.show(task, step, PokeLevel.FULL_SCREEN)
+
+        notifications.silence(task, step, PokeLevel.FULL_SCREEN)
+
+        val quiet = shadowOf(manager).allNotifications.single()
+        assertEquals(NotificationChannels.POKE_SILENT, quiet.channelId)
+        assertEquals(0, quiet.flags and Notification.FLAG_INSISTENT)
+        assertEquals(0, quiet.flags and Notification.FLAG_ONGOING_EVENT)
+        assertNull(quiet.fullScreenIntent)
+        assertEquals(PokeIntents.ACTION_DONE, shadowOf(quiet.actions.first().actionIntent).savedIntent.action)
+        assertEquals(setOf(Cast.TASK_ID), notifications.showing())
+    }
+
+    @Test
     fun `a poke is in a group of its own and takes the task's earlier note away`() {
         AndroidTaskAnnouncer(app, FakeClock(), TimeZone.of("Europe/Istanbul")).announce(aTask(), "Sibel")
         val poke = show(seq = 1)
