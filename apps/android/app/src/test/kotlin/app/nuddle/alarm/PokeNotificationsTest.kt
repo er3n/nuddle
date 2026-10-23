@@ -215,6 +215,36 @@ class PokeNotificationsTest {
     }
 
     @Test
+    fun `the alarm volume comes back when two pokes go at once while the system still lists both (NUD-165)`() {
+        val audio = app.getSystemService<AudioManager>()!!
+        audio.setStreamVolume(AudioManager.STREAM_ALARM, 1, 0)
+        val other = "other-task"
+        show(seq = 2)
+        notifications.show(
+            aTask(id = other),
+            PokeStep(other, 1, 1, Instant.parse("2026-10-12T08:00:00+03:00"), PokeLevel.SOUND),
+            PokeLevel.SOUND,
+        )
+        // A sync closes both; the system applies the cancels later, so for a moment it lists both groups.
+        listOf(Cast.TASK_ID, other).forEachIndexed { i, task ->
+            val lingering =
+                NotificationCompat
+                    .Builder(app, NotificationChannels.POKE_SILENT)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setGroup(NotificationIds.pokeGroup(task))
+                    .build()
+            app.getSystemService<NotificationManager>()!!.notify("lingering-$i".hashCode(), lingering)
+        }
+
+        notifications.cancel(Cast.TASK_ID)
+        assertTrue(audio.getStreamVolume(AudioManager.STREAM_ALARM) > 1)
+        notifications.cancel(other)
+
+        assertEquals(1, audio.getStreamVolume(AudioManager.STREAM_ALARM))
+        assertEquals(emptySet(), notifications.showing())
+    }
+
+    @Test
     fun `a poke is in a group of its own and takes the task's earlier note away`() {
         AndroidTaskAnnouncer(app, FakeClock(), TimeZone.of("Europe/Istanbul")).announce(aTask(), "Sibel")
         val poke = show(seq = 1)
