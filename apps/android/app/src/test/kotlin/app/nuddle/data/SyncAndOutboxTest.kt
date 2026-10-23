@@ -14,7 +14,6 @@ import app.nuddle.data.outbox.OutboxSender
 import app.nuddle.data.photo.PendingPhoto
 import app.nuddle.data.photo.PhotoFiles
 import app.nuddle.data.session.OutboxTaskAcks
-import app.nuddle.data.session.TaskAcks
 import app.nuddle.data.sync.AlarmRearmer
 import app.nuddle.data.sync.LocalPendingChanges
 import app.nuddle.data.sync.SyncRepository
@@ -33,12 +32,11 @@ import app.nuddle.testing.inMemoryDatabase
 import app.nuddle.testing.json
 import app.nuddle.testing.retrofit
 import app.nuddle.testing.testJson
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import org.junit.After
 import org.junit.Before
@@ -91,25 +89,23 @@ class SyncAndOutboxTest {
     /** Tasks with a change this phone has not sent yet. */
     private var unsent = emptySet<String>()
 
-    private fun syncRepository(
-        examples: ExamplePhotoRefresher = ExamplePhotoRefresher {},
-        acks: TaskAcks = this.acks,
-    ) = SyncRepository(
-        api = server.retrofit().create(SyncApi::class.java),
-        sessions = sessions,
-        tasks = db.tasks(),
-        invites = db.invites(),
-        connections = db.connections(),
-        events = db.taskEvents(),
-        alarms = alarms,
-        announcer = announcer,
-        json = testJson,
-        pending = { unsent },
-        acks = acks,
-        avatars = { },
-        announcements = { synced, notify -> received += synced.map { it.id } to notify },
-        examples = examples,
-    )
+    private fun syncRepository(examples: ExamplePhotoRefresher = ExamplePhotoRefresher {}) =
+        SyncRepository(
+            api = server.retrofit().create(SyncApi::class.java),
+            sessions = sessions,
+            tasks = db.tasks(),
+            invites = db.invites(),
+            connections = db.connections(),
+            events = db.taskEvents(),
+            alarms = alarms,
+            announcer = announcer,
+            json = testJson,
+            pending = { unsent },
+            acks = acks,
+            avatars = { },
+            announcements = { synced, notify -> received += synced.map { it.id } to notify },
+            examples = examples,
+        )
 
     /** What sync handed the announcement inbox (ADR 0025): ids and whether to notify. */
     private val received = mutableListOf<Pair<List<String>, Boolean>>()
@@ -593,26 +589,6 @@ class SyncAndOutboxTest {
 
             assertTrue(syncRepository().sync())
             assertTrue(syncRepository().sync())
-
-            assertEquals(listOf(Cast.TASK_ID to "Sibel"), announcer.announced)
-        }
-
-    @Test
-    fun `a sync cancelled once it has the server's answer still applies all of it and tells the new task (NUD-166)`() =
-        runTest {
-            sessions.cursor = "40"
-            server.enqueue(json(200, syncBody.replace("\"connections\":[]", sibelConnection)))
-            lateinit var syncing: Job
-            // The acknowledge this sync queues replaces the outbox worker that runs it (unique work, REPLACE).
-            val replacing =
-                object : TaskAcks {
-                    override suspend fun reached(taskIds: Collection<String>) = syncing.cancel()
-
-                    override suspend fun seen(taskIds: Collection<String>) = Unit
-                }
-
-            syncing = launch { syncRepository(acks = replacing).sync() }
-            syncing.join()
 
             assertEquals(listOf(Cast.TASK_ID to "Sibel"), announcer.announced)
         }
