@@ -147,6 +147,29 @@ describe("checkPlan (ADR 0017)", () => {
     ).toEqual(["1:SOUND@05:00"]);
   });
 
+  it("moves HUMAN right before quiet hours when the deadline's last hour is quiet, as v0 does (NUD-172)", () => {
+    // Due 01:30, quiet hours 23:00-07:00: the last hour (00:30-01:30) is quiet.
+    const late = aTask()
+      .from(sibel)
+      .forRecipient(eren)
+      .withDeadline("2026-10-12T01:30:00+03:00")
+      .build();
+    expect(
+      summary(
+        check(
+          [
+            step("22:00", "SOUND", "2026-10-11"),
+            step("22:30", "FULL_SCREEN", "2026-10-11"),
+            step("22:50", "HUMAN", "2026-10-11"),
+          ],
+          {
+            task: late,
+          },
+        ),
+      ),
+    ).toEqual(["1:SOUND@19:00", "2:FULL_SCREEN@19:30", "3:HUMAN@19:59"]);
+  });
+
   it("rejects a plan with no device step or only SILENT ones", () => {
     expect(check([])).toBeNull();
     expect(check([step("08:30", "HUMAN")])).toBeNull();
