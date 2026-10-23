@@ -1,6 +1,7 @@
 package app.nuddle.push
 
 import android.content.Context
+import android.os.Build
 import app.nuddle.BuildConfig
 import app.nuddle.api.DevicesApi
 import app.nuddle.api.model.RegisterDeviceRequest
@@ -17,6 +18,19 @@ import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
+
+/**
+ * "Samsung SM-S911B", "Google Pixel 8": the phone's name in Cihazlarım (5e, ADR 0027). The maker is left out when the
+ * model already starts with it.
+ */
+internal fun deviceModel(
+    manufacturer: String,
+    model: String,
+): String {
+    val maker = manufacturer.trim().replaceFirstChar { it.titlecase() }
+    val name = model.trim()
+    return if (maker.isEmpty() || name.startsWith(maker, ignoreCase = true)) name else "$maker $name"
+}
 
 /**
  * `POST /api/v1/devices` with the Firebase Installation ID and the permission summary; the returned `deviceId` goes
@@ -44,6 +58,7 @@ class DeviceRegistrar
                     fid = installationId,
                     platform = RegisterDeviceRequest.Platform.ANDROID,
                     appVersion = BuildConfig.VERSION_NAME,
+                    model = deviceModel(Build.MANUFACTURER, Build.MODEL),
                     permissions = permissions.summary(),
                 )
             val result = apiCall(json) { api.registerDevice(request) }

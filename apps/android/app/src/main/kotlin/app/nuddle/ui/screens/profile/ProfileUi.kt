@@ -95,6 +95,8 @@ data class ProfileCallbacks(
     val onFixPermission: (SetupStep) -> Unit = {},
     /** "Dürtmem çalmadı": 2h without a detected loss (NUD-126). */
     val onMissedRing: () -> Unit = {},
+    /** "Cihazlarım": the phones my account is open on (5e, NUD-142). */
+    val onDevices: () -> Unit = {},
     val onLogOut: () -> Unit = {},
     val onDelete: () -> Unit = {},
 )

@@ -61,8 +61,8 @@ internal fun LocalTime.hhmm(): String = format(HHMM)
 internal val EdgeType.yours: Int get() = asYours ?: R.string.relationship_other
 
 /**
- * 5a: who I am, "Bizimkiler", the two human channel switches, quiet hours, permissions with "Dürtmem çalmadı", Çıkış
- * yap and Hesabı sil.
+ * 5a: who I am, "Bizimkiler", the two human channel switches, quiet hours, permissions with "Dürtmem çalmadı",
+ * Cihazlarım (5e), Çıkış yap and Hesabı sil.
  * The settings sheets (rename, 7g, 7h, 7i) open on top.
  */
 @Composable
@@ -104,6 +104,13 @@ fun ProfileScreen(
             )
         }
         Permissions(state.permissions, callbacks.onFixPermission, callbacks.onMissedRing)
+        SettingsGroup(stringResource(R.string.profile_account)) {
+            LineRow(
+                label = stringResource(R.string.devices_title),
+                onClick = callbacks.onDevices,
+                modifier = Modifier.testTag(TestTags.PROFILE_DEVICES),
+            )
+        }
         Row(Modifier.fillMaxWidth().padding(horizontal = dimens.space4), horizontalArrangement = Arrangement.SpaceBetween) {
             TextLink(
                 text = stringResource(R.string.profile_log_out),

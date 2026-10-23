@@ -28,6 +28,7 @@ fun ProfileRoute(
     onOpenPerson: (String) -> Unit,
     onInvite: () -> Unit,
     onMissedRing: () -> Unit,
+    onDevices: () -> Unit,
     onSignedOut: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
@@ -57,6 +58,7 @@ fun ProfileRoute(
                 onQuietHours = viewModel::onQuietHours,
                 onFixPermission = { step -> activity?.let { it.startActivity(settingsIntent(it, step)) } },
                 onMissedRing = onMissedRing,
+                onDevices = onDevices,
                 onLogOut = viewModel::onLogOut,
                 onDelete = viewModel::onDelete,
             ),
