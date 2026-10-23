@@ -77,8 +77,9 @@ run = "pnpm --filter @nuddle/web contract:lint"
 [tasks."lint:android"]
 hide = true
 # ktlint (Spotless), detekt with the Compose rules, Android Lint (docs/quality.md, Kotlin).
+# --stacktrace: detekt sometimes fails on CI with only "There was a problem running detekt" (NUD-161).
 dir = "apps/android"
-run = "./gradlew --console=plain spotlessCheck :app:detekt :app:lintDevDebug"
+run = "./gradlew --console=plain --stacktrace spotlessCheck :app:detekt :app:lintDevDebug"
 
 [tasks."lint:secrets"]
 hide = true
