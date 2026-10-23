@@ -4,16 +4,18 @@ import { readFile } from "node:fs/promises";
 import { z } from "zod";
 import type { Extraction } from "../domain/extraction";
 import { after } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import type { PersonProfiler, PokePlanner, TaskExtractor } from "../domain/ports";
 import { JoseTokenVerifier } from "../infra/auth/jwt";
 import { SupabaseAuthGateway } from "../infra/auth/supabase-auth";
-import { OffsetClock, systemClock } from "../infra/clock";
+import { OffsetClock, systemClock, timerDelay } from "../infra/clock";
 import { connectDb } from "../infra/db/client";
 import { fidsOf } from "../infra/db/store";
 import { FixtureExtractor } from "../infra/llm/fixture-extractor";
 import { OpenRouterExtractor } from "../infra/llm/openrouter-extractor";
 import { OpenRouterPlanner } from "../infra/llm/openrouter-planner";
 import { OpenRouterProfiler } from "../infra/llm/openrouter-profiler";
+import { AesGcmCodeCipher, noCodeCipher } from "../infra/otp/code-cipher";
 import { TwilioOtpSender, unconfiguredOtpSender } from "../infra/otp/twilio";
 import { FcmPushSender } from "../infra/push/fcm";
 import { logPushSender } from "../infra/push/log";
@@ -37,6 +39,11 @@ const Env = z.object({
   TWILIO_AUTH_TOKEN: optional,
   TWILIO_FROM: optional,
   SMS_RETRIEVER_HASH: optional,
+  TWILIO_WHATSAPP_FROM: optional,
+  TWILIO_WHATSAPP_TEMPLATE_SID_TR: optional,
+  TWILIO_WHATSAPP_TEMPLATE_SID_EN: optional,
+  OTP_CODE_KEY: optional,
+  PUBLIC_BASE_URL: optional.pipe(z.url().nullable()),
   FIREBASE_SERVICE_ACCOUNT: optional,
   OPENROUTER_API_KEY: optional,
   OPENROUTER_MODEL: optional,
@@ -90,6 +97,24 @@ export async function createProductionApp(
     throw new Error("OPENROUTER_API_KEY and OPENROUTER_MODEL are required outside E2E mode");
   }
 
+  // Twilio posts every message's status here (ADR 0029); the signature covers this exact URL.
+  const publicBaseUrl = (env.PUBLIC_BASE_URL ?? "https://nuddle.app").replace(/\/$/, "");
+  const statusUrl = `${publicBaseUrl}/api/internal/twilio-status`;
+  // WhatsApp needs the sender, both templates and the key that holds the code for the fallback.
+  // Until all are set every code goes by SMS, as before the sender was approved.
+  const whatsApp =
+    env.TWILIO_WHATSAPP_FROM !== null &&
+    env.TWILIO_WHATSAPP_TEMPLATE_SID_TR !== null &&
+    env.TWILIO_WHATSAPP_TEMPLATE_SID_EN !== null &&
+    env.OTP_CODE_KEY !== null
+      ? {
+          from: env.TWILIO_WHATSAPP_FROM,
+          templates: {
+            tr: env.TWILIO_WHATSAPP_TEMPLATE_SID_TR,
+            en: env.TWILIO_WHATSAPP_TEMPLATE_SID_EN,
+          },
+        }
+      : null;
   const otp =
     env.TWILIO_ACCOUNT_SID !== null && env.TWILIO_AUTH_TOKEN !== null && env.TWILIO_FROM !== null
       ? new TwilioOtpSender({
@@ -97,6 +122,8 @@ export async function createProductionApp(
           authToken: env.TWILIO_AUTH_TOKEN,
           from: env.TWILIO_FROM,
           smsRetrieverHash: env.SMS_RETRIEVER_HASH,
+          statusCallback: statusUrl,
+          whatsApp,
         })
       : unconfiguredOtpSender;
 
@@ -110,6 +137,14 @@ export async function createProductionApp(
     clock: e2e?.clock ?? systemClock,
     push,
     otp,
+    otpDelivery: {
+      delay: timerDelay,
+      // The 12 s fallback runs after the hook answered Supabase (ADR 0029).
+      waitUntil,
+      cipher: env.OTP_CODE_KEY === null ? noCodeCipher : new AesGcmCodeCipher(env.OTP_CODE_KEY),
+      twilioAuthToken: env.TWILIO_AUTH_TOKEN,
+      statusUrl,
+    },
     extractor,
     planner,
     profiler,

@@ -16,6 +16,7 @@ const errors = {
   otp_locked: { code: "DRT-1008", status: 429 },
   otp_limit: { code: "DRT-1009", status: 429 },
   write_limit: { code: "DRT-1010", status: 429 },
+  otp_resend_unavailable: { code: "DRT-1011", status: 409 },
 
   wrong_status: { code: "DRT-4001", status: 409 },
   not_sender: { code: "DRT-4002", status: 403 },
@@ -45,7 +46,8 @@ type RequestError =
   | "forbidden"
   | "otp_locked"
   | "otp_limit"
-  | "write_limit";
+  | "write_limit"
+  | "otp_resend_unavailable";
 
 export type ErrorName =
   RequestError | DomainError | ConnectionError | "internal" | "upstream_failed";

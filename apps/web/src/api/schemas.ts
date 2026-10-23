@@ -102,6 +102,18 @@ const PermissionSummary = z
 // ---- auth -----------------------------------------------------------------------------------
 
 export const SendOtpRequest = z.object({ phone: SignInPhone }).openapi("SendOtpRequest");
+/** Where the code went (ADR 0029): screen 0d shows the WhatsApp or the SMS variant. */
+const OtpChannel = z.enum(["whatsapp", "sms"]).openapi("OtpChannel");
+export const OtpSent = z
+  .object({
+    ok: z.literal(true),
+    /** "sms" also for test numbers, which never reach the Send SMS hook. */
+    channel: OtpChannel,
+  })
+  .openapi("OtpSent");
+export const ResendOtpBySmsRequest = z
+  .object({ phone: SignInPhone })
+  .openapi("ResendOtpBySmsRequest");
 /** Who signs in from where (ADR 0027): kept with the session, never an IP or the token. */
 const SessionOrigin = {
   /** `BuildConfig.VERSION_NAME`. */

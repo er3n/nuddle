@@ -8,13 +8,9 @@ import type { AppDeps } from "./deps";
 import { ApiError } from "./errors";
 import type { AppEnv } from "./routes";
 import { SLUG } from "../domain/announcements";
-import {
-  announce,
-  deleteAccountByPhone,
-  deletionPreview,
-  runTick,
-  sendSignInCode,
-} from "./services";
+import { isTwilioSignatureValid } from "../infra/otp/twilio";
+import { announce, deleteAccountByPhone, deletionPreview, runTick } from "./services";
+import { recordTwilioStatus, sendSignInCode } from "./sign-in-codes";
 
 function sameSecret(given: string, expected: string): boolean {
   const a = Buffer.from(given);
@@ -109,6 +105,31 @@ export function internalRoutes(deps: AppDeps): Hono<AppEnv> {
       return c.json({ error: { http_code: 500, message: "could not send the code" } }, 500);
     }
     return c.json({});
+  });
+
+  // Twilio's status callback for sign-in codes (ADR 0029), signed with X-Twilio-Signature over
+  // the configured public URL (never the request's host) and the form parameters.
+  r.post("/twilio-status", async (c) => {
+    const params = Object.fromEntries(new URLSearchParams(await c.req.text()));
+    const { twilioAuthToken, statusUrl } = deps.otpDelivery;
+    const signature = c.req.header("x-twilio-signature") ?? "";
+    if (
+      twilioAuthToken === null ||
+      !isTwilioSignatureValid(twilioAuthToken, statusUrl, params, signature)
+    ) {
+      return c.text("invalid signature", 403);
+    }
+    const sid = params.MessageSid ?? params.SmsSid;
+    const status = params.MessageStatus ?? params.SmsStatus;
+    if (sid === undefined || status === undefined) return c.text("no message status", 400);
+    await recordTwilioStatus(deps, {
+      sid,
+      status,
+      errorCode:
+        params.ErrorCode === undefined || params.ErrorCode === "" ? null : params.ErrorCode,
+      price: params.Price ?? null,
+    });
+    return c.body(null, 204);
   });
 
   return r;

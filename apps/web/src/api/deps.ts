@@ -2,6 +2,8 @@
 // Ground rules 2). Production wiring: production.ts.
 import type {
   Clock,
+  CodeCipher,
+  Delay,
   OtpSender,
   PersonProfiler,
   PhotoStorage,
@@ -15,11 +17,29 @@ import type { AuthGateway } from "../infra/auth/supabase-auth";
 import type { OffsetClock } from "../infra/clock";
 import type { Db } from "../infra/db/store";
 
+interface OtpDelivery {
+  /** The 12 s wait before the SMS fallback: a timer in production, released by tests. */
+  delay: Delay;
+  /**
+   * Keeps the function alive for the fallback after the hook answered: Vercel's `waitUntil` in
+   * production. Tests collect the work and await it when they choose.
+   */
+  waitUntil: (work: Promise<unknown>) => void;
+  /** Holds the code encrypted for the fallback and "SMS ile gönder". */
+  cipher: CodeCipher;
+  /** Twilio's auth token, which signs status callbacks; null refuses every callback. */
+  twilioAuthToken: string | null;
+  /** The public URL Twilio posts statuses to, the one its signature covers. */
+  statusUrl: string;
+}
+
 export interface AppDeps {
   db: Db;
   clock: Clock;
   push: PushSender;
   otp: OtpSender;
+  /** The WhatsApp code's SMS fallback and Twilio's status callback (ADR 0029). */
+  otpDelivery: OtpDelivery;
   extractor: TaskExtractor;
   /** The LLM poke planner (ADR 0017); null keeps plan v0 only (E2E mode, most tests). */
   planner: PokePlanner | null;

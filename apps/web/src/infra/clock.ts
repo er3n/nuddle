@@ -1,6 +1,6 @@
 // The only place on the server that reads the wall clock (ADR 0009). Everything else receives a
 // `Clock` or `now`.
-import type { Clock } from "../domain/ports";
+import type { Clock, Delay } from "../domain/ports";
 
 export const systemClock: Clock = {
   now: () => new Date(),
@@ -24,3 +24,11 @@ export class OffsetClock implements Clock {
     this.offsetMs = 0;
   }
 }
+
+/** A real timer for the WhatsApp fallback (ADR 0029); tests release a fake by hand. */
+export const timerDelay: Delay = {
+  wait: (ms) =>
+    new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    }),
+};

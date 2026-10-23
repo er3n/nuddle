@@ -1,6 +1,7 @@
 // Interfaces to external services (docs/architecture.md, Layering rules). Real adapters live in
 // src/infra, recording fakes in test/fakes.
 import type { Extraction, ExtractionInput } from "./extraction";
+import type { OtpLanguage } from "./otp-channel";
 import type { PlannerInput, PlanProposal } from "./planner";
 import type { ProfileInput } from "./profile";
 import type { PersonId, PushMessage, TaskId } from "./types";
@@ -14,9 +15,32 @@ export interface PushSender {
   send(message: PushMessage): Promise<void>;
 }
 
-/** OTP delivery for the Supabase Send SMS hook: WhatsApp template first, SMS fallback. */
+/** What Twilio answered for a message it accepted. */
+export interface SentMessage {
+  /** Twilio's MessageSid: the status callback names the message by it. */
+  sid: string;
+}
+
+/** OTP delivery for the Supabase Send SMS hook: WhatsApp template first, SMS fallback (ADR 0029). */
 export interface OtpSender {
-  send(phone: string, code: string): Promise<void>;
+  /** False until the WhatsApp sender and its templates are configured: every code goes by SMS. */
+  readonly whatsApp: boolean;
+  /** The WhatsApp authentication template with the code, in the number's language. */
+  sendWhatsApp(phone: string, code: string, language: OtpLanguage): Promise<SentMessage>;
+  sendSms(phone: string, code: string): Promise<SentMessage>;
+  /** What Twilio charged for a message in USD; null while it has not priced it. */
+  priceOf(sid: string): Promise<number | null>;
+}
+
+/** Waiting without reading the clock: a timer in production, released by hand in tests. */
+export interface Delay {
+  wait(ms: number): Promise<void>;
+}
+
+/** The sign-in code held for the SMS fallback, encrypted at rest (ADR 0029). */
+export interface CodeCipher {
+  encrypt(code: string): string;
+  decrypt(ciphertext: string): string;
 }
 
 /** What went to the model and what came back, for the LLM call log (ADR 0019). */
