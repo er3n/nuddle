@@ -13,6 +13,7 @@ import app.nuddle.api.model.TaskEventType
 import app.nuddle.api.model.TaskStatus
 import app.nuddle.api.model.Timing
 import app.nuddle.data.EventTypes
+import app.nuddle.data.LocalWipe
 import app.nuddle.data.announcement.AnnouncementInbox
 import app.nuddle.data.api.ApiResult
 import app.nuddle.data.api.apiCall
@@ -152,6 +153,7 @@ class SyncRepository
         private val avatars: AvatarRefresher,
         private val announcements: AnnouncementInbox,
         private val examples: ExamplePhotoRefresher = ExamplePhotoRefresher {},
+        private val wipe: LocalWipe = LocalWipe {},
     ) : Syncer {
         /**
          * One sync at a time in the process: a push, the app coming to the front and a write can ask at once (NUD-59),
@@ -168,9 +170,18 @@ class SyncRepository
             // Once the server's answer is here it is applied to the end, whatever cancels the caller (NUD-166): the
             // cursor moves with it, so a cancel midway (the outbox worker replaced by the acknowledge this sync queues,
             // a screen that closes) would lose its notes for good, since the next sync sees those tasks as known.
-            withContext(NonCancellable) { applyAnswer(session, cursor, result.value) }
+            withContext(NonCancellable) {
+                // Signed out meanwhile (Çıkış yap, Hesabımı sil, a refused refresh, NUD-141): the wipe does not wait for
+                // a sync, so an answer that came for the person who left is not applied, and what this sync wrote back
+                // while the wipe ran (rows, alarms, the cursor) goes again (NUD-167). The wipe can be repeated.
+                if (!stillSignedIn(session)) return@withContext
+                applyAnswer(session, cursor, result.value)
+                if (!stillSignedIn(session)) wipe.wipe()
+            }
             return true
         }
+
+        private suspend fun stillSignedIn(session: StoredSession) = sessions.current()?.personId == session.personId
 
         private suspend fun applyAnswer(
             session: StoredSession,
