@@ -29,6 +29,7 @@ internal fun TaskEntity.toLocalState() =
         open = status in OPEN_STATUSES,
         moment = isMoment,
         notice = finishMode == FinishMode.NOTICE.value,
+        snoozedUntil = snoozedUntil?.let(Instant::fromEpochMilliseconds),
     )
 
 /** Keeps the alarms in AlarmManager equal to the stored plans (ADR 0005). */
@@ -119,6 +120,21 @@ class PokeAlarms
         suspend fun stopTask(taskId: String) {
             steps.forTask(taskId).forEach { scheduler.cancel(it.toStep().key) }
             remember()
+        }
+
+        /**
+         * Ertele on [key] until [until] (NUD-152): the other steps of its plan that come before the snooze ends lose their
+         * alarms, so the plan does not ring during the snooze while the server's shifted plan is on its way.
+         */
+        suspend fun holdForSnooze(
+            key: AlarmKey,
+            until: Instant,
+        ) {
+            steps
+                .forTask(key.taskId)
+                .map { it.toStep() }
+                .filter { it.planVersion == key.planVersion && it.seq != key.seq && it.plannedAt < until }
+                .forEach { scheduler.cancel(it.key) }
         }
 
         /** Signing out: no alarm of this person may ring on this phone any more. */
