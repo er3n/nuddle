@@ -440,6 +440,31 @@ class PokeAlarmTest {
         }
 
     @Test
+    fun `Ertele holds the next step that would ring during the snooze, also after a re-arm (NUD-152)`() =
+        runTest {
+            db.tasks().upsert(listOf(aTask(planVersion = 2)))
+            db.pokeSteps().replacePlan(
+                Cast.TASK_ID,
+                2,
+                listOf(
+                    aStep(0, "2026-10-12T08:00:00+03:00", planVersion = 2),
+                    aStep(1, "2026-10-12T08:05:00+03:00", planVersion = 2),
+                    aStep(2, "2026-10-12T08:40:00+03:00", PokeLevel.FULL_SCREEN, planVersion = 2),
+                ),
+            )
+            alarms.rearm()
+            firing.fire(key(0))
+
+            actions.snooze(key(0))
+            assertEquals(setOf(key(0), key(2)), scheduler.scheduled.keys)
+            assertEquals(clock.now() + 15.minutes, scheduler.scheduled.getValue(key(0)).plannedAt)
+
+            // Offline: an hourly check or a reboot arms again from Room and still leaves the held step out.
+            alarms.rearm()
+            assertEquals(setOf(key(0), key(2)), scheduler.scheduled.keys)
+        }
+
+    @Test
     fun `a task that closes in a sync takes the poke that rang for it off the screen (NUD-64)`() =
         runTest {
             givenPlan()
