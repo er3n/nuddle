@@ -120,7 +120,7 @@ export interface Messages {
     storeSoon: string;
     iphone: string;
   };
-  footer: { quietHours: string; privacy: string; deleteAccount: string };
+  footer: { quietHours: string; privacy: string; deleteAccount: string; instagram: string };
   invite: { title: string; body: string; more: string };
   notFound: { title: string; home: string };
   legal: Legal;

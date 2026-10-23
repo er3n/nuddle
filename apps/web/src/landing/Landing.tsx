@@ -6,6 +6,7 @@ import { cx } from "./cx";
 import styles from "./landing.module.css";
 import { PokeButton, PokeDemoProvider, PokedBadge, PokeLevels } from "./PokeDemo";
 import { PromoVideo } from "./PromoVideo";
+import { instagramUrl } from "./social";
 import { landingJsonLd } from "./structured-data";
 import { Story } from "./Story";
 import { PLAY_STORE_URL } from "./store";
@@ -417,6 +418,16 @@ export function Landing({ locale }: { locale: Locale }) {
               <a href={legalPath.deleteAccount[locale]} className={styles.footerLink}>
                 {m.footer.deleteAccount}
               </a>
+              {instagramUrl[locale] && (
+                <a
+                  href={instagramUrl[locale]}
+                  className={styles.footerLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {m.footer.instagram}
+                </a>
+              )}
             </span>
             <span>{m.footer.quietHours}</span>
           </div>
