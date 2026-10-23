@@ -12,6 +12,7 @@ import app.nuddle.data.session.SessionStore
 import app.nuddle.domain.AlarmScheduler
 import app.nuddle.domain.Diagnostics
 import app.nuddle.domain.MissedRingRules
+import app.nuddle.domain.PokeRules
 import app.nuddle.domain.QuietHours
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -82,6 +83,11 @@ class AlarmCheck
                 stoppedAt = since,
                 now = now,
                 quietHours = sessions.quietHours() ?: QuietHours.default(timeZone),
+                arrivedTooLate =
+                    all
+                        .filter { PokeRules.arrivedTooLate(it.toStep(), it.receivedAt?.let(Instant::fromEpochMilliseconds)) }
+                        .map { it.toStep().key }
+                        .toSet(),
             )
         }
     }

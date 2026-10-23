@@ -3,6 +3,7 @@ package app.nuddle.domain
 import kotlinx.datetime.TimeZone
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
@@ -103,6 +104,14 @@ class PokeRulesTest {
         val shifted = step(seq = 0, version = 3, at = now + 3.minutes)
         val replanned = mapOf("t1" to snoozed.copy(currentPlanVersion = 3))
         assertEquals(listOf(shifted), PokeRules.stepsToArm(listOf(shifted), replanned, setOf(rang.key), now))
+    }
+
+    @Test
+    fun `a step that reached the phone more than 2 minutes after its time never had an alarm (NUD-162)`() {
+        val step = step(at = now)
+        assertTrue(PokeRules.arrivedTooLate(step, now + 2.minutes))
+        assertFalse(PokeRules.arrivedTooLate(step, now + 1.minutes))
+        assertFalse(PokeRules.arrivedTooLate(step, null))
     }
 
     @Test

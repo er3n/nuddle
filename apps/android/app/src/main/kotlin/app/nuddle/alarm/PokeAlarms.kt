@@ -113,7 +113,9 @@ class PokeAlarms
                 .forTask(taskId)
                 .filter { it.planVersion != version }
                 .forEach { scheduler.cancel(it.toStep().key) }
-            this.steps.replacePlan(taskId, version, steps)
+            // A step already stored keeps the time it first arrived (insertIgnoringExisting).
+            val now = clock.now().toEpochMilliseconds()
+            this.steps.replacePlan(taskId, version, steps.map { it.copy(receivedAt = it.receivedAt ?: now) })
         }
 
         /** Done, Snooze and Can't today stop the task's alarms at once, even offline (docs/domain.md, step 6). */

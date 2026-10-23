@@ -9,7 +9,9 @@ import kotlin.time.Instant
 object MissedRingRules {
     /**
      * After a force stop at [stoppedAt]: the newest step that came due while the app was stopped and would have rung
-     * (current plan, open task, not fired, outside quiet hours). Null when nothing came due.
+     * (current plan, open task, not fired, outside quiet hours). Null when nothing came due. A step that was never
+     * meant to ring here is no loss (NUD-162): one an Ertele held, or one in [arrivedTooLate] (it reached the phone
+     * after its time).
      */
     fun lostWhileStopped(
         steps: List<PokeStep>,
@@ -18,12 +20,14 @@ object MissedRingRules {
         stoppedAt: Instant,
         now: Instant,
         quietHours: QuietHours,
+        arrivedTooLate: Set<AlarmKey> = emptySet(),
     ): Instant? =
         steps
             .filter { step ->
                 val task = tasks[step.taskId]
                 task != null && task.open && step.planVersion == task.currentPlanVersion && step.key !in fired &&
-                    step.plannedAt > stoppedAt && step.plannedAt <= now && !quietHours.contains(step.plannedAt)
+                    step.plannedAt > stoppedAt && step.plannedAt <= now && !quietHours.contains(step.plannedAt) &&
+                    step.key !in arrivedTooLate && !PokeRules.heldBySnooze(step, task, fired)
             }.maxOfOrNull { it.plannedAt }
 
     /**
