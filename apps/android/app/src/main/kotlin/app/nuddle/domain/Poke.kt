@@ -117,7 +117,8 @@ object PokeRules {
                     step.plannedAt > now - LATE_GRACE && !heldBySnooze(step, task, fired)
             }.sortedBy { it.plannedAt }
 
-    private fun heldBySnooze(
+    /** A step of the plan that rang, held by the task's Ertele because it comes before the snooze ends (NUD-152). */
+    fun heldBySnooze(
         step: PokeStep,
         task: LocalTaskState,
         fired: Set<AlarmKey>,
@@ -125,6 +126,15 @@ object PokeRules {
         val until = task.snoozedUntil ?: return false
         return step.plannedAt < until && fired.any { it.taskId == step.taskId && it.planVersion == step.planVersion }
     }
+
+    /**
+     * A step that reached the phone more than [LATE_GRACE] after its time never got an alarm (see [stepsToArm]); the
+     * server's lost poke check covers it, not the phone's (NUD-162). [receivedAt] null: stored before it was kept.
+     */
+    fun arrivedTooLate(
+        step: PokeStep,
+        receivedAt: Instant?,
+    ): Boolean = receivedAt != null && step.plannedAt <= receivedAt - LATE_GRACE
 
     /** Rounded time to the deadline for the poke text ("son zamana 45 dk", "1 saat"). Never negative. */
     fun timeLeft(

@@ -138,7 +138,9 @@ class PokeAlarms
                 .forTask(taskId)
                 .filter { it.planVersion != version }
                 .forEach { scheduler.cancel(it.toStep().key) }
-            this.steps.replacePlan(taskId, version, steps)
+            // A step already stored keeps the time it first arrived (insertIgnoringExisting).
+            val now = clock.now().toEpochMilliseconds()
+            this.steps.replacePlan(taskId, version, steps.map { it.copy(receivedAt = it.receivedAt ?: now) })
         }
 
         /** Done, Snooze and Can't today stop the task's alarms at once, even offline (docs/domain.md, step 6). */
@@ -169,4 +171,11 @@ class PokeAlarms
         }
 
         suspend fun step(key: AlarmKey): PokeStep? = steps.get(key.taskId, key.planVersion, key.seq)?.toStep()
+
+        /**
+         * The full screen poke that is up for [key]. A sync may have replaced its plan since it rang (an edit, a replan),
+         * which leaves the poke up for its open task: it then shows its own number, with the time it is looked at.
+         */
+        suspend fun fullScreenStep(key: AlarmKey): PokeStep =
+            step(key) ?: PokeStep(key.taskId, key.planVersion, key.seq, clock.now(), PokeLevel.FULL_SCREEN)
     }

@@ -2,6 +2,7 @@
 // the new task, the events to append, the new plan version, the server timers and the push hints.
 // The caller persists all of it in one transaction (ADR 0006, 0007).
 import { planPokes } from "./plan-pokes";
+import { isQuiet, nextQuietStart } from "./quiet-hours";
 import type { Reachability } from "./reachability";
 import { DAY, HOUR, MINUTE, addMs } from "./time";
 import type { RepeatRule } from "./repeat";
@@ -237,20 +238,41 @@ const MIN_SNOOZE_MS = 5 * MINUTE;
 /**
  * The next snooze of a task, or null when none is left or too little time is: 15 then 10 minutes,
  * shortened (whole minutes) so 5 minutes remain before the deadline, never under 5 (open-questions#1).
- * The device applies the same rule to label Ertele (`SnoozeRules`).
+ * A task that is not `at` also ends its snooze before the recipient's next quiet hours start, where
+ * it could not ring (NUD-163). The device applies the same rule to label Ertele (`SnoozeRules`).
  */
 function nextSnooze(
-  task: Pick<Task, "deadline">,
-  ctx: Pick<TaskContext, "history" | "now">,
+  task: Pick<Task, "deadline" | "timing">,
+  ctx: Pick<TaskContext, "history" | "now" | "recipient">,
 ): Snooze | null {
   const used = ctx.history.filter((e) => e.type === "snoozed").length;
   const planned = SNOOZE_MS[used];
   if (planned === undefined) return null;
   const room = task.deadline.getTime() - ctx.now.getTime() - AFTER_SNOOZE_MS;
-  const length = Math.min(planned, Math.floor(room / MINUTE) * MINUTE);
+  const quiet = quietRoomMs(task, ctx);
+  const length = Math.min(
+    planned,
+    Math.floor(room / MINUTE) * MINUTE,
+    Math.floor(quiet / MINUTE) * MINUTE,
+  );
   if (length < MIN_SNOOZE_MS) return null;
   const until = addMs(ctx.now, length);
   return { count: used + 1, minutes: length / MINUTE, until, last: used + 1 === SNOOZE_MS.length };
+}
+
+/**
+ * How long a snooze may last before the recipient's next quiet hours start; it must end before
+ * them. No limit for an `at` task (it rings in its own window, open-questions#47) or while quiet
+ * hours already hold.
+ */
+function quietRoomMs(
+  task: Pick<Task, "timing">,
+  ctx: Pick<TaskContext, "now" | "recipient">,
+): number {
+  const qh = ctx.recipient.quietHours;
+  if (task.timing === "at" || isQuiet(ctx.now, qh)) return Infinity;
+  const start = nextQuietStart(ctx.now, qh);
+  return start === null ? Infinity : start.getTime() - ctx.now.getTime() - 1;
 }
 
 export function isOpen(status: TaskStatus): boolean {

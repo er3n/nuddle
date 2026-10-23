@@ -46,6 +46,17 @@ class MissedRingRulesTest {
     }
 
     @Test
+    fun `a step an Ertele held or one that reached the phone after its time was never meant to ring here (NUD-162)`() {
+        // Step 1 rang at 08:20; Ertele until 08:45 held step 2.
+        val snoozed = mapOf("t1" to LocalTaskState(2, open = true, snoozedUntil = at("08:45")))
+        assertNull(lost(listOf(step(1, "08:20"), step(2, "08:30")), tasks = snoozed, fired = setOf(AlarmKey("t1", 2, 1))))
+
+        val late = setOf(AlarmKey("t1", 2, 2))
+        assertNull(MissedRingRules.lostWhileStopped(listOf(step(2, "08:30")), open, emptySet(), at("08:10"), at("09:30"), quiet, late))
+        assertEquals(at("08:30"), lost(listOf(step(2, "08:30"))))
+    }
+
+    @Test
     fun `the bell warns until a poke rings again or every step was done after the loss`() {
         assertEquals(at("08:30"), MissedRingRules.warning(at("08:30"), rangAt = null, fixedAt = null))
         assertEquals(at("08:30"), MissedRingRules.warning(at("08:30"), rangAt = at("08:00"), fixedAt = at("07:00")))

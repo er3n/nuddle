@@ -54,6 +54,14 @@ export function quietIntervalAt(t: Date, qh: QuietHours): Interval | null {
   return null;
 }
 
+/** The start of the first quiet interval after `t`, or null without quiet hours (start equals end). */
+export function nextQuietStart(t: Date, qh: QuietHours): Date | null {
+  const later = intervalsAround(t, qh)
+    .map((i) => i.start)
+    .filter((start) => start.getTime() > t.getTime());
+  return later.reduce<Date | null>((first, s) => (first === null || s < first ? s : first), null);
+}
+
 export function isQuiet(t: Date, qh: QuietHours): boolean {
   return quietIntervalAt(t, qh) !== null;
 }

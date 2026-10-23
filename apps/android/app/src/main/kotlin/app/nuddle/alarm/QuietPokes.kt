@@ -17,6 +17,7 @@ class QuietPokes
         private val alarms: PokeAlarms,
         private val notifications: PokeNotifications,
         private val diagnostics: Diagnostics = Diagnostics.None,
+        private val quietHours: QuietHoursSource = QuietHoursSource.None,
     ) {
         /**
          * The poke was swiped away (NUD-154). Its voice stops now, and with no poke left the alarm volume goes back to the
@@ -30,9 +31,8 @@ class QuietPokes
         /** A volume key on the full screen poke (NUD-155): it goes quiet and stays with its answers. */
         suspend fun silence(key: AlarmKey) {
             val task = tasks.get(key.taskId) ?: return
-            val step = alarms.step(key) ?: return
             if (task.id !in notifications.showing()) return
             diagnostics.log("silence ${key.taskId}")
-            notifications.silence(task, step, PokeLevel.FULL_SCREEN)
+            notifications.silence(task, alarms.fullScreenStep(key), PokeLevel.FULL_SCREEN, quietHours.quietHours())
         }
     }
