@@ -51,7 +51,11 @@ class PokeAlarms
             val states = taskList.associate { it.id to it.toLocalState() }
             val fired = all.filter { it.firedAt != null }.map { it.toStep().key }.toSet()
             val now = clock.now()
-            return PokeRules.stepsToArm(all.map { it.toStep() }, states, fired, now) + snoozedRings(taskList, all, now)
+            // A snoozed ring may be a step that is also due on its own (NUD-158): the snooze's time wins.
+            return (PokeRules.stepsToArm(all.map { it.toStep() }, states, fired, now) + snoozedRings(taskList, all, now))
+                .associateBy { it.key }
+                .values
+                .toList()
         }
 
         /**
@@ -103,6 +107,27 @@ class PokeAlarms
                         ?.toStep()
                         ?.copy(plannedAt = Instant.fromEpochMilliseconds(task.snoozedUntil ?: return@mapNotNull null))
                 }
+
+        /**
+         * What Ertele on [key] rings at the snooze's end (NUD-158): the step that rang. When a sync replaced its plan since
+         * (the LLM plan follows the first one within seconds, an edit), the current plan's first step yet to ring takes
+         * its place and counts as rung [at], so a re-arm keeps the snoozed ring and holds the steps before its end. Null
+         * when the plan has no step left.
+         */
+        suspend fun snoozeRing(
+            key: AlarmKey,
+            task: TaskEntity,
+            at: Instant,
+        ): PokeStep? {
+            step(key)?.let { return it }
+            val next =
+                steps
+                    .forTask(task.id)
+                    .filter { it.planVersion == task.planVersion && it.firedAt == null }
+                    .minByOrNull { it.seq } ?: return null
+            steps.markFired(next.taskId, next.planVersion, next.seq, at.toEpochMilliseconds())
+            return next.toStep()
+        }
 
         override suspend fun applyPlan(
             taskId: String,

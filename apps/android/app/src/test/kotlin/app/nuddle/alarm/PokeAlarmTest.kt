@@ -37,6 +37,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -515,6 +516,63 @@ class PokeAlarmTest {
             actions.done(key(1))
             quiet.silence(key(1))
             assertEquals(listOf(Cast.TASK_ID), notifications.silenced)
+        }
+
+    @Test
+    fun `Ertele on a poke whose plan a sync replaced still snoozes, rings the current plan and tells the server (NUD-158)`() =
+        runTest {
+            givenPlan()
+            alarms.rearm()
+            firing.fire(key(0))
+            // The LLM plan replaces the first plan seconds after its first poke rang.
+            db.tasks().upsert(listOf(db.tasks().get(Cast.TASK_ID)!!.copy(planVersion = 3)))
+            alarms.applyPlan(
+                Cast.TASK_ID,
+                3,
+                listOf(
+                    aStep(0, "2026-10-12T08:10:00+03:00", planVersion = 3),
+                    aStep(1, "2026-10-12T08:12:00+03:00", planVersion = 3),
+                    aStep(2, "2026-10-12T08:30:00+03:00", planVersion = 3),
+                ),
+            )
+            alarms.rearm()
+
+            assertTrue(actions.snooze(key(0)))
+
+            val next = AlarmKey(Cast.TASK_ID, 3, 0)
+            val later = AlarmKey(Cast.TASK_ID, 3, 2)
+            assertEquals(setOf(next, later), scheduler.scheduled.keys)
+            assertEquals(clock.now() + 15.minutes, scheduler.scheduled.getValue(next).plannedAt)
+            assertEquals(1, db.tasks().get(Cast.TASK_ID)!!.snoozesUsed)
+            assertEquals(1, db.outbox().pending().count { it.command == "snooze" })
+            // Offline, a re-arm keeps the snoozed ring and still holds the step inside the snooze.
+            alarms.rearm()
+            assertEquals(setOf(next, later), scheduler.scheduled.keys)
+            assertEquals(clock.now() + 15.minutes, scheduler.scheduled.getValue(next).plannedAt)
+        }
+
+    @Test
+    fun `a snooze from before an edit does not pull the edited plan's first step forward (NUD-158)`() =
+        runTest {
+            givenPlan()
+            alarms.rearm()
+            firing.fire(key(0))
+            actions.snooze(key(0))
+            // The sender moves the task to tomorrow during the snooze: a new plan, nothing of it rang.
+            db.tasks().upsert(listOf(db.tasks().get(Cast.TASK_ID)!!.copy(planVersion = 3)))
+            alarms.applyPlan(Cast.TASK_ID, 3, listOf(aStep(0, "2026-10-13T08:00:00+03:00", planVersion = 3)))
+            alarms.rearm()
+
+            assertEquals(Instant.parse("2026-10-13T08:00:00+03:00"), scheduler.scheduled.getValue(AlarmKey(Cast.TASK_ID, 3, 0)).plannedAt)
+        }
+
+    @Test
+    fun `a snooze refused at the tap says so, and nothing changes (NUD-158)`() =
+        runTest {
+            givenPlan()
+            clock.advance(51.minutes)
+            assertFalse(actions.snooze(key(2)))
+            assertTrue(db.outbox().pending().isEmpty())
         }
 
     @Test
