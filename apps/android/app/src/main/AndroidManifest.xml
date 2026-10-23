@@ -32,6 +32,9 @@
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE" />
         </intent>
+        <!-- The WhatsApp OTP handshake goes only to an installed WhatsApp or WhatsApp Business (ADR 0029). -->
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
     </queries>
 
     <application
@@ -84,6 +87,11 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="image/*" />
             </intent-filter>
+            <!-- One-tap WhatsApp sign-in code (ADR 0029): WhatsApp opens the app with the code. Only a code carrying the
+                 id of our last handshake is taken (WhatsAppCodes). -->
+            <intent-filter>
+                <action android:name="com.whatsapp.otp.OTP_RETRIEVED" />
+            </intent-filter>
         </activity>
 
         <activity
@@ -123,6 +131,16 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="android.intent.action.TIME_SET" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Zero-tap WhatsApp sign-in code (ADR 0029): exported because WhatsApp sends it; only a code carrying the id
+             of our last handshake is taken (WhatsAppCodes). -->
+        <receiver
+            android:name=".data.WhatsAppOtpReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.whatsapp.otp.OTP_RETRIEVED" />
             </intent-filter>
         </receiver>
 

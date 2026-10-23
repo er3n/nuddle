@@ -18,6 +18,8 @@ import app.nuddle.data.InviteLinks
 import app.nuddle.data.SharedImage
 import app.nuddle.data.SharedImages
 import app.nuddle.data.SharedText
+import app.nuddle.data.WhatsAppCodes
+import app.nuddle.data.WhatsAppIntents
 import app.nuddle.data.avatar.AvatarFiles
 import app.nuddle.data.sync.Syncer
 import app.nuddle.domain.Diagnostics
@@ -49,6 +51,8 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var diagnostics: Diagnostics
 
+    @Inject lateinit var whatsAppCodes: WhatsAppCodes
+
     /** The code of an invite link that opened the app, until home has acted on it. */
     private val inviteCode = MutableStateFlow<String?>(null)
 
@@ -65,6 +69,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         diagnostics.log("main start ${opener(intent)}")
         if (savedInstanceState == null) {
+            WhatsAppIntents.deliver(intent, whatsAppCodes)
             inviteCode.value = InviteLinks.codeOf(intent?.dataString)
             openRoute.value = intent?.getStringExtra(EXTRA_ROUTE)
             sharedText.value = SharedText.of(intent)
@@ -130,6 +135,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         diagnostics.log("main intent ${opener(intent)}")
+        WhatsAppIntents.deliver(intent, whatsAppCodes)
         InviteLinks.codeOf(intent.dataString)?.let { inviteCode.value = it }
         intent.getStringExtra(EXTRA_ROUTE)?.let { openRoute.value = it }
         SharedText.of(intent)?.let { sharedText.value = it }
@@ -145,7 +151,7 @@ class MainActivity : ComponentActivity() {
         /**
          * What opened the activity, for the breadcrumbs (ADR 0023): a screen a poke asked for (its route holds only a
          * task id), an invite link (never the link, which carries the code), a share from another app (never its
-         * text), or the launcher.
+         * text), a WhatsApp sign-in code (never the code), or the launcher.
          */
         private fun opener(intent: Intent?): String {
             val route = intent?.getStringExtra(EXTRA_ROUTE)
@@ -153,6 +159,7 @@ class MainActivity : ComponentActivity() {
                 route != null -> "route $route"
                 intent?.data != null -> "link"
                 intent?.action == Intent.ACTION_SEND -> "share"
+                intent?.action == WhatsAppIntents.ACTION_OTP_RETRIEVED -> "whatsapp_otp"
                 else -> "launcher"
             }
         }

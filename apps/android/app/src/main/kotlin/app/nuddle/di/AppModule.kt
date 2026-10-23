@@ -28,7 +28,11 @@ import app.nuddle.alarm.WorkManagerAlarmChecks
 import app.nuddle.alarm.userUnlocked
 import app.nuddle.data.ApiAuthRepository
 import app.nuddle.data.AuthRepository
+import app.nuddle.data.SdkWhatsAppHandshake
 import app.nuddle.data.SessionStarter
+import app.nuddle.data.WhatsAppCodes
+import app.nuddle.data.WhatsAppHandshake
+import app.nuddle.data.WhatsAppOtp
 import app.nuddle.data.outbox.OutboxDrainer
 import app.nuddle.data.outbox.WorkManagerScheduling
 import app.nuddle.data.session.DataStoreHeadsUpStore
@@ -130,6 +134,12 @@ abstract class BindingsModule {
 
     @Binds
     abstract fun authRepository(impl: ApiAuthRepository): AuthRepository
+
+    @Binds
+    abstract fun whatsAppHandshake(impl: SdkWhatsAppHandshake): WhatsAppHandshake
+
+    @Binds
+    abstract fun whatsAppOtp(impl: WhatsAppCodes): WhatsAppOtp
 
     @Binds
     abstract fun outboxDrainer(impl: WorkManagerScheduling): OutboxDrainer

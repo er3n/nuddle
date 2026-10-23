@@ -261,6 +261,9 @@ dependencies {
     implementation(libs.firebase.installations)
     implementation(libs.firebase.crashlytics)
     implementation(libs.play.services.auth.api.phone)
+    // WhatsApp sign-in codes (ADR 0029). The SDK uses only the platform and androidx.annotation; its POM still pulls
+    // in AppCompat, which a Compose app does not need.
+    implementation(libs.whatsapp.otp) { exclude(group = "androidx.appcompat") }
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test)
