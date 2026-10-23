@@ -48,7 +48,7 @@ nuddle/
   mise.toml                 tool versions + tasks (dev, fix, lint, test:fast, test, e2e:smoke, tick, eval)
   lefthook.yml
   apps/
-    android/                Gradle project, applicationId app.nuddle, flavors: dev, e2e, prod
+    android/                Gradle project, applicationId com.dokukoza.nuddle (prod), flavors: dev, e2e, prod
     web/
       src/app/              Next.js routes: landing `/` (en) and `/tr`, invite link page, later sender page
       src/landing/          landing, invite and 404 components; colors from docs/ux/tokens.json
@@ -137,7 +137,7 @@ The app shows the code on the unrecoverable error screen (6f) and sends it to Cr
 | local | `next dev` on the host | `supabase start` (Docker) | `app.nuddle.debug` |
 | e2e | `next dev` with `E2E=1` | same local stack, separate database | `app.nuddle.debug`, flavor `e2e` |
 | preview | none: ticket branches (`nud-*`) are not deployed (Hobby: 100 deployments a day per account) | none | none |
-| prod (= beta) | Vercel production | Supabase cloud project | `app.nuddle` (registered before the beta; until then the dev project) |
+| prod (= beta) | Vercel production | Supabase cloud project | `com.dokukoza.nuddle` (ADR 0028) and the testing app `app.nuddle`, both in `nuddle-app-er3n` |
 
 A staging project is added before the global launch, not before.
 

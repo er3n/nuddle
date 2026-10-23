@@ -1,6 +1,6 @@
 # apps/android
 
-Independent Gradle build (Kotlin, Compose), `applicationId app.nuddle`, flavors `dev`, `e2e`, `prod` (ADR 0004). Use the `mise` tasks from the repo root; they work the same for humans, agents and CI.
+Independent Gradle build (Kotlin, Compose), `applicationId com.dokukoza.nuddle` for prod and `app.nuddle.debug` for dev and e2e (ADR 0028), flavors `dev`, `e2e`, `prod` (ADR 0004). Use the `mise` tasks from the repo root; they work the same for humans, agents and CI.
 
 | Task | What it runs |
 |---|---|

@@ -1,4 +1,5 @@
-// The Android app (ADR 0004). Flavors: dev and e2e run as app.nuddle.debug against the local API, prod is app.nuddle.
+// The Android app (ADR 0004). Flavors: dev and e2e run as app.nuddle.debug against the local API, prod is
+// com.dokukoza.nuddle (ADR 0028).
 import com.github.triplet.gradle.androidpublisher.ReleaseStatus
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
@@ -122,6 +123,8 @@ android {
         }
         create("prod") {
             dimension = "env"
+            // Play production lives on the older developer account; app.nuddle stays on the new one (ADR 0028).
+            applicationId = "com.dokukoza.nuddle"
             // The production API, also the invite link host (open-questions#13).
             buildConfigField("String", "API_BASE_URL", "\"https://nuddle.app/\"")
             buildConfigField("boolean", "EXPOSE_TEST_TAGS", "false")
