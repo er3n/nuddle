@@ -14,8 +14,10 @@ import app.nuddle.domain.Diagnostics
 import app.nuddle.domain.routeShown
 import app.nuddle.testing.Cast
 import app.nuddle.testing.FakeClock
+import app.nuddle.testing.InMemorySessionStore
 import app.nuddle.testing.RecordingDiagnostics
 import app.nuddle.testing.RecordingDrainer
+import app.nuddle.testing.aSession
 import app.nuddle.testing.drtError
 import app.nuddle.testing.inMemoryDatabase
 import app.nuddle.testing.json
@@ -187,7 +189,7 @@ class DiagnosticsTest {
             outbox.enqueue("done", "key-1", DoneCommand("key-1", Cast.TASK_ID), DoneCommand.serializer())
             server.enqueue(drtError(409, "DRT-4001", "wrong_status"))
             val raw = server.retrofit(client()).create(RawCommandApi::class.java)
-            assertTrue(OutboxSender(db.outbox(), raw).drain())
+            assertTrue(OutboxSender(db.outbox(), raw, InMemorySessionStore(aSession())).drain())
             assertEquals(listOf("queued done key-1", "api outbox done 409 DRT-4001"), diagnostics.lines)
             assertEquals("outbox done 409 DRT-4001", diagnostics.errors.single().message)
         }

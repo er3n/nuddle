@@ -133,7 +133,7 @@ class InMemorySessionStore(
 
     override suspend fun syncCursor(): String? = cursor
 
-    override suspend fun saveSyncCursor(cursor: String) {
+    override suspend fun saveSyncCursor(cursor: String?) {
         this.cursor = cursor
     }
 
