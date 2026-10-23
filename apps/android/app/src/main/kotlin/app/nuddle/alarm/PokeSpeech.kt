@@ -147,6 +147,15 @@ class AndroidPokeSpeech
                         ) {
                             spoken.remove(utteranceId)?.complete(Unit)
                         }
+
+                        // An answer to another poke stops the engine, which drops this sentence too: its round ends
+                        // now instead of waiting out the timeout, and the next round says it again (NUD-159).
+                        override fun onStop(
+                            utteranceId: String,
+                            interrupted: Boolean,
+                        ) {
+                            spoken.remove(utteranceId)?.complete(Unit)
+                        }
                     },
                 )
                 engine = started
