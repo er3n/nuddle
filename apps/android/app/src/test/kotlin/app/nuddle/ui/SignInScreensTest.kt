@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -143,7 +144,7 @@ class SignInScreensTest {
         compose.onNodeWithText("SMS ile gönder").assertDoesNotExist()
 
         state = state.copy(smsOffered = true)
-        compose.onNodeWithText("SMS ile gönder").performClick()
+        compose.onNodeWithTag(TestTags.CODE_SEND_SMS).assertTextEquals("SMS ile gönder").performClick()
         assertEquals(1, sms)
 
         state = state.copy(channel = CodeChannel.Sms, smsOffered = false, alsoSentBySms = true)

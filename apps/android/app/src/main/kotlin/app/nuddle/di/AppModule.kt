@@ -136,12 +136,6 @@ abstract class BindingsModule {
     abstract fun authRepository(impl: ApiAuthRepository): AuthRepository
 
     @Binds
-    abstract fun whatsAppHandshake(impl: SdkWhatsAppHandshake): WhatsAppHandshake
-
-    @Binds
-    abstract fun whatsAppOtp(impl: WhatsAppCodes): WhatsAppOtp
-
-    @Binds
     abstract fun outboxDrainer(impl: WorkManagerScheduling): OutboxDrainer
 
     @Binds
@@ -167,6 +161,17 @@ abstract class BindingsModule {
 
     @Binds
     abstract fun sessionStarter(impl: AppSessionStarter): SessionStarter
+}
+
+/** WhatsApp sign-in codes (ADR 0029): Meta's SDK behind the handshake port, one [WhatsAppCodes] for the app. */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class WhatsAppOtpModule {
+    @Binds
+    abstract fun whatsAppHandshake(impl: SdkWhatsAppHandshake): WhatsAppHandshake
+
+    @Binds
+    abstract fun whatsAppOtp(impl: WhatsAppCodes): WhatsAppOtp
 }
 
 /** The direct boot copy of the armed pokes and the hourly check (docs/ux/platform.md, Alarms and pokes; NUD-125). */

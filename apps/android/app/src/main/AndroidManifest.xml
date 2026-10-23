@@ -135,10 +135,12 @@
         </receiver>
 
         <!-- Zero-tap WhatsApp sign-in code (ADR 0029): exported because WhatsApp sends it; only a code carrying the id
-             of our last handshake is taken (WhatsAppCodes). -->
+             of our last handshake is taken (WhatsAppCodes). No permission: WhatsApp holds none we could require
+             (Meta's zero-tap setup declares the receiver without one), so the handshake id is the check instead. -->
         <receiver
             android:name=".data.WhatsAppOtpReceiver"
-            android:exported="true">
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
             <intent-filter>
                 <action android:name="com.whatsapp.otp.OTP_RETRIEVED" />
             </intent-filter>
