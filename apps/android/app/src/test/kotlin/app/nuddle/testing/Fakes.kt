@@ -250,6 +250,16 @@ class RecordingNotifications : PokeNotifications {
         headsUpsUp += task.id
     }
 
+    val silenced = mutableListOf<String>()
+
+    override fun silence(
+        task: TaskEntity,
+        step: PokeStep,
+        level: PokeLevel,
+    ) {
+        silenced += task.id
+    }
+
     override fun cancel(taskId: String) {
         cancelled += taskId
         up -= taskId
