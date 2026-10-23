@@ -10,7 +10,7 @@ Local stack config (`config.toml`), migrations (Drizzle output and hand-written 
 
 ## Cloud project (stage 7, human)
 
-Project `nuddle`, ref `hksqgdkbxalaixjghlvi`, `eu-central-1`. Agents never run these commands (CLAUDE.md hard rule 6); the human runs them from the repo root. The supabase CLI is pinned in `mise.toml`, hence `mise exec --`. Secrets come from `~/.nuddle/prod/` (`docs/human-checklist.md`, Before stage 7).
+Project `nuddle`, ref `hksqgdkbxalaixjghlvi`, `eu-central-1`. Agents run these commands only when the human asks (CLAUDE.md hard rule 6), from the repo root. The supabase CLI is pinned in `mise.toml`, hence `mise exec --`. Secrets come from `~/.nuddle/prod/` (`docs/human-checklist.md`, Before stage 7).
 
 1. Link (asks for the database password): `mise exec -- supabase link --project-ref hksqgdkbxalaixjghlvi`
 2. Check what is applied (read-only): `mise exec -- supabase migration list --linked`

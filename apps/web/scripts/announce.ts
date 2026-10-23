@@ -1,7 +1,7 @@
 // `mise run announce -- announcements/<slug>.md --to <+90...,+90...|*> [--prod] [--yes]` (ADR 0025):
 // sends a message from Nuddle to the given numbers, or to everyone with `*`. Without --yes it only
 // checks the file and its images and prints who would get it. Local by default; --prod targets
-// nuddle.app with ~/.nuddle/prod/TICK_SECRET, and only the human runs that (CLAUDE.md rule 6).
+// nuddle.app with ~/.nuddle/prod/TICK_SECRET, only when the human asks (CLAUDE.md rule 6).
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, resolve } from "node:path";

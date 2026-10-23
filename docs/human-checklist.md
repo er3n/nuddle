@@ -46,7 +46,8 @@ Things only the human can do: accounts, payments, logins, secrets, production pu
 
 ## Before the beta (about 20 families)
 
-- [ ] Register `app.nuddle` (prod) in Firebase (in `nuddle-app-er3n` or a separate project: decide then), put its `google-services.json` in `apps/android/app/src/prod/` (git-ignored), and give Vercel a service account of that project (moved from stage 7, NUD-11).
+- [x] Register the prod app in Firebase: `app.nuddle` and, for production, `com.dokukoza.nuddle` (ADR 0028, added 2026-10-23 with the upload key SHAs) are both in `nuddle-app-er3n`; their `google-services.json` is in `apps/android/app/src/prod/` (git-ignored). Vercel keeps the service account of that project.
+- [ ] Production on the erenozturk@ Play account (ADR 0028, NUD-144). Done 2026-10-23: Firebase app `com.dokukoza.nuddle` with the upload and Play App Signing SHAs; `ANDROID_APP_LINK_FINGERPRINTS` (plus `D8:91:…:CF:B9`) and `SMS_RETRIEVER_HASH` (`FdXmcSJuarV`) set in Vercel Production, live with the next production deploy; review code entered and production release 8 sent for review. Left: invite `play-publisher@nuddle-app-er3n-512208.iam.gserviceaccount.com` in that Play Console so `mise run android:publish` reaches the new app.
 
 - [x] Google Play Console account. Personal account on `dokukoza@gmail.com`, created 2026-10-16 (the 2024 account on another address was closed for inactivity). A new personal account needs a closed test with at least 12 testers opted in for 14 days in a row before production access; the beta families are that test. Done 2026-10-16: the app `app.nuddle` exists, and release 1 (0.1.0) is on internal testing for the tester list "Bizimkiler".
 - [x] Play upload key, created on your machine and never shown to the agent:

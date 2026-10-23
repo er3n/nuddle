@@ -27,7 +27,7 @@ Turkish UI tagline: "Bir kere söylenir. Gerisini dürt halleder."
 | Turkey | Brand **dürt** on Turkish devices. Same app, same code, only the localized store name differs. |
 | Play store name | `Nuddle: Reminders That Nag` (en-US, the default listing) and `dürt: Hatırlatıcı ve Alarm` (tr-TR). The part after the colon carries search keywords; the brand stays Nuddle / dürt everywhere else (decided 2026-10-16). |
 | Domain | `nuddle.app` (canonical). `durtmobil.com` redirects to it. `nuddle.com` is taken. `durt.app` is free if wanted. |
-| Android `applicationId` | `app.nuddle` (permanent after first Play upload). Kotlin `namespace` is also `app.nuddle`. Debug builds use `app.nuddle.debug`. |
+| Android `applicationId` | `com.dokukoza.nuddle` for the Play production app (ADR 0028). `app.nuddle` is the earlier testing app on the dokukoza@ Play account. Kotlin `namespace` stays `app.nuddle`. Debug builds use `app.nuddle.debug`. Permanent after the first Play upload. |
 | GitHub | public monorepo `er3n/nuddle` on the personal account (see ADR 0001). The `nuddle-app` org is kept as an option for a later transfer. |
 | Rejected names | Poke (poke.com, funded AI assistant in the same space), "dürt" everywhere ("dirt", the ü problem), nudge, bump, prod, jog, tug, elbow, psst (domains taken), "Done Yet" (a very similar "Done?" app exists on Android). |
 
