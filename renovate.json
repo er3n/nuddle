@@ -15,6 +15,12 @@
       "groupName": "major ({{manager}})"
     },
     {
+      "description": "Runtimes stay on the majors docs/bootstrap-plan.md pins (node 22, pnpm 10, java 21); moving one is its own change with the doc, CI and Vercel together (NUD-118)",
+      "matchPackageNames": ["node", "pnpm", "java", "@types/node"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "description": "typescript-eslint pins the supported TypeScript range; update them together",
       "matchPackageNames": ["typescript", "typescript-eslint"],
       "groupName": "typescript"
