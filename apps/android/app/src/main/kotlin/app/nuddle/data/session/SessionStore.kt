@@ -50,7 +50,8 @@ interface SessionStore {
 
     suspend fun syncCursor(): String?
 
-    suspend fun saveSyncCursor(cursor: String)
+    /** Null forgets it: the next sync is a full one (NUD-168). */
+    suspend fun saveSyncCursor(cursor: String?)
 
     suspend fun clear()
 }

@@ -703,7 +703,7 @@ class SyncAndOutboxTest {
             assertEquals(1, db.outbox().pending().size)
             assertEquals(2, drainer.kicks)
 
-            val sender = OutboxSender(db.outbox(), server.retrofit().create(RawCommandApi::class.java))
+            val sender = OutboxSender(db.outbox(), server.retrofit().create(RawCommandApi::class.java), sessions)
             server.enqueue(drtError(503, "DRT-5001", "internal"))
             assertFalse(sender.drain())
             assertEquals(
@@ -730,7 +730,7 @@ class SyncAndOutboxTest {
             val outbox = Outbox(db.outbox(), testJson, FakeClock(), RecordingDrainer())
             outbox.enqueue("done", "key-2", DoneCommand("key-2", Cast.TASK_ID), DoneCommand.serializer())
             server.enqueue(drtError(409, "DRT-4001", "wrong_status"))
-            assertTrue(OutboxSender(db.outbox(), server.retrofit().create(RawCommandApi::class.java)).drain())
+            assertTrue(OutboxSender(db.outbox(), server.retrofit().create(RawCommandApi::class.java), sessions).drain())
             assertTrue(db.outbox().pending().isEmpty())
         }
 }

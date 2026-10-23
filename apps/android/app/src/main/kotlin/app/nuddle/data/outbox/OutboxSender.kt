@@ -2,6 +2,7 @@ package app.nuddle.data.outbox
 
 import app.nuddle.data.api.RawCommandApi
 import app.nuddle.data.db.OutboxDao
+import app.nuddle.data.session.SessionStore
 import app.nuddle.domain.OutboxPolicy
 import app.nuddle.domain.SendOutcome
 import okhttp3.MediaType.Companion.toMediaType
@@ -15,6 +16,7 @@ class OutboxSender
     constructor(
         private val dao: OutboxDao,
         private val api: RawCommandApi,
+        private val sessions: SessionStore,
     ) {
         suspend fun drain(): Boolean {
             for (entry in dao.pending()) {
@@ -26,8 +28,16 @@ class OutboxSender
                         null
                     }
                 when (OutboxPolicy.outcome(status)) {
-                    SendOutcome.SENT, SendOutcome.DROP -> {
+                    SendOutcome.SENT -> {
                         dao.remove(entry.idempotencyKey)
+                    }
+
+                    SendOutcome.DROP -> {
+                        dao.remove(entry.idempotencyKey)
+                        // The phone showed this answer before the server had it; a sync meanwhile kept that local state
+                        // and moved its cursor past the server's own change, which the refusal does not touch again.
+                        // The sync after this drain is a full one, so the server's state comes back (NUD-168).
+                        if (entry.command in LOCAL_FIRST) sessions.saveSyncCursor(null)
                     }
 
                     SendOutcome.RETRY -> {
@@ -41,5 +51,8 @@ class OutboxSender
 
         private companion object {
             val JSON = "application/json".toMediaType()
+
+            /** Commands the phone applies to its own copy of the task before the server answers. */
+            val LOCAL_FIRST = setOf("done", "snooze", "cant_today", "cancel", "approve", "did_it_later", "edit", "remove_missed")
         }
     }

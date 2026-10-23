@@ -100,8 +100,8 @@ class DataStoreSessionStore
 
         override suspend fun syncCursor(): String? = store.data.first()[Keys.syncCursor]
 
-        override suspend fun saveSyncCursor(cursor: String) {
-            store.edit { it[Keys.syncCursor] = cursor }
+        override suspend fun saveSyncCursor(cursor: String?) {
+            store.edit { if (cursor == null) it.remove(Keys.syncCursor) else it[Keys.syncCursor] = cursor }
         }
 
         override suspend fun clear() {
