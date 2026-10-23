@@ -1,6 +1,7 @@
 package app.nuddle.alarm
 
 import android.app.Application
+import android.app.NotificationManager
 import android.media.AudioManager
 import android.speech.tts.TextToSpeech
 import androidx.test.core.app.ApplicationProvider
@@ -28,7 +29,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.seconds
 
-/** NUD-151: the task is said aloud only when the voice gets the audio focus, never over a phone call. */
+/** The task is said aloud only with the audio focus, never over a call (NUD-151) or on a silenced phone (NUD-164). */
 @OptIn(ExperimentalCoroutinesApi::class) // Reason: virtual time drives the voice's 3 and 10 second pauses.
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -73,6 +74,33 @@ class PokeSpeechCallTest {
             val tts = firstRound()
 
             assertNull(shadowOf(tts).lastSpokenText)
+        }
+
+    @Test
+    fun `on silent or vibrate the poke rings but the task is not said (NUD-164)`() =
+        runTest(dispatcher) {
+            audio.ringerMode = AudioManager.RINGER_MODE_VIBRATE
+            speech().start(toSelf, PokeLevel.SOUND) { true }
+
+            val tts = firstRound()
+
+            assertNull(shadowOf(tts).lastSpokenText)
+        }
+
+    @Test
+    fun `with Do Not Disturb on the task is not said (NUD-164)`() =
+        runTest(dispatcher) {
+            val notifications = app.getSystemService(NotificationManager::class.java)
+            notifications.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
+            try {
+                speech().start(toSelf, PokeLevel.SOUND) { true }
+
+                val tts = firstRound()
+
+                assertNull(shadowOf(tts).lastSpokenText)
+            } finally {
+                notifications.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+            }
         }
 
     @Test
