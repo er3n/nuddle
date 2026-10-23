@@ -269,6 +269,8 @@ class PokeActions
                 val step = alarms.step(key) ?: return@whole
                 scheduler.schedule(step.copy(plannedAt = snooze.until))
                 tasks.countSnooze(key.taskId, snooze.until.toEpochMilliseconds())
+                // The plan's next steps before the snooze ends lose their alarms now, also offline (NUD-152).
+                alarms.holdForSnooze(key, snooze.until)
                 alarms.remember()
                 val id = ids.next()
                 outbox.enqueue("snooze", id, SnoozeCommand(idempotencyKey = id, taskId = key.taskId), SnoozeCommand.serializer())

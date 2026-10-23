@@ -18,6 +18,7 @@ import app.nuddle.testing.FakeTaskRepository
 import app.nuddle.testing.InMemoryConnectionDao
 import app.nuddle.testing.InMemoryTaskDao
 import app.nuddle.testing.MainDispatcherRule
+import app.nuddle.testing.RecordingNotifications
 import app.nuddle.testing.aTask
 import app.nuddle.testing.sibelConnection
 import app.nuddle.ui.screens.photo.CameraSource
@@ -55,6 +56,7 @@ class PhotoViewModelTest {
     private val tasks = FakeTaskRepository()
     private val photoTaken = mutableListOf<String>()
     private val uploads = FakePhotoUploads()
+    private val pokes = RecordingNotifications()
 
     private val shot: ByteArray =
         ByteArrayOutputStream().use {
@@ -118,8 +120,20 @@ class PhotoViewModelTest {
             gallery,
             PhotoSender(PhotoFiles(temp.newFolder("photos")), closer, uploads, IdGenerator(FakeClock()), FakeClock()),
             tasks,
+            pokes,
         )
     }
+
+    @Test
+    fun `opening the camera stops the task's ringing poke, the task stays open (NUD-153)`() =
+        runTest {
+            ready()
+            // The camera screen opens: its ViewModel is made.
+            vm.state.value
+
+            assertEquals(listOf(Cast.TASK_ID), pokes.cancelled)
+            assertTrue(photoTaken.isEmpty())
+        }
 
     private suspend fun TestScope.ready() {
         taskDao.upsert(listOf(aTask()))

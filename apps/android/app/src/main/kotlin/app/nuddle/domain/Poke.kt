@@ -35,6 +35,8 @@ data class LocalTaskState(
     val moment: Boolean = false,
     /** A one-time message (finish mode `notice`): no "Zaten yaptın mı?" before it (NUD-129). */
     val notice: Boolean = false,
+    /** The end of the task's latest Ertele, if any (NUD-152). */
+    val snoozedUntil: Instant? = null,
 )
 
 sealed interface FireDecision {
@@ -97,6 +99,10 @@ object PokeRules {
      * the past. Used after a sync and on boot, package replace, time and time zone changes. A step that arrives a
      * little late (the first step of a plan is planned at "now") rings at once; an older one is not rung late, and
      * the server's lost poke check covers it (docs/domain.md, Device execution).
+     *
+     * Ertele holds the rest of the plan that rang (NUD-152): until the server's plan shifted after the snooze arrives,
+     * a step of a version with a fired step that comes before the snooze ends never rings, also offline. The snoozed
+     * ring itself is added by the caller. A new plan version (the shifted one, an edit) is not held.
      */
     fun stepsToArm(
         steps: List<PokeStep>,
@@ -108,8 +114,17 @@ object PokeRules {
             .filter { step ->
                 val task = tasks[step.taskId]
                 task != null && task.open && step.planVersion == task.currentPlanVersion && step.key !in fired &&
-                    step.plannedAt > now - LATE_GRACE
+                    step.plannedAt > now - LATE_GRACE && !heldBySnooze(step, task, fired)
             }.sortedBy { it.plannedAt }
+
+    private fun heldBySnooze(
+        step: PokeStep,
+        task: LocalTaskState,
+        fired: Set<AlarmKey>,
+    ): Boolean {
+        val until = task.snoozedUntil ?: return false
+        return step.plannedAt < until && fired.any { it.taskId == step.taskId && it.planVersion == step.planVersion }
+    }
 
     /** Rounded time to the deadline for the poke text ("son zamana 45 dk", "1 saat"). Never negative. */
     fun timeLeft(

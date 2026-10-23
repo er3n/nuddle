@@ -90,6 +90,22 @@ class PokeRulesTest {
     }
 
     @Test
+    fun `Ertele holds the rest of the plan that rang until the snooze ends, a new plan version is not held (NUD-152)`() {
+        val rang = step(seq = 0, at = now - 5.minutes)
+        val during = step(seq = 1, at = now + 3.minutes)
+        val after = step(seq = 2, at = now + 20.minutes)
+        val snoozed = open.copy(snoozedUntil = now + 15.minutes)
+
+        val armed = PokeRules.stepsToArm(listOf(rang, during, after), mapOf("t1" to snoozed), setOf(rang.key), now)
+        assertEquals(listOf(after), armed)
+
+        // The server's shifted plan, or an edit, is a new version: nothing of it rang yet, so nothing is held.
+        val shifted = step(seq = 0, version = 3, at = now + 3.minutes)
+        val replanned = mapOf("t1" to snoozed.copy(currentPlanVersion = 3))
+        assertEquals(listOf(shifted), PokeRules.stepsToArm(listOf(shifted), replanned, setOf(rang.key), now))
+    }
+
+    @Test
     fun `time left is rounded down to minutes under an hour and hours above`() {
         assertEquals(TimeLeft.Minutes(45), PokeRules.timeLeft(now, now + 45.minutes))
         assertEquals(TimeLeft.Hours(1), PokeRules.timeLeft(now, now + 61.minutes))

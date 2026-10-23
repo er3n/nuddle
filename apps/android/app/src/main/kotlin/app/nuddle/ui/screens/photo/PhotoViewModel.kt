@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.nuddle.alarm.PokeNotifications
 import app.nuddle.data.TaskRepository
 import app.nuddle.data.db.ConnectionDao
 import app.nuddle.data.db.TaskDao
@@ -62,8 +63,15 @@ class PhotoViewModel
         private val gallery: GalleryImages,
         private val sender: PhotoSender,
         private val tasks: TaskRepository,
+        pokes: PokeNotifications,
     ) : ViewModel() {
         private val taskId: String = checkNotNull(savedState[ARG_TASK])
+
+        init {
+            // Bitti on a photo task's poke opens the camera (4d): the poke stops ringing and speaking while the photo is
+            // taken. The task stays open and the next steps ring as planned until the photo is sent (NUD-153).
+            pokes.cancel(taskId)
+        }
 
         private data class Local(
             val stage: PhotoStage = PhotoStage.Camera,
