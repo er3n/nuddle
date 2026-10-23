@@ -6,6 +6,7 @@ import app.nuddle.api.model.SyncConnection
 import app.nuddle.api.model.SyncEvent
 import app.nuddle.api.model.SyncPlan
 import app.nuddle.api.model.SyncReceivedInvite
+import app.nuddle.api.model.SyncResponse
 import app.nuddle.api.model.SyncSentInvite
 import app.nuddle.api.model.SyncTask
 import app.nuddle.api.model.TaskEventType
@@ -32,12 +33,15 @@ import app.nuddle.data.level
 import app.nuddle.data.note
 import app.nuddle.data.reason
 import app.nuddle.data.session.SessionStore
+import app.nuddle.data.session.StoredSession
 import app.nuddle.data.session.TaskAcks
 import app.nuddle.data.sinceLastDeadline
 import app.nuddle.data.toProfile
 import app.nuddle.domain.PokeLevel
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import kotlin.time.Instant
@@ -161,7 +165,18 @@ class SyncRepository
             val cursor = sessions.syncCursor()
             val result = apiCall(json) { api.sync(cursor = cursor, deviceId = sessions.deviceId()) }
             if (result !is ApiResult.Success) return false
-            val response = result.value
+            // Once the server's answer is here it is applied to the end, whatever cancels the caller (NUD-166): the
+            // cursor moves with it, so a cancel midway (the outbox worker replaced by the acknowledge this sync queues,
+            // a screen that closes) would lose its notes for good, since the next sync sees those tasks as known.
+            withContext(NonCancellable) { applyAnswer(session, cursor, result.value) }
+            return true
+        }
+
+        private suspend fun applyAnswer(
+            session: StoredSession,
+            cursor: String?,
+            response: SyncResponse,
+        ) {
             val me = response.me
             sessions.saveMe(me.toProfile())
             connections.upsert(response.connections.map(SyncConnection::toEntity))
@@ -205,7 +220,6 @@ class SyncRepository
             }
             // The sender's pictures of the synced tasks, last, so a slow fetch holds no alarm or note (NUD-138).
             examples.refresh(response.tasks.map(SyncTask::toEntity))
-            return true
         }
 
         /**
